@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.common
 
 import androidx.compose.foundation.background
@@ -199,4 +200,4 @@ private fun SimpleBottomNavItem(
             color = if (isSelected) Color(0xFF5A2A82) else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
-}
+}*/

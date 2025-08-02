@@ -1,3 +1,4 @@
+/*
 package com.insightku.data.local.database
 
 import androidx.room.Database
@@ -45,4 +46,4 @@ abstract class InsightKuDatabase : RoomDatabase() {
             }
         }
     }
-}
+}*/

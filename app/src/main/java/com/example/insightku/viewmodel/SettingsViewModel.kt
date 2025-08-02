@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -185,4 +186,4 @@ class SettingsViewModel : ViewModel() {
             settings["userEmail"]?.let { updateUserEmail(it as String) }
         }
     }
-}
+}*/

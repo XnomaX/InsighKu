@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.dashboard
 
 import androidx.compose.foundation.Canvas
@@ -397,4 +398,4 @@ private fun formatCurrency(amount: Double): String {
     val locale = Locale.Builder().setLanguage("id").setRegion("ID").build()
     val formatter = NumberFormat.getCurrencyInstance(locale)
     return formatter.format(amount)
-}
+}*/

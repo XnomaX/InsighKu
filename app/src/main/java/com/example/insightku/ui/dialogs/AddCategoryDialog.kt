@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.dialogs
 
 import androidx.compose.foundation.background
@@ -424,4 +425,4 @@ private fun IconOption(
             modifier = Modifier.size(20.dp)
         )
     }
-}
+}*/

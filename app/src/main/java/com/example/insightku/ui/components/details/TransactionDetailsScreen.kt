@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.details
 
 import androidx.compose.foundation.layout.*
@@ -117,4 +118,4 @@ private fun TransactionItem(
             }
         }
     }
-}
+}*/

@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.settings
 
 import androidx.compose.foundation.background
@@ -746,4 +747,4 @@ private fun AppInfoCard() {
             )
         }
     }
-}
+}*/

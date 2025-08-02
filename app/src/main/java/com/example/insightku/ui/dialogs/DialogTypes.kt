@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.dialogs
 
 // Common data types used across dialogs
@@ -9,4 +10,4 @@ data class TransactionData(
     val description: String,
     val date: String,
     val isIncome: Boolean
-)
+)*/

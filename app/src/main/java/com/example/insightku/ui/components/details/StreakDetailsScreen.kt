@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.details
 
 import androidx.compose.foundation.layout.*
@@ -43,4 +44,4 @@ fun StreakDetailsScreen(
             modifier = Modifier.padding(16.dp)
         )
     }
-}
+}*/

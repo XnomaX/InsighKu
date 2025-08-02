@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.common
 
 import androidx.compose.foundation.layout.*
@@ -30,4 +31,4 @@ fun LoadingIndicator(
             color = MaterialTheme.colorScheme.onSurface
         )
     }
-}
+}*/

@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.budgeting
 
 import androidx.compose.foundation.BorderStroke
@@ -689,4 +690,4 @@ private fun formatCurrency(amount: Double): String {
     val locale = Locale.Builder().setLanguage("id").setRegion("ID").build()
     val formatter = NumberFormat.getCurrencyInstance(locale)
     return formatter.format(amount)
-}
+}*/

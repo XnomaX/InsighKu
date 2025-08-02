@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.data.model
 
 import androidx.room.Entity
@@ -12,4 +13,4 @@ data class Category(
     val budgetLimit: Double? = null,
     val icon: String? = null,
     val isActive: Boolean = true
-)
+)*/
