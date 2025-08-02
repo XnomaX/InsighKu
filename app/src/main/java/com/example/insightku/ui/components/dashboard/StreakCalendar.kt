@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.dashboard
 
 import androidx.compose.foundation.background
@@ -250,3 +251,4 @@ private fun daysBetween(date1: Date, date2: Date): Long {
     }
     return (cal2.timeInMillis - cal1.timeInMillis) / (1000 * 60 * 60 * 24)
 }
+*/

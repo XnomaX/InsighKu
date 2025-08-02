@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -59,21 +60,21 @@ data class BudgetSummary(
 )
 
 class BudgetingViewModel : ViewModel() {
-    
+
     private val _budgetingData = MutableStateFlow(BudgetingData())
     val budgetingData: StateFlow<BudgetingData> = _budgetingData.asStateFlow()
-    
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
+
     init {
         loadBudgetingData()
     }
-    
+
     fun loadBudgetingData() {
         viewModelScope.launch {
             _isLoading.value = true
-            
+
             try {
                 // Simulate API call or database query
                 val budgetCategories = listOf(
@@ -91,7 +92,7 @@ class BudgetingViewModel : ViewModel() {
                         name = "Transportation",
                         budgetAmount = 400000.0,
                         spentAmount = 520000.0,
-                        color = "#3B82F6", 
+                        color = "#3B82F6",
                         iconName = "directions_car",
                         lastMonthSpent = 380000.0
                     ),
@@ -110,7 +111,7 @@ class BudgetingViewModel : ViewModel() {
                         budgetAmount = 600000.0,
                         spentAmount = 480000.0,
                         color = "#EC4899",
-                        iconName = "shopping_bag", 
+                        iconName = "shopping_bag",
                         lastMonthSpent = 450000.0
                     ),
                     BudgetCategory(
@@ -132,7 +133,7 @@ class BudgetingViewModel : ViewModel() {
                         lastMonthSpent = 80000.0
                     )
                 )
-                
+
                 val recurringPayments = listOf(
                     RecurringPayment(
                         id = "1",
@@ -145,7 +146,7 @@ class BudgetingViewModel : ViewModel() {
                         iconName = "subscriptions"
                     ),
                     RecurringPayment(
-                        id = "2", 
+                        id = "2",
                         name = "Rent Payment",
                         amount = 12000000.0,
                         dueDate = "Jul 1",
@@ -185,16 +186,16 @@ class BudgetingViewModel : ViewModel() {
                         iconName = "phone"
                     )
                 )
-                
+
                 val totalBudget = budgetCategories.sumOf { it.budgetAmount }
                 val totalSpent = budgetCategories.sumOf { it.spentAmount }
                 val remaining = totalBudget - totalSpent
                 val percentage = (totalSpent / totalBudget) * 100
-                
+
                 val overBudgetCount = budgetCategories.count { it.isOverBudget }
                 val alertCount = budgetCategories.count { it.isAlert }
                 val onTrackCount = budgetCategories.count { it.isOnTrack }
-                
+
                 val budgetSummary = BudgetSummary(
                     totalBudget = totalBudget,
                     totalSpent = totalSpent,
@@ -204,13 +205,13 @@ class BudgetingViewModel : ViewModel() {
                     alertCategoriesCount = alertCount,
                     onTrackCategoriesCount = onTrackCount
                 )
-                
+
                 _budgetingData.value = BudgetingData(
                     budgetCategories = budgetCategories,
                     recurringPayments = recurringPayments,
                     budgetSummary = budgetSummary
                 )
-                
+
             } catch (e: Exception) {
                 // Handle error
                 e.printStackTrace()
@@ -219,66 +220,66 @@ class BudgetingViewModel : ViewModel() {
             }
         }
     }
-    
+
     fun addCategory(category: BudgetCategory) {
         viewModelScope.launch {
             // Simulate adding category
             val currentData = _budgetingData.value
             val updatedCategories = currentData.budgetCategories + category
-            
+
             updateBudgetingData(updatedCategories, currentData.recurringPayments)
         }
     }
-    
+
     fun updateCategory(category: BudgetCategory) {
         viewModelScope.launch {
             val currentData = _budgetingData.value
-            val updatedCategories = currentData.budgetCategories.map { 
+            val updatedCategories = currentData.budgetCategories.map {
                 if (it.id == category.id) category else it
             }
-            
+
             updateBudgetingData(updatedCategories, currentData.recurringPayments)
         }
     }
-    
+
     fun deleteCategory(categoryId: String) {
         viewModelScope.launch {
             val currentData = _budgetingData.value
             val updatedCategories = currentData.budgetCategories.filter { it.id != categoryId }
-            
+
             updateBudgetingData(updatedCategories, currentData.recurringPayments)
         }
     }
-    
+
     fun addRecurringPayment(payment: RecurringPayment) {
         viewModelScope.launch {
             val currentData = _budgetingData.value
             val updatedPayments = currentData.recurringPayments + payment
-            
+
             updateBudgetingData(currentData.budgetCategories, updatedPayments)
         }
     }
-    
+
     fun updateRecurringPayment(payment: RecurringPayment) {
         viewModelScope.launch {
             val currentData = _budgetingData.value
             val updatedPayments = currentData.recurringPayments.map {
                 if (it.id == payment.id) payment else it
             }
-            
+
             updateBudgetingData(currentData.budgetCategories, updatedPayments)
         }
     }
-    
+
     fun deleteRecurringPayment(paymentId: String) {
         viewModelScope.launch {
             val currentData = _budgetingData.value
             val updatedPayments = currentData.recurringPayments.filter { it.id != paymentId }
-            
+
             updateBudgetingData(currentData.budgetCategories, updatedPayments)
         }
     }
-    
+
     private fun updateBudgetingData(
         categories: List<BudgetCategory>,
         payments: List<RecurringPayment>
@@ -287,11 +288,11 @@ class BudgetingViewModel : ViewModel() {
         val totalSpent = categories.sumOf { it.spentAmount }
         val remaining = totalBudget - totalSpent
         val percentage = if (totalBudget > 0) (totalSpent / totalBudget) * 100 else 0.0
-        
+
         val overBudgetCount = categories.count { it.isOverBudget }
         val alertCount = categories.count { it.isAlert }
         val onTrackCount = categories.count { it.isOnTrack }
-        
+
         val budgetSummary = BudgetSummary(
             totalBudget = totalBudget,
             totalSpent = totalSpent,
@@ -301,15 +302,15 @@ class BudgetingViewModel : ViewModel() {
             alertCategoriesCount = alertCount,
             onTrackCategoriesCount = onTrackCount
         )
-        
+
         _budgetingData.value = BudgetingData(
             budgetCategories = categories,
             recurringPayments = payments,
             budgetSummary = budgetSummary
         )
     }
-    
+
     fun refreshData() {
         loadBudgetingData()
     }
-}
+}*/

@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.data.local.dao
 
 import androidx.room.*
@@ -48,4 +49,4 @@ interface TransactionDao {
 
     @Query("DELETE FROM transactions")
     suspend fun deleteAllTransactions()
-}
+}*/

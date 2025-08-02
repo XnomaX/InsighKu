@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.utils
 
 import android.content.Context
@@ -103,3 +104,4 @@ fun Boolean.toInt(): Int = if (this) 1 else 0
 fun Boolean.toYesNo(): String = if (this) "Yes" else "No"
 
 fun Boolean.toOnOff(): String = if (this) "On" else "Off"
+*/

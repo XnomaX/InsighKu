@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.dashboard
 
 import androidx.compose.foundation.background
@@ -201,4 +202,4 @@ fun BalanceCard(
 private fun formatCurrency(amount: Double): String {
     val formatter = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
     return formatter.format(amount).replace("IDR", "Rp")
-}
+}*/

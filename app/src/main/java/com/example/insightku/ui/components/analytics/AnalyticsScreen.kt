@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.analytics
 
 import androidx.compose.foundation.BorderStroke
@@ -586,4 +587,4 @@ private fun CategoryLegendItem(
 private fun formatCurrency(amount: Double): String {
     val formatter = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("id-ID"))
     return formatter.format(amount).replace("IDR", "Rp")
-}
+}*/

@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.data.model
 
 import androidx.room.Entity
@@ -14,4 +15,4 @@ data class User(
     val streakCount: Int = 0,
     val bestStreak: Int = 0,
     val totalTransactions: Int = 0
-)
+)*/

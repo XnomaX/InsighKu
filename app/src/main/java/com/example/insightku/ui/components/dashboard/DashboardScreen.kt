@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.components.dashboard
 
 import androidx.compose.foundation.background
@@ -258,4 +259,4 @@ private fun AIForecastPanel(
             )
         }
     }
-}
+}*/

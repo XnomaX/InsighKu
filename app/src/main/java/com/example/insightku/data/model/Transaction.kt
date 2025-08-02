@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.data.model
 
 import androidx.room.Entity
@@ -18,4 +19,4 @@ data class Transaction(
 
 enum class TransactionType {
     INCOME, EXPENSE
-}
+}*/

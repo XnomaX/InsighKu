@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.dialogs
 
 import androidx.compose.foundation.background
@@ -297,7 +298,9 @@ private fun VerificationCodeStep() {
         )
         
         TextButton(
-            onClick = { /* Resend code */ }
+            onClick = { */
+/* Resend code *//*
+ }
         ) {
             Text(
                 text = "Didn't receive code? Resend",
@@ -434,4 +437,4 @@ data class WhatsAppSetupStep(
     val description: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val action: String
-)
+)*/

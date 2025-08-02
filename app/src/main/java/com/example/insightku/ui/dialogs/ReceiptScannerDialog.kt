@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.dialogs
 
 import androidx.compose.foundation.background
@@ -474,4 +475,4 @@ private fun ResultContent(
 
 enum class ScanningState {
     READY, SCANNING, PROCESSING, RESULT
-}
+}*/

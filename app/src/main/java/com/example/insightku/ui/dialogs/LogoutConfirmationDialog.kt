@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.ui.dialogs
 
 import androidx.compose.foundation.layout.*
@@ -61,4 +62,4 @@ fun LogoutConfirmationDialog(
             }
         )
     }
-}
+}*/

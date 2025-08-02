@@ -1,3 +1,4 @@
+/*
 package com.example.insightku.data.model
 
 import androidx.room.Entity
@@ -20,4 +21,4 @@ data class Budget(
 
 enum class BudgetPeriod {
     DAILY, WEEKLY, MONTHLY, YEARLY
-}
+}*/
