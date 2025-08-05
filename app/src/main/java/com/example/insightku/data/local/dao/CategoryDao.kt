@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.data.local.dao
 
 import androidx.room.*
@@ -33,4 +32,4 @@ interface CategoryDao {
 
     @Query("UPDATE categories SET isActive = 0 WHERE id = :categoryId")
     suspend fun deactivateCategory(categoryId: String)
-}*/
+}

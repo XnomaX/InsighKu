@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.ui.components.details
 
 import androidx.compose.foundation.layout.*
@@ -13,8 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.insightku.viewmodel.Transaction
+import com.example.insightku.data.model.Transaction
 import com.example.insightku.utils.AppConstants
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun TransactionDetailsScreen(
@@ -68,6 +69,8 @@ private fun TransactionItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -101,21 +104,24 @@ private fun TransactionItem(
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
-                    text = if (transaction.amount >= 0) "+${transaction.amount}" else "${transaction.amount}",
+                    text = if (transaction.type == com.example.insightku.data.model.TransactionType.INCOME)
+                        "+${transaction.amount}"
+                    else
+                        "-${transaction.amount}",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.Medium
                     ),
-                    color = if (transaction.amount >= 0) 
-                        Color(AppConstants.SUCCESS_COLOR) 
-                    else 
+                    color = if (transaction.type == com.example.insightku.data.model.TransactionType.INCOME)
+                        Color(AppConstants.SUCCESS_COLOR)
+                    else
                         Color(AppConstants.ERROR_COLOR)
                 )
                 Text(
-                    text = transaction.date,
+                    text = dateFormat.format(Date(transaction.date)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
     }
-}*/
+}

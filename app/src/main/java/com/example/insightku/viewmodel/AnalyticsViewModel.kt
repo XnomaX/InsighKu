@@ -1,203 +1,156 @@
-/*
 package com.example.insightku.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.ui.components.analytics.*
+import com.example.insightku.ui.components.analytics.model.*
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
-data class AnalyticsData(
-    val totalIncome: Double = 0.0,
-    val totalExpenses: Double = 0.0,
-    val savings: Double = 0.0,
-    val savingsRate: Double = 0.0,
-    val expenseCategories: List<ExpenseCategory> = emptyList(),
-    val incomeCategories: List<IncomeCategory> = emptyList(),
-    val monthlyTrend: List<MonthlyTrendData> = emptyList(),
-    val selectedMonth: String = "2024-06"
-)
+@HiltViewModel
+class AnalyticsViewModel @Inject constructor() : ViewModel() {
 
-data class MonthlyTrendData(
-    val month: String,
-    val income: Double,
-    val expenses: Double
-)
+    private val _uiState = MutableStateFlow(AnalyticsState())
+    val uiState: StateFlow<AnalyticsState> = _uiState.asStateFlow()
 
-data class ExpenseCategory(
-    val name: String,
-    val amount: Double,
-    val percentage: Double,
-    val color: String,
-    val iconName: String
-)
-
-data class IncomeCategory(
-    val name: String,
-    val amount: Double,
-    val percentage: Double,
-    val color: String,
-    val iconName: String
-)
-
-class AnalyticsViewModel : ViewModel() {
-    
-    private val _analyticsData = MutableStateFlow(AnalyticsData())
-    val analyticsData: StateFlow<AnalyticsData> = _analyticsData.asStateFlow()
-    
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
-    private val _selectedExpenseCategory = MutableStateFlow<String?>(null)
-    val selectedExpenseCategory: StateFlow<String?> = _selectedExpenseCategory.asStateFlow()
-    
-    private val _selectedIncomeCategory = MutableStateFlow<String?>(null)
-    val selectedIncomeCategory: StateFlow<String?> = _selectedIncomeCategory.asStateFlow()
-    
     init {
-        loadAnalyticsData()
+        loadAnalytics()
     }
-    
-    fun loadAnalyticsData(month: String = "2024-06") {
+
+    fun onEvent(event: AnalyticsEvent) {
+        when (event) {
+            is AnalyticsEvent.LoadAnalytics -> loadAnalytics()
+            is AnalyticsEvent.RefreshData -> loadAnalytics()
+            is AnalyticsEvent.SelectMonth -> selectMonth(event.month)
+            is AnalyticsEvent.ChangeTimePeriod -> changeTimePeriod(event.period)
+            is AnalyticsEvent.ChangeBudgetPeriod -> changeBudgetPeriod(event.period)
+            is AnalyticsEvent.SelectExpenseCategory -> selectExpenseCategory(event.category)
+            is AnalyticsEvent.SelectIncomeCategory -> selectIncomeCategory(event.category)
+            is AnalyticsEvent.NextMonth -> navigateToNextMonth()
+            is AnalyticsEvent.PreviousMonth -> navigateToPreviousMonth()
+        }
+    }
+
+    private fun loadAnalytics() {
         viewModelScope.launch {
-            _isLoading.value = true
-            
             try {
-                // Simulate API call or database query
-                val expenseCategories = listOf(
-                    ExpenseCategory(
-                        name = "Food & Drinks",
-                        amount = 850000.0,
-                        percentage = 32.1,
-                        color = "#F59E0B",
-                        iconName = "restaurant"
-                    ),
-                    ExpenseCategory(
-                        name = "Transportation", 
-                        amount = 650000.0,
-                        percentage = 24.5,
-                        color = "#3B82F6",
-                        iconName = "directions_car"
-                    ),
-                    ExpenseCategory(
-                        name = "Entertainment",
-                        amount = 420000.0,
-                        percentage = 15.8,
-                        color = "#8B5CF6", 
-                        iconName = "sports_esports"
-                    ),
-                    ExpenseCategory(
-                        name = "Shopping",
-                        amount = 380000.0,
-                        percentage = 14.3,
-                        color = "#EC4899",
-                        iconName = "shopping_bag"
-                    ),
-                    ExpenseCategory(
-                        name = "Coffee",
-                        amount = 280000.0,
-                        percentage = 10.6,
-                        color = "#92400E",
-                        iconName = "local_cafe"
-                    ),
-                    ExpenseCategory(
-                        name = "Housing",
-                        amount = 1070000.0,
-                        percentage = 2.7,
-                        color = "#EF4444",
-                        iconName = "home"
-                    )
+                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+
+                // Load monthly data
+                val monthlyDataMap = getMonthlyDataMap()
+                val availableMonths = monthlyDataMap.keys.sorted().reversed()
+                val currentMonthData = monthlyDataMap[_uiState.value.selectedMonth]
+
+                // Load budget and income/expense data based on current periods - use AnalyticsDataSource directly
+                val budgetData = if (_uiState.value.budgetPeriod == TimePeriod.WEEKLY) {
+                    AnalyticsDataSource.weeklyBudgetData
+                } else {
+                    AnalyticsDataSource.monthlyBudgetData
+                }
+
+                val incomeExpenseData = if (_uiState.value.timePeriod == TimePeriod.WEEKLY) {
+                    getWeeklyIncomeExpenseData()
+                } else {
+                    getMonthlyIncomeExpenseData()
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = null,
+                    availableMonths = availableMonths,
+                    currentMonthData = currentMonthData,
+                    budgetData = budgetData,
+                    incomeExpenseData = incomeExpenseData
                 )
-                
-                val incomeCategories = listOf(
-                    IncomeCategory(
-                        name = "Salary",
-                        amount = 2800000.0,
-                        percentage = 80.0,
-                        color = "#10B981",
-                        iconName = "work"
-                    ),
-                    IncomeCategory(
-                        name = "Freelance",
-                        amount = 400000.0,
-                        percentage = 11.4,
-                        color = "#06B6D4",
-                        iconName = "computer"
-                    ),
-                    IncomeCategory(
-                        name = "Investment",
-                        amount = 200000.0,
-                        percentage = 5.7,
-                        color = "#8B5CF6",
-                        iconName = "trending_up"
-                    ),
-                    IncomeCategory(
-                        name = "Other",
-                        amount = 100000.0,
-                        percentage = 2.9,
-                        color = "#F59E0B",
-                        iconName = "account_balance_wallet"
-                    )
-                )
-                
-                val totalIncome = incomeCategories.sumOf { it.amount }
-                val totalExpenses = expenseCategories.sumOf { it.amount }
-                val savings = totalIncome - totalExpenses
-                val savingsRate = (savings / totalIncome) * 100
-                
-                val monthlyTrend = listOf(
-                    MonthlyTrendData("Jan", 3200000.0, 2100000.0),
-                    MonthlyTrendData("Feb", 3200000.0, 1890000.0),
-                    MonthlyTrendData("Mar", 3200000.0, 2340000.0),
-                    MonthlyTrendData("Apr", 3500000.0, 2890000.0),
-                    MonthlyTrendData("May", 3500000.0, 2450000.0),
-                    MonthlyTrendData("Jun", totalIncome, totalExpenses)
-                )
-                
-                _analyticsData.value = AnalyticsData(
-                    totalIncome = totalIncome,
-                    totalExpenses = totalExpenses,
-                    savings = savings,
-                    savingsRate = savingsRate,
-                    expenseCategories = expenseCategories,
-                    incomeCategories = incomeCategories,
-                    monthlyTrend = monthlyTrend,
-                    selectedMonth = month
-                )
-                
             } catch (e: Exception) {
-                // Handle error
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "Failed to load analytics: ${e.message}"
+                )
             }
         }
     }
-    
-    fun selectExpenseCategory(categoryName: String?) {
-        _selectedExpenseCategory.value = if (_selectedExpenseCategory.value == categoryName) {
-            null
-        } else {
-            categoryName
+
+    private fun selectMonth(month: String) {
+        viewModelScope.launch {
+            try {
+                val monthlyDataMap = getMonthlyDataMap()
+                val currentMonthData = monthlyDataMap[month]
+
+                _uiState.value = _uiState.value.copy(
+                    selectedMonth = month,
+                    currentMonthData = currentMonthData,
+                    selectedExpenseCategory = null, // Reset category selection when changing month
+                    selectedIncomeCategory = null
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Failed to load month data: ${e.message}"
+                )
+            }
         }
     }
-    
-    fun selectIncomeCategory(categoryName: String?) {
-        _selectedIncomeCategory.value = if (_selectedIncomeCategory.value == categoryName) {
-            null
-        } else {
-            categoryName
+
+    private fun changeTimePeriod(period: TimePeriod) {
+        viewModelScope.launch {
+            val incomeExpenseData = if (period == TimePeriod.WEEKLY) {
+                getWeeklyIncomeExpenseData()
+            } else {
+                getMonthlyIncomeExpenseData()
+            }
+
+            _uiState.value = _uiState.value.copy(
+                timePeriod = period,
+                incomeExpenseData = incomeExpenseData
+            )
         }
     }
-    
-    fun changeMonth(month: String) {
-        loadAnalyticsData(month)
+
+    private fun changeBudgetPeriod(period: TimePeriod) {
+        viewModelScope.launch {
+            // Use data directly from AnalyticsDataSource instead of helper functions
+            val budgetData = if (period == TimePeriod.WEEKLY) {
+                AnalyticsDataSource.weeklyBudgetData
+            } else {
+                AnalyticsDataSource.monthlyBudgetData
+            }
+
+            _uiState.value = _uiState.value.copy(
+                budgetPeriod = period,
+                budgetData = budgetData
+            )
+        }
     }
-    
-    fun refreshData() {
-        loadAnalyticsData(_analyticsData.value.selectedMonth)
+
+    private fun selectExpenseCategory(category: String?) {
+        _uiState.value = _uiState.value.copy(
+            selectedExpenseCategory = category
+        )
     }
-}*/
+
+    private fun selectIncomeCategory(category: String?) {
+        _uiState.value = _uiState.value.copy(
+            selectedIncomeCategory = category
+        )
+    }
+
+    private fun navigateToNextMonth() {
+        val currentIndex = _uiState.value.availableMonths.indexOf(_uiState.value.selectedMonth)
+        if (currentIndex > 0) {
+            val nextMonth = _uiState.value.availableMonths[currentIndex - 1]
+            selectMonth(nextMonth)
+        }
+    }
+
+    private fun navigateToPreviousMonth() {
+        val currentIndex = _uiState.value.availableMonths.indexOf(_uiState.value.selectedMonth)
+        if (currentIndex < _uiState.value.availableMonths.size - 1) {
+            val previousMonth = _uiState.value.availableMonths[currentIndex + 1]
+            selectMonth(previousMonth)
+        }
+    }
+}

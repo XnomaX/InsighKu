@@ -1,4 +1,3 @@
-/*
 package com.insightku.data.local.database
 
 import androidx.room.TypeConverter
@@ -34,4 +33,4 @@ class Converters {
     fun toBudgetPeriod(period: String): BudgetPeriod {
         return BudgetPeriod.valueOf(period)
     }
-}*/
+}

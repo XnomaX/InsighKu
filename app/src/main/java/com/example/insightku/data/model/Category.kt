@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.data.model
 
 import androidx.room.Entity
@@ -12,5 +11,7 @@ data class Category(
     val color: String,
     val budgetLimit: Double? = null,
     val icon: String? = null,
-    val isActive: Boolean = true
-)*/
+    val isActive: Boolean = true,
+    // --- PROPERTI BARU DITAMBAHKAN ---
+    val alertThreshold: Int = 80 // Default threshold 80%
+)

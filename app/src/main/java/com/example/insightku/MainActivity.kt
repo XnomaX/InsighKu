@@ -12,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import com.example.insightku.ui.InsightKuApp
 import com.example.insightku.ui.theme.InsightKuTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

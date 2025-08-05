@@ -1,30 +1,28 @@
-/*
 package com.example.insightku.ui.dialogs
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.insightku.viewmodel.Category
+import com.example.insightku.data.model.Category
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,63 +32,36 @@ fun AddCategoryDialog(
     onCategoryAdded: (Category) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var budgetAmount by remember { mutableStateOf("") }
-    var selectedColor by remember { mutableStateOf("#F59E0B") }
-    var selectedIcon by remember { mutableStateOf("restaurant") }
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var budgetLimit by remember { mutableStateOf(500000f) }
+    var alertThreshold by remember { mutableStateOf(80f) }
+    var selectedIconName by remember { mutableStateOf("Food & Drinks") }
 
-    val availableColors = listOf(
-        "#F59E0B", "#3B82F6", "#8B5CF6", "#EC4899", 
-        "#EF4444", "#10B981", "#F97316", "#6366F1",
-        "#84CC16", "#06B6D4", "#F59E0B", "#E11D48"
-    )
-
-    val availableIcons = listOf(
-        "restaurant" to Icons.Default.Restaurant,
-        "directions_car" to Icons.Default.DirectionsCar,
-        "sports_esports" to Icons.Default.SportsEsports,
-        "shopping_bag" to Icons.Default.ShoppingBag,
-        "home" to Icons.Default.Home,
-        "local_hospital" to Icons.Default.LocalHospital,
-        "fitness_center" to Icons.Default.FitnessCenter,
-        "school" to Icons.Default.School,
-        "work" to Icons.Default.Work,
-        "flight" to Icons.Default.Flight,
-        "movie" to Icons.Default.Movie,
-        "music_note" to Icons.Default.MusicNote
-    )
-
-    LaunchedEffect(isOpen) {
-        if (isOpen) {
-            name = ""
-            budgetAmount = ""
-            selectedColor = "#F59E0B"
-            selectedIcon = "restaurant"
+    val selectedIcon = defaultCategoryIcons.find { it.name == selectedIconName } ?: defaultCategoryIcons.first()
+    
+    fun validate() : Boolean {
+        return if (name.trim().length < 2) {
+            nameError = "Category name must be at least 2 characters"
+            false
+        } else {
+            nameError = null
+            true
         }
     }
 
     if (isOpen) {
         Dialog(
             onDismissRequest = onDismiss,
-            properties = DialogProperties(
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true,
-                usePlatformDefaultWidth = false
-            )
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
+                    .padding(16.dp)
+                    .heightIn(max = 650.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 600.dp)
-                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     // Header
                     Row(
                         modifier = Modifier
@@ -99,42 +70,13 @@ fun AddCategoryDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Add Category",
-                                tint = Color(0xFF5A2A82),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            
-                            Text(
-                                text = "Add New Category",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Close",
-                                modifier = Modifier.size(20.dp)
-                            )
+                        Text("Add New Category", style = MaterialTheme.typography.titleLarge)
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }
-                    
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                    )
-                    
+                    HorizontalDivider()
+
                     // Content
                     Column(
                         modifier = Modifier
@@ -142,212 +84,115 @@ fun AddCategoryDialog(
                             .weight(1f)
                             .verticalScroll(rememberScrollState())
                             .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
-                        // Category Preview
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(selectedColor.removePrefix("#").toLong(16) or 0xFF000000).copy(alpha = 0.1f)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            Color(selectedColor.removePrefix("#").toLong(16) or 0xFF000000).copy(alpha = 0.2f),
-                                            shape = CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    val iconVector = availableIcons.find { it.first == selectedIcon }?.second ?: Icons.Default.Category
-                                    Icon(
-                                        iconVector,
-                                        contentDescription = name,
-                                        tint = Color(selectedColor.removePrefix("#").toLong(16) or 0xFF000000),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = name.ifEmpty { "Category Name" },
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    )
-                                    Text(
-                                        text = "Budget: Rp ${budgetAmount.ifEmpty { "0" }}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                        
                         // Category Name
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "Category Name",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            
-                            OutlinedTextField(
-                                value = name,
-                                onValueChange = { name = it },
-                                placeholder = { Text("e.g., Food & Drinks") },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF5A2A82),
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                )
-                            )
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it; nameError = null },
+                            label = { Text("Category Name") },
+                            placeholder = { Text("e.g., Groceries, Bills") },
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = nameError != null,
+                            singleLine = true
+                        )
+                        if (nameError != null) {
+                            Text(nameError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         }
-                        
-                        // Budget Amount
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "Budget Amount",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            
-                            OutlinedTextField(
-                                value = budgetAmount,
-                                onValueChange = { budgetAmount = it },
-                                placeholder = { Text("0") },
-                                modifier = Modifier.fillMaxWidth(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                leadingIcon = {
-                                    Text(
-                                        text = "Rp",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF5A2A82),
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                )
-                            )
-                        }
-                        
-                        // Color Selection
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Category Color",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            
+
+                        // Icon & Color Selection
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Icon & Color", style = MaterialTheme.typography.titleMedium)
                             LazyVerticalGrid(
-                                columns = GridCells.Fixed(6),
+                                columns = GridCells.Adaptive(60.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.height(80.dp)
+                                modifier = Modifier.height(140.dp) // Adjust height for 2 rows
                             ) {
-                                items(availableColors) { color ->
-                                    ColorOption(
-                                        color = color,
-                                        isSelected = selectedColor == color,
-                                        onClick = { selectedColor = color }
-                                    )
-                                }
-                            }
-                        }
-                        
-                        // Icon Selection
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Category Icon",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(6),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.height(120.dp)
-                            ) {
-                                items(availableIcons) { (iconName, iconVector) ->
+                                items(defaultCategoryIcons) { iconData ->
                                     IconOption(
-                                        icon = iconVector,
-                                        iconName = iconName,
-                                        isSelected = selectedIcon == iconName,
-                                        onClick = { selectedIcon = iconName }
+                                        iconData = iconData,
+                                        isSelected = selectedIconName == iconData.name,
+                                        onClick = { selectedIconName = iconData.name }
                                     )
                                 }
                             }
+                        }
+                        
+                        // Budget Limit
+                        SliderSection(
+                            title = "Budget Limit",
+                            label = "Monthly Budget",
+                            value = budgetLimit,
+                            onValueChange = { budgetLimit = it },
+                            range = 50000f..5000000f,
+                            steps = 99,
+                            prefix = "Rp "
+                        )
+
+                        // Alert Threshold
+                        SliderSection(
+                            title = "Alert Threshold",
+                            label = "Alert at",
+                            value = alertThreshold,
+                            onValueChange = { alertThreshold = it },
+                            range = 50f..100f,
+                            steps = 9,
+                            suffix = "% of budget"
+                        )
+                        
+                        // Preview
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                           Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                               Text("Preview", style = MaterialTheme.typography.titleMedium)
+                               Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .background(selectedIcon.color.copy(alpha = 0.2f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(selectedIcon.icon, contentDescription = null, tint = selectedIcon.color, modifier = Modifier.size(14.dp))
+                                    }
+                                   Text(name.ifEmpty { "Category Name" }, fontWeight = FontWeight.Bold)
+                               }
+                               PreviewRow("Budget:", "Rp ${budgetLimit.roundToInt().formatCurrency()}")
+                               PreviewRow("Alert At:", "${alertThreshold.roundToInt()}% (Rp ${(budgetLimit * alertThreshold / 100).roundToInt().formatCurrency()})")
+                           }
                         }
                     }
-                    
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                    )
-                    
+
                     // Action Buttons
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
+                            .padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
                             Text("Cancel")
                         }
-                        
                         Button(
                             onClick = {
-                                val amount = budgetAmount.toDoubleOrNull() ?: 0.0
-                                val category = Category(
-                                    id = System.currentTimeMillis().toString(),
-                                    name = name,
-                                    budgetAmount = amount,
-                                    spentAmount = 0.0,
-                                    color = selectedColor,
-                                    icon = selectedIcon
-                                )
-                                onCategoryAdded(category)
+                                if (validate()) {
+                                    val newCategory = Category(
+                                        name = name.trim(),
+                                        color = "#" + selectedIcon.color.value.toString(16).substring(2, 8).uppercase(),
+                                        icon = selectedIcon.name,
+                                        budgetLimit = budgetLimit.toDouble(),
+                                        alertThreshold = alertThreshold.roundToInt()
+                                    )
+                                    onCategoryAdded(newCategory)
+                                }
                             },
-                            enabled = name.isNotBlank() && budgetAmount.isNotBlank(),
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF5A2A82),
-                                contentColor = Color.White
-                            )
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Add Category")
+                            Text("Add")
                         }
                     }
                 }
@@ -357,72 +202,21 @@ fun AddCategoryDialog(
 }
 
 @Composable
-private fun ColorOption(
-    color: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .background(
-                Color(color.removePrefix("#").toLong(16) or 0xFF000000),
-                shape = CircleShape
-            )
-            .clip(CircleShape)
-            .then(
-                if (isSelected) {
-                    Modifier
-                        .padding(4.dp)
-                        .background(
-                            Color.White,
-                            shape = CircleShape
-                        )
-                        .padding(4.dp)
-                        .background(
-                            Color(color.removePrefix("#").toLong(16) or 0xFF000000),
-                            shape = CircleShape
-                        )
-                } else {
-                    Modifier
-                }
-            )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        if (isSelected) {
-            Icon(
-                Icons.Default.Check,
-                contentDescription = "Selected",
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
-            )
-        }
+private fun PreviewRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }
 
+@Preview
 @Composable
-private fun IconOption(
-    icon: ImageVector,
-    iconName: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .background(
-                if (isSelected) Color(0xFF5A2A82).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            icon,
-            contentDescription = iconName,
-            tint = if (isSelected) Color(0xFF5A2A82) else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
+fun AddCategoryDialogPreview() {
+    MaterialTheme {
+        AddCategoryDialog(
+            isOpen = true,
+            onDismiss = {},
+            onCategoryAdded = {}
         )
     }
-}*/
+}

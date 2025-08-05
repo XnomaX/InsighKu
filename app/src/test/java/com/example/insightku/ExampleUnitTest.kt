@@ -1,4 +1,4 @@
-package com.example.insighku
+package com.example.insightku
 
 import org.junit.Test
 

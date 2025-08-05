@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.ui.dialogs
 
 import androidx.compose.foundation.background
@@ -26,7 +25,7 @@ fun ReceiptScannerDialog(
 ) {
     var scanningState by remember { mutableStateOf(ScanningState.READY) }
     var extractedData by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    
+
     LaunchedEffect(isOpen) {
         if (isOpen) {
             scanningState = ScanningState.READY
@@ -73,7 +72,7 @@ fun ReceiptScannerDialog(
                                 tint = Color(0xFF5A2A82),
                                 modifier = Modifier.size(24.dp)
                             )
-                            
+
                             Text(
                                 text = "AI Receipt Scanner",
                                 style = MaterialTheme.typography.titleMedium.copy(
@@ -82,7 +81,7 @@ fun ReceiptScannerDialog(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
-                        
+
                         IconButton(
                             onClick = onDismiss,
                             modifier = Modifier.size(32.dp)
@@ -94,21 +93,21 @@ fun ReceiptScannerDialog(
                             )
                         }
                     }
-                    
+
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                     )
-                    
+
                     // Content based on scanning state
                     when (scanningState) {
                         ScanningState.READY -> {
                             ScannerReadyContent(
-                                onStartScan = { 
+                                onStartScan = {
                                     scanningState = ScanningState.SCANNING
                                 }
                             )
                         }
-                        
+
                         ScanningState.SCANNING -> {
                             ScanningContent(
                                 onScanComplete = { data ->
@@ -117,7 +116,7 @@ fun ReceiptScannerDialog(
                                 }
                             )
                         }
-                        
+
                         ScanningState.PROCESSING -> {
                             ProcessingContent(
                                 onProcessComplete = {
@@ -125,7 +124,7 @@ fun ReceiptScannerDialog(
                                 }
                             )
                         }
-                        
+
                         ScanningState.RESULT -> {
                             ResultContent(
                                 extractedData = extractedData,
@@ -179,7 +178,7 @@ private fun ScannerReadyContent(
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    
+
                     Text(
                         text = "Position receipt in camera view",
                         style = MaterialTheme.typography.bodyMedium,
@@ -188,7 +187,7 @@ private fun ScannerReadyContent(
                 }
             }
         }
-        
+
         // Instructions
         Card(
             colors = CardDefaults.cardColors(
@@ -205,7 +204,7 @@ private fun ScannerReadyContent(
                         fontWeight = FontWeight.Medium
                     )
                 )
-                
+
                 Text(
                     text = "• Ensure good lighting\n• Keep receipt flat and fully visible\n• Avoid shadows and glare\n• Make sure text is clear and readable",
                     style = MaterialTheme.typography.bodySmall,
@@ -213,7 +212,7 @@ private fun ScannerReadyContent(
                 )
             }
         }
-        
+
         // Scan Button
         Button(
             onClick = onStartScan,
@@ -241,7 +240,7 @@ private fun ScanningContent(
     LaunchedEffect(Unit) {
         // Simulate scanning process
         delay(3000)
-        
+
         // Mock extracted data
         val mockData = mapOf(
             "merchant" to "Starbucks Coffee",
@@ -251,7 +250,7 @@ private fun ScanningContent(
         )
         onScanComplete(mockData)
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -280,14 +279,14 @@ private fun ScanningContent(
                         modifier = Modifier.size(48.dp),
                         color = Color(0xFF5A2A82)
                     )
-                    
+
                     Text(
                         text = "Scanning receipt...",
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontWeight = FontWeight.Medium
                         )
                     )
-                    
+
                     Text(
                         text = "AI is extracting transaction details",
                         style = MaterialTheme.typography.bodySmall,
@@ -308,7 +307,7 @@ private fun ProcessingContent(
         delay(2000)
         onProcessComplete()
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -320,14 +319,14 @@ private fun ProcessingContent(
             modifier = Modifier.size(48.dp),
             color = Color(0xFF5A2A82)
         )
-        
+
         Text(
             text = "Processing data...",
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontWeight = FontWeight.Medium
             )
         )
-        
+
         Text(
             text = "Analyzing and categorizing transaction",
             style = MaterialTheme.typography.bodySmall,
@@ -346,7 +345,7 @@ private fun ResultContent(
     var amount by remember { mutableStateOf(extractedData["amount"] ?: "") }
     var category by remember { mutableStateOf(extractedData["category"] ?: "") }
     var date by remember { mutableStateOf(extractedData["date"] ?: "") }
-    
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -365,7 +364,7 @@ private fun ResultContent(
                 tint = Color(0xFF10B981),
                 modifier = Modifier.size(24.dp)
             )
-            
+
             Text(
                 text = "Receipt scanned successfully!",
                 style = MaterialTheme.typography.bodyLarge.copy(
@@ -374,13 +373,13 @@ private fun ResultContent(
                 color = Color(0xFF10B981)
             )
         }
-        
+
         Text(
             text = "Please review and confirm the extracted details:",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         // Extracted data form
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -394,7 +393,7 @@ private fun ResultContent(
                     focusedBorderColor = Color(0xFF5A2A82)
                 )
             )
-            
+
             OutlinedTextField(
                 value = amount,
                 onValueChange = { amount = it },
@@ -407,7 +406,7 @@ private fun ResultContent(
                     focusedBorderColor = Color(0xFF5A2A82)
                 )
             )
-            
+
             OutlinedTextField(
                 value = category,
                 onValueChange = { category = it },
@@ -417,7 +416,7 @@ private fun ResultContent(
                     focusedBorderColor = Color(0xFF5A2A82)
                 )
             )
-            
+
             OutlinedTextField(
                 value = date,
                 onValueChange = { date = it },
@@ -428,7 +427,7 @@ private fun ResultContent(
                 )
             )
         }
-        
+
         // Action buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -440,7 +439,7 @@ private fun ResultContent(
             ) {
                 Text("Scan Again")
             }
-            
+
             Button(
                 onClick = {
                     val transaction = TransactionData(
@@ -475,4 +474,4 @@ private fun ResultContent(
 
 enum class ScanningState {
     READY, SCANNING, PROCESSING, RESULT
-}*/
+}

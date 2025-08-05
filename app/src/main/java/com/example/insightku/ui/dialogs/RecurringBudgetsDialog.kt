@@ -1,14 +1,15 @@
-/*
 package com.example.insightku.ui.dialogs
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,10 +18,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.insightku.viewmodel.RecurringBudget
+import com.example.insightku.data.model.BudgetFrequency
+import com.example.insightku.data.model.RecurringBudget
+import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.TimeUnit
+
+val PurpleMain = Color(0xFF5A2A82)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,413 +39,271 @@ fun RecurringBudgetsDialog(
     isOpen: Boolean,
     onDismiss: () -> Unit,
     recurringBudgets: List<RecurringBudget>,
-    onBudgetAdded: (RecurringBudget) -> Unit
+    onBudgetAdded: (RecurringBudget) -> Unit,
+    onBudgetEdited: (RecurringBudget) -> Unit,
+    onBudgetDeleted: (RecurringBudget) -> Unit,
+    showAddFormInitially: Boolean = false,
+    editingBudgetInitially: RecurringBudget? = null
 ) {
-    var showAddForm by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
-    var frequency by remember { mutableStateOf("Monthly") }
-    var category by remember { mutableStateOf("") }
-    var nextDate by remember { mutableStateOf("") }
+    var showAddForm by remember { mutableStateOf(showAddFormInitially) }
+    var editingBudget by remember { mutableStateOf(editingBudgetInitially) }
+    var budgetToDelete by remember { mutableStateOf<RecurringBudget?>(null) }
 
-    val frequencies = listOf("Weekly", "Monthly", "Quarterly", "Yearly")
-    val categories = listOf("Entertainment", "Housing", "Health", "Utilities", "Transport", "Others")
+    val categories = mapOf(
+        "Subscriptions" to "cat_1",
+        "Utilities" to "cat_2",
+        "Insurance" to "cat_3",
+        "Rent/Mortgage" to "cat_4",
+        "Loan Payments" to "cat_5",
+        "Memberships" to "cat_6",
+        "Donations" to "cat_7",
+        "Others" to "cat_8"
+    )
 
-    LaunchedEffect(isOpen) {
-        if (isOpen && !showAddForm) {
-            // Reset form when dialog opens
-            name = ""
-            amount = ""
-            frequency = "Monthly"
-            category = ""
-            nextDate = ""
+    fun handleEdit(budget: RecurringBudget) {
+        editingBudget = budget
+        showAddForm = true
+    }
+
+    fun handleBackToList() {
+        showAddForm = false
+        editingBudget = null
+    }
+
+    fun handleDeleteRequest(budget: RecurringBudget) {
+        budgetToDelete = budget
+    }
+
+    fun handleDeleteConfirm() {
+        budgetToDelete?.let {
+            onBudgetDeleted(it)
+            budgetToDelete = null
         }
     }
 
     if (isOpen) {
         Dialog(
             onDismissRequest = onDismiss,
-            properties = DialogProperties(
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true,
-                usePlatformDefaultWidth = false
-            )
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Card(
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                shape = RoundedCornerShape(16.dp)
+                    .fillMaxWidth(0.95f)
+                    .fillMaxHeight(0.85f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 600.dp)
-                ) {
-                    // Header
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp, 16.dp, 20.dp, 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (showAddForm) {
-                                IconButton(
-                                    onClick = { showAddForm = false },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.ArrowBack,
-                                        contentDescription = "Back",
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                Column(Modifier.fillMaxSize()) {
+                    DialogHeader(
+                        showAddForm = showAddForm,
+                        isEditing = editingBudget != null,
+                        onBack = ::handleBackToList,
+                        onClose = onDismiss
+                    )
+
+                    if (showAddForm) {
+                        AddEditBudgetForm(
+                            editingBudget = editingBudget,
+                            onSave = { budget ->
+                                if (editingBudget != null) {
+                                    onBudgetEdited(budget)
+                                } else {
+                                    onBudgetAdded(budget)
                                 }
-                            }
-                            
-                            Icon(
-                                Icons.Default.Repeat,
-                                contentDescription = "Recurring Budgets",
-                                tint = Color(0xFF5A2A82),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            
+                                handleBackToList()
+                            },
+                            onCancel = ::handleBackToList,
+                            categories = categories
+                        )
+                    } else {
+                        BudgetList(
+                            budgets = recurringBudgets,
+                            onEdit = ::handleEdit,
+                            onDelete = ::handleDeleteRequest,
+                            onAdd = { showAddForm = true },
+                            categories = categories
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (budgetToDelete != null) {
+        DeleteConfirmationDialog(
+            budgetName = budgetToDelete?.name ?: "",
+            onConfirm = ::handleDeleteConfirm,
+            onDismiss = { budgetToDelete = null }
+        )
+    }
+}
+
+@Composable
+fun DialogHeader(
+    showAddForm: Boolean,
+    isEditing: Boolean,
+    onBack: () -> Unit,
+    onClose: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (showAddForm) {
+                IconButton(onClick = onBack, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+                Spacer(Modifier.width(8.dp))
+            }
+            Icon(Icons.Default.Repeat, contentDescription = null, tint = PurpleMain)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = when {
+                    showAddForm && isEditing -> "Edit Pembayaran Berulang"
+                    showAddForm -> "Tambah Pembayaran Berulang"
+                    else -> "Pembayaran Berulang"
+                },
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        IconButton(onClick = onClose, modifier = Modifier.size(24.dp)) {
+            Icon(Icons.Default.Close, contentDescription = "Close")
+        }
+    }
+    HorizontalDivider()
+}
+
+@Composable
+fun ColumnScope.BudgetList(
+    budgets: List<RecurringBudget>,
+    onEdit: (RecurringBudget) -> Unit,
+    onDelete: (RecurringBudget) -> Unit,
+    onAdd: () -> Unit,
+    categories: Map<String, String>
+) {
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .padding(horizontal = 16.dp)
+    ) {
+        Text(
+            "Kelola pembayaran berulang dan langganan Anda.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            textAlign = TextAlign.Center
+        )
+
+        if (budgets.isEmpty()) {
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Belum ada pembayaran berulang.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
+                items(budgets) { budget ->
+                    RecurringBudgetItem(
+                        budget = budget,
+                        categoryName = categories.entries.find { it.value == budget.categoryId }?.key ?: "N/A",
+                        onEdit = { onEdit(budget) },
+                        onDelete = { onDelete(budget) }
+                    )
+                }
+            }
+        }
+    }
+    Button(
+        onClick = onAdd,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .height(50.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = PurpleMain)
+    ) {
+        Icon(Icons.Default.Add, contentDescription = null)
+        Spacer(Modifier.width(8.dp))
+        Text("Tambah Pembayaran Berulang")
+    }
+}
+
+@Composable
+fun RecurringBudgetItem(
+    budget: RecurringBudget,
+    categoryName: String,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(budget.name, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.width(8.dp))
+                        Badge(containerColor = MaterialTheme.colorScheme.secondaryContainer) {
                             Text(
-                                text = if (showAddForm) "Add Recurring Budget" else "Recurring Budgets",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface
+                                text = budget.frequency.name.lowercase().replaceFirstChar { it.uppercase() },
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                             )
-                        }
-                        
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (!showAddForm) {
-                                IconButton(
-                                    onClick = { showAddForm = true },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Add,
-                                        contentDescription = "Add",
-                                        tint = Color(0xFF5A2A82),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                            
-                            IconButton(
-                                onClick = onDismiss,
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "Close",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
                         }
                     }
-                    
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    Text(categoryName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Rp ${formatAmount(budget.amount)}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     )
-                    
-                    // Content
-                    if (showAddForm) {
-                        // Add Form
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .verticalScroll(rememberScrollState())
-                                .padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            // Budget Name
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "Budget Name",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                                
-                                OutlinedTextField(
-                                    value = name,
-                                    onValueChange = { name = it },
-                                    placeholder = { Text("e.g., Netflix Subscription") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color(0xFF5A2A82),
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                    )
-                                )
-                            }
-                            
-                            // Amount
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "Amount",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                                
-                                OutlinedTextField(
-                                    value = amount,
-                                    onValueChange = { amount = it },
-                                    placeholder = { Text("0") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                    leadingIcon = {
-                                        Text(
-                                            text = "Rp",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color(0xFF5A2A82),
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                    )
-                                )
-                            }
-                            
-                            // Frequency
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "Frequency",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                                
-                                var expandedFrequency by remember { mutableStateOf(false) }
-                                
-                                ExposedDropdownMenuBox(
-                                    expanded = expandedFrequency,
-                                    onExpandedChange = { expandedFrequency = !expandedFrequency }
-                                ) {
-                                    OutlinedTextField(
-                                        value = frequency,
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        trailingIcon = {
-                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedFrequency)
-                                        },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .menuAnchor(),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = Color(0xFF5A2A82),
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                        )
-                                    )
-                                    
-                                    ExposedDropdownMenu(
-                                        expanded = expandedFrequency,
-                                        onDismissRequest = { expandedFrequency = false }
-                                    ) {
-                                        frequencies.forEach { freq ->
-                                            DropdownMenuItem(
-                                                text = { Text(freq) },
-                                                onClick = {
-                                                    frequency = freq
-                                                    expandedFrequency = false
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Category
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "Category",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                                
-                                var expandedCategory by remember { mutableStateOf(false) }
-                                
-                                ExposedDropdownMenuBox(
-                                    expanded = expandedCategory,
-                                    onExpandedChange = { expandedCategory = !expandedCategory }
-                                ) {
-                                    OutlinedTextField(
-                                        value = category,
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        placeholder = { Text("Select category") },
-                                        trailingIcon = {
-                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory)
-                                        },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .menuAnchor(),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = Color(0xFF5A2A82),
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                        )
-                                    )
-                                    
-                                    ExposedDropdownMenu(
-                                        expanded = expandedCategory,
-                                        onDismissRequest = { expandedCategory = false }
-                                    ) {
-                                        categories.forEach { cat ->
-                                            DropdownMenuItem(
-                                                text = { Text(cat) },
-                                                onClick = {
-                                                    category = cat
-                                                    expandedCategory = false
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Next Date
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "Next Payment Date",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                                
-                                OutlinedTextField(
-                                    value = nextDate,
-                                    onValueChange = { nextDate = it },
-                                    placeholder = { Text("e.g., Jul 1") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color(0xFF5A2A82),
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                    )
-                                )
-                            }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                        if (budget.isActive) {
+                            Icon(Icons.Default.Notifications, contentDescription = null, tint = PurpleMain, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
                         }
-                        
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                        )
-                        
-                        // Add Form Buttons
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { showAddForm = false },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Cancel")
-                            }
-                            
-                            Button(
-                                onClick = {
-                                    val amountValue = amount.toDoubleOrNull() ?: 0.0
-                                    val budget = RecurringBudget(
-                                        id = System.currentTimeMillis().toString(),
-                                        name = name,
-                                        amount = amountValue,
-                                        frequency = frequency,
-                                        nextDate = nextDate,
-                                        category = category,
-                                        isActive = true
-                                    )
-                                    onBudgetAdded(budget)
-                                    showAddForm = false
-                                },
-                                enabled = name.isNotBlank() && amount.isNotBlank() && category.isNotBlank() && nextDate.isNotBlank(),
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF5A2A82),
-                                    contentColor = Color.White
-                                )
-                            ) {
-                                Icon(
-                                    Icons.Default.Add,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Add Budget")
-                            }
-                        }
-                    } else {
-                        // Budget List
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .verticalScroll(rememberScrollState())
-                                .padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            if (recurringBudgets.isEmpty()) {
-                                // Empty state
-                                Card(
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                    )
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(24.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Repeat,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(32.dp)
-                                        )
-                                        Text(
-                                            text = "No recurring budgets yet",
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        Text(
-                                            text = "Add your first recurring payment",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            } else {
-                                recurringBudgets.forEach { budget ->
-                                    RecurringBudgetItem(budget = budget)
-                                }
-                            }
-                        }
+                        Text(formatNextDue(budget.nextDue), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "Selanjutnya: ${SimpleDateFormat("dd MMM yyyy", Locale("in", "ID")).format(Date(budget.nextDue))}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = PurpleMain, modifier = Modifier.size(18.dp))
+                    }
+                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -442,79 +311,296 @@ fun RecurringBudgetsDialog(
     }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RecurringBudgetItem(
-    budget: RecurringBudget
+fun ColumnScope.AddEditBudgetForm(
+    editingBudget: RecurringBudget?,
+    onSave: (RecurringBudget) -> Unit,
+    onCancel: () -> Unit,
+    categories: Map<String, String>
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+    var name by remember { mutableStateOf(editingBudget?.name ?: "") }
+    var amount by remember { mutableStateOf(editingBudget?.amount?.toString() ?: "") }
+    var frequency by remember { mutableStateOf(editingBudget?.frequency ?: BudgetFrequency.MONTHLY) }
+    var categoryId by remember { mutableStateOf(editingBudget?.categoryId) }
+    var nextDueDate by remember { mutableLongStateOf(editingBudget?.nextDue ?: System.currentTimeMillis()) }
+    var notifications by remember { mutableStateOf(editingBudget?.isActive ?: true) }
+    var reminderDaysBefore by remember { mutableIntStateOf(editingBudget?.reminderDaysBefore ?: 3) }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val reminderOptions = listOf(
+        1 to "1 hari sebelumnya",
+        3 to "3 hari sebelumnya",
+        7 to "7 hari sebelumnya",
+        14 to "14 hari sebelumnya"
+    )
+
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
     ) {
+        // Form Fields
+        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nama Pembayaran") }, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(16.dp))
+        OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Nominal (Rp)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(16.dp))
+        DropdownField(
+            label = "Kategori",
+            options = categories.map { it.key to it.value }.toMap(),
+            onValueSelected = { categoryId = it },
+            displayValue = { categories.entries.find { it.value == categoryId }?.key ?: "Pilih Kategori" }
+        )
+        Spacer(Modifier.height(16.dp))
+        DropdownField(
+            label = "Frekuensi",
+            options = BudgetFrequency.entries.associateBy({ it }, { it.name.lowercase().replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() } }),
+            onValueSelected = { frequency = it },
+            displayValue = { frequency.name.lowercase().replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() } }
+        )
+        Spacer(Modifier.height(16.dp))
+
+        // Reminder Section
+        HorizontalDivider(Modifier.padding(vertical = 16.dp))
+        Text("Pengingat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = SimpleDateFormat("dd MMMM yyyy", Locale("in", "ID")).format(Date(nextDueDate)),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Tanggal Mulai Pengingat") },
+            trailingIcon = {
+                IconButton(onClick = { showDatePicker = true }) {
+                    Icon(Icons.Default.CalendarToday, contentDescription = "Select Date")
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(16.dp))
+        DropdownField(
+            label = "Waktu Pengingat",
+            options = reminderOptions.toMap(),
+            onValueSelected = { reminderDaysBefore = it },
+            displayValue = { reminderOptions.find { it.first == reminderDaysBefore }?.second ?: "Pilih Waktu" }
+        )
+        Spacer(Modifier.height(16.dp))
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            Color(0xFF5A2A82).copy(alpha = 0.1f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Repeat,
-                        contentDescription = budget.name,
-                        tint = Color(0xFF5A2A82),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                
-                Column {
-                    Text(
-                        text = budget.name,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "${budget.frequency} • Due ${budget.nextDate}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            Column {
+                Text("Notifikasi", style = MaterialTheme.typography.bodyLarge)
+                Text("Dapatkan pengingat sebelum jatuh tempo", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
-                Text(
-                    text = "Rp ${budget.amount.toInt()}",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+            Switch(checked = notifications, onCheckedChange = { notifications = it })
+        }
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = nextDueDate)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                Button(onClick = {
+                    datePickerState.selectedDateMillis?.let { nextDueDate = it }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDatePicker = false }) { Text("Batal") }
+            }
+        ) { DatePicker(state = datePickerState) }
+    }
+
+    // Action Buttons
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Batal") }
+        Button(
+            onClick = {
+                val budget = RecurringBudget(
+                    id = editingBudget?.id ?: 0,
+                    name = name,
+                    amount = amount.toDoubleOrNull() ?: 0.0,
+                    frequency = frequency,
+                    categoryId = categoryId,
+                    nextDue = nextDueDate,
+                    isActive = notifications,
+                    reminderDaysBefore = reminderDaysBefore
                 )
-                
-                if (budget.isActive) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = "Active",
-                        tint = Color(0xFF10B981),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                onSave(budget)
+            },
+            enabled = name.isNotBlank() && amount.isNotBlank() && categoryId != null,
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(containerColor = PurpleMain)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(Modifier.width(4.dp))
+            Text(if (editingBudget != null) "Update" else "Tambah")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> DropdownField(
+    label: String,
+    options: Map<T, String>,
+    onValueSelected: (T) -> Unit,
+    displayValue: @Composable () -> String
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = displayValue(),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { (value, text) ->
+                DropdownMenuItem(
+                    text = { Text(text) },
+                    onClick = {
+                        onValueSelected(value)
+                        expanded = false
+                    }
+                )
             }
         }
     }
-}*/
+}
+
+
+@Composable
+fun DeleteConfirmationDialog(
+    budgetName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.width(8.dp))
+                Text("Hapus Pembayaran")
+            }
+        },
+        text = { Text("Apakah Anda yakin ingin menghapus pembayaran berulang \"$budgetName\"? Tindakan ini tidak dapat dibatalkan.") },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) { Text("Ya, Hapus") }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text("Batal") }
+        }
+    )
+}
+
+private fun formatAmount(amount: Double): String {
+    val format = NumberFormat.getNumberInstance(Locale("in", "ID"))
+    return format.format(amount)
+}
+
+private fun formatNextDue(dateMillis: Long): String {
+    val diff = dateMillis - System.currentTimeMillis()
+    if (diff < 0) return "Jatuh Tempo"
+    val days = TimeUnit.MILLISECONDS.toDays(diff)
+    return when (days) {
+        0L -> "Hari Ini"
+        1L -> "Besok"
+        else -> "Dalam $days hari"
+    }
+}
+
+@Preview(name = "List View", showBackground = true)
+@Composable
+fun RecurringBudgetsDialogPreview() {
+    val budgets = remember {
+        mutableStateListOf(
+            RecurringBudget(1, "Netflix", 186000.0, BudgetFrequency.MONTHLY, "cat_1", true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(5), 3),
+            RecurringBudget(2, "Spotify", 54000.0, BudgetFrequency.MONTHLY, "cat_1", true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(12), 7)
+        )
+    }
+
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            RecurringBudgetsDialog(
+                isOpen = true,
+                onDismiss = {},
+                recurringBudgets = budgets,
+                onBudgetAdded = { budgets.add(it.copy(id = (budgets.maxOfOrNull { b -> b.id } ?: 0) + 1)) },
+                onBudgetEdited = { edited ->
+                    val index = budgets.indexOfFirst { it.id == edited.id }
+                    if (index != -1) {
+                        budgets[index] = edited
+                    }
+                },
+                onBudgetDeleted = { toDelete -> budgets.removeIf { it.id == toDelete.id } }
+            )
+        }
+    }
+}
+
+@Preview(name = "Add Form", showBackground = true)
+@Composable
+fun AddBudgetFormPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            RecurringBudgetsDialog(
+                isOpen = true,
+                onDismiss = {},
+                recurringBudgets = emptyList(),
+                onBudgetAdded = {},
+                onBudgetEdited = {},
+                onBudgetDeleted = {},
+                showAddFormInitially = true
+            )
+        }
+    }
+}
+
+@Preview(name = "Edit Form", showBackground = true)
+@Composable
+fun EditBudgetFormPreview() {
+    val editingBudget = RecurringBudget(1, "Netflix", 186000.0, BudgetFrequency.MONTHLY, "cat_1", true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(5), 3)
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            RecurringBudgetsDialog(
+                isOpen = true,
+                onDismiss = {},
+                recurringBudgets = emptyList(),
+                onBudgetAdded = {},
+                onBudgetEdited = {},
+                onBudgetDeleted = {},
+                showAddFormInitially = true,
+                editingBudgetInitially = editingBudget
+            )
+        }
+    }
+}

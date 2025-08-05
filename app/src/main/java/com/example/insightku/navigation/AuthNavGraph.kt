@@ -2,10 +2,14 @@ package com.example.insightku.navigation
 
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import com.example.insightku.ui.components.auth.forgotpassword.ForgotPasswordScreen
 import com.example.insightku.ui.components.auth.login.LoginScreen
+import com.example.insightku.ui.components.auth.resetpassword.ResetPasswordScreen
 import com.example.insightku.ui.components.auth.signup.SignUpScreen
 
 fun NavGraphBuilder.authNavGraph(navController: NavHostController) {
@@ -53,6 +57,35 @@ fun NavGraphBuilder.authNavGraph(navController: NavHostController) {
             ForgotPasswordScreen(
                 onNavigateToLogin = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        // Reset Password Screen
+        composable(
+            route = Route.RESET_PASSWORD,
+            arguments = listOf(
+                navArgument("oobCode") {
+                    type = NavType.StringType
+                    nullable = false
+                }
+            ),
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "https://insightku.app/reset-password?oobCode={oobCode}"
+                }
+            )
+        ) { backStackEntry ->
+            val oobCode = backStackEntry.arguments?.getString("oobCode") ?: ""
+            ResetPasswordScreen(
+                oobCode = oobCode,
+                onSuccess = {
+                    // Setelah berhasil reset password, navigasi ke login
+                    navController.navigate(Route.SIGN_IN) {
+                        popUpTo(Route.AUTH_GRAPH) {
+                            inclusive = false
+                        }
+                    }
                 }
             )
         }

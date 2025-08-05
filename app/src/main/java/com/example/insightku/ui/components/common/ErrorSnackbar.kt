@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.ui.components.common
 
 import androidx.compose.foundation.layout.*
@@ -34,4 +33,4 @@ fun ErrorSnackbar(
             color = Color.White
         )
     }
-}*/
+}

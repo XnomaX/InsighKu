@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.data.local.preferences
 
 import android.content.Context
@@ -139,4 +138,4 @@ class UserPreferencesDataStore @Inject constructor(
             preferences[FIRST_TIME_USER_KEY] = isFirstTime
         }
     }
-}*/
+}
