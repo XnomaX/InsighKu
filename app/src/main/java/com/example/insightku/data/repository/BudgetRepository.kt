@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.data.repository
 
 import com.example.insightku.data.local.dao.BudgetDao
@@ -54,4 +53,4 @@ class BudgetRepository @Inject constructor(
     
     suspend fun deactivateRecurringBudget(budgetId: String) = 
         recurringBudgetDao.deactivateRecurringBudget(budgetId)
-}*/
+}

@@ -16,9 +16,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") } // For MPAndroidChart
     }
 }
 
 rootProject.name = "InsighKu"
 include(":app")
- 

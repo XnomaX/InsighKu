@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.data.local.dao
 
 import androidx.room.*
@@ -36,4 +35,4 @@ interface UserDao {
 
     @Query("UPDATE users SET lastLoginAt = :lastLoginAt WHERE id = :userId")
     suspend fun updateLastLoginAt(userId: String, lastLoginAt: Long)
-}*/
+}

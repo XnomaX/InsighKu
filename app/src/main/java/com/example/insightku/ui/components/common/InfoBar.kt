@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.ui.components.common
 
 import androidx.compose.foundation.layout.*
@@ -117,4 +116,4 @@ fun BrandedInfoBar(
         subtitle = "Design by Figma",
         modifier = modifier
     )
-}*/
+}

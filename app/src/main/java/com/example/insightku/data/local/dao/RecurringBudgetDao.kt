@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.data.local.dao
 
 import androidx.room.*
@@ -33,4 +32,4 @@ interface RecurringBudgetDao {
 
     @Query("UPDATE recurring_budgets SET isActive = 0 WHERE id = :budgetId")
     suspend fun deactivateRecurringBudget(budgetId: String)
-}*/
+}

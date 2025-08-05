@@ -1,10 +1,10 @@
-/*
 package com.example.insightku.utils
 
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -104,4 +104,3 @@ fun Boolean.toInt(): Int = if (this) 1 else 0
 fun Boolean.toYesNo(): String = if (this) "Yes" else "No"
 
 fun Boolean.toOnOff(): String = if (this) "On" else "Off"
-*/

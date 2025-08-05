@@ -1,12 +1,12 @@
-/*
 package com.example.insightku.ui.dialogs
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,86 +14,64 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.insightku.viewmodel.Category
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import com.example.insightku.data.model.Category
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditCategoryDialog(
     isOpen: Boolean,
     onDismiss: () -> Unit,
-    category: Category,
+    category: Category?,
     onCategoryEdited: (Category) -> Unit,
     onCategoryDeleted: (String) -> Unit
 ) {
+    if (category == null) return
+
     var name by remember { mutableStateOf(category.name) }
-    var budgetAmount by remember { mutableStateOf(category.budgetAmount.toString()) }
-    var selectedColor by remember { mutableStateOf(category.color) }
-    var selectedIcon by remember { mutableStateOf(category.icon) }
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var budgetLimit by remember { mutableStateOf(category.budgetLimit?.toFloat() ?: 500000f) }
+    var alertThreshold by remember { mutableStateOf(category.alertThreshold.toFloat()) }
+    var selectedIconName by remember { mutableStateOf(category.icon ?: "Food & Drinks") }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
-    val availableColors = listOf(
-        "#F59E0B", "#3B82F6", "#8B5CF6", "#EC4899",
-        "#EF4444", "#10B981", "#F97316", "#6366F1",
-        "#84CC16", "#06B6D4", "#F59E0B", "#E11D48"
-    )
+    val selectedIcon = defaultCategoryIcons.find { it.name == selectedIconName } ?: defaultCategoryIcons.first()
 
-    val availableIcons = listOf(
-        "restaurant" to Icons.Default.Restaurant,
-        "directions_car" to Icons.Default.DirectionsCar,
-        "sports_esports" to Icons.Default.SportsEsports,
-        "shopping_bag" to Icons.Default.ShoppingBag,
-        "home" to Icons.Default.Home,
-        "local_hospital" to Icons.Default.LocalHospital,
-        "fitness_center" to Icons.Default.FitnessCenter,
-        "school" to Icons.Default.School,
-        "work" to Icons.Default.Work,
-        "flight" to Icons.Default.Flight,
-        "movie" to Icons.Default.Movie,
-        "music_note" to Icons.Default.MusicNote
-    )
-
+    // Sync state with category changes from outside
     LaunchedEffect(category) {
         name = category.name
-        budgetAmount = category.budgetAmount.toString()
-        selectedColor = category.color
-        selectedIcon = category.icon
+        budgetLimit = category.budgetLimit?.toFloat() ?: 500000f
+        alertThreshold = category.alertThreshold.toFloat()
+        selectedIconName = category.icon ?: "Food & Drinks"
+    }
+    
+    fun validate() : Boolean {
+        return if (name.trim().length < 2) {
+            nameError = "Category name must be at least 2 characters"
+            false
+        } else {
+            nameError = null
+            true
+        }
     }
 
     if (isOpen) {
         Dialog(
             onDismissRequest = onDismiss,
-            properties = DialogProperties(
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true,
-                usePlatformDefaultWidth = false
-            )
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
+                    .padding(16.dp)
+                    .heightIn(max = 650.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 600.dp)
-                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     // Header
                     Row(
                         modifier = Modifier
@@ -102,58 +80,13 @@ fun EditCategoryDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = "Edit Category",
-                                tint = Color(0xFF5A2A82),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            
-                            Text(
-                                text = "Edit Category",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            IconButton(
-                                onClick = { showDeleteConfirmation = true },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = Color(0xFFEF4444),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            
-                            IconButton(
-                                onClick = onDismiss,
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "Close",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                        Text("Edit Category", style = MaterialTheme.typography.titleLarge)
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }
-                    
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                    )
-                    
+                    HorizontalDivider()
+
                     // Content
                     Column(
                         modifier = Modifier
@@ -161,246 +94,126 @@ fun EditCategoryDialog(
                             .weight(1f)
                             .verticalScroll(rememberScrollState())
                             .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
-                        // Category Preview
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(selectedColor.removePrefix("#").toLong(16) or 0xFF000000).copy(alpha = 0.1f)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            Color(selectedColor.removePrefix("#").toLong(16) or 0xFF000000).copy(alpha = 0.2f),
-                                            shape = CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    val iconVector = availableIcons.find { it.first == selectedIcon }?.second ?: Icons.Default.Category
-                                    Icon(
-                                        iconVector,
-                                        contentDescription = name,
-                                        tint = Color(selectedColor.removePrefix("#").toLong(16) or 0xFF000000),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = name.ifEmpty { "Category Name" },
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    )
-                                    Text(
-                                        text = "Budget: Rp ${budgetAmount.ifEmpty { "0" }}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                        
                         // Category Name
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "Category Name",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            
-                            OutlinedTextField(
-                                value = name,
-                                onValueChange = { name = it },
-                                placeholder = { Text("e.g., Food & Drinks") },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF5A2A82),
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                )
-                            )
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it; nameError = null },
+                            label = { Text("Category Name") },
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = nameError != null,
+                            singleLine = true
+                        )
+                        if (nameError != null) {
+                            Text(nameError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         }
-                        
-                        // Budget Amount
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "Budget Amount",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            
-                            OutlinedTextField(
-                                value = budgetAmount,
-                                onValueChange = { budgetAmount = it },
-                                placeholder = { Text("0") },
-                                modifier = Modifier.fillMaxWidth(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                leadingIcon = {
-                                    Text(
-                                        text = "Rp",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF5A2A82),
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                )
-                            )
-                        }
-                        
-                        // Color Selection
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Category Color",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            
+
+                        // Icon & Color Selection
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Icon & Color", style = MaterialTheme.typography.titleMedium)
                             LazyVerticalGrid(
-                                columns = GridCells.Fixed(6),
+                                columns = GridCells.Adaptive(60.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.height(80.dp)
+                                modifier = Modifier.height(140.dp)
                             ) {
-                                items(availableColors) { color ->
-                                    ColorOption(
-                                        color = color,
-                                        isSelected = selectedColor == color,
-                                        onClick = { selectedColor = color }
-                                    )
-                                }
-                            }
-                        }
-                        
-                        // Icon Selection
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Category Icon",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(6),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.height(120.dp)
-                            ) {
-                                items(availableIcons) { (iconName, iconVector) ->
+                                items(defaultCategoryIcons) { iconData ->
                                     IconOption(
-                                        icon = iconVector,
-                                        iconName = iconName,
-                                        isSelected = selectedIcon == iconName,
-                                        onClick = { selectedIcon = iconName }
+                                        iconData = iconData,
+                                        isSelected = selectedIconName == iconData.name,
+                                        onClick = { selectedIconName = iconData.name }
                                     )
                                 }
                             }
                         }
-                    }
-                    
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                    )
-                    
-                    // Action Buttons
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Cancel")
-                        }
                         
+                        // Budget Limit
+                        SliderSection(
+                            title = "Budget Limit",
+                            label = "Monthly Budget",
+                            value = budgetLimit,
+                            onValueChange = { budgetLimit = it },
+                            range = 50000f..5000000f,
+                            steps = 99,
+                            prefix = "Rp "
+                        )
+
+                        // Alert Threshold
+                        SliderSection(
+                            title = "Alert Threshold",
+                            label = "Alert at",
+                            value = alertThreshold,
+                            onValueChange = { alertThreshold = it },
+                            range = 50f..100f,
+                            steps = 9,
+                            suffix = "% of budget"
+                        )
+                    }
+
+                    // Action Buttons
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                                Text("Cancel")
+                            }
+                            Button(
+                                onClick = {
+                                    if (validate()) {
+                                        val updatedCategory = category.copy(
+                                            name = name.trim(),
+                                            color = "#" + selectedIcon.color.value.toString(16).substring(2, 8).uppercase(),
+                                            icon = selectedIcon.name,
+                                            budgetLimit = budgetLimit.toDouble(),
+                                            alertThreshold = alertThreshold.roundToInt()
+                                        )
+                                        onCategoryEdited(updatedCategory)
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Save Changes")
+                            }
+                        }
                         Button(
-                            onClick = {
-                                val amount = budgetAmount.toDoubleOrNull() ?: 0.0
-                                val updatedCategory = category.copy(
-                                    name = name,
-                                    budgetAmount = amount,
-                                    color = selectedColor,
-                                    icon = selectedIcon
-                                )
-                                onCategoryEdited(updatedCategory)
-                            },
-                            enabled = name.isNotBlank() && budgetAmount.isNotBlank(),
-                            modifier = Modifier.weight(1f),
+                            onClick = { showDeleteConfirmation = true },
+                            modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF5A2A82),
-                                contentColor = Color.White
-                            )
+                                containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                         ) {
-                            Text("Save Changes")
+                            Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Delete Category")
                         }
                     }
                 }
             }
         }
     }
-    
+
     // Delete Confirmation Dialog
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            icon = {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = Color(0xFFEF4444)
-                )
-            },
-            title = {
-                Text("Delete Category")
-            },
-            text = {
-                Text("Are you sure you want to delete \"${category.name}\"? This action cannot be undone.")
-            },
+            icon = { Icon(Icons.Default.Warning, contentDescription = "Warning") },
+            title = { Text("Delete Category") },
+            text = { Text("Are you sure you want to delete \"${category.name}\"? This action cannot be undone.") },
             confirmButton = {
                 Button(
                     onClick = {
                         showDeleteConfirmation = false
                         onCategoryDeleted(category.id)
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFEF4444),
-                        contentColor = Color.White
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
                     Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { showDeleteConfirmation = false }
-                ) {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
                     Text("Cancel")
                 }
             }
@@ -408,73 +221,23 @@ fun EditCategoryDialog(
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-private fun ColorOption(
-    color: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .background(
-                Color(color.removePrefix("#").toLong(16) or 0xFF000000),
-                shape = CircleShape
-            )
-            .clip(CircleShape)
-            .then(
-                if (isSelected) {
-                    Modifier.background(
-                        Color.White,
-                        shape = CircleShape
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .padding(if (isSelected) 4.dp else 0.dp)
-            .background(
-                Color(color.removePrefix("#").toLong(16) or 0xFF000000),
-                shape = CircleShape
-            )
-            .clip(CircleShape)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        if (isSelected) {
-            Icon(
-                Icons.Default.Check,
-                contentDescription = "Selected",
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun IconOption(
-    icon: ImageVector,
-    iconName: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .background(
-                if (isSelected) Color(0xFF5A2A82).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            icon,
-            contentDescription = iconName,
-            tint = if (isSelected) Color(0xFF5A2A82) else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
+fun EditCategoryDialogPreview() {
+    MaterialTheme {
+        EditCategoryDialog(
+            isOpen = true,
+            onDismiss = {},
+            category = Category(
+                id = "1",
+                name = "Food",
+                color = "#F59E0B",
+                budgetLimit = 1000.0,
+                icon = "Food & Drinks",
+                alertThreshold = 90
+            ),
+            onCategoryEdited = {},
+            onCategoryDeleted = {}
         )
     }
 }
-*/

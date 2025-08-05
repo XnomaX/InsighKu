@@ -1,136 +1,99 @@
-/*
 package com.example.insightku.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.insightku.data.model.RecurringBudget
-import com.example.insightku.data.model.Transaction
-import com.example.insightku.data.repository.TransactionRepository
-import com.example.insightku.data.local.preferences.UserPreferencesDataStore
+import com.example.insightku.ui.components.dashboard.*
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-data class DashboardUiState(
-    val balance: Double = 0.0,
-    val income: Double = 0.0,
-    val expenses: Double = 0.0,
-    val balanceVisible: Boolean = true,
-    val recentTransactions: List<Transaction> = emptyList(),
-    val recurringBudgets: List<RecurringBudget> = emptyList(),
-    val currentStreak: Int = 0,
-    val bestStreak: Int = 0,
-    val totalDays: Int = 0,
-    val streakData: List<Boolean> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
+import kotlin.random.Random
 
 @HiltViewModel
-class DashboardViewModel @Inject constructor(
-    private val transactionRepository: TransactionRepository,
-    private val userPreferencesDataStore: UserPreferencesDataStore
-) : ViewModel() {
+class DashboardViewModel @Inject constructor() : ViewModel() {
 
-    private val _uiState = MutableStateFlow(DashboardUiState())
-    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+    var uiState by mutableStateOf(DashboardState())
+        private set
 
-    init {
-        loadDashboardData()
+    fun onEvent(event: DashboardEvent) {
+        when(event) {
+            DashboardEvent.LoadDashboardData -> loadDashboardData()
+            DashboardEvent.RefreshData -> loadDashboardData()
+            DashboardEvent.ClearError -> clearError()
+            DashboardEvent.AddTransaction -> { /* Handle add transaction navigation */ }
+            is DashboardEvent.ToggleForecastPeriod -> { /* Handle forecast period toggle */ }
+        }
     }
 
     private fun loadDashboardData() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            
             try {
-                // Combine all data flows
-                combine(
-                    transactionRepository.getAllTransactions(),
-                    transactionRepository.getRecurringBudgets(),
-                    userPreferencesDataStore.currentStreak,
-                    userPreferencesDataStore.bestStreak,
-                    userPreferencesDataStore.totalDays
-                ) { transactions, recurringBudgets, currentStreak, bestStreak, totalDays ->
-                    
-                    val balance = transactions.sumOf { 
-                        if (it.type == com.example.insightku.data.model.TransactionType.INCOME) it.amount else -it.amount
-                    }
-                    val income = transactions.filter { 
-                        it.type == com.example.insightku.data.model.TransactionType.INCOME
-                    }.sumOf { it.amount }
-                    val expenses = transactions.filter { 
-                        it.type == com.example.insightku.data.model.TransactionType.EXPENSE
-                    }.sumOf { it.amount }
-                    
-                    val streakData = generateStreakData(currentStreak)
-                    
-                    DashboardUiState(
-                        balance = balance,
-                        income = income,
-                        expenses = expenses,
-                        recentTransactions = transactions.take(10),
-                        recurringBudgets = recurringBudgets,
-                        currentStreak = currentStreak,
-                        bestStreak = bestStreak,
-                        totalDays = totalDays,
-                        streakData = streakData,
-                        isLoading = false
+                uiState = uiState.copy(isLoading = true, error = null)
+                delay(1000) // Simulate network delay
+
+                // Mock data for AI Forecast
+                val weeklyForecastData = (0..6).map { Random.nextInt(50, 200).toFloat() }
+                val monthlyForecastData = (0..11).map { Random.nextInt(1500, 2500).toFloat() }
+
+                // Mock data for Recent Transactions
+                val mockRecentTransactions = listOf(
+                    TransactionItem(
+                        id = "1",
+                        title = "Starbucks Coffee",
+                        category = "Food & Drinks",
+                        amount = 4.50,
+                        time = "2:30 PM",
+                        isIncome = false,
+                        iconName = "local_cafe",
+                        colorHex = "#F59E0B"
+                    ),
+                    TransactionItem(
+                        id = "2",
+                        title = "Uber Ride",
+                        category = "Transportation",
+                        amount = 12.80,
+                        time = "1:15 PM",
+                        isIncome = false,
+                        iconName = "directions_car",
+                        colorHex = "#3B82F6"
+                    ),
+                    TransactionItem(
+                        id = "3",
+                        title = "Salary Deposit",
+                        category = "Income",
+                        amount = 3200.00,
+                        time = "9:00 AM",
+                        isIncome = true,
+                        iconName = "trending_up",
+                        colorHex = "#10B981"
                     )
-                }.collect { newState ->
-                    _uiState.value = newState
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
+                )
+
+                uiState = uiState.copy(
                     isLoading = false,
-                    error = e.message
+                    totalBalance = 4256.80,
+                    monthlyIncome = 3200.0,
+                    monthlyExpenses = 2650.0,
+                    weeklyForecastData = weeklyForecastData,
+                    monthlyForecastData = monthlyForecastData,
+                    aiInsightMessage = "💡 AI Insight: You're likely to spend $625 this week, which is 12% less than last week!",
+                    recentTransactions = mockRecentTransactions,
+                    currentStreak = 5,
+                    hasTrackedToday = false
+                )
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    isLoading = false,
+                    error = "Failed to load dashboard data: ${e.message}"
                 )
             }
         }
     }
 
-    fun toggleBalanceVisibility() {
-        _uiState.value = _uiState.value.copy(
-            balanceVisible = !_uiState.value.balanceVisible
-        )
+    private fun clearError() {
+        uiState = uiState.copy(error = null)
     }
-
-    fun refreshData() {
-        loadDashboardData()
-    }
-
-    private fun generateStreakData(currentStreak: Int): List<Boolean> {
-        // Generate 7 days of streak data for calendar
-        val today = java.util.Calendar.getInstance()
-        val streakData = mutableListOf<Boolean>()
-        
-        for (i in 6 downTo 0) {
-            val date = java.util.Calendar.getInstance().apply {
-                add(java.util.Calendar.DAY_OF_YEAR, -i)
-            }
-            // Mark as completed if within current streak
-            streakData.add(i < currentStreak)
-        }
-        
-        return streakData
-    }
-
-    fun onTransactionAdded() {
-        viewModelScope.launch {
-            // Update streak when transaction is added
-            val today = System.currentTimeMillis()
-            userPreferencesDataStore.updateLastTransactionDate(today)
-            
-            // Increment streak logic would go here
-            val newStreak = _uiState.value.currentStreak + 1
-            userPreferencesDataStore.updateCurrentStreak(newStreak)
-            
-            if (newStreak > _uiState.value.bestStreak) {
-                userPreferencesDataStore.updateBestStreak(newStreak)
-            }
-            
-            refreshData()
-        }
-    }
-}*/
+}

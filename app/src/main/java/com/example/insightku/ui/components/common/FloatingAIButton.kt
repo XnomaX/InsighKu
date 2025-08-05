@@ -1,4 +1,3 @@
-/*
 package com.example.insightku.ui.components.common
 
 import androidx.compose.foundation.background
@@ -155,4 +154,4 @@ private fun Canvas(
         modifier = modifier,
         onDraw = onDraw
     )
-}*/
+}
