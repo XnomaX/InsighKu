@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1044586760966",
+    "project_id": "insightku-aeb21",
+    "storage_bucket": "insightku-aeb21.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1044586760966:android:10e8aa2218ef3fe4006c87",
+        "android_client_info": {
+          "package_name": "com.example.insightku"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA04I6_Xkb_mn2zmTpwY7t0MKGpm3GGXQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
