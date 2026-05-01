@@ -31,24 +31,28 @@ fun String.truncate(maxLength: Int): String {
 }
 
 // Double Extensions
-fun Double.toCurrency(): String = CurrencyUtils.formatAmount(this)
+// CURRENCY FIX: toCurrency() sekarang menerima currencyCode agar tidak hardcode IDR.
+// Gunakan formatCurrency() composable helper di Composable context untuk otomatis
+// ambil LocalCurrencyCode.current — lebih direkomendasikan daripada extension ini.
+fun Double.toCurrency(currencyCode: String = "IDR"): String =
+    CurrencyUtils.formatAmount(this, currencyCode)
 
-fun Double.toCurrencyCompact(): String = CurrencyUtils.formatAmountCompact(this)
+fun Double.toCurrencyCompact(currencyCode: String = "IDR"): String =
+    CurrencyUtils.formatAmountCompact(this, currencyCode)
 
 fun Double.toPercentage(): String = CurrencyUtils.formatPercentage(this)
 
 // Long Extensions (for timestamps)
 fun Long.toDateString(): String = DateUtils.formatDate(this)
-
 fun Long.toTimeString(): String = DateUtils.formatTime(this)
-
 fun Long.toDateTimeString(): String = DateUtils.formatDateTime(this)
-
 fun Long.toRelativeDateString(): String = DateUtils.getRelativeDateString(this)
-
 fun Long.isToday(): Boolean = DateUtils.isToday(this)
-
 fun Long.isYesterday(): Boolean = DateUtils.isYesterday(this)
+
+// TIMESTAMP FIX (Issue 3): Konversi Long timestamp ke string relatif human-readable
+// Contoh: 1777595336895 → "2 hours ago", "Just now", "Yesterday"
+fun Long.toRelativeTime(): String = TimeUtils.toRelativeTime(this)
 
 // List Extensions
 fun <T> List<T>.safeGet(index: Int): T? {

@@ -16,7 +16,7 @@ import com.example.insightku.data.model.*
         Budget::class,
         User::class
     ],
-    version = 1,
+    version = 3,       // v3: Tambah isSynced + createdAt ke Transaction (offline-first)
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -26,23 +26,5 @@ abstract class InsightKuDatabase : RoomDatabase() {
     abstract fun recurringBudgetDao(): RecurringBudgetDao
     abstract fun budgetDao(): BudgetDao
     abstract fun userDao(): UserDao
-
-    companion object {
-        @Volatile
-        private var INSTANCE: InsightKuDatabase? = null
-
-        fun getDatabase(context: Context): InsightKuDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    InsightKuDatabase::class.java,
-                    "insightku_database"
-                )
-                    .fallbackToDestructiveMigration()
-                    .build()
-                INSTANCE = instance
-                instance
-            }
-        }
-    }
 }
+

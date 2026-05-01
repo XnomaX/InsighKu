@@ -1,6 +1,21 @@
 package com.example.insightku.navigation
 
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.ui.components.common.ErrorSnackbar
+import com.example.insightku.viewmodel.RootViewModel
+
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -9,38 +24,69 @@ import com.example.insightku.ui.components.splash.SplashScreen
 @Composable
 fun RootNavGraph() {
     val navController = rememberNavController()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    NavHost(
-        navController = navController,
-        startDestination = Route.SPLASH,
-        route = "root_graph"
-    ) {
-        // Splash Screen as entry point - Protected Route Controller
-        composable(Route.SPLASH) {
-            SplashScreen(
-                onNavigateToAuth = {
-                    // Navigate ke AuthGraph jika user belum login
-                    navController.navigate(Route.AUTH_GRAPH) {
-                        popUpTo(Route.SPLASH) {
-                            inclusive = true
-                        }
-                    }
-                },
-                onNavigateToHome = {
-                    // Navigate ke MainGraph jika user sudah login
-                    navController.navigate(Route.MAIN_GRAPH) {
-                        popUpTo(Route.SPLASH) {
-                            inclusive = true
-                        }
-                    }
-                }
-            )
+    /**
+     * PERBAIKAN KRITIS: Ganti viewModel() → hiltViewModel()
+     *
+     * SEBELUMNYA (salah):
+     * `val rootViewModel: RootViewModel = viewModel()`
+     * `viewModel()` membuat instance baru yang dikelola Compose runtime (ViewModelStoreOwner Activity).
+     * Sementara Hilt membuat instance berbeda lewat RootViewModelModule yang sudah dihapus.
+     * Dua instance berbeda → LoginViewModel dan ViewModel lain emit error ke instance A,
+     * tapi RootNavGraph mengobservasi instance B → snackbar tidak pernah muncul.
+     *
+     * SEKARANG (benar):
+     * `hiltViewModel()` mendapatkan instance yang dikelola Hilt dengan lifecycle Activity.
+     * Semua ViewModel yang inject ErrorBus mengirim error ke ErrorBus (Singleton),
+     * RootViewModel mengobservasi ErrorBus dan expose ke sini via globalError StateFlow.
+     * Satu instance, satu sumber kebenaran.
+     */
+    val rootViewModel: RootViewModel = hiltViewModel()
+    val globalError by rootViewModel.globalError.collectAsState()
+
+    LaunchedEffect(globalError) {
+        globalError?.let {
+            snackbarHostState.showSnackbar(it)
+            rootViewModel.clearGlobalError()
         }
+    }
 
-        // Auth Graph - untuk user yang belum login
-        authNavGraph(navController = navController)
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        // WindowInsets.None: kita kelola sendiri di tiap screen/graph
+        // agar tidak double-padding antara Scaffold dan content
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { paddingValues ->
+        NavHost(
+            navController = navController,
+            startDestination = Route.SPLASH,
+            route = "root_graph",
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding()  // keyboard tidak nabrak content
+        ) {
+            // Splash Screen — Protected Route Controller
+            composable(Route.SPLASH) {
+                SplashScreen(
+                    onNavigateToAuth = {
+                        navController.navigate(Route.AUTH_GRAPH) {
+                            popUpTo(Route.SPLASH) { inclusive = true }
+                        }
+                    },
+                    onNavigateToHome = {
+                        navController.navigate(Route.MAIN_GRAPH) {
+                            popUpTo(Route.SPLASH) { inclusive = true }
+                        }
+                    }
+                )
+            }
 
-        // Main Graph - untuk user yang sudah login (Protected Routes)
-        mainNavGraph(navController = navController)
+            // Auth Graph — untuk user yang belum login
+            authNavGraph(navController = navController)
+
+            // Main Graph — untuk user yang sudah login
+            mainNavGraph(navController = navController)
+        }
     }
 }

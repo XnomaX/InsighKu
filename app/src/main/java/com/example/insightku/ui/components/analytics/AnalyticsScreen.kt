@@ -10,21 +10,24 @@ import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.ui.components.analytics.model.AnalyticsUtils
+import com.example.insightku.ui.components.analytics.model.CategoryData
+import com.example.insightku.ui.components.analytics.model.TimePeriod
+import com.example.insightku.ui.theme.Dimens
+import com.example.insightku.ui.theme.LocalResponsiveDimens
 import com.example.insightku.viewmodel.AnalyticsViewModel
-import com.example.insightku.ui.components.analytics.model.*
-import androidx.compose.ui.tooling.preview.Preview
-import kotlin.math.abs
 
 @Composable
 fun AnalyticsScreen(
@@ -36,191 +39,74 @@ fun AnalyticsScreen(
         viewModel.onEvent(AnalyticsEvent.LoadAnalytics)
     }
 
-    // Main container dengan background
+    AnalyticsScreenContent(uiState = uiState, onEvent = viewModel::onEvent)
+}
+
+@Composable
+fun AnalyticsScreenContent(
+    uiState: AnalyticsUiState,
+    onEvent: (AnalyticsEvent) -> Unit
+) {
+    val dimens = LocalResponsiveDimens.current
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF5A2A82),
-                                Color(0xFF7C3AED)
-                            )
-                        )
-                    )
-            ) {
-                // Text di tengah dengan styling yang lebih elegant
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "Financial Analytics",
-                        style = MaterialTheme.typography.headlineMedium, // Font yang lebih bagus dan minimalis
-                        fontWeight = FontWeight.Bold, // Tidak terlalu bold
-                        color = Color.White,
-                        letterSpacing = 0.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Insights for ${AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth)}",
-                        style = MaterialTheme.typography.bodyLarge, // Ukuran yang tepat
-                        fontWeight = FontWeight.Normal,
-                        color = Color.White.copy(alpha = 0.85f),
-                        letterSpacing = 0.25.sp
-                    )
-                }
+        if (uiState.isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = Dimens.PaddingLarge)
+        ) {
+            item {
+                HeaderSection(uiState.selectedMonth)
             }
 
-            // Content area dengan negative margin untuk month selector di tengah
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset(y = (-20).dp) // Dikecilkan untuk proporsi yang lebih baik
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Month Selector Card - di posisi tengah antara ungu dan putih, ukuran kecil
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                    shape = RoundedCornerShape(8.dp) // Dikecilkan
+            item {
+                Column(
+                    modifier = Modifier
+                        .offset(y = Dimens.HeaderVerticalOffset)
+                        .padding(horizontal = dimens.screenHorizontalPadding),
+                    verticalArrangement = Arrangement.spacedBy(dimens.itemSpacing)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp), // Dikecilkan
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Previous month button
-                        IconButton(
-                            onClick = { viewModel.onEvent(AnalyticsEvent.PreviousMonth) },
-                            modifier = Modifier
-                                .size(28.dp) // Dikecilkan
-                                .background(
-                                    Color(0xFF5A2A82).copy(alpha = 0.1f),
-                                    CircleShape
-                                )
-                        ) {
-                            Icon(
-                                Icons.Default.ChevronLeft,
-                                contentDescription = "Previous month",
-                                tint = Color(0xFF5A2A82),
-                                modifier = Modifier.size(18.dp) // Diperbesar untuk arrow
-                            )
-                        }
-
-                        // Center content dengan Calendar icon dan month name
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.CalendarToday,
-                                contentDescription = null,
-                                tint = Color(0xFF5A2A82),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                text = AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth),
-                                style = MaterialTheme.typography.bodyMedium, // Font minimalis dan kecil
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF5A2A82),
-                                letterSpacing = 0.3.sp
-                            )
-                        }
-
-                        // Next month button
-                        IconButton(
-                            onClick = { viewModel.onEvent(AnalyticsEvent.NextMonth) },
-                            modifier = Modifier
-                                .size(28.dp) // Dikecilkan
-                                .background(
-                                    Color(0xFF5A2A82).copy(alpha = 0.1f),
-                                    CircleShape
-                                )
-                        ) {
-                            Icon(
-                                Icons.Default.ChevronRight,
-                                contentDescription = "Next month",
-                                tint = Color(0xFF5A2A82),
-                                modifier = Modifier.size(18.dp) // Diperbesar untuk arrow
-                            )
-                        }
-                    }
-                }
-
-                // Statistics Cards - dengan font yang lebih kecil
-                StatisticsCardsSection(
-                    totalIncome = uiState.totalIncome,
-                    totalExpenses = uiState.totalExpenses,
-                    savings = uiState.savings
-                )
-
-                // Savings Rate Card
-                SavingsRateSection(
-                    savingsRate = uiState.savingsRate,
-                    selectedMonth = uiState.selectedMonth
-                )
-
-                // Budget Performance Card - gunakan style persis seperti di BudgetPerformanceCard
-                BudgetPerformanceCard(
-                    budgetPeriod = uiState.budgetPeriod,
-                    onPeriodChange = { period ->
-                        viewModel.onEvent(AnalyticsEvent.ChangeBudgetPeriod(period))
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                    // No extra padding here, let the card handle its own padding for consistency
-                )
-
-                // Income vs Expenses Chart
-                IncomeExpensesChart(
-                    timePeriod = uiState.timePeriod,
-                    onPeriodChange = { period ->
-                        viewModel.onEvent(AnalyticsEvent.ChangeTimePeriod(period))
-                    }
-                )
-
-                // Interactive Donut Charts
-                val currentData = uiState.currentMonthData
-                if (currentData != null) {
-                    InteractiveDonutChart(
-                        title = "Expense Categories",
-                        titleIcon = "💸",
-                        subtitle = "Monthly expenses by category",
-                        categories = currentData.expenseCategories,
-                        selectedCategory = uiState.selectedExpenseCategory,
-                        onCategoryClick = { category ->
-                            viewModel.onEvent(AnalyticsEvent.SelectExpenseCategory(category))
-                        },
-                        centerColor = Color(0xFFEF4444),
-                        monthName = AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth)
+                    MonthSelector(
+                        selectedMonth = AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth),
+                        onPreviousMonth = { onEvent(AnalyticsEvent.PreviousMonth) },
+                        onNextMonth = { onEvent(AnalyticsEvent.NextMonth) }
                     )
 
-                    if (currentData.incomeCategories.isNotEmpty()) {
-                        InteractiveDonutChart(
-                            title = "Income Sources",
-                            titleIcon = "💰",
-                            subtitle = "Monthly income breakdown",
-                            categories = currentData.incomeCategories,
-                            selectedCategory = uiState.selectedIncomeCategory,
-                            onCategoryClick = { category ->
-                                viewModel.onEvent(AnalyticsEvent.SelectIncomeCategory(category))
-                            },
-                            centerColor = Color(0xFF10B981),
-                            monthName = AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth)
+                    StatisticsSection(
+                        totalIncome = uiState.totalIncome,
+                        totalExpenses = uiState.totalExpenses,
+                        savings = uiState.savings
+                    )
+
+                    SavingsRateSection(
+                        savingsRate = uiState.savingsRate,
+                        selectedMonth = AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth)
+                    )
+
+                    BudgetPerformanceCard(
+                        budgetPeriod = uiState.budgetTimePeriod,
+                        onPeriodChange = { period -> onEvent(AnalyticsEvent.ChangeBudgetPeriod(period)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    IncomeExpensesChart(
+                        timePeriod = uiState.chartTimePeriod,
+                        onPeriodChange = { period -> onEvent(AnalyticsEvent.ChangeTimePeriod(period)) }
+                    )
+
+                    uiState.currentMonthData?.let {
+                        DonutChartsSection(
+                            monthlyData = it,
+                            selectedExpenseCategory = uiState.selectedExpenseCategory,
+                            selectedIncomeCategory = uiState.selectedIncomeCategory,
+                            onEvent = onEvent,
+                            selectedMonth = AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth)
                         )
                     }
                 }
@@ -230,117 +116,145 @@ fun AnalyticsScreen(
 }
 
 @Composable
-private fun StatisticsCardsSection(
+private fun HeaderSection(selectedMonth: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(Dimens.HeaderHeight)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.tertiary
+                    )
+                )
+            )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = Dimens.PaddingExtraLarge),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Financial Analytics", // R.string.financial_analytics
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
+            Text(
+                text = "Insights for ${AnalyticsUtils.getMonthDisplayName(selectedMonth)}", // R.string.insights_for_month
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+            )
+        }
+    }
+}
+
+@Composable
+fun MonthSelector(
+    selectedMonth: String,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationMedium),
+        shape = RoundedCornerShape(Dimens.CornerRadiusSmall)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.MonthSelectorPadding),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onPreviousMonth,
+                modifier = Modifier
+                    .size(Dimens.MonthSelectorButtonSize)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
+            ) {
+                Icon(
+                    Icons.Default.ChevronLeft,
+                    contentDescription = "Previous month", // R.string.previous_month
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(Dimens.IconSizeMedium)
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
+            ) {
+                Icon(
+                    Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(Dimens.IconSizeSmall)
+                )
+                Text(
+                    text = selectedMonth,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            IconButton(
+                onClick = onNextMonth,
+                modifier = Modifier
+                    .size(Dimens.MonthSelectorButtonSize)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
+            ) {
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = "Next month", // R.string.next_month
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(Dimens.IconSizeMedium)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun StatisticsSection(
     totalIncome: Double,
     totalExpenses: Double,
     savings: Double
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
     ) {
         StatCard(
             modifier = Modifier.weight(1f),
-            title = "Income",
+            title = "Income", // R.string.income
             amount = totalIncome,
             icon = Icons.AutoMirrored.Filled.TrendingUp,
-            color = Color(0xFF10B981),
-            backgroundColor = Color(0xFF10B981).copy(alpha = 0.1f)
+            color = MaterialTheme.colorScheme.secondary, // Custom color
+            backgroundColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
         )
         StatCard(
             modifier = Modifier.weight(1f),
-            title = "Expenses",
+            title = "Expenses", // R.string.expenses
             amount = totalExpenses,
             icon = Icons.AutoMirrored.Filled.TrendingDown,
-            color = Color(0xFFEF4444),
-            backgroundColor = Color(0xFFEF4444).copy(alpha = 0.1f)
+            color = MaterialTheme.colorScheme.error, // Custom color
+            backgroundColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
         )
         StatCard(
             modifier = Modifier.weight(1f),
-            title = "Savings",
-            amount = abs(savings),
+            title = "Savings", // R.string.savings
+            amount = savings,
             icon = Icons.Default.Savings,
-            color = if (savings >= 0) Color(0xFF5A2A82) else Color(0xFFEF4444),
-            backgroundColor = if (savings >= 0) Color(0xFF5A2A82).copy(alpha = 0.1f) else Color(0xFFEF4444).copy(alpha = 0.1f)
+            color = if (savings >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            backgroundColor = (if (savings >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error).copy(alpha = 0.1f)
         )
-    }
-}
-
-@Composable
-private fun SavingsRateSection(
-    savingsRate: Double,
-    selectedMonth: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Savings Rate",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Monthly savings performance for ${AnalyticsUtils.getMonthDisplayName(selectedMonth)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Target: 20%",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "${"%.1f".format(abs(savingsRate))}%",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF5A2A82)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LinearProgressIndicator(
-            progress = { (abs(savingsRate) / 100.0).coerceIn(0.0, 1.0).toFloat() },
-            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp),
-            color = Color(0xFF5A2A82),
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = when {
-                    savingsRate >= 20 -> "🎉 Congratulations! Target achieved"
-                    savingsRate >= 0 -> "💪 Keep saving to reach your target"
-                    else -> "⚠️ Expenses exceeded income this month"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = when {
-                    savingsRate >= 20 -> Color(0xFF10B981)
-                    savingsRate >= 0 -> MaterialTheme.colorScheme.onSurface
-                    else -> Color(0xFFEF4444)
-                }
-            )
-        }
     }
 }
 
@@ -356,376 +270,152 @@ private fun StatCard(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(12.dp) // Diperbesar kembali
+        shape = RoundedCornerShape(Dimens.CornerRadiusMedium)
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 18.dp, vertical = 16.dp) // Tambah padding horizontal
-                .fillMaxWidth(), // Pastikan full width
+                .padding(horizontal = Dimens.StatCardPaddingHorizontal, vertical = Dimens.StatCardPaddingVertical)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp) // Diperbesar icon box
-                    .background(backgroundColor, RoundedCornerShape(24.dp)),
+                    .size(Dimens.StatCardIconBoxSize)
+                    .background(backgroundColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = color,
-                    modifier = Modifier.size(24.dp) // Diperbesar icon
+                    modifier = Modifier.size(Dimens.StatCardIconSize)
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp)) // Diperbesar spacing
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodySmall, // Diperbesar font
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
             Text(
                 text = AnalyticsUtils.formatCurrencyShort(amount),
-                style = MaterialTheme.typography.titleSmall, // Diperbesar font angka
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = color,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun AnalyticsScreenPreview() {
-    MaterialTheme {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Header dengan gradient ungu yang diperkecil
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF5A2A82),
-                                    Color(0xFF7C3AED)
-                                )
-                            )
-                        )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "Financial Analytics",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Insights for June 2024",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.White.copy(alpha = 0.85f),
-                            letterSpacing = 0.25.sp
-                        )
-                    }
-                }
-
-                // Content area dengan month selector di tengah
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .offset(y = (-20).dp)
-                        .padding(horizontal = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Month Selector Card - kecil dan di tengah
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Previous month button
-                            IconButton(
-                                onClick = { },
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .background(
-                                        Color(0xFF5A2A82).copy(alpha = 0.1f),
-                                        CircleShape
-                                    )
-                            ) {
-                                Icon(
-                                    Icons.Default.ChevronLeft,
-                                    contentDescription = "Previous month",
-                                    tint = Color(0xFF5A2A82),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-
-                            // Center content dengan Calendar icon dan month name
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.CalendarToday,
-                                    contentDescription = null,
-                                    tint = Color(0xFF5A2A82),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    text = "June 2024",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF5A2A82),
-                                    letterSpacing = 0.3.sp
-                                )
-                            }
-
-                            // Next month button
-                            IconButton(
-                                onClick = { },
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .background(
-                                        Color(0xFF5A2A82).copy(alpha = 0.1f),
-                                        CircleShape
-                                    )
-                            ) {
-                                Icon(
-                                    Icons.Default.ChevronRight,
-                                    contentDescription = "Next month",
-                                    tint = Color(0xFF5A2A82),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(0.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Statistics Cards Preview
-                        item {
-                            StatisticsCardsSectionPreview()
-                        }
-
-                        // Savings Rate Preview
-                        item {
-                            SavingsRateSectionPreview()
-                        }
-
-                        // Budget Performance Card dengan toggle yang sebenarnya
-                        item {
-                            BudgetPerformanceCardPreview()
-                        }
-
-                        // Income vs Expenses Chart yang sebenarnya
-                        item {
-                            IncomeExpensesChartPreview()
-                        }
-
-                        // Interactive Donut Charts Preview
-                        item {
-                            // Expenses Donut Chart
-                            InteractiveDonutChart(
-                                title = "Expense Categories",
-                                titleIcon = "💸",
-                                subtitle = "Monthly expenses by category",
-                                categories = listOf(
-                                    CategoryData("Food", 1500000.0, Color(0xFFEF4444), Icons.Default.Fastfood),
-                                    CategoryData("Transport", 500000.0, Color(0xFF10B981), Icons.Default.DirectionsCar),
-                                    CategoryData("Entertainment", 300000.0, Color(0xFF3B82F6), Icons.Default.Movie)
-                                ),
-                                selectedCategory = null,
-                                onCategoryClick = {},
-                                centerColor = Color(0xFFEF4444),
-                                monthName = "June 2024"
-                            )
-                        }
-                        item {
-                            InteractiveDonutChartsIncome()
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun StatisticsCardsSectionPreview() {
-    MaterialTheme {
-        StatisticsCardsSection(
-            totalIncome = 3200000.0,
-            totalExpenses = 2650000.0,
-            savings = 550000.0
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SavingsRateSectionPreview() {
-    MaterialTheme {
-        SavingsRateSection(
-            savingsRate = 17.2,
-            selectedMonth = "2024-06"
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun StatCardPreview() {
-    MaterialTheme {
-        StatCard(
-            title = "Income",
-            amount = 3200000.0,
-            icon = Icons.AutoMirrored.Filled.TrendingUp,
-            color = Color(0xFF10B981),
-            backgroundColor = Color(0xFF10B981).copy(alpha = 0.1f)
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MonthSelectorPreview() {
-    MaterialTheme {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-            shape = RoundedCornerShape(8.dp)
+fun SavingsRateSection(
+    savingsRate: Double,
+    selectedMonth: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationSmall),
+        shape = RoundedCornerShape(Dimens.CornerRadiusMedium)
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.PaddingLarge)
         ) {
+            Text(
+                text = "Savings Rate", // R.string.savings_rate
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
+            Text(
+                text = "Monthly savings performance for $selectedMonth", // R.string.savings_performance_for_month
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = { },
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            Color(0xFF5A2A82).copy(alpha = 0.1f),
-                            CircleShape
-                        )
-                ) {
-                    Icon(
-                        Icons.Default.ChevronLeft,
-                        contentDescription = "Previous month",
-                        tint = Color(0xFF5A2A82),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        tint = Color(0xFF5A2A82),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = "June 2024",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF5A2A82),
-                        letterSpacing = 0.3.sp
-                    )
-                }
-
-                IconButton(
-                    onClick = { },
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            Color(0xFF5A2A82).copy(alpha = 0.1f),
-                            CircleShape
-                        )
-                ) {
-                    Icon(
-                        Icons.Default.ChevronRight,
-                        contentDescription = "Next month",
-                        tint = Color(0xFF5A2A82),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                Text(
+                    text = "Target: 20%", // R.string.savings_target
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "${"%.1f".format(savingsRate)}%",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
+
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+
+            LinearProgressIndicator(
+                progress = { (savingsRate / 100.0).coerceIn(0.0, 1.0).toFloat() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(Dimens.LinearProgressHeight),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+
+            val (text, color) = when {
+                savingsRate >= 20 -> "🎉 Congratulations! Target achieved" to MaterialTheme.colorScheme.secondary // R.string.savings_target_achieved
+                savingsRate >= 0 -> "💪 Keep saving to reach your target" to MaterialTheme.colorScheme.onSurface // R.string.savings_keep_going
+                else -> "⚠️ Expenses exceeded income this month" to MaterialTheme.colorScheme.error // R.string.savings_negative
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                color = color
+            )
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun BudgetPerformanceCardPreview() {
-    MaterialTheme {
-        BudgetPerformanceCard(
-            budgetPeriod = TimePeriod.MONTHLY,
-            onPeriodChange = { /* Handle period change */ },
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun IncomeExpensesChartPreview() {
-    MaterialTheme {
-        IncomeExpensesChart(
-            timePeriod = TimePeriod.MONTHLY,
-            onPeriodChange = { }
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun InteractiveDonutChartsIncome() {
-    MaterialTheme {
+private fun DonutChartsSection(
+    monthlyData: com.example.insightku.ui.components.analytics.model.MonthlyData,
+    selectedExpenseCategory: String?,
+    selectedIncomeCategory: String?,
+    onEvent: (AnalyticsEvent) -> Unit,
+    selectedMonth: String
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)) {
         InteractiveDonutChart(
-            title = "Income Categories",
-            titleIcon = "💰",
-            subtitle = "Monthly expenses by category",
-            categories = listOf(
-                CategoryData("Food", 1500000.0, Color(0xFFEF4444), Icons.Default.Fastfood),
-                CategoryData("Transport", 500000.0, Color(0xFF10B981), Icons.Default.DirectionsCar),
-                CategoryData("Entertainment", 300000.0, Color(0xFF3B82F6), Icons.Default.Movie)
-            ),
-            selectedCategory = null,
-            onCategoryClick = {},
-            centerColor = Color(0xFFEF4444),
-            monthName = "June 2024"
+            title = "Expense Categories", // R.string.expense_categories
+            titleIcon = "💸",
+            subtitle = "Monthly expenses by category", // R.string.expense_categories_subtitle
+            categories = monthlyData.expenseCategories,
+            selectedCategory = selectedExpenseCategory,
+            onCategoryClick = { category -> onEvent(AnalyticsEvent.SelectExpenseCategory(category)) },
+            centerColor = MaterialTheme.colorScheme.error,
+            monthName = selectedMonth
         )
+
+        if (monthlyData.incomeCategories.isNotEmpty()) {
+            InteractiveDonutChart(
+                title = "Income Sources", // R.string.income_sources
+                titleIcon = "💰",
+                subtitle = "Monthly income breakdown", // R.string.income_sources_subtitle
+                categories = monthlyData.incomeCategories,
+                selectedCategory = selectedIncomeCategory,
+                onCategoryClick = { category -> onEvent(AnalyticsEvent.SelectIncomeCategory(category)) },
+                centerColor = MaterialTheme.colorScheme.secondary,
+                monthName = selectedMonth
+            )
+        }
     }
 }

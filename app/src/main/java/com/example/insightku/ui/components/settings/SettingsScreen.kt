@@ -1,3 +1,4 @@
+
 package com.example.insightku.ui.components.settings
 
 import androidx.compose.foundation.background
@@ -7,339 +8,419 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.R
+import com.example.insightku.ui.theme.Dimens
+import com.example.insightku.ui.theme.LocalResponsiveDimens
+import com.example.insightku.utils.CurrencyUtils
 import com.example.insightku.viewmodel.SettingsViewModel
 
-// Data models for settings
-data class SettingsItem(
-    val label: String,
-    val description: String,
-    val type: SettingsItemType,
-    val icon: ImageVector,
-    val action: () -> Unit = {}
-)
-
-sealed class SettingsItemType {
-    object Navigation : SettingsItemType()
-    data class Toggle(val isEnabled: Boolean, val onToggle: (Boolean) -> Unit) : SettingsItemType()
-    data class Selection(val currentValue: String, val onSelect: () -> Unit) : SettingsItemType()
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onLogout: () -> Unit = {},
+    onLogout: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val uiState = viewModel.uiState
-    val scrollState = rememberScrollState()
+    val uiState by viewModel.uiState.collectAsState()
 
-    // Theme colors
-    val primaryPurple = MaterialTheme.colorScheme.primary
-    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
-
-    // Handle logout success
-    LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading && !uiState.showLogoutDialog && uiState.error == null) {
-            // Check if logout was successful (user data cleared)
-            if (uiState.userEmail.isEmpty() && uiState.userName.isEmpty()) {
-                onLogout()
-            }
+    LaunchedEffect(uiState.userEmail) {
+        if (!uiState.isLoading && uiState.userEmail.isEmpty()) {
+            onLogout()
         }
     }
+
+    if (uiState.showLogoutDialog) {
+        LogoutConfirmationDialog(
+            onConfirm = { viewModel.onEvent(SettingsEvent.ConfirmLogout) },
+            onDismiss = { viewModel.onEvent(SettingsEvent.HideLogoutDialog) }
+        )
+    }
+
+    val dimens = LocalResponsiveDimens.current
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
-            .verticalScroll(scrollState)
+            .verticalScroll(rememberScrollState())
     ) {
-        // Header
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        SettingsHeader()
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Manage your app preferences and account settings",
-            style = MaterialTheme.typography.bodyMedium,
-            color = onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // User Profile Card
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = primaryPurple)
-            }
-        } else {
-            UserProfileCard(
-                userName = uiState.userName.ifEmpty { "User" },
-                userEmail = uiState.userEmail.ifEmpty { "user@example.com" }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Settings Items
-        val settingsItems = listOf(
-            SettingsItem(
-                label = "Dark Mode",
-                description = "Switch between light and dark theme",
-                type = SettingsItemType.Toggle(
-                    isEnabled = uiState.isDarkMode,
-                    onToggle = { viewModel.onEvent(SettingsEvent.ToggleDarkMode(it)) }
-                ),
-                icon = Icons.Default.DarkMode
-            ),
-            SettingsItem(
-                label = "Notifications",
-                description = "Enable push notifications",
-                type = SettingsItemType.Toggle(
-                    isEnabled = uiState.notificationsEnabled,
-                    onToggle = { viewModel.onEvent(SettingsEvent.ToggleNotifications(it)) }
-                ),
-                icon = Icons.Default.Notifications
-            ),
-            SettingsItem(
-                label = "Biometric Authentication",
-                description = "Use fingerprint or face recognition",
-                type = SettingsItemType.Toggle(
-                    isEnabled = uiState.biometricEnabled,
-                    onToggle = { viewModel.onEvent(SettingsEvent.ToggleBiometric(it)) }
-                ),
-                icon = Icons.Default.Fingerprint
-            ),
-            SettingsItem(
-                label = "Auto Backup",
-                description = "Automatically backup your data",
-                type = SettingsItemType.Toggle(
-                    isEnabled = uiState.autoBackupEnabled,
-                    onToggle = { viewModel.onEvent(SettingsEvent.ToggleAutoBackup(it)) }
-                ),
-                icon = Icons.Default.Backup
-            ),
-            SettingsItem(
-                label = "Currency",
-                description = "Current: ${uiState.currencyCode}",
-                type = SettingsItemType.Selection(
-                    currentValue = uiState.currencyCode,
-                    onSelect = { /* TODO: Show currency picker */ }
-                ),
-                icon = Icons.Default.CurrencyExchange
-            )
-        )
-
-        settingsItems.forEach { item ->
-            SettingsItemRow(item = item)
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Logout Button
-        Button(
-            onClick = { viewModel.onEvent(SettingsEvent.ShowLogoutDialog) },
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error
-            )
+                .padding(horizontal = dimens.screenHorizontalPadding)
+                .offset(y = (-32).dp),
+            verticalArrangement = Arrangement.spacedBy(dimens.itemSpacing)
         ) {
-            Icon(
-                Icons.Default.ExitToApp,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Logout",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Medium
-                )
-            )
+            AppearanceSection(uiState, viewModel::onEvent)
+            CurrencySection(uiState, viewModel::onEvent)
+            TransactionInputSection(uiState, viewModel::onEvent)
+            WhatsAppIntegrationSection(uiState, viewModel::onEvent)
+            NotificationsSection(uiState, viewModel::onEvent)
+            SecuritySection(uiState, viewModel::onEvent)
+            AccountSection(uiState, viewModel::onEvent)
+            AppInfoSection()
         }
-    }
-
-    // Error Snackbar
-    if (uiState.error != null) {
-        LaunchedEffect(uiState.error) {
-            // Show snackbar for errors
-            // TODO: Implement snackbar similar to LoginScreen
-            viewModel.onEvent(SettingsEvent.ClearError)
-        }
-    }
-
-    // Logout Confirmation Dialog
-    if (uiState.showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onEvent(SettingsEvent.HideLogoutDialog) },
-            title = {
-                Text("Confirm Logout")
-            },
-            text = {
-                Text("Are you sure you want to logout?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { viewModel.onEvent(SettingsEvent.ConfirmLogout) }
-                ) {
-                    Text("Logout", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { viewModel.onEvent(SettingsEvent.HideLogoutDialog) }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
 
 @Composable
-private fun UserProfileCard(
-    userName: String,
-    userEmail: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+private fun SettingsHeader() {
+    val purpleGradient = Brush.verticalGradient(
+        colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(brush = purpleGradient)
+            .padding(Dimens.PaddingExtraLarge)
     ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Profile Avatar
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.secondary
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = userName.firstOrNull()?.uppercase() ?: "U",
-                    style = MaterialTheme.typography.headlineSmall,
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.settings_title),
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
+            Text(
+                text = stringResource(R.string.settings_title),
+                style = MaterialTheme.typography.headlineLarge.copy(
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column {
-                Text(
-                    text = userName,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
+            Text(
+                text = stringResource(R.string.settings_subtitle),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = Color.White.copy(alpha = 0.8f)
                 )
-                Text(
-                    text = userEmail,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppearanceSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsCard(
+        title = stringResource(R.string.appearance),
+        icon = if (uiState.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode
+    ) {
+        SettingSwitchItem(
+            label = stringResource(R.string.dark_mode),
+            description = stringResource(R.string.dark_mode_desc),
+            checked = uiState.isDarkMode,
+            onCheckedChange = { onEvent(SettingsEvent.OnThemeChange(it)) }
+        )
+    }
+}
+
+@Composable
+private fun TransactionInputSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsCard(title = stringResource(R.string.transaction_input), icon = Icons.Default.Edit) {
+        SettingSelectItem(
+            label = stringResource(R.string.default_input_mode),
+            description = stringResource(R.string.default_input_mode_desc),
+            selectedValue = uiState.defaultInputMode,
+            options = mapOf(
+                InputMode.OCR to stringResource(R.string.input_mode_ocr),
+                InputMode.MANUAL to stringResource(R.string.input_mode_manual)
+            ),
+            onSelectionChange = { onEvent(SettingsEvent.OnDefaultInputChange(it)) }
+        )
+    }
+}
+
+@Composable
+private fun CurrencySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    val currencyOptions = CurrencyUtils.SUPPORTED_CURRENCIES.associate { it.code to it.displayName }
+    SettingsCard(title = "Currency", icon = Icons.Default.AttachMoney) {
+        SettingSelectItem(
+            label = "Default Currency",
+            description = "Pilih mata uang yang digunakan di seluruh aplikasi",
+            selectedValue = uiState.currencyCode,
+            options = currencyOptions,
+            onSelectionChange = { onEvent(SettingsEvent.OnCurrencyChange(it)) }
+        )
+    }
+}
+
+@Composable
+private fun WhatsAppIntegrationSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsCard(title = stringResource(R.string.whatsapp_integration), icon = Icons.AutoMirrored.Filled.Message) {
+        SettingSwitchItem(
+            label = stringResource(R.string.whatsapp_bot),
+            description = if (uiState.whatsappEnabled) stringResource(R.string.whatsapp_bot_desc_enabled) else stringResource(R.string.whatsapp_bot_desc_disabled),
+            checked = uiState.whatsappEnabled,
+            onCheckedChange = { onEvent(SettingsEvent.OnWhatsAppToggle(it)) }
+        )
+    }
+}
+
+@Composable
+private fun NotificationsSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsCard(title = stringResource(R.string.notifications), icon = Icons.Default.Notifications) {
+        SettingSwitchItem(
+            label = stringResource(R.string.push_notifications),
+            description = stringResource(R.string.push_notifications_desc),
+            checked = uiState.pushNotificationsEnabled,
+            onCheckedChange = { onEvent(SettingsEvent.OnPushNotificationsToggle(it)) }
+        )
+        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.PaddingMedium))
+        SettingSwitchItem(
+            label = stringResource(R.string.budget_alerts),
+            description = stringResource(R.string.budget_alerts_desc),
+            checked = uiState.budgetAlertsEnabled,
+            onCheckedChange = { onEvent(SettingsEvent.OnBudgetAlertsToggle(it)) }
+        )
+    }
+}
+
+@Composable
+private fun SecuritySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsCard(title = stringResource(R.string.security), icon = Icons.Default.Shield) {
+        SettingSwitchItem(
+            label = stringResource(R.string.biometric_auth),
+            description = stringResource(R.string.biometric_auth_desc),
+            checked = uiState.biometricEnabled,
+            onCheckedChange = { onEvent(SettingsEvent.OnBiometricToggle(it)) }
+        )
+    }
+}
+
+@Composable
+private fun AccountSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsCard(title = stringResource(R.string.account), icon = Icons.Default.Person) {
+        SettingItem(
+            label = stringResource(R.string.current_user),
+            description = uiState.userEmail
+        )
+        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.PaddingMedium))
+        Button(
+            onClick = { onEvent(SettingsEvent.ShowLogoutDialog) },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.error
+            ),
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(0.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = stringResource(R.string.logout_button))
+                Spacer(modifier = Modifier.width(Dimens.PaddingMedium))
+                Text(stringResource(R.string.logout_button))
             }
         }
     }
 }
 
 @Composable
-private fun SettingsItemRow(item: SettingsItem) {
+private fun AppInfoSection() {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.CornerRadiusLarge),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.PaddingExtraLarge),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.app_info_version), style = MaterialTheme.typography.bodySmall)
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+            Text(
+                text = stringResource(R.string.app_info_made_with_love),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// Reusable Components
+@Composable
+fun SettingsCard(title: String, icon: ImageVector, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        shape = RoundedCornerShape(Dimens.CornerRadiusLarge),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                item.icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.padding(Dimens.PaddingLarge)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(Dimens.PaddingMedium))
                 Text(
-                    text = item.label,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
             }
-            
-            // Render different controls based on type
-            when (val type = item.type) {
-                is SettingsItemType.Toggle -> {
-                    Switch(
-                        checked = type.isEnabled,
-                        onCheckedChange = type.onToggle,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                }
-                is SettingsItemType.Selection -> {
-                    Icon(
-                        Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                is SettingsItemType.Navigation -> {
-                    Icon(
-                        Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
+            content()
+        }
+    }
+}
+
+@Composable
+fun SettingSwitchItem(
+    label: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.primary
+            )
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> SettingSelectItem(
+    label: String,
+    description: String,
+    selectedValue: T,
+    options: Map<T, String>,
+    onSelectionChange: (T) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column {
+        Text(label, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = options[selectedValue] ?: "",
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                options.forEach { (value, text) ->
+                    DropdownMenuItem(
+                        text = { Text(text) },
+                        onClick = {
+                            onSelectionChange(value)
+                            expanded = false
+                        }
                     )
                 }
             }
         }
     }
+}
+
+@Composable
+fun SettingItem(label: String, description: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = stringResource(R.string.logout_dialog_title))
+                Spacer(Modifier.width(Dimens.PaddingMedium))
+                Text(stringResource(R.string.logout_dialog_title))
+            }
+        },
+        text = { Text(stringResource(R.string.logout_dialog_message)) },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) { Text(stringResource(R.string.logout_dialog_confirm)) }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.logout_dialog_cancel)) }
+        }
+    )
 }

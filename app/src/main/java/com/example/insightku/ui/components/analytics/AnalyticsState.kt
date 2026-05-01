@@ -1,25 +1,28 @@
 package com.example.insightku.ui.components.analytics
 
-import com.example.insightku.ui.components.analytics.model.*
+import com.example.insightku.ui.components.analytics.model.BudgetData
+import com.example.insightku.ui.components.analytics.model.IncomeExpenseData
+import com.example.insightku.ui.components.analytics.model.MonthlyData
+import com.example.insightku.ui.components.analytics.model.TimePeriod
 
-data class AnalyticsState(
-    val isLoading: Boolean = false,
+/**
+ * Represents the entire state for the Analytics screen.
+ * This is the single source of truth for the UI.
+ */
+data class AnalyticsUiState(
+    val isLoading: Boolean = true,
     val error: String? = null,
-    val selectedMonth: String = "2024-06",
-    val availableMonths: List<String> = listOf("2024-06", "2024-05", "2024-04", "2024-03", "2024-02", "2024-01"),
+    val selectedMonth: String = "",
+    val availableMonths: List<String> = emptyList(),
     val currentMonthData: MonthlyData? = null,
     val selectedExpenseCategory: String? = null,
     val selectedIncomeCategory: String? = null,
-    val timePeriod: TimePeriod = TimePeriod.MONTHLY,
-    val budgetPeriod: TimePeriod = TimePeriod.MONTHLY,
-    
-    // DATA BARU UNTUK BUDGET
-    val weeklyBudgetData: List<BudgetData> = emptyList(),
-    val monthlyBudgetData: List<BudgetData> = emptyList(),
+    val chartTimePeriod: TimePeriod = TimePeriod.MONTHLY,
+    val budgetTimePeriod: TimePeriod = TimePeriod.MONTHLY,
     val budgetData: List<BudgetData> = emptyList(),
-
     val incomeExpenseData: List<IncomeExpenseData> = emptyList()
 ) {
+    // Derived state - calculated from the core state properties
     val savings: Double
         get() = currentMonthData?.savings ?: 0.0
 

@@ -9,19 +9,12 @@ import com.example.insightku.ui.components.main.MainScreen
 fun NavGraphBuilder.mainNavGraph(navController: NavHostController) {
     navigation(
         route = Route.MAIN_GRAPH,
-        startDestination = Route.HOME
+        startDestination = Route.MAIN_SCREEN // Single destination for the main part of the app
     ) {
-        composable(Route.HOME) {
-            MainScreen(
-                onLogout = {
-                    // Navigate ke Splash dan clear session
-                    navController.navigate(Route.SPLASH) {
-                        popUpTo(0) {
-                            inclusive = true
-                        }
-                    }
-                }
-            )
+        composable(Route.MAIN_SCREEN) {
+            MainScreen(rootNavController = navController) // Pass the root NavController
         }
+        // Other main-related destinations like a full-screen transaction details page can go here
+        // composable(Route.TRANSACTION_DETAILS) { ... }
     }
 }

@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -31,9 +30,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.viewmodel.SignUpViewModel
 import com.example.insightku.data.model.UserData
+import com.example.insightku.ui.theme.Dimens
+import com.example.insightku.ui.theme.adaptiveDp
+import com.example.insightku.ui.theme.rememberWindowSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,13 +46,21 @@ fun SignUpScreen(
     onBack: (() -> Unit)? = null
 ) {
     val viewModel: SignUpViewModel = hiltViewModel()
-    val uiState = viewModel.uiState
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showPassword by remember { mutableStateOf(false) }
     var showConfirmPassword by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val emailFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
     val confirmPasswordFocusRequester = remember { FocusRequester() }
+
+    // Responsive values
+    val screenPadding      = adaptiveDp(Dimens.AuthScreenPaddingCompact, Dimens.AuthScreenPaddingMedium, Dimens.AuthScreenPaddingExpanded)
+    val logoSize           = adaptiveDp(Dimens.AuthLogoSizeCompact, Dimens.AuthLogoSizeMedium, Dimens.AuthLogoSizeExpanded)
+    val cardInnerPadding   = adaptiveDp(Dimens.CardInnerPaddingCompact, Dimens.CardInnerPaddingMedium, Dimens.CardInnerPaddingExpanded)
+    val formSpacing        = adaptiveDp(Dimens.FormSpacingCompact, Dimens.FormSpacingMedium, Dimens.FormSpacingExpanded)
+    val buttonHeight       = adaptiveDp(Dimens.ButtonHeightCompact, Dimens.ButtonHeightMedium, Dimens.ButtonHeightExpanded)
+    val iconLogoSize       = adaptiveDp(Dimens.AuthLogoSizeCompact * 0.5f, Dimens.AuthLogoSizeMedium * 0.5f, Dimens.AuthLogoSizeExpanded * 0.5f)
 
     // Theme colors
     val primaryPurple = MaterialTheme.colorScheme.primary
@@ -70,19 +81,26 @@ fun SignUpScreen(
         viewModel.resetState()
     }
 
-    Column(
+    // Box terluar handle status bar inset agar logo tidak terpotong
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
+            .statusBarsPadding()
+    ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = screenPadding)
             .verticalScroll(scrollState)
             .semantics { contentDescription = "Sign up screen" },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
         // App Icon
         Box(
             modifier = Modifier
-                .size(80.dp)
+                .size(logoSize)
                 .background(
                     color = primaryPurple.copy(alpha = 0.1f),
                     shape = CircleShape
@@ -92,7 +110,7 @@ fun SignUpScreen(
             Icon(
                 Icons.Default.Lightbulb,
                 contentDescription = "InsightKu logo",
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(iconLogoSize),
                 tint = primaryPurple
             )
         }
@@ -116,7 +134,7 @@ fun SignUpScreen(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(formSpacing))
 
         // Sign Up Form within a Card
         Card(
@@ -126,7 +144,7 @@ fun SignUpScreen(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier.padding(cardInnerPadding)
             ) {
                 // Name Field with validation
                 NameInputField(
@@ -141,7 +159,7 @@ fun SignUpScreen(
                     onSurfaceVariant = onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(formSpacing))
 
                 // Email Field with validation
                 EmailInputField(
@@ -157,7 +175,7 @@ fun SignUpScreen(
                     onSurfaceVariant = onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(formSpacing))
 
                 // Password Field with validation
                 PasswordInputField(
@@ -179,11 +197,11 @@ fun SignUpScreen(
 
                 // Password Strength Indicator
                 if (uiState.password.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(formSpacing * 0.5f))
                     PasswordStrengthIndicator(password = uiState.password)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(formSpacing))
 
                 // Confirm Password Field with validation
                 PasswordInputField(
@@ -207,7 +225,7 @@ fun SignUpScreen(
                     placeholder = "Confirm your password"
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(formSpacing))
 
                 // General Error Display
                 if (uiState.error != null) {
@@ -216,7 +234,7 @@ fun SignUpScreen(
                         onDismiss = { viewModel.clearError() },
                         errorColor = errorColor
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(formSpacing))
                 }
 
                 // Sign Up Button
@@ -224,7 +242,7 @@ fun SignUpScreen(
                     onClick = { viewModel.onEvent(SignUpEvent.Submit) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
+                        .height(buttonHeight)
                         .semantics {
                             contentDescription = if (uiState.isLoading) {
                                 "Creating account, please wait"
@@ -254,70 +272,9 @@ fun SignUpScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(formSpacing))
 
-        // Divider
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            HorizontalDivider(
-                modifier = Modifier.weight(1f),
-                color = onSurfaceVariant.copy(alpha = 0.3f)
-            )
-            Text(
-                text = "or continue with",
-                color = onSurfaceVariant,
-                fontSize = 12.sp,
-                style = MaterialTheme.typography.bodySmall
-            )
-            HorizontalDivider(
-                modifier = Modifier.weight(1f),
-                color = onSurfaceVariant.copy(alpha = 0.3f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Sign Up with Google Button
-        OutlinedButton(
-            onClick = { /* TODO: Implement Google Sign Up */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .semantics { contentDescription = "Sign up with Google" },
-            shape = RoundedCornerShape(50.dp),
-            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.White,
-                contentColor = Color.Black
-            )
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_google),
-                    contentDescription = "Google Logo",
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.Unspecified
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Sign up with Google",
-                    color = Color.Black,
-                    fontWeight = FontWeight.Medium,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Login Text
+        // Login Prompt
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
@@ -345,8 +302,9 @@ fun SignUpScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-    }
+        Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
+    } // end Column
+    } // end Box
 }
 
 @Composable
@@ -356,7 +314,7 @@ private fun NameInputField(
     isError: Boolean,
     errorMessage: String?,
     onNext: () -> Unit,
-    lightGrayBg: Color,
+    lightGrayBg:   Color,
     errorColor: Color,
     successColor: Color,
     onSurfaceVariant: Color
@@ -763,14 +721,14 @@ private fun PasswordRequirement(text: String, isMet: Boolean) {
         Icon(
             imageVector = if (isMet) Icons.Default.Check else Icons.Default.Close,
             contentDescription = null,
-            tint = if (isMet) Color.Green else MaterialTheme.colorScheme.error,
+            tint = if (isMet) Color(0xFF6D28D9) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = if (isMet) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (isMet) Color(0xFF6D28D9) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
     }
 }
@@ -808,28 +766,28 @@ private fun calculatePasswordStrength(password: String): PasswordStrength {
     return when (score) {
         0, 1 -> PasswordStrength(
             progress = 0.2f,
-            color = Color.Red,
-            text = "Very Weak"
+            color = Color(0xFFE11D48),   // rose-600 — tidak terlalu menyala
+            text = "Terlalu lemah"
         )
         2 -> PasswordStrength(
             progress = 0.4f,
-            color = Color(0xFFFF9800),
-            text = "Weak"
+            color = Color(0xFFD97706),   // amber-600 — hangat, tidak norak
+            text = "Lemah"
         )
         3 -> PasswordStrength(
             progress = 0.6f,
-            color = Color(0xFFFFEB3B),
-            text = "Fair"
+            color = Color(0xFF7C3AED),   // violet-600 — warna primer app
+            text = "Cukup"
         )
         4 -> PasswordStrength(
             progress = 0.8f,
-            color = Color(0xFF4CAF50),
-            text = "Good"
+            color = Color(0xFF0D9488),   // teal-600 — calmer green
+            text = "Kuat"
         )
         else -> PasswordStrength(
             progress = 1.0f,
-            color = Color.Green,
-            text = "Strong"
+            color = Color(0xFF059669),   // emerald-600 — bukan raw Green
+            text = "Sangat Kuat"
         )
     }
 }

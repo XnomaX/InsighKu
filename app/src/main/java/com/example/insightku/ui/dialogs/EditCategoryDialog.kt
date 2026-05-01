@@ -34,8 +34,8 @@ fun EditCategoryDialog(
 
     var name by remember { mutableStateOf(category.name) }
     var nameError by remember { mutableStateOf<String?>(null) }
-    var budgetLimit by remember { mutableStateOf(category.budgetLimit?.toFloat() ?: 500000f) }
-    var alertThreshold by remember { mutableStateOf(category.alertThreshold.toFloat()) }
+    var budgetLimit by remember { mutableFloatStateOf(category.budgetLimit?.toFloat() ?: 500000f) }
+    var alertThreshold by remember { mutableFloatStateOf(category.alertThreshold.toFloat()) }
     var selectedIconName by remember { mutableStateOf(category.icon ?: "Food & Drinks") }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 

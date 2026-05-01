@@ -2,6 +2,7 @@ package com.example.insightku.ui.components.main
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,131 +27,57 @@ import com.example.insightku.ui.components.analytics.AnalyticsScreen
 import com.example.insightku.ui.components.budgeting.BudgetingScreen
 import com.example.insightku.ui.components.dashboard.DashboardScreen
 import com.example.insightku.ui.components.settings.SettingsScreen
-import com.example.insightku.ui.dialogs.AddTransactionDialog
+import com.example.insightku.ui.components.addtransaction.AddTransactionDialog
+import com.example.insightku.ui.components.dashboard.DashboardEvent
+import com.example.insightku.viewmodel.DashboardViewModel
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.viewmodel.TransactionDetailsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
-    onLogout: () -> Unit = {}
+    rootNavController: NavHostController
 ) {
     val navController = rememberNavController()
+    val dashboardViewModel: DashboardViewModel = hiltViewModel()
     var showAddTransactionDialog by remember { mutableStateOf(false) }
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: Route.HOME
-
-    val purpleColor = Color(0xFF5A2A82) // Sama seperti di contoh
+    var pendingStreakPopup by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        bottomBar = {
-            // Bottom Navigation seperti di contoh React
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 8.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp), // 16 * 4 = 64dp (h-16)
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    // 1. Home
-                    BottomNavButton(
-                        icon = Icons.Default.Home,
-                        label = "Home",
-                        isActive = currentRoute == Route.HOME,
-                        purpleColor = purpleColor,
-                        isActionButton = false
-                    ) {
-                        if (currentRoute != Route.HOME) {
-                            navController.navigate(Route.HOME) {
-                                popUpTo(navController.graph.startDestinationId)
-                                launchSingleTop = true
-                            }
-                        }
-                    }
-
-                    // 2. Analytics
-                    BottomNavButton(
-                        icon = Icons.Default.BarChart,
-                        label = "Analytics",
-                        isActive = currentRoute == Route.ANALYSIS,
-                        purpleColor = purpleColor,
-                        isActionButton = false
-                    ) {
-                        if (currentRoute != Route.ANALYSIS) {
-                            navController.navigate(Route.ANALYSIS) {
-                                popUpTo(navController.graph.startDestinationId)
-                                launchSingleTop = true
-                            }
-                        }
-                    }
-
-                    // 3. Add (Action Button) - Tengah
-                    BottomNavButton(
-                        icon = Icons.Default.Add,
-                        label = "Add",
-                        isActive = false,
-                        purpleColor = purpleColor,
-                        isActionButton = true
-                    ) {
-                        showAddTransactionDialog = true
-                    }
-
-                    // 4. Budgeting
-                    BottomNavButton(
-                        icon = Icons.Default.AccountBalanceWallet,
-                        label = "Budgeting",
-                        isActive = currentRoute == Route.BUDGETING,
-                        purpleColor = purpleColor,
-                        isActionButton = false
-                    ) {
-                        if (currentRoute != Route.BUDGETING) {
-                            navController.navigate(Route.BUDGETING) {
-                                popUpTo(navController.graph.startDestinationId)
-                                launchSingleTop = true
-                            }
-                        }
-                    }
-
-                    // 5. Settings
-                    BottomNavButton(
-                        icon = Icons.Default.Settings,
-                        label = "Settings",
-                        isActive = currentRoute == Route.SETTINGS,
-                        purpleColor = purpleColor,
-                        isActionButton = false
-                    ) {
-                        if (currentRoute != Route.SETTINGS) {
-                            navController.navigate(Route.SETTINGS) {
-                                popUpTo(navController.graph.startDestinationId)
-                                launchSingleTop = true
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        bottomBar = { BottomNavBar(navController = navController, onAddClick = { showAddTransactionDialog = true }) }
     ) { paddingValues ->
         MainNavHost(
             navController = navController,
-            modifier = Modifier.padding(paddingValues),
-            onLogout = onLogout
+            rootNavController = rootNavController,
+            dashboardViewModel = dashboardViewModel,
+            onShowAddTransaction = { showAddTransactionDialog = true },
+            onShowAddTransactionForStreak = {
+                showAddTransactionDialog = true
+                pendingStreakPopup = true
+            },
+            modifier = Modifier
+                .padding(paddingValues)
+                .statusBarsPadding()
         )
     }
 
     if (showAddTransactionDialog) {
         AddTransactionDialog(
             isOpen = showAddTransactionDialog,
-            onDismiss = { showAddTransactionDialog = false },
-            onTransactionAdded = {
+            onDismiss = {
                 showAddTransactionDialog = false
+                pendingStreakPopup = false // cancelled, no popup
             },
-            onOpenScanner = {
+            onTransactionAdded = { transaction ->
+                dashboardViewModel.onEvent(DashboardEvent.AddTransaction(transaction))
                 showAddTransactionDialog = false
-            }
+                // pendingStreakPopup stays true → DashboardScreen will show it
+            },
+            onOpenScanner = {}
         )
     }
 }
@@ -157,8 +85,11 @@ fun MainScreen(
 @Composable
 private fun MainNavHost(
     navController: NavHostController,
-    modifier: Modifier = Modifier,
-    onLogout: () -> Unit
+    rootNavController: NavHostController,
+    dashboardViewModel: DashboardViewModel,
+    onShowAddTransaction: () -> Unit = {},
+    onShowAddTransactionForStreak: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
@@ -167,61 +98,123 @@ private fun MainNavHost(
     ) {
         composable(Route.HOME) {
             DashboardScreen(
+                viewModel = dashboardViewModel,
                 onNavigateToTransactionDetails = {
                     navController.navigate(Route.TRANSACTION_DETAILS)
+                },
+                onAddTransaction = onShowAddTransaction,
+                onAddTransactionForStreak = onShowAddTransactionForStreak
+            )
+        }
+        composable(Route.TRANSACTION_DETAILS) {
+            // BUG8 FIX: Ambil TransactionDetailsViewModel dan hubungkan
+            // onEditTransaction/onDeleteTransaction ke database via ViewModel.
+            // Sebelumnya kedua callback ini selalu {} (lambda kosong) → Edit/Delete tidak bekerja.
+            val txDetailsViewModel: TransactionDetailsViewModel = hiltViewModel()
+            com.example.insightku.ui.components.details.TransactionDetailsScreen(
+                viewModel = txDetailsViewModel,
+                initialTransactions = emptyList(),
+                onBack = { navController.popBackStack() },
+                onEditTransaction = { updatedTransaction ->
+                    txDetailsViewModel.updateTransaction(updatedTransaction)
+                },
+                onDeleteTransaction = { transactionId ->
+                    txDetailsViewModel.deleteTransaction(transactionId)
+                    navController.popBackStack()
                 }
             )
         }
-
         composable(Route.ANALYSIS) {
             AnalyticsScreen()
         }
-
         composable(Route.BUDGETING) {
             BudgetingScreen()
         }
-
         composable(Route.SETTINGS) {
-            SettingsScreen(onLogout = onLogout)
-        }
-
-        composable(Route.TRANSACTION_DETAILS) {
-            // TODO: Create TransactionDetailsScreen
-            // TransactionDetailsScreen(
-            //     onNavigateBack = { navController.popBackStack() }
-            // )
-
-            // For now, showing a placeholder
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "Transaction Details",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "This screen will show all transaction details",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = { navController.popBackStack() }
-                    ) {
-                        Text("Go Back")
-                    }
+            SettingsScreen(onLogout = {
+                // BUG12 FIX: popUpTo(0) membersihkan seluruh back stack hingga root
+                // agar user tidak bisa kembali ke Main setelah logout dengan tombol back.
+                rootNavController.navigate(Route.AUTH_GRAPH) {
+                    popUpTo(0) { inclusive = true }
                 }
-            }
+            })
         }
     }
 }
+
+
+@Composable
+fun BottomNavBar(
+    navController: NavHostController,
+    onAddClick: () -> Unit
+) {
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    val purpleColor = Color(0xFF5A2A82)
+
+    // BUG13 FIX: Helper untuk navigasi tab yang benar — tidak menumpuk back stack
+    fun navigateToTab(route: String) {
+        navController.navigate(route) {
+            // Kembali ke start destination agar back stack tidak menumpuk
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            // Tidak buat instance baru jika sudah ada
+            launchSingleTop = true
+            // Restore state saat kembali ke tab yang pernah dibuka
+            restoreState = true
+        }
+    }
+
+    BottomAppBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 8.dp
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BottomNavButton(
+                icon = Icons.Default.Home,
+                label = "Home",
+                isActive = currentRoute == Route.HOME,
+                purpleColor = purpleColor,
+                onClick = { navigateToTab(Route.HOME) }
+            )
+            BottomNavButton(
+                icon = Icons.Default.BarChart,
+                label = "Analytics",
+                isActive = currentRoute == Route.ANALYSIS,
+                purpleColor = purpleColor,
+                onClick = { navigateToTab(Route.ANALYSIS) }
+            )
+            BottomNavButton(
+                icon = Icons.Default.Add,
+                label = "Add",
+                isActive = false,
+                purpleColor = purpleColor,
+                isActionButton = true,
+                onClick = onAddClick
+            )
+            BottomNavButton(
+                icon = Icons.Default.AccountBalanceWallet,
+                label = "Budgeting",
+                isActive = currentRoute == Route.BUDGETING,
+                purpleColor = purpleColor,
+                onClick = { navigateToTab(Route.BUDGETING) }
+            )
+            BottomNavButton(
+                icon = Icons.Default.Settings,
+                label = "Settings",
+                isActive = currentRoute == Route.SETTINGS,
+                purpleColor = purpleColor,
+                onClick = { navigateToTab(Route.SETTINGS) }
+            )
+        }
+    }
+}
+
 
 @Composable
 fun BottomNavButton(
@@ -308,7 +301,7 @@ fun BottomNavButton(
 @Composable
 fun MainScreenPreview() {
     MaterialTheme {
-        MainScreen()
+        MainScreen(rootNavController = rememberNavController())
     }
 }
 

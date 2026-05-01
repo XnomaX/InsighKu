@@ -3,6 +3,15 @@
   <component name="CopilotDiffPersistence">
     <option name="pendingDiffs">
       <map>
+        <entry key="$USER_HOME$/AppData/Local/github-copilot/intellij/mcp.json">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$USER_HOME$/AppData/Local/github-copilot/intellij/mcp.json" />
+              <option name="originalContent" value="{&#10;    &quot;servers&quot;: {}&#10;}" />
+              <option name="updatedContent" value="{&#10;    &quot;servers&quot;: {&#10;        &quot;insightku-firebase&quot;: {&#10;            &quot;url&quot;: &quot;https://firestore.googleapis.com/v1/projects/insightku-aeb21/databases/(default)/documents&quot;,&#10;            &quot;requestInit&quot;: {&#10;                &quot;headers&quot;: {&#10;                    &quot;Authorization&quot;: &quot;Bearer AIzaSyBA04I6_Xkb_mn2zmTpwY7t0MKGpm3GGXQ&quot;,&#10;                    &quot;Content-Type&quot;: &quot;application/json&quot;&#10;                }&#10;            }&#10;        },&#10;        &quot;insightku-realtime&quot;: {&#10;            &quot;url&quot;: &quot;https://insightku-aeb21-default-rtdb.firebaseio.com/.json&quot;,&#10;            &quot;requestInit&quot;: {&#10;                &quot;headers&quot;: {&#10;                    &quot;Authorization&quot;: &quot;Bearer AIzaSyBA04I6_Xkb_mn2zmTpwY7t0MKGpm3GGXQ&quot;,&#10;                    &quot;Content-Type&quot;: &quot;application/json&quot;&#10;                }&#10;            }&#10;        },&#10;        &quot;insightku-auth&quot;: {&#10;            &quot;url&quot;: &quot;https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword&quot;,&#10;            &quot;requestInit&quot;: {&#10;                &quot;headers&quot;: {&#10;                    &quot;Content-Type&quot;: &quot;application/json&quot;&#10;                },&#10;                &quot;method&quot;: &quot;POST&quot;&#10;            }&#10;        }&#10;    }&#10;}" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
         <entry key="$PROJECT_DIR$/app/src/main/java/com/example/insightku/ui/components/analytics/AnalyticsContract.kt">
           <value>
             <PendingDiffInfo>

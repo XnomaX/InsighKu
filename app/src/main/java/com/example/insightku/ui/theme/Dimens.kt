@@ -33,4 +33,35 @@ object Dimens {
     val MonthSelectorPadding = 10.dp
 
     val LinearProgressHeight = 6.dp
+
+    // ─── Responsive / Adaptive ─────────────────────────────────────────────────
+    // Ukuran yang disesuaikan berdasarkan lebar layar:
+    // Compact  = HP biasa  (< 600dp)
+    // Medium   = HP besar / foldable (600–840dp)
+    // Expanded = Tablet    (> 840dp)
+
+    /** Padding horizontal halaman auth (Login / SignUp) */
+    val AuthScreenPaddingCompact   = 20.dp
+    val AuthScreenPaddingMedium    = 48.dp
+    val AuthScreenPaddingExpanded  = 96.dp
+
+    /** Tinggi logo icon di halaman auth */
+    val AuthLogoSizeCompact        = 64.dp
+    val AuthLogoSizeMedium         = 80.dp
+    val AuthLogoSizeExpanded       = 96.dp
+
+    /** Tinggi tombol utama (Login / Create Account) */
+    val ButtonHeightCompact        = 48.dp
+    val ButtonHeightMedium         = 54.dp
+    val ButtonHeightExpanded       = 56.dp
+
+    /** Padding dalam Card form */
+    val CardInnerPaddingCompact    = 16.dp
+    val CardInnerPaddingMedium     = 24.dp
+    val CardInnerPaddingExpanded   = 32.dp
+
+    /** Spasi antar elemen di form */
+    val FormSpacingCompact         = 12.dp
+    val FormSpacingMedium          = 16.dp
+    val FormSpacingExpanded        = 20.dp
 }

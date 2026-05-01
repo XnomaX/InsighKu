@@ -41,6 +41,7 @@ fun ForgotPasswordScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .padding(24.dp)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -117,9 +118,12 @@ fun ForgotPasswordScreen(
                     // Email Input Field
                     OutlinedTextField(
                         value = uiState.email,
-                        onValueChange = { viewModel.onEvent(ForgotPasswordEvent.EmailChanged(it)) },
+                        onValueChange = {
+                            // Trim spasi di awal/akhir secara otomatis
+                            viewModel.onEvent(ForgotPasswordEvent.EmailChanged(it.trim()))
+                        },
                         label = { Text("Email") },
-                        placeholder = { Text("Enter your email") },
+                        placeholder = { Text("Masukkan email kamu") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         leadingIcon = {
@@ -148,7 +152,7 @@ fun ForgotPasswordScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        enabled = uiState.email.isNotBlank() && !uiState.isLoading,
+                        enabled = uiState.email.trim().isNotBlank() && !uiState.isLoading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = primaryPurple,
                             disabledContainerColor = primaryPurple.copy(alpha = 0.5f)
