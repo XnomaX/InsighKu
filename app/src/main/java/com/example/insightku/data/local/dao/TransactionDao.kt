@@ -48,4 +48,33 @@ interface TransactionDao {
 
     @Query("DELETE FROM transactions")
     suspend fun deleteAllTransactions()
+
+    // ── Offline-First Sync Methods (Issue 2) ─────────────────────────────────
+
+    /**
+     * Ambil semua transaksi yang belum disinkronkan ke Firestore.
+     * Dipakai oleh SyncTransactionWorker untuk retry upload saat network tersedia.
+     */
+    @Query("SELECT * FROM transactions WHERE isSynced = 0 ORDER BY createdAt ASC")
+    suspend fun getAllUnsyncedTransactions(): List<Transaction>
+
+    /**
+     * Update status sync setelah berhasil upload ke Firestore.
+     * Hanya update kolom isSynced, tidak menyentuh data lain.
+     */
+    @Query("UPDATE transactions SET isSynced = 1 WHERE id = :transactionId")
+    suspend fun markAsSynced(transactionId: String)
+
+    /**
+     * Insert data dari Firestore (remote refresh) tanpa menimpa transaksi lokal
+     * yang belum tersinkron (isSynced=0). Penting untuk menghindari data loss
+     * saat offline: data lokal yang belum terkirim tidak boleh ditimpa.
+     *
+     * Strategy: IGNORE — jika id sudah ada (data lokal), skip insert dari remote.
+     * Ini aman karena: jika isSynced=true, data sudah sama. Jika isSynced=false,
+     * data lokal harus dipertahankan dan dikirim ke Firestore (bukan sebaliknya).
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTransactionsFromRemote(transactions: List<Transaction>)
 }
+

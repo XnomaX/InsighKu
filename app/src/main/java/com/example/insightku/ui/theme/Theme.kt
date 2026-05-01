@@ -78,6 +78,8 @@ fun InsightKuTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
+    /** Kode mata uang aktif — diambil dari DataStore via SettingsViewModel di level atas */
+    currencyCode: String = "IDR",
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -89,7 +91,7 @@ fun InsightKuTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
-    
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -102,7 +104,12 @@ fun InsightKuTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = Shapes,
-        content = content
-    )
+        shapes = Shapes
+    ) {
+        // ProvideCurrency membuat LocalCurrencyCode tersedia di seluruh composable tree.
+        // ProvideResponsiveDimens membuat LocalResponsiveDimens tersedia.
+        ProvideCurrency(currencyCode) {
+            ProvideResponsiveDimens(content = content)
+        }
+    }
 }

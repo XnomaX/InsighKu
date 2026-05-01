@@ -1,4 +1,3 @@
-
 package com.example.insightku.ui.components.budgeting
 
 import androidx.compose.material.icons.Icons
@@ -27,7 +26,7 @@ fun BudgetingScreenPreview() {
 
 @Preview(showBackground = true, name = "Budget Summary Card")
 @Composable
-private fun BudgetSummaryCardPreview() {
+fun BudgetSummaryCardPreview() {
     MaterialTheme {
         BudgetSummaryCard(
             totalBudget = 15000000.0,
@@ -41,7 +40,7 @@ private fun BudgetSummaryCardPreview() {
 
 @Preview(showBackground = true, name = "Budget Summary With Alert")
 @Composable
-private fun BudgetSummaryCardWithAlertPreview() {
+fun BudgetSummaryCardWithAlertPreview() {
     MaterialTheme {
         BudgetSummaryCard(
             totalBudget = 15000000.0,
@@ -57,7 +56,7 @@ private fun BudgetSummaryCardWithAlertPreview() {
 
 @Preview(showBackground = true, name = "Category Budgets Card")
 @Composable
-private fun CategoryBudgetsCardPreview() {
+fun CategoryBudgetsCardPreview() {
     MaterialTheme {
         CategoryBudgetsCard(
             categories = BudgetingDataSource.getDummyBudgetCategories(),
@@ -69,7 +68,7 @@ private fun CategoryBudgetsCardPreview() {
 
 @Preview(showBackground = true, name = "Scheduled Payments Card")
 @Composable
-private fun ScheduledPaymentsCardPreview() {
+fun ScheduledPaymentsCardPreview() {
     val payments = listOf(
         ScheduledPayment("Netflix Subscription", 250000.0, "Jun 28", Icons.Default.Repeat, Color(0xFFEF4444)),
         ScheduledPayment("Rent Payment", 2500000.0, "Jul 1", Icons.Default.Home, Color(0xFF3B82F6)),

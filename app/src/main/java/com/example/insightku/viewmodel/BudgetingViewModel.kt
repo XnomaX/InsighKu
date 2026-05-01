@@ -4,58 +4,78 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.data.model.Category
 import com.example.insightku.data.model.RecurringBudget
+import com.example.insightku.data.model.TransactionType
+import com.example.insightku.data.repository.AuthRepository
+import com.example.insightku.data.repository.TransactionRepository
 import com.example.insightku.ui.components.budgeting.BudgetCategory
 import com.example.insightku.ui.components.budgeting.BudgetingEvent
-import com.example.insightku.ui.components.budgeting.BudgetingState
+import com.example.insightku.ui.components.budgeting.BudgetingUiState
+import com.example.insightku.ui.components.budgeting.DialogState
+import com.example.insightku.utils.ErrorBus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * BudgetingViewModel — refactored.
+ *
+ * PERUBAHAN:
+ * 1. Hapus inject RootViewModel → inject ErrorBus
+ * 2. Perbaiki nested launch:
+ *    SEBELUMNYA: onEvent launch → panggil loadBudgetData() → loadBudgetData launch lagi
+ *    SEKARANG: onEvent tidak launch, langsung panggil fungsi yang launch sendiri
+ * 3. ShowRecurringBudgetsDialog masih menggunakan emptyList() karena data sebenarnya
+ *    sudah di-observe via combine() di loadBudgetData(). Ini akan diperbaiki di iterasi berikutnya.
+ *
+ * Note: BudgetingViewModel masih inject TransactionRepository dan AuthRepository secara langsung
+ * karena operasi budgeting (kategori + recurring budget) belum memiliki UseCase sendiri.
+ * Ini adalah hutang teknis yang bisa di-extract menjadi ManageBudgetUseCase di iterasi berikutnya.
+ */
 @HiltViewModel
 class BudgetingViewModel @Inject constructor(
-    // TODO: Inject repository when available
+    private val transactionRepository: TransactionRepository,
+    private val authRepository: AuthRepository,
+    private val errorBus: ErrorBus
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(BudgetingState())
+    private val _uiState = MutableStateFlow(BudgetingUiState())
     val uiState = _uiState.asStateFlow()
+
+    // BUG7 FIX: Track Job agar tidak ada multiple collectors bersamaan
+    private var loadJob: Job? = null
 
     init {
         loadBudgetData()
+        // ISSUE 2 FIX: Trigger refresh dari Firestore saat VM pertama dibuat
+        refreshData()
     }
 
     fun onEvent(event: BudgetingEvent) {
+        // PERBAIKAN: onEvent tidak launch sendiri
         when (event) {
-            // General
             is BudgetingEvent.LoadBudgetData -> loadBudgetData()
-            is BudgetingEvent.RefreshData -> loadBudgetData()
+            is BudgetingEvent.RefreshData -> refreshData()
             is BudgetingEvent.ClearError -> _uiState.update { it.copy(error = null) }
             is BudgetingEvent.ChangePeriod -> { /* Not implemented yet */ }
 
-            // Category Dialogs
-            is BudgetingEvent.ShowAddBudgetDialog -> _uiState.update { it.copy(showAddBudgetDialog = true) }
-            is BudgetingEvent.HideAddBudgetDialog -> _uiState.update { it.copy(showAddBudgetDialog = false) }
+            // Dialogs
+            is BudgetingEvent.ShowAddBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.AddBudget) }
+            is BudgetingEvent.HideAddBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
+            is BudgetingEvent.ShowEditBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.EditBudget(event.category)) }
+            is BudgetingEvent.HideEditBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
+            is BudgetingEvent.ShowRecurringBudgetsDialog -> _uiState.update { it.copy(dialogState = DialogState.ManageRecurring(emptyList())) }
+            is BudgetingEvent.HideRecurringBudgetsDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
+
+            // Data Operations
             is BudgetingEvent.AddCategory -> addCategory(event.category)
-            is BudgetingEvent.ShowEditBudgetDialog -> {
-                val categoryToEdit = Category(
-                    id = event.category.id,
-                    name = event.category.name,
-                    budgetLimit = event.category.budgetedAmount,
-                    color = event.category.color,
-                    icon = event.category.icon
-                )
-                _uiState.update { it.copy(editingCategory = categoryToEdit) }
-            }
-            is BudgetingEvent.HideEditBudgetDialog -> _uiState.update { it.copy(editingCategory = null) }
             is BudgetingEvent.UpdateCategory -> updateCategory(event.category)
             is BudgetingEvent.DeleteCategory -> deleteCategory(event.categoryId)
-
-            // Recurring Budgets Dialogs
-            is BudgetingEvent.ShowRecurringBudgetsDialog -> _uiState.update { it.copy(showRecurringBudgetsDialog = true) }
-            is BudgetingEvent.HideRecurringBudgetsDialog -> _uiState.update { it.copy(showRecurringBudgetsDialog = false) }
             is BudgetingEvent.AddRecurringBudget -> addRecurringBudget(event.budget)
             is BudgetingEvent.UpdateRecurringBudget -> updateRecurringBudget(event.budget)
             is BudgetingEvent.DeleteRecurringBudget -> deleteRecurringBudget(event.budget)
@@ -63,133 +83,147 @@ class BudgetingViewModel @Inject constructor(
     }
 
     private fun loadBudgetData() {
-        viewModelScope.launch {
+        // BUG7 FIX: Cancel job lama sebelum launch baru
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
             try {
-                _uiState.update { it.copy(isLoading = true, error = null) }
-                delay(1000)
-
-                val mockBudgetCategories = listOf(
-                    BudgetCategory("1", "Food & Dining", 2000000.0, 1650000.0, "#FF6B6B", "restaurant"),
-                    BudgetCategory("2", "Transportation", 1000000.0, 750000.0, "#4ECDC4", "directions_car"),
-                    BudgetCategory("3", "Shopping", 1500000.0, 1800000.0, "#45B7D1", "shopping_bag"),
-                    BudgetCategory("4", "Entertainment", 500000.0, 320000.0, "#96CEB4", "movie"),
-                    BudgetCategory("5", "Bills & Utilities", 1200000.0, 1150000.0, "#FECA57", "receipt")
-                )
-
-                val mockRecurringBudgets = listOf(
-                    RecurringBudget(id = 1, name = "Netflix", amount = 186000.0, frequency = com.example.insightku.data.model.BudgetFrequency.MONTHLY, nextDue = System.currentTimeMillis() + 86400000 * 5, reminderDaysBefore = 3),
-                    RecurringBudget(id = 2, name = "Spotify", amount = 54000.0, frequency = com.example.insightku.data.model.BudgetFrequency.MONTHLY, nextDue = System.currentTimeMillis() + 86400000 * 10, reminderDaysBefore = 7)
-                )
-
-                _uiState.update { it.copy(recurringBudgets = mockRecurringBudgets) }
-                updateStateWith(mockBudgetCategories)
-
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(isLoading = false, error = "Failed to load budget data: ${e.message}")
+                combine(
+                    transactionRepository.getAllCategories(),
+                    transactionRepository.getAllTransactions(),
+                    transactionRepository.getRecurringBudgets()
+                ) { categories, transactions, recurringBudgets ->
+                    val budgetCategories = categories.filter { (it.budgetLimit ?: 0.0) > 0.0 }.map { category ->
+                        val spentAmount = transactions
+                            .filter { it.category == category.name && it.type == TransactionType.EXPENSE }
+                            .sumOf { it.amount }
+                        BudgetCategory(
+                            id = category.id.toString(),
+                            name = category.name,
+                            budgetedAmount = category.budgetLimit ?: 0.0,
+                            spentAmount = spentAmount,
+                            color = category.color ?: "",
+                            icon = category.icon ?: ""
+                        )
+                    }
+                    Pair(budgetCategories, recurringBudgets)
+                }.collect { (budgetCategories, recurringBudgets) ->
+                    val totalBudget = budgetCategories.sumOf { it.budgetedAmount }
+                    val totalSpent = budgetCategories.sumOf { it.spentAmount }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            totalBudget = totalBudget,
+                            totalSpent = totalSpent,
+                            budgetCategories = budgetCategories,
+                            dialogState = DialogState.None
+                        )
+                    }
                 }
+            } catch (e: CancellationException) {
+                // ISSUE 1 FIX: Rethrow — terjadi normal saat navigasi back
+                throw e
+            } catch (e: Exception) {
+                val errorMessage = e.message ?: "Gagal memuat data budget"
+                _uiState.update { it.copy(isLoading = false, error = errorMessage) }
+                errorBus.send(errorMessage)
+            }
+        }
+    }
+
+    private fun refreshData() {
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            try {
+                transactionRepository.refreshCategories(userId)
+                transactionRepository.refreshTransactions(userId)
+                transactionRepository.refreshRecurringBudgets(userId)
+            } catch (e: CancellationException) {
+                // ISSUE 1 FIX: Rethrow — jangan tampilkan ke user
+                throw e
+            } catch (e: Exception) {
+                // Silent fail — Room cache masih bisa dipakai
             }
         }
     }
 
     private fun addCategory(category: Category) {
         viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                val newBudgetCategory = BudgetCategory(
-                    id = category.id,
-                    name = category.name,
-                    budgetedAmount = category.budgetLimit ?: 0.0,
-                    spentAmount = 0.0,
-                    color = category.color,
-                    icon = category.icon ?: "category"
-                )
-                val updatedCategories = _uiState.value.budgetCategories + newBudgetCategory
-                updateStateWith(updatedCategories)
-                _uiState.update { it.copy(showAddBudgetDialog = false) }
-
+                transactionRepository.insertCategory(category, userId)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to add budget category: ${e.message}") }
+                val errorMessage = e.message ?: "Gagal menambah kategori"
+                _uiState.update { it.copy(error = errorMessage) }
+                errorBus.send(errorMessage)
             }
         }
     }
 
     private fun updateCategory(category: Category) {
         viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                val updatedCategories = _uiState.value.budgetCategories.map {
-                    if (it.id == category.id) {
-                        it.copy(
-                            name = category.name,
-                            budgetedAmount = category.budgetLimit ?: it.budgetedAmount,
-                            color = category.color,
-                            icon = category.icon ?: it.icon
-                        )
-                    } else {
-                        it
-                    }
-                }
-                updateStateWith(updatedCategories)
-                _uiState.update { it.copy(editingCategory = null) }
+                transactionRepository.updateCategory(category, userId)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to update category: ${e.message}") }
+                val errorMessage = e.message ?: "Gagal update kategori"
+                _uiState.update { it.copy(error = errorMessage) }
+                errorBus.send(errorMessage)
             }
         }
     }
 
     private fun deleteCategory(categoryId: String) {
         viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                val updatedCategories = _uiState.value.budgetCategories.filter { it.id != categoryId }
-                updateStateWith(updatedCategories)
-                _uiState.update { it.copy(editingCategory = null) }
+                transactionRepository.deleteCategory(categoryId, userId)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to delete budget category: ${e.message}") }
+                val errorMessage = e.message ?: "Gagal hapus kategori"
+                _uiState.update { it.copy(error = errorMessage) }
+                errorBus.send(errorMessage)
             }
         }
     }
 
     private fun addRecurringBudget(budget: RecurringBudget) {
         viewModelScope.launch {
-            val newBudget = budget.copy(id = (_uiState.value.recurringBudgets.maxOfOrNull { it.id } ?: 0) + 1)
-            val updatedBudgets = _uiState.value.recurringBudgets + newBudget
-            _uiState.update { it.copy(recurringBudgets = updatedBudgets) }
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            try {
+                transactionRepository.insertRecurringBudget(budget, userId)
+            } catch (e: Exception) {
+                val errorMessage = e.message ?: "Gagal menambah budget berulang"
+                _uiState.update { it.copy(error = errorMessage) }
+                errorBus.send(errorMessage)
+            }
         }
     }
 
     private fun updateRecurringBudget(budget: RecurringBudget) {
         viewModelScope.launch {
-            val updatedBudgets = _uiState.value.recurringBudgets.map {
-                if (it.id == budget.id) budget else it
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            try {
+                transactionRepository.updateRecurringBudget(budget, userId)
+            } catch (e: Exception) {
+                val errorMessage = e.message ?: "Gagal update budget berulang"
+                _uiState.update { it.copy(error = errorMessage) }
+                errorBus.send(errorMessage)
             }
-            _uiState.update { it.copy(recurringBudgets = updatedBudgets) }
         }
     }
 
     private fun deleteRecurringBudget(budget: RecurringBudget) {
         viewModelScope.launch {
-            val updatedBudgets = _uiState.value.recurringBudgets.filter { it.id != budget.id }
-            _uiState.update { it.copy(recurringBudgets = updatedBudgets) }
-        }
-    }
-
-    // --- REUSABLE STATE UPDATE LOGIC ---
-    private fun updateStateWith(categories: List<BudgetCategory>) {
-        val totalBudget = categories.sumOf { it.budgetedAmount }
-        val totalSpent = categories.sumOf { it.spentAmount }
-        val remainingBudget = totalBudget - totalSpent
-        val utilizationPercentage = if (totalBudget > 0) (totalSpent / totalBudget) * 100 else 0.0
-        val overBudgetCategories = categories.filter { it.isOverBudget }
-
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                totalBudget = totalBudget,
-                totalSpent = totalSpent,
-                remainingBudget = remainingBudget,
-                budgetCategories = categories,
-                budgetUtilizationPercentage = utilizationPercentage,
-                overBudgetCategories = overBudgetCategories
-            )
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            try {
+                transactionRepository.deleteRecurringBudget(budget.id.toString(), userId)
+            } catch (e: Exception) {
+                val errorMessage = e.message ?: "Gagal hapus budget berulang"
+                _uiState.update { it.copy(error = errorMessage) }
+                errorBus.send(errorMessage)
+            }
         }
     }
 }

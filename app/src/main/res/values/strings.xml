@@ -1,39 +1,131 @@
 <resources>
     <string name="app_name">InsightKu</string>
     <string name="app_description">Smart financial tracking with AI</string>
-    
+
     <!-- Navigation -->
     <string name="nav_home">Home</string>
     <string name="nav_analytics">Analytics</string>
     <string name="nav_budgeting">Budgeting</string>
     <string name="nav_settings">Settings</string>
     <string name="nav_add_transaction">Add Transaction</string>
-    
+
     <!-- Dashboard -->
-    <string name="balance_card_title">Total Balance</string>
+    <string name="dashboard_greeting">Good afternoon, %1$s!</string>
+    <string name="dashboard_subtitle">Here\'s your financial overview</string>
+    <string name="total_balance">Total Balance</string>
+    <string name="income">Income</string>
+    <string name="expenses">Expenses</string>
+    <string name="toggle_visibility">Toggle Visibility</string>
     <string name="recent_transactions">Recent Transactions</string>
+    <string name="recent_transactions_subtitle">Latest financial activity</string>
+    <string name="view_all">View All</string>
+    <string name="no_recent_transactions">No recent transactions</string>
     <string name="ai_forecast">AI Forecast</string>
     <string name="streak_calendar">Streak Calendar</string>
-    
+
+    <!-- Analytics -->
+    <string name="financial_analytics">Financial Analytics</string>
+    <string name="insights_for_month">Insights for %1$s</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="savings">Savings</string>
+    <string name="savings_rate">Savings Rate</string>
+    <string name="savings_performance_for_month">Monthly savings performance for %1$s</string>
+    <string name="savings_target">Target: 20%</string>
+    <string name="savings_target_achieved">🎉 Congratulations! Target achieved</string>
+    <string name="savings_keep_going">💪 Keep saving to reach your target</string>
+    <string name="savings_negative">⚠️ Expenses exceeded income this month</string>
+    <string name="expense_categories">Expense Categories</string>
+    <string name="expense_categories_subtitle">Monthly expenses by category</string>
+    <string name="income_sources">Income Sources</string>
+    <string name="income_sources_subtitle">Monthly income breakdown</string>
+
+    <!-- Budgeting -->
+    <string name="budget_overview">Budget Overview</string>
+    <string name="budget_overview_subtitle">Track your spending goals for %1$s</string>
+    <string name="total_budget">Total Budget</string>
+    <string name="spent">Spent</string>
+    <string name="remaining">Remaining</string>
+    <string name="overall_progress">Overall Progress</string>
+    <string name="budget_alert">Budget Alert</string>
+    <string name="budget_alert_message">%1$d %2$s reached the limit</string>
+    <string name="category_budgets">Category Budgets</string>
+    <string name="add_new_category">Add New Category</string>
+    <string name="scheduled_payments">Scheduled Payments</string>
+    <string name="scheduled_payments_subtitle">Recurring subscriptions and bills</string>
+    <string name="manage">Manage</string>
+    <string name="add_recurring_payment">Add Recurring Payment</string>
+    <string name="status_on_track">On Track</string>
+    <string name="status_alert">Alert</string>
+    <string name="status_over_budget">Over Budget</string>
+    <string name="used_of_budget">%1$.1f%% used</string>
+    <string name="amount_left">%1$s left</string>
+    <string name="amount_over">%1$s over</string>
+    <string name="comparison_last_month">%1$s vs last month</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Customize your app preferences</string>
+    <string name="appearance">Appearance</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="dark_mode_desc">Switch between light and dark themes</string>
+    <string name="transaction_input">Transaction Input</string>
+    <string name="default_input_mode">Default Input Mode</string>
+    <string name="default_input_mode_desc">Choose your preferred method for adding transactions</string>
+    <string name="input_mode_ocr">Scan Receipt (OCR)</string>
+    <string name="input_mode_manual">Manual Input</string>
+    <string name="whatsapp_integration">WhatsApp Integration</string>
+    <string name="whatsapp_bot">WhatsApp Bot</string>
+    <string name="whatsapp_bot_desc_enabled">Send transaction details via WhatsApp messages</string>
+    <string name="whatsapp_bot_desc_disabled">Enable WhatsApp integration for automatic transaction input</string>
+    <string name="notifications">Notifications</string>
+    <string name="push_notifications">Push Notifications</string>
+    <string name="push_notifications_desc">Receive notifications for app updates</string>
+    <string name="budget_alerts">Budget Alerts</string>
+    <string name="budget_alerts_desc">Get notified when approaching budget limits</string>
+    <string name="security">Security</string>
+    <string name="biometric_auth">Biometric Authentication</string>
+    <string name="biometric_auth_desc">Use fingerprint or face recognition to unlock</string>
+    <string name="account">Account</string>
+    <string name="current_user">Current User</string>
+    <string name="logout_button">Logout from InsightKu</string>
+    <string name="logout_dialog_title">Confirm Logout</string>
+    <string name="logout_dialog_message">Are you sure you want to logout from InsightKu? You will be returned to the login screen.</string>
+    <string name="logout_dialog_confirm">Yes, Logout</string>
+    <string name="logout_dialog_cancel">Cancel</string>
+    <string name="app_info_version">Version 1.0.0</string>
+    <string name="app_info_made_with_love">Made with ❤️ for better financial management</string>
+
+    <!-- Auth -->
+    <string name="welcome_to_app">Welcome to %1$s</string>
+    <string name="app_tagline">Unlock powerful insights for better decisions</string>
+    <string name="email_label">Email</string>
+    <string name="email_placeholder">Enter your email</string>
+    <string name="password_label">Password</string>
+    <string name="password_placeholder">Enter your password</string>
+    <string name="forgot_password_link">Forgot password?</string>
+    <string name="login_button">Login</string>
+    <string name="logging_in">Logging in...</string>
+    <string name="or_continue_with">or continue with</string>
+    <string name="login_with_google">Login with Google</string>
+    <string name="no_account_prompt">Don\'t have an account?</string>
+    <string name="signup_link">Sign up for %1$s</string>
+    <string name="error_invalid_email">Please enter a valid email address</string>
+    <string name="error_password_length">Password must be at least 6 characters</string>
+    <string name="error_field_required">%1$s is required</string>
+
     <!-- Transactions -->
-    <string name="add_transaction">Add Transaction</string>
+    <string name="add_transaction_title">Add Transaction</string>
     <string name="scan_receipt">Scan Receipt</string>
     <string name="manual_input">Manual Input</string>
     <string name="transaction_added">Transaction added successfully</string>
-    
+
     <!-- Categories -->
     <string name="add_category">Add Category</string>
     <string name="edit_category">Edit Category</string>
     <string name="category_name">Category Name</string>
     <string name="budget_amount">Budget Amount</string>
-    
-    <!-- Settings -->
-    <string name="settings_appearance">Appearance</string>
-    <string name="settings_dark_mode">Dark Mode</string>
-    <string name="settings_notifications">Notifications</string>
-    <string name="settings_security">Security</string>
-    <string name="settings_whatsapp">WhatsApp Integration</string>
-    
+
     <!-- Auth -->
     <string name="login">Sign In</string>
     <string name="signup">Sign Up</string>
@@ -41,7 +133,7 @@
     <string name="email">Email</string>
     <string name="password">Password</string>
     <string name="forgot_password">Forgot Password?</string>
-    
+
     <!-- Common -->
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
@@ -53,7 +145,7 @@
     <string name="loading">Loading...</string>
     <string name="error">Error</string>
     <string name="success">Success</string>
-    
+
     <!-- Currency -->
     <string name="currency_symbol">Rp</string>
     <string name="currency_format">Rp %1$s</string>

@@ -32,4 +32,7 @@ interface CategoryDao {
 
     @Query("UPDATE categories SET isActive = 0 WHERE id = :categoryId")
     suspend fun deactivateCategory(categoryId: String)
+
+    @Query("DELETE FROM categories")
+    suspend fun deleteAllCategories()
 }

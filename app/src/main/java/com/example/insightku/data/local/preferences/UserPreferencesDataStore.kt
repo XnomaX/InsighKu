@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -13,7 +14,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 @Singleton
 class UserPreferencesDataStore @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     companion object {
         private val THEME_KEY = stringPreferencesKey("theme")
@@ -27,6 +28,7 @@ class UserPreferencesDataStore @Inject constructor(
         private val BIOMETRIC_ENABLED_KEY = booleanPreferencesKey("biometric_enabled")
         private val NOTIFICATION_ENABLED_KEY = booleanPreferencesKey("notification_enabled")
         private val FIRST_TIME_USER_KEY = booleanPreferencesKey("first_time_user")
+        private val CURRENCY_CODE_KEY = stringPreferencesKey("currency_code")
     }
 
     val theme: Flow<String> = context.dataStore.data.map { preferences ->
@@ -71,6 +73,11 @@ class UserPreferencesDataStore @Inject constructor(
 
     val isFirstTimeUser: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[FIRST_TIME_USER_KEY] ?: true
+    }
+
+    /** Kode mata uang yang aktif (ISO 4217), default: IDR */
+    val currencyCode: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[CURRENCY_CODE_KEY] ?: "IDR"
     }
 
     suspend fun setTheme(theme: String) {
@@ -136,6 +143,13 @@ class UserPreferencesDataStore @Inject constructor(
     suspend fun setFirstTimeUser(isFirstTime: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[FIRST_TIME_USER_KEY] = isFirstTime
+        }
+    }
+
+    /** Simpan pilihan mata uang user (mis. "IDR", "USD", "EUR") */
+    suspend fun setCurrencyCode(code: String) {
+        context.dataStore.edit { preferences ->
+            preferences[CURRENCY_CODE_KEY] = code
         }
     }
 }

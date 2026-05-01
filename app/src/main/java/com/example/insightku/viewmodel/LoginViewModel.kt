@@ -1,140 +1,99 @@
 package com.example.insightku.viewmodel
 
-import android.util.Patterns
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.domain.usecase.auth.GoogleSignInUseCase
+import com.example.insightku.domain.usecase.auth.LoginUseCase
 import com.example.insightku.ui.components.auth.login.LoginEvent
-import com.example.insightku.ui.components.auth.login.LoginState
+import com.example.insightku.ui.components.auth.login.LoginUiState
+import com.example.insightku.utils.ErrorBus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class LoginViewModel @Inject constructor() : ViewModel() {
+class LoginViewModel @Inject constructor(
+    private val loginUseCase: LoginUseCase,
+    private val googleSignInUseCase: GoogleSignInUseCase,
+    private val errorBus: ErrorBus
+) : ViewModel() {
 
-    private var _uiState = mutableStateOf(LoginState())
-    val uiState by _uiState
+    private val _uiState = MutableStateFlow(LoginUiState())
+    val uiState = _uiState.asStateFlow()
 
     fun onEvent(event: LoginEvent) {
         when (event) {
             is LoginEvent.EmailChanged -> {
                 val emailError = validateEmail(event.value)
-                _uiState.value = _uiState.value.copy(
-                    email = event.value,
-                    emailError = emailError,
-                    error = null,
-                    isLoginEnabled = isValidInput(event.value, _uiState.value.password)
-                )
+                _uiState.update { it.copy(email = event.value, emailError = emailError, error = null) }
             }
             is LoginEvent.PasswordChanged -> {
                 val passwordError = validatePassword(event.value)
-                _uiState.value = _uiState.value.copy(
-                    password = event.value,
-                    passwordError = passwordError,
-                    error = null,
-                    isLoginEnabled = isValidInput(_uiState.value.email, event.value)
-                )
+                _uiState.update { it.copy(password = event.value, passwordError = passwordError, error = null) }
             }
             is LoginEvent.Submit -> {
-                if (validateAllFields()) {
-                    login()
-                }
+                if (validateAllFields()) login()
+            }
+            is LoginEvent.ClearError -> {
+                _uiState.update { it.copy(error = null) }
+            }
+            is LoginEvent.GoogleSignIn -> {
+                signInWithGoogle(event.idToken)
             }
         }
     }
 
     private fun validateEmail(email: String): String? {
-        return when {
-            email.isBlank() -> null
-            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Please enter a valid email address"
-            else -> null
+        if (email.isNotBlank() && !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            return "Please enter a valid email address"
         }
+        return null
     }
 
     private fun validatePassword(password: String): String? {
-        return when {
-            password.isBlank() -> null
-            password.length < 6 -> "Password must be at least 6 characters"
-            else -> null
+        if (password.isNotBlank() && password.length < 6) {
+            return "Password must be at least 6 characters"
         }
-    }
-
-    private fun isValidInput(email: String, password: String): Boolean {
-        return email.isNotBlank() &&
-               Patterns.EMAIL_ADDRESS.matcher(email).matches() &&
-               password.isNotBlank() &&
-               password.length >= 6
+        return null
     }
 
     private fun validateAllFields(): Boolean {
-        val emailError = if (_uiState.value.email.isBlank()) {
-            "Email is required"
-        } else if (!Patterns.EMAIL_ADDRESS.matcher(_uiState.value.email).matches()) {
-            "Please enter a valid email address"
-        } else null
-
-        val passwordError = if (_uiState.value.password.isBlank()) {
-            "Password is required"
-        } else if (_uiState.value.password.length < 6) {
-            "Password must be at least 6 characters"
-        } else null
-
-        _uiState.value = _uiState.value.copy(
-            emailError = emailError,
-            passwordError = passwordError
-        )
-
+        val emailError = if (_uiState.value.email.isBlank()) "Email is required" else validateEmail(_uiState.value.email)
+        val passwordError = if (_uiState.value.password.isBlank()) "Password is required" else validatePassword(_uiState.value.password)
+        _uiState.update { it.copy(emailError = emailError, passwordError = passwordError) }
         return emailError == null && passwordError == null
     }
 
     private fun login() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
-            try {
-                delay(1500) // Simulate API call
-
-                if (_uiState.value.email == "test@test.com" && _uiState.value.password == "123456") {
-                    handleSuccessfulLogin()
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = "Invalid email or password. Please try again."
-                    )
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            loginUseCase(_uiState.value.email, _uiState.value.password)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, loginSuccess = true) }
                 }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "An error occurred: ${e.message}"
-                )
-            }
+                .onFailure { exception ->
+                    val errorMessage = exception.message ?: "An unknown error occurred"
+                    _uiState.update { it.copy(isLoading = false, error = errorMessage) }
+                    errorBus.send(errorMessage)
+                }
         }
     }
 
-    private suspend fun handleSuccessfulLogin() {
-        try {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                success = true,
-                error = null
-            )
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                error = "Login successful but failed to save data: ${e.message}"
-            )
+    fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            googleSignInUseCase(idToken)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, loginSuccess = true) }
+                }
+                .onFailure { exception ->
+                    val errorMessage = exception.message ?: "Google Sign-In gagal"
+                    _uiState.update { it.copy(isLoading = false, error = errorMessage) }
+                    errorBus.send(errorMessage)
+                }
         }
-    }
-
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null, emailError = null, passwordError = null)
-    }
-
-    fun resetState() {
-        _uiState.value = LoginState()
     }
 }

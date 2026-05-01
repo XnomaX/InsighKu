@@ -1,0 +1,81 @@
+package com.example.insightku.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.insightku.data.model.Transaction
+import com.example.insightku.data.repository.AuthRepository
+import com.example.insightku.data.repository.TransactionRepository
+import com.example.insightku.domain.usecase.transaction.GetTransactionsUseCase
+import com.example.insightku.utils.ErrorBus
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class TransactionDetailsViewModel @Inject constructor(
+    private val getTransactionsUseCase: GetTransactionsUseCase,
+    private val transactionRepository: TransactionRepository,
+    private val authRepository: AuthRepository,
+    private val errorBus: ErrorBus
+) : ViewModel() {
+
+    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
+    val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    // BUG5 FIX: Track Job agar tidak ada multiple collectors bersamaan
+    private var loadJob: Job? = null
+
+    init {
+        loadTransactions()
+    }
+
+    private fun loadTransactions() {
+        // Cancel job lama sebelum launch baru
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                getTransactionsUseCase().collect { list ->
+                    _transactions.value = list
+                    _isLoading.value = false
+                }
+            } catch (e: CancellationException) {
+                // ISSUE 1 FIX: Rethrow — terjadi normal saat navigasi back dari layar ini
+                throw e
+            } catch (e: Exception) {
+                _isLoading.value = false
+                errorBus.send(e.message ?: "Gagal memuat transaksi")
+            }
+        }
+    }
+
+    // BUG8 FIX: Expose fungsi update dan delete agar TransactionDetailsScreen bisa
+    // tersambung ke database (sebelumnya hanya lambda kosong dari MainScreen)
+    fun updateTransaction(transaction: Transaction) {
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            try {
+                transactionRepository.updateTransaction(transaction, userId)
+            } catch (e: Exception) {
+                errorBus.send(e.message ?: "Gagal menyimpan perubahan transaksi")
+            }
+        }
+    }
+
+    fun deleteTransaction(transactionId: String) {
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            try {
+                transactionRepository.deleteTransaction(transactionId, userId)
+            } catch (e: Exception) {
+                errorBus.send(e.message ?: "Gagal menghapus transaksi")
+            }
+        }
+    }
+}

@@ -37,24 +37,22 @@ class MainViewModel @Inject constructor(
                     _userState.value = UserData(
                         email = email,
                         name = name,
-                        token = userId // menggunakan userId sebagai token
+                        token = userId
                     )
                 }
             } catch (e: Exception) {
-                // Handle error jika tidak bisa load user data
                 _isLoggedIn.value = false
                 _userState.value = UserData()
             }
         }
     }
 
-    suspend fun logout() {
-        try {
-            sessionManager.clearSession()
-            _isLoggedIn.value = false
-            _userState.value = UserData()
-        } catch (e: Exception) {
-            // Handle logout error
-        }
-    }
+    // BUG3 FIX: Fungsi logout() yang lama DIHAPUS karena hanya clear DataStore
+    // tanpa Firebase SignOut → security risk (token masih aktif).
+    // Logout yang benar ada di SettingsViewModel via LogoutUseCase yang melakukan:
+    //   1. firebaseAuth.signOut()
+    //   2. sessionManager.clearSession()
+    //   3. Hapus cache Room (transaksi + kategori)
+    // Jangan tambah fungsi logout() di sini untuk menghindari duplikasi yang salah.
 }
+

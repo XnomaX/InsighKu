@@ -1,4 +1,3 @@
-
 package com.example.insightku.ui.components.dashboard
 
 import android.content.res.Configuration
