@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+﻿<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Light Theme -->
     <style name="Theme.InsightKu" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary colors -->
@@ -41,11 +41,12 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 
-    <!-- Splash Screen Theme -->
+    <!-- Splash Screen Theme — konsisten dengan SplashScreen.kt composable -->
     <style name="Theme.SplashScreen" parent="Theme.InsightKu.Splash" />
 
     <style name="Theme.InsightKu.Splash" parent="Theme.SplashScreen">
-        <item name="android:windowBackground">@color/primary</item>
+        <!-- Putih: sama dengan colorScheme.background di SplashScreen.kt -->
+        <item name="android:windowBackground">@color/background_light</item>
         <item name="postSplashScreenTheme">@style/Theme.InsightKu</item>
     </style>
 </resources>
