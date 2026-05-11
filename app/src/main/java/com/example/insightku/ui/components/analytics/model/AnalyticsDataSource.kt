@@ -52,7 +52,7 @@ object AnalyticsDataSource {
             totalIncome = 3200000.0,
             totalExpenses = 2980000.0,
             expenseCategories = listOf(
-                CategoryData("Food & Drinks", 880000.0, Color(0xFFF59E0B), Icons.Default.Restaurant),
+                CategoryData("Food & Dri    nks", 880000.0, Color(0xFFF59E0B), Icons.Default.Restaurant),
                 CategoryData("Transportation", 590000.0, Color(0xFF3B82F6), Icons.Default.DirectionsCar),
                 CategoryData("Entertainment", 420000.0, Color(0xFF8B5CF6), Icons.Default.MovieFilter),
                 CategoryData("Shopping", 350000.0, Color(0xFFEC4899), Icons.Default.ShoppingBag),
