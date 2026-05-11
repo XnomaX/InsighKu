@@ -1,8 +1,9 @@
 package com.example.insightku.ui.components.budgeting
 
-import com.example.insightku.data.model.Category
+import androidx.compose.runtime.Immutable
 import com.example.insightku.data.model.RecurringBudget
 
+@Immutable
 data class BudgetingUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
@@ -12,14 +13,16 @@ data class BudgetingUiState(
     val selectedPeriod: BudgetPeriod = BudgetPeriod.MONTHLY,
     val dialogState: DialogState = DialogState.None
 ) {
-    val remainingBudget: Double get() = totalBudget - totalSpent
-    val budgetUtilizationPercentage: Double get() = if (totalBudget > 0) (totalSpent / totalBudget) * 100 else 0.0
+    val remainingBudget: Double get() = totalBudget - limitedSpent
+    val limitedSpent: Double get() = budgetCategories.filter { it.hasLimit }.sumOf { it.spentAmount }
+    val unlimitedSpent: Double get() = budgetCategories.filterNot { it.hasLimit }.sumOf { it.spentAmount }
+    val budgetUtilizationPercentage: Double get() = if (totalBudget > 0) (limitedSpent / totalBudget) * 100 else 0.0
     val overBudgetCategories: List<BudgetCategory> get() = budgetCategories.filter { it.isOverBudget }
 }
 
 sealed class DialogState {
-    object None : DialogState()
-    object AddBudget : DialogState()
+    data object None : DialogState()
+    data object AddBudget : DialogState()
     data class EditBudget(val category: BudgetCategory) : DialogState()
     data class ManageRecurring(val budgets: List<RecurringBudget>) : DialogState()
 }
@@ -30,22 +33,33 @@ enum class BudgetPeriod(val displayName: String) {
     YEARLY("Yearly")
 }
 
+enum class BudgetHealth {
+    Unlimited,
+    Good,
+    Warning,
+    Over
+}
+
+@Immutable
 data class BudgetCategory(
     val id: String,
     val name: String,
-    val budgetedAmount: Double,   // 0.0 → no limit (unlimited)
+    val budgetedAmount: Double?,
     val spentAmount: Double,
     val color: String,
     val icon: String
 ) {
-    /** True only when a limit is explicitly set (budgetedAmount > 0). */
-    val hasLimit: Boolean get() = budgetedAmount > 0.0
-
-    val remainingAmount: Double get() = if (hasLimit) budgetedAmount - spentAmount else 0.0
-
-    /** 0–100+; always 0 for unlimited categories so they never appear over-budget. */
-    val utilizationPercentage: Double
-        get() = if (hasLimit) (spentAmount / budgetedAmount) * 100 else 0.0
-
-    val isOverBudget: Boolean get() = hasLimit && spentAmount > budgetedAmount
+    val hasLimit: Boolean get() = (budgetedAmount ?: 0.0) > 0.0
+    val limitAmount: Double get() = budgetedAmount ?: 0.0
+    val remainingAmount: Double get() = if (hasLimit) limitAmount - spentAmount else 0.0
+    val utilizationPercentage: Double get() = if (hasLimit) (spentAmount / limitAmount) * 100 else 0.0
+    val progressFraction: Float get() = (utilizationPercentage / 100.0).coerceIn(0.0, 1.0).toFloat()
+    val isOverBudget: Boolean get() = hasLimit && spentAmount > limitAmount
+    val health: BudgetHealth
+        get() = when {
+            !hasLimit -> BudgetHealth.Unlimited
+            utilizationPercentage < 70.0 -> BudgetHealth.Good
+            utilizationPercentage <= 100.0 -> BudgetHealth.Warning
+            else -> BudgetHealth.Over
+        }
 }

@@ -2,42 +2,75 @@ package com.example.insightku.ui.components.budgeting
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GpsFixed
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.insightku.R
 import com.example.insightku.data.model.Category
 import com.example.insightku.ui.dialogs.AddCategoryDialog
 import com.example.insightku.ui.dialogs.EditCategoryDialog
 import com.example.insightku.ui.dialogs.RecurringBudgetsDialog
 import com.example.insightku.ui.theme.Dimens
-import com.example.insightku.ui.theme.LocalResponsiveDimens
+import com.example.insightku.ui.theme.formatCurrency
 import com.example.insightku.viewmodel.BudgetingViewModel
-import java.text.NumberFormat
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.*
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.abs
-
-// --- Main Composable ---
 
 @Composable
 fun BudgetingScreen(
@@ -58,53 +91,70 @@ fun BudgetingScreenContent(
     uiState: BudgetingUiState,
     onEvent: (BudgetingEvent) -> Unit
 ) {
-    val dimens = LocalResponsiveDimens.current
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (uiState.isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        }
-
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = Dimens.PaddingExtraLarge),
+            contentPadding = PaddingValues(
+                start = Dimens.PaddingLarge,
+                top = Dimens.PaddingLarge,
+                end = Dimens.PaddingLarge,
+                bottom = Dimens.PaddingExtraLarge
+            ),
             verticalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
         ) {
             item {
-                val currentMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()))
-                Header(month = currentMonth)
+                BudgetHeader(
+                    month = currentMonthLabel(),
+                    isLoading = uiState.isLoading,
+                    onRefresh = { onEvent(BudgetingEvent.RefreshData) }
+                )
             }
 
-            item {
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = dimens.screenHorizontalPadding)
-                        .offset(y = (-60).dp),
-                    verticalArrangement = Arrangement.spacedBy(dimens.itemSpacing)
-                ) {
-                    BudgetSummaryCard(
-                        totalBudget = uiState.totalBudget,
-                        totalSpent = uiState.totalSpent,
-                        remaining = uiState.remainingBudget,
-                        percentage = uiState.budgetUtilizationPercentage.toFloat(),
-                        overBudgetCategories = uiState.overBudgetCategories
-                    )
-
-                    CategoryBudgetsCard(
-                        categories = uiState.budgetCategories,
-                        onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog) },
-                        onEditCategory = { onEvent(BudgetingEvent.ShowEditBudgetDialog(it)) }
-                    )
-
-                    ScheduledPaymentsCard(
-                        payments = emptyList(),
-                        onManageRecurring = { onEvent(BudgetingEvent.ShowRecurringBudgetsDialog) }
+            if (uiState.error != null) {
+                item {
+                    BudgetErrorCard(
+                        message = uiState.error,
+                        onDismiss = { onEvent(BudgetingEvent.ClearError) }
                     )
                 }
             }
+
+            item {
+                BudgetSummaryCard(
+                    totalBudget = uiState.totalBudget,
+                    totalSpent = uiState.totalSpent,
+                    limitedSpent = uiState.limitedSpent,
+                    unlimitedSpent = uiState.unlimitedSpent,
+                    remaining = uiState.remainingBudget,
+                    percentage = uiState.budgetUtilizationPercentage.toFloat(),
+                    overBudgetCategories = uiState.overBudgetCategories,
+                    onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog) }
+                )
+            }
+
+            if (!uiState.isLoading && uiState.budgetCategories.isEmpty()) {
+                item {
+                    EmptyBudgetState(onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog) })
+                }
+            } else {
+                items(
+                    items = uiState.budgetCategories,
+                    key = { it.id }
+                ) { category ->
+                    CategoryBudgetCard(
+                        category = category,
+                        onEdit = { onEvent(BudgetingEvent.ShowEditBudgetDialog(category)) }
+                    )
+                }
+            }
+        }
+
+        if (uiState.isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
     }
 }
@@ -119,22 +169,23 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
                 onCategoryAdded = { category -> onEvent(BudgetingEvent.AddCategory(category)) }
             )
         }
+
         is DialogState.EditBudget -> {
-            val categoryToEdit = Category(
-                id = dialogState.category.id,
-                name = dialogState.category.name,
-                budgetLimit = dialogState.category.budgetedAmount,
-                color = dialogState.category.color,
-                icon = dialogState.category.icon
-            )
             EditCategoryDialog(
                 isOpen = true,
                 onDismiss = { onEvent(BudgetingEvent.HideEditBudgetDialog) },
-                category = categoryToEdit,
+                category = Category(
+                    id = dialogState.category.id,
+                    name = dialogState.category.name,
+                    budgetLimit = dialogState.category.budgetedAmount,
+                    color = dialogState.category.color,
+                    icon = dialogState.category.icon
+                ),
                 onCategoryEdited = { onEvent(BudgetingEvent.UpdateCategory(it)) },
                 onCategoryDeleted = { onEvent(BudgetingEvent.DeleteCategory(dialogState.category.id)) }
             )
         }
+
         is DialogState.ManageRecurring -> {
             RecurringBudgetsDialog(
                 isOpen = true,
@@ -145,48 +196,75 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
                 onBudgetDeleted = { onEvent(BudgetingEvent.DeleteRecurringBudget(it)) }
             )
         }
-        DialogState.None -> {}
+
+        DialogState.None -> Unit
     }
 }
 
-// --- UI Components ---
-
 @Composable
-private fun Header(month: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
-                )
-            )
+private fun BudgetHeader(
+    month: String,
+    isLoading: Boolean,
+    onRefresh: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 60.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.GpsFixed,
-                contentDescription = stringResource(R.string.budget_overview),
-                tint = Color.White,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.budget_overview),
-                color = Color.White,
-                style = MaterialTheme.typography.headlineMedium,
+                text = "Budgeting",
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
             Text(
-                text = stringResource(R.string.budget_overview_subtitle, month),
-                color = Color.White.copy(alpha = 0.8f)
+                text = month,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        OutlinedButton(
+            onClick = onRefresh,
+            enabled = !isLoading,
+            shape = RoundedCornerShape(Dimens.CornerRadiusMedium)
+        ) {
+            Text(if (isLoading) "Syncing" else "Refresh")
+        }
+    }
+}
+
+@Composable
+private fun BudgetErrorCard(
+    message: String,
+    onDismiss: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        ),
+        shape = RoundedCornerShape(Dimens.CornerRadiusMedium)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.PaddingLarge),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Warning, contentDescription = null)
+            Text(
+                text = message,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = "Dismiss",
+                modifier = Modifier.clickable(onClick = onDismiss),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -196,9 +274,12 @@ private fun Header(month: String) {
 fun BudgetSummaryCard(
     totalBudget: Double,
     totalSpent: Double,
+    limitedSpent: Double = totalSpent,
+    unlimitedSpent: Double = 0.0,
     remaining: Double,
     percentage: Float,
-    overBudgetCategories: List<BudgetCategory>
+    overBudgetCategories: List<BudgetCategory>,
+    onAddCategory: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -206,92 +287,233 @@ fun BudgetSummaryCard(
         elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationMedium),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(Dimens.PaddingLarge)) {
+        Column(
+            modifier = Modifier.padding(Dimens.PaddingLarge),
+            verticalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
+        ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = Dimens.PaddingLarge),
-                horizontalArrangement = Arrangement.SpaceAround
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                SummaryItem(stringResource(R.string.total_budget), totalBudget, color = MaterialTheme.colorScheme.primary)
-                SummaryItem(stringResource(R.string.spent), totalSpent, color = MaterialTheme.colorScheme.onSurface)
-                SummaryItem(stringResource(R.string.remaining), remaining, color = if (remaining >= 0) Color(0xFF16A34A) else MaterialTheme.colorScheme.error)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Remaining this month",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = formatCurrency(remaining),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (remaining >= 0) budgetStatusColor(BudgetHealth.Good) else budgetStatusColor(BudgetHealth.Over)
+                    )
+                }
+
+                Button(
+                    onClick = onAddCategory,
+                    shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
+                    contentPadding = PaddingValues(horizontal = Dimens.PaddingMedium, vertical = Dimens.PaddingMedium)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(Dimens.IconSizeMedium))
+                    Spacer(modifier = Modifier.width(Dimens.PaddingSmall))
+                    Text("Category")
+                }
             }
 
-            Column(modifier = Modifier.padding(bottom = Dimens.PaddingLarge)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = stringResource(R.string.overall_progress), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(text = "${"%.1f".format(percentage)}%", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = "Limited budget used",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${percentage.coerceAtLeast(0f).formatPercent()}%",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
                 LinearProgressIndicator(
-                    progress = { percentage / 100f },
+                    progress = { (percentage / 100f).coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(10.dp)
                         .clip(RoundedCornerShape(5.dp)),
-                    color = if (percentage > 100) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    color = budgetProgressColor(percentage.toDouble()),
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
+            ) {
+                SummaryMetric(
+                    label = "Budget",
+                    value = formatCurrency(totalBudget),
+                    modifier = Modifier.weight(1f)
+                )
+                SummaryMetric(
+                    label = "Spent",
+                    value = formatCurrency(totalSpent),
+                    modifier = Modifier.weight(1f)
+                )
+                SummaryMetric(
+                    label = "No limit",
+                    value = formatCurrency(unlimitedSpent),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
             if (overBudgetCategories.isNotEmpty()) {
-                BudgetAlert(overBudgetCategories)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(Dimens.CornerRadiusSmall),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.65f),
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                ) {
+                    Row(
+                        modifier = Modifier.padding(Dimens.PaddingMedium),
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(Dimens.IconSizeMedium))
+                        Text(
+                            text = "${overBudgetCategories.size} categories are over budget",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SummaryItem(title: String, amount: Double, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun SummaryMetric(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
         Text(
-            text = title,
+            text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
-        Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
         Text(
-            text = formatCurrencyAbbreviated(amount),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = color
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
 
 @Composable
-private fun BudgetAlert(overBudgetCategories: List<BudgetCategory>) {
+private fun CategoryBudgetCard(
+    category: BudgetCategory,
+    onEdit: () -> Unit
+) {
+    val statusColor = budgetStatusColor(category.health)
+    val categoryColor = parseCategoryColor(category.color)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Dimens.CornerRadiusSmall),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
-            contentColor = MaterialTheme.colorScheme.onErrorContainer
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
+        shape = RoundedCornerShape(Dimens.CornerRadiusLarge),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
     ) {
-        Row(
-            modifier = Modifier.padding(Dimens.PaddingMedium),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(Dimens.PaddingLarge),
+            verticalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
         ) {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = stringResource(R.string.budget_alert),
-                modifier = Modifier.size(Dimens.IconSizeLarge),
-                tint = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.width(Dimens.PaddingMedium))
-            Column {
-                Text(text = stringResource(R.string.budget_alert), fontWeight = FontWeight.Bold)
-                val categoryText = if (overBudgetCategories.size == 1) "category has" else "categories have"
-                Text(
-                    text = stringResource(R.string.budget_alert_message, overBudgetCategories.size, categoryText),
-                    style = MaterialTheme.typography.bodySmall
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier.size(44.dp),
+                    shape = CircleShape,
+                    color = categoryColor.copy(alpha = 0.16f),
+                    contentColor = categoryColor
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = categoryIcon(category),
+                            contentDescription = null,
+                            modifier = Modifier.size(Dimens.IconSizeLarge)
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = category.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = if (category.hasLimit) {
+                            "${formatCurrency(category.spentAmount)} of ${formatCurrency(category.limitAmount)}"
+                        } else {
+                            "${formatCurrency(category.spentAmount)} spent, no limit set"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit ${category.name}")
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (category.hasLimit) "Remaining" else "Remaining",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = if (category.hasLimit) formatCurrency(category.remainingAmount) else "Unlimited",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (category.hasLimit) statusColor else MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                BudgetStatusPill(category = category, color = statusColor)
+            }
+
+            if (category.hasLimit) {
+                LinearProgressIndicator(
+                    progress = { category.progressFraction },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = statusColor,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
         }
@@ -299,115 +521,133 @@ private fun BudgetAlert(overBudgetCategories: List<BudgetCategory>) {
 }
 
 @Composable
-fun CategoryBudgetsCard(
-    categories: List<BudgetCategory>,
-    onAddCategory: () -> Unit,
-    onEditCategory: (BudgetCategory) -> Unit
+private fun BudgetStatusPill(
+    category: BudgetCategory,
+    color: Color
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Dimens.CornerRadiusLarge),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    val text = when (category.health) {
+        BudgetHealth.Unlimited -> "No limit"
+        BudgetHealth.Good -> "On track"
+        BudgetHealth.Warning -> "${category.utilizationPercentage.formatPercent()}%"
+        BudgetHealth.Over -> "${category.utilizationPercentage.formatPercent()}%"
+    }
+
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = color.copy(alpha = 0.12f),
+        contentColor = color
     ) {
-        Column(modifier = Modifier.padding(Dimens.PaddingLarge)) {
-            Text(
-                text = stringResource(R.string.category_budgets),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
-            Column(verticalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
-                categories.forEach { category ->
-                    CategoryCard(category = category, onEdit = { onEditCategory(category) })
-                }
-            }
-            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
-            DashedButton(text = stringResource(R.string.add_new_category), onClick = onAddCategory)
-        }
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
+        )
     }
 }
 
 @Composable
-private fun CategoryCard(category: BudgetCategory, onEdit: (BudgetCategory) -> Unit) {
-    // ... Implementation remains the same, but ensure all text is from resources
-}
-
-@Composable
-fun ScheduledPaymentsCard(
-    payments: List<ScheduledPayment>,
-    onManageRecurring: () -> Unit
-) {
+private fun EmptyBudgetState(onAddCategory: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimens.CornerRadiusLarge),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(Dimens.PaddingLarge)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.PaddingExtraLarge),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
+        ) {
+            Surface(
+                modifier = Modifier.size(56.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) {
-                Column {
-                    Text(text = stringResource(R.string.scheduled_payments), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(text = stringResource(R.string.scheduled_payments_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                TextButton(onClick = onManageRecurring) {
-                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.manage), modifier = Modifier.size(Dimens.IconSizeMedium))
-                    Spacer(modifier = Modifier.width(Dimens.PaddingSmall))
-                    Text(stringResource(R.string.manage))
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = null)
                 }
             }
-            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
-            payments.forEach { payment ->
-                PaymentItem(payment = payment)
-                Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+            Text(
+                text = "No budgets yet",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Add a category limit when you need control. Leave it unset when tracking is enough.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Button(
+                onClick = onAddCategory,
+                shape = RoundedCornerShape(Dimens.CornerRadiusMedium)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(Dimens.IconSizeMedium))
+                Spacer(modifier = Modifier.width(Dimens.PaddingSmall))
+                Text("Add category")
             }
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-            DashedButton(text = stringResource(R.string.add_recurring_payment), onClick = onManageRecurring)
         }
     }
 }
 
 @Composable
-private fun PaymentItem(payment: ScheduledPayment) {
-    // ... Implementation remains the same
+private fun budgetStatusColor(health: BudgetHealth): Color {
+    return when (health) {
+        BudgetHealth.Unlimited -> MaterialTheme.colorScheme.primary
+        BudgetHealth.Good -> Color(0xFF16A34A)
+        BudgetHealth.Warning -> Color(0xFFEAB308)
+        BudgetHealth.Over -> MaterialTheme.colorScheme.error
+    }
 }
 
 @Composable
-private fun DashedButton(text: String, onClick: () -> Unit) {
-    // ... Implementation remains the same
-}
-
-// --- Data Models and Utils for Preview ---
-
-data class ScheduledPayment(
-    val name: String,
-    val amount: Double,
-    val date: String,
-    val icon: ImageVector,
-    val color: Color
-)
-
-fun formatCurrency(amount: Double, fractionDigits: Int = 2): String {
-    val format = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-    format.maximumFractionDigits = fractionDigits
-    return format.format(amount)
-}
-
-fun formatCurrencyAbbreviated(amount: Double): String {
-    val absAmount = abs(amount)
-    val sign = if (amount < 0) "-" else ""
-
+private fun budgetProgressColor(percentage: Double): Color {
     return when {
-        absAmount >= 1_000_000 -> {
-            val value = "%.1f".format(absAmount / 1_000_000).removeSuffix(".0")
-            "${sign}Rp${value}jt"
-        }
-        absAmount >= 1_000 -> {
-            val value = "%.0f".format(absAmount / 1_000)
-            "${sign}Rp${value}rb"
-        }
-        else -> formatCurrency(amount, 0)
+        percentage < 70.0 -> budgetStatusColor(BudgetHealth.Good)
+        percentage <= 100.0 -> budgetStatusColor(BudgetHealth.Warning)
+        else -> budgetStatusColor(BudgetHealth.Over)
     }
 }
+
+private fun parseCategoryColor(value: String): Color {
+    return runCatching {
+        Color(android.graphics.Color.parseColor(value.ifBlank { "#79747E" }))
+    }.getOrDefault(Color(0xFF79747E))
+}
+
+private fun categoryIcon(category: BudgetCategory): ImageVector {
+    val icon = category.icon.lowercase(Locale.getDefault())
+    val name = category.name.lowercase(Locale.getDefault())
+    return when {
+        "food" in icon || "drink" in icon || "restaurant" in icon || "food" in name -> Icons.Default.Restaurant
+        "transport" in icon || "car" in icon || "transport" in name -> Icons.Default.DirectionsCar
+        "bill" in icon || "receipt" in icon || "bill" in name -> Icons.Default.Receipt
+        "utility" in icon || "bolt" in icon || "utility" in name -> Icons.Default.Bolt
+        "shopping" in icon || "shopping" in name -> Icons.Default.ShoppingBag
+        "entertainment" in icon || "game" in icon || "movie" in icon || "lifestyle" in name -> Icons.Default.SportsEsports
+        "health" in icon || "health" in name -> Icons.Default.LocalHospital
+        "housing" in icon || "home" in icon || "rent" in name -> Icons.Default.Home
+        "coffee" in icon || "cafe" in name -> Icons.Default.Coffee
+        category.icon.isBlank() -> Icons.Default.Category
+        else -> Icons.Default.MoreHoriz
+    }
+}
+
+private fun currentMonthLabel(): String {
+    return SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date())
+}
+
+private fun Double.formatPercent(): String {
+    return if (abs(this - toInt()) < 0.05) {
+        toInt().toString()
+    } else {
+        String.format(Locale.getDefault(), "%.1f", this)
+    }
+}
+
+private fun Float.formatPercent(): String = toDouble().formatPercent()
