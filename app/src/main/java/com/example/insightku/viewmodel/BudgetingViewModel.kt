@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import javax.inject.Inject
 
 /**
@@ -49,6 +50,7 @@ class BudgetingViewModel @Inject constructor(
 
     // BUG7 FIX: Track Job agar tidak ada multiple collectors bersamaan
     private var loadJob: Job? = null
+    private var hasSeededDefaultCategories = false
 
     init {
         loadBudgetData()
@@ -95,30 +97,60 @@ class BudgetingViewModel @Inject constructor(
                     transactionRepository.getAllTransactions(),
                     transactionRepository.getRecurringBudgets()
                 ) { categories, transactions, recurringBudgets ->
-                    val budgetCategories = categories.filter { (it.budgetLimit ?: 0.0) > 0.0 }.map { category ->
-                        val spentAmount = transactions
-                            .filter { it.category == category.name && it.type == TransactionType.EXPENSE }
+                    val activeCategories = categories.filter { it.isActive }
+                    val monthlyExpenses = transactions
+                        .filter { it.type == TransactionType.EXPENSE && it.date in currentMonthRange() }
+
+                    val knownNames = activeCategories.map { it.name.normalizedCategoryName() }.toSet()
+                    val categoryRows = activeCategories.map { category ->
+                        val spentAmount = monthlyExpenses
+                            .filter { it.category.normalizedCategoryName() == category.name.normalizedCategoryName() }
                             .sumOf { it.amount }
                         BudgetCategory(
                             id = category.id.toString(),
                             name = category.name,
-                            budgetedAmount = category.budgetLimit ?: 0.0,
+                            budgetedAmount = category.budgetLimit,
                             spentAmount = spentAmount,
                             color = category.color ?: "",
                             icon = category.icon ?: ""
                         )
                     }
+
+                    val transactionOnlyRows = monthlyExpenses
+                        .filter { it.category.normalizedCategoryName() !in knownNames }
+                        .groupBy { it.category.ifBlank { "Uncategorized" } }
+                        .map { (categoryName, categoryTransactions) ->
+                            BudgetCategory(
+                                id = "transaction-only-${categoryName.normalizedCategoryName()}",
+                                name = categoryName.ifBlank { "Uncategorized" },
+                                budgetedAmount = null,
+                                spentAmount = categoryTransactions.sumOf { it.amount },
+                                color = defaultColorForCategory(categoryName),
+                                icon = categoryName
+                            )
+                        }
+
+                    val budgetCategories = (categoryRows + transactionOnlyRows)
+                        .sortedWith(
+                            compareByDescending<BudgetCategory> { it.isOverBudget }
+                                .thenByDescending { it.hasLimit }
+                                .thenBy { it.name.lowercase() }
+                        )
                     Pair(budgetCategories, recurringBudgets)
                 }.collect { (budgetCategories, recurringBudgets) ->
-                    val totalBudget = budgetCategories.sumOf { it.budgetedAmount }
+                    if (budgetCategories.isEmpty() && !hasSeededDefaultCategories) {
+                        hasSeededDefaultCategories = true
+                        seedDefaultCategories(userId)
+                    }
+
+                    val totalBudget = budgetCategories.filter { it.hasLimit }.sumOf { it.limitAmount }
                     val totalSpent = budgetCategories.sumOf { it.spentAmount }
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             totalBudget = totalBudget,
                             totalSpent = totalSpent,
-                            budgetCategories = budgetCategories,
-                            dialogState = DialogState.None
+                            budgetCategories = budgetCategories
                         )
                     }
                 }
@@ -154,6 +186,7 @@ class BudgetingViewModel @Inject constructor(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
                 transactionRepository.insertCategory(category, userId)
+                _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal menambah kategori"
                 _uiState.update { it.copy(error = errorMessage) }
@@ -166,7 +199,12 @@ class BudgetingViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                transactionRepository.updateCategory(category, userId)
+                if (category.id.startsWith("transaction-only-")) {
+                    transactionRepository.insertCategory(category, userId)
+                } else {
+                    transactionRepository.updateCategory(category, userId)
+                }
+                _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal update kategori"
                 _uiState.update { it.copy(error = errorMessage) }
@@ -180,6 +218,7 @@ class BudgetingViewModel @Inject constructor(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
                 transactionRepository.deleteCategory(categoryId, userId)
+                _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal hapus kategori"
                 _uiState.update { it.copy(error = errorMessage) }
@@ -224,6 +263,55 @@ class BudgetingViewModel @Inject constructor(
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
+        }
+    }
+
+    private suspend fun seedDefaultCategories(userId: String) {
+        defaultBudgetCategories().forEach { category ->
+            try {
+                transactionRepository.insertCategory(category, userId)
+            } catch (e: Exception) {
+                // Keep the screen usable from Room cache even if one remote write fails.
+            }
+        }
+    }
+
+    private fun defaultBudgetCategories(): List<Category> {
+        return listOf(
+            Category(name = "Food", color = "#F59E0B", icon = "Food & Drinks", budgetLimit = null),
+            Category(name = "Transport", color = "#3B82F6", icon = "Transportation", budgetLimit = null),
+            Category(name = "Bills", color = "#EF4444", icon = "Bills & Utilities", budgetLimit = null),
+            Category(name = "Lifestyle", color = "#8B5CF6", icon = "Entertainment", budgetLimit = null),
+            Category(name = "Health", color = "#10B981", icon = "Healthcare", budgetLimit = null),
+            Category(name = "Shopping", color = "#EC4899", icon = "Shopping", budgetLimit = null)
+        )
+    }
+
+    private fun currentMonthRange(): LongRange {
+        val start = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val end = (start.clone() as Calendar).apply {
+            add(Calendar.MONTH, 1)
+            add(Calendar.MILLISECOND, -1)
+        }
+        return start.timeInMillis..end.timeInMillis
+    }
+
+    private fun String.normalizedCategoryName(): String = trim().lowercase()
+
+    private fun defaultColorForCategory(categoryName: String): String {
+        return when {
+            categoryName.normalizedCategoryName().contains("food") -> "#F59E0B"
+            categoryName.normalizedCategoryName().contains("transport") -> "#3B82F6"
+            categoryName.normalizedCategoryName().contains("bill") -> "#EF4444"
+            categoryName.normalizedCategoryName().contains("shop") -> "#EC4899"
+            categoryName.normalizedCategoryName().contains("health") -> "#10B981"
+            else -> "#79747E"
         }
     }
 }
