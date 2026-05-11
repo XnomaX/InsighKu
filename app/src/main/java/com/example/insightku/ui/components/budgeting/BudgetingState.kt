@@ -33,12 +33,19 @@ enum class BudgetPeriod(val displayName: String) {
 data class BudgetCategory(
     val id: String,
     val name: String,
-    val budgetedAmount: Double,
+    val budgetedAmount: Double,   // 0.0 → no limit (unlimited)
     val spentAmount: Double,
     val color: String,
     val icon: String
 ) {
-    val remainingAmount: Double get() = budgetedAmount - spentAmount
-    val utilizationPercentage: Double get() = if (budgetedAmount > 0) (spentAmount / budgetedAmount) * 100 else 0.0
-    val isOverBudget: Boolean get() = spentAmount > budgetedAmount
+    /** True only when a limit is explicitly set (budgetedAmount > 0). */
+    val hasLimit: Boolean get() = budgetedAmount > 0.0
+
+    val remainingAmount: Double get() = if (hasLimit) budgetedAmount - spentAmount else 0.0
+
+    /** 0–100+; always 0 for unlimited categories so they never appear over-budget. */
+    val utilizationPercentage: Double
+        get() = if (hasLimit) (spentAmount / budgetedAmount) * 100 else 0.0
+
+    val isOverBudget: Boolean get() = hasLimit && spentAmount > budgetedAmount
 }
