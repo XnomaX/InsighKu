@@ -51,6 +51,10 @@ class BudgetingViewModel @Inject constructor(
     // BUG7 FIX: Track Job agar tidak ada multiple collectors bersamaan
     private var loadJob: Job? = null
     private var hasSeededDefaultCategories = false
+    private var isRefreshComplete = false
+
+    // Cache recurring budgets so ShowRecurringBudgetsDialog can pass real data
+    private var cachedRecurringBudgets: List<RecurringBudget> = emptyList()
 
     init {
         loadBudgetData()
@@ -71,7 +75,7 @@ class BudgetingViewModel @Inject constructor(
             is BudgetingEvent.HideAddBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
             is BudgetingEvent.ShowEditBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.EditBudget(event.category)) }
             is BudgetingEvent.HideEditBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
-            is BudgetingEvent.ShowRecurringBudgetsDialog -> _uiState.update { it.copy(dialogState = DialogState.ManageRecurring(emptyList())) }
+            is BudgetingEvent.ShowRecurringBudgetsDialog -> _uiState.update { it.copy(dialogState = DialogState.ManageRecurring(cachedRecurringBudgets)) }
             is BudgetingEvent.HideRecurringBudgetsDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
 
             // Data Operations
@@ -138,7 +142,10 @@ class BudgetingViewModel @Inject constructor(
                         )
                     Pair(budgetCategories, recurringBudgets)
                 }.collect { (budgetCategories, recurringBudgets) ->
-                    if (budgetCategories.isEmpty() && !hasSeededDefaultCategories) {
+                    // Cache recurring budgets so ShowRecurringBudgetsDialog can use real data
+                    cachedRecurringBudgets = recurringBudgets
+
+                    if (budgetCategories.isEmpty() && !hasSeededDefaultCategories && isRefreshComplete) {
                         hasSeededDefaultCategories = true
                         seedDefaultCategories(userId)
                     }
@@ -177,6 +184,8 @@ class BudgetingViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 // Silent fail — Room cache masih bisa dipakai
+            } finally {
+                isRefreshComplete = true
             }
         }
     }

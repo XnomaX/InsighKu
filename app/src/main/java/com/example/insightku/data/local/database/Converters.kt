@@ -1,4 +1,4 @@
-package com.insightku.data.local.database
+package com.example.insightku.data.local.database
 
 import androidx.room.TypeConverter
 import com.example.insightku.data.model.*
@@ -11,7 +11,7 @@ class Converters {
 
     @TypeConverter
     fun toTransactionType(type: String): TransactionType {
-        return TransactionType.valueOf(type)
+        return runCatching { TransactionType.valueOf(type) }.getOrDefault(TransactionType.EXPENSE)
     }
 
     @TypeConverter
@@ -21,7 +21,7 @@ class Converters {
 
     @TypeConverter
     fun toBudgetFrequency(frequency: String): BudgetFrequency {
-        return BudgetFrequency.valueOf(frequency)
+        return runCatching { BudgetFrequency.valueOf(frequency) }.getOrDefault(BudgetFrequency.MONTHLY)
     }
 
     @TypeConverter
@@ -31,6 +31,6 @@ class Converters {
 
     @TypeConverter
     fun toBudgetPeriod(period: String): BudgetPeriod {
-        return BudgetPeriod.valueOf(period)
+        return runCatching { BudgetPeriod.valueOf(period) }.getOrDefault(BudgetPeriod.MONTHLY)
     }
 }

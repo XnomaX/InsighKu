@@ -144,7 +144,7 @@ private fun LoginScreenContent(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(Dimens.CornerRadiusLarge),
+            shape = RoundedCornerShape(20.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationMedium),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
@@ -292,7 +292,7 @@ private fun EmailInputField(
                     else
                         "Email input field"
                 },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             leadingIcon = {
                 Icon(
                     Icons.Default.Email,
@@ -381,7 +381,7 @@ private fun PasswordInputField(
                     else
                         "Password input field"
                 },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             leadingIcon = {
                 Icon(
                     Icons.Default.Lock,
@@ -528,7 +528,7 @@ private fun LoginButton(
             containerColor = MaterialTheme.colorScheme.primary,
             disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
         ),
-        shape = CircleShape
+        shape = RoundedCornerShape(16.dp)
     ) {
         if (uiState.isLoading) {
             CircularProgressIndicator(

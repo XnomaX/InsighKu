@@ -9,6 +9,9 @@ import com.example.insightku.ui.components.analytics.AnalyticsEvent
 import com.example.insightku.ui.components.analytics.AnalyticsUiState
 import com.example.insightku.ui.components.analytics.model.CategoryData
 import com.example.insightku.ui.components.analytics.model.MonthlyData
+import com.example.insightku.ui.components.analytics.model.TimePeriod
+import com.example.insightku.ui.components.analytics.model.BudgetData
+import com.example.insightku.ui.components.analytics.model.IncomeExpenseData
 import com.example.insightku.utils.CategoryUtils
 import com.example.insightku.utils.ErrorBus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,8 +72,8 @@ class AnalyticsViewModel @Inject constructor(
             is AnalyticsEvent.SelectIncomeCategory -> _uiState.update { it.copy(selectedIncomeCategory = event.category) }
             AnalyticsEvent.NextMonth -> navigateMonth(1)
             AnalyticsEvent.PreviousMonth -> navigateMonth(-1)
-            is AnalyticsEvent.ChangeTimePeriod -> { /* TODO */ }
-            is AnalyticsEvent.ChangeBudgetPeriod -> { /* TODO */ }
+            is AnalyticsEvent.ChangeTimePeriod -> changeTimePeriod(event.period)
+            is AnalyticsEvent.ChangeBudgetPeriod -> changeBudgetPeriod(event.period)
         }
     }
 
@@ -123,7 +126,11 @@ class AnalyticsViewModel @Inject constructor(
     private fun processAndUpdateState() {
         processTransactionsIntoMonthlyData()
         val availableMonths = monthlyDataMap.keys.sortedDescending()
-        val selectedMonth = availableMonths.firstOrNull() ?: ""
+        val currentSelected = _uiState.value.selectedMonth
+        val selectedMonth = if (currentSelected in availableMonths) currentSelected
+                            else availableMonths.firstOrNull() ?: ""
+        val currentPeriod = _uiState.value.chartTimePeriod
+        val currentBudgetPeriod = _uiState.value.budgetTimePeriod
         _uiState.update {
             it.copy(
                 isLoading = false,
@@ -132,6 +139,9 @@ class AnalyticsViewModel @Inject constructor(
                 currentMonthData = monthlyDataMap[selectedMonth]
             )
         }
+        // Recompute chart data with current period settings
+        recomputeIncomeExpenseData(currentPeriod)
+        recomputeBudgetData(currentBudgetPeriod)
     }
 
     private fun processTransactionsIntoMonthlyData() {
@@ -191,5 +201,158 @@ class AnalyticsViewModel @Inject constructor(
         val currentIndex = availableMonths.indexOf(currentState.selectedMonth)
         val newIndex = (currentIndex - offset).coerceIn(availableMonths.indices)
         if (currentIndex != newIndex) selectMonth(availableMonths[newIndex])
+    }
+
+    private fun changeTimePeriod(period: TimePeriod) {
+        _uiState.update { it.copy(chartTimePeriod = period) }
+        recomputeIncomeExpenseData(period)
+    }
+
+    private fun changeBudgetPeriod(period: TimePeriod) {
+        _uiState.update { it.copy(budgetTimePeriod = period) }
+        recomputeBudgetData(period)
+    }
+
+    /**
+     * Aggregates allTransactions into IncomeExpenseData buckets based on the selected period.
+     * - WEEKLY  → last 4 weeks (W1..W4)
+     * - MONTHLY → last 6 months (Jan..Jun style)
+     * - YEARLY  → last 3 years
+     */
+    private fun recomputeIncomeExpenseData(period: TimePeriod) {
+        val cal = Calendar.getInstance()
+        val data: List<IncomeExpenseData> = when (period) {
+            TimePeriod.WEEKLY -> {
+                (3 downTo 0).map { weeksAgo ->
+                    val weekStart = (cal.clone() as Calendar).apply {
+                        add(Calendar.WEEK_OF_YEAR, -weeksAgo)
+                        set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    val weekEnd = (weekStart.clone() as Calendar).apply {
+                        add(Calendar.WEEK_OF_YEAR, 1)
+                        add(Calendar.MILLISECOND, -1)
+                    }
+                    val label = "W${4 - weeksAgo}"
+                    val txInRange = allTransactions.filter { it.date in weekStart.timeInMillis..weekEnd.timeInMillis }
+                    IncomeExpenseData(
+                        period = label,
+                        income = txInRange.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
+                        expenses = txInRange.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                    )
+                }
+            }
+            TimePeriod.MONTHLY -> {
+                val monthFmt = SimpleDateFormat("MMM", Locale.getDefault())
+                (5 downTo 0).map { monthsAgo ->
+                    val monthCal = (cal.clone() as Calendar).apply {
+                        add(Calendar.MONTH, -monthsAgo)
+                        set(Calendar.DAY_OF_MONTH, 1)
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    val monthEnd = (monthCal.clone() as Calendar).apply {
+                        add(Calendar.MONTH, 1); add(Calendar.MILLISECOND, -1)
+                    }
+                    val label = monthFmt.format(monthCal.time)
+                    val txInRange = allTransactions.filter { it.date in monthCal.timeInMillis..monthEnd.timeInMillis }
+                    IncomeExpenseData(
+                        period = label,
+                        income = txInRange.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
+                        expenses = txInRange.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                    )
+                }
+            }
+            TimePeriod.YEARLY -> {
+                val currentYear = cal.get(Calendar.YEAR)
+                (2 downTo 0).map { yearsAgo ->
+                    val year = currentYear - yearsAgo
+                    val yearStart = Calendar.getInstance().apply {
+                        set(year, Calendar.JANUARY, 1, 0, 0, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    val yearEnd = Calendar.getInstance().apply {
+                        set(year, Calendar.DECEMBER, 31, 23, 59, 59); set(Calendar.MILLISECOND, 999)
+                    }
+                    val txInRange = allTransactions.filter { it.date in yearStart.timeInMillis..yearEnd.timeInMillis }
+                    IncomeExpenseData(
+                        period = year.toString(),
+                        income = txInRange.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
+                        expenses = txInRange.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                    )
+                }
+            }
+        }
+        _uiState.update { it.copy(incomeExpenseData = data) }
+    }
+
+    /**
+     * Aggregates allTransactions into BudgetData buckets based on the selected period.
+     * Budget target is derived from the average monthly spend across all data.
+     */
+    private fun recomputeBudgetData(period: TimePeriod) {
+        val cal = Calendar.getInstance()
+        // Use average monthly expense as a simple budget target baseline
+        val avgMonthlyExpense = if (monthlyDataMap.isNotEmpty())
+            monthlyDataMap.values.map { it.totalExpenses }.average()
+        else 0.0
+
+        val data: List<BudgetData> = when (period) {
+            TimePeriod.WEEKLY -> {
+                val weeklyTarget = avgMonthlyExpense / 4.0
+                (3 downTo 0).map { weeksAgo ->
+                    val weekStart = (cal.clone() as Calendar).apply {
+                        add(Calendar.WEEK_OF_YEAR, -weeksAgo)
+                        set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    val weekEnd = (weekStart.clone() as Calendar).apply {
+                        add(Calendar.WEEK_OF_YEAR, 1); add(Calendar.MILLISECOND, -1)
+                    }
+                    val actual = allTransactions
+                        .filter { it.type == TransactionType.EXPENSE && it.date in weekStart.timeInMillis..weekEnd.timeInMillis }
+                        .sumOf { it.amount }
+                    BudgetData(period = "W${4 - weeksAgo}", budget = weeklyTarget, actual = actual)
+                }
+            }
+            TimePeriod.MONTHLY -> {
+                val monthFmt = SimpleDateFormat("MMM", Locale.getDefault())
+                (5 downTo 0).map { monthsAgo ->
+                    val monthCal = (cal.clone() as Calendar).apply {
+                        add(Calendar.MONTH, -monthsAgo)
+                        set(Calendar.DAY_OF_MONTH, 1)
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    val monthEnd = (monthCal.clone() as Calendar).apply {
+                        add(Calendar.MONTH, 1); add(Calendar.MILLISECOND, -1)
+                    }
+                    val label = monthFmt.format(monthCal.time)
+                    val actual = allTransactions
+                        .filter { it.type == TransactionType.EXPENSE && it.date in monthCal.timeInMillis..monthEnd.timeInMillis }
+                        .sumOf { it.amount }
+                    BudgetData(period = label, budget = avgMonthlyExpense, actual = actual)
+                }
+            }
+            TimePeriod.YEARLY -> {
+                val yearlyTarget = avgMonthlyExpense * 12
+                val currentYear = cal.get(Calendar.YEAR)
+                (2 downTo 0).map { yearsAgo ->
+                    val year = currentYear - yearsAgo
+                    val yearStart = Calendar.getInstance().apply {
+                        set(year, Calendar.JANUARY, 1, 0, 0, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    val yearEnd = Calendar.getInstance().apply {
+                        set(year, Calendar.DECEMBER, 31, 23, 59, 59); set(Calendar.MILLISECOND, 999)
+                    }
+                    val actual = allTransactions
+                        .filter { it.type == TransactionType.EXPENSE && it.date in yearStart.timeInMillis..yearEnd.timeInMillis }
+                        .sumOf { it.amount }
+                    BudgetData(period = year.toString(), budget = yearlyTarget, actual = actual)
+                }
+            }
+        }
+        _uiState.update { it.copy(budgetData = data) }
     }
 }

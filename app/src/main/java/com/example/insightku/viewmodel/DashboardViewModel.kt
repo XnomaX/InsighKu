@@ -180,6 +180,26 @@ class DashboardViewModel @Inject constructor(
             streak++
             check.add(Calendar.DAY_OF_YEAR, -1)
         }
+
+        // Calculate best streak by scanning all tracked days in order
+        val sortedDays = trackedDayKeys.sorted()
+        var bestStreak = 0
+        var runStreak = 0
+        var prevCal: Calendar? = null
+        for (key in sortedDays) {
+            val cal = Calendar.getInstance().apply {
+                time = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).parse(key) ?: return@apply
+            }
+            if (prevCal == null) {
+                runStreak = 1
+            } else {
+                val prev = prevCal.clone() as Calendar
+                prev.add(Calendar.DAY_OF_YEAR, 1)
+                runStreak = if (dayKey(prev) == key) runStreak + 1 else 1
+            }
+            if (runStreak > bestStreak) bestStreak = runStreak
+            prevCal = cal
+        }
         // ───────────────────────────────────────────────────────────────────────
 
         _uiState.update {
@@ -190,6 +210,7 @@ class DashboardViewModel @Inject constructor(
                 monthlyExpenses     = monthlyExpenses,
                 recentTransactions  = recentTransactions,
                 currentStreak       = streak,
+                bestStreak          = bestStreak,
                 hasTrackedToday     = hasTrackedToday
             )
         }

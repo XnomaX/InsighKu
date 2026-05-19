@@ -44,7 +44,8 @@ fun ReceiptScannerDialog(
             category = formData.category,
             amount = if (formData.isIncome) amount else -amount,
             description = formData.description,
-            date = formData.date,
+            date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                .format(java.util.Date(formData.dateMillis)),
             isIncome = formData.isIncome
         )
         onTransactionConfirmed(transaction)
@@ -261,8 +262,10 @@ fun ScannedContent(
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = formData.date,
-                onValueChange = { onFormDataChange(formData.copy(date = it)) },
+                value = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                    .format(java.util.Date(formData.dateMillis)),
+                onValueChange = {},
+                readOnly = true,
                 label = { Text("Date") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -296,17 +299,75 @@ private fun ResultContent(
     onRetry: () -> Unit
 ) {
     var merchant by remember { mutableStateOf(extractedData["merchant"] ?: "") }
-    var amount by remember { mutableStateOf(extractedData["amount"] ?: "") }
+    var amount   by remember { mutableStateOf(extractedData["amount"] ?: "") }
     var category by remember { mutableStateOf(extractedData["category"] ?: "") }
-    var date by remember { mutableStateOf(extractedData["date"] ?: "") }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // ... (Implementation from your provided code)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFDCFCE7), RoundedCornerShape(8.dp))
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF10B981))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "AI extracted the details. Please review.",
+                color = Color(0xFF166534),
+                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        OutlinedTextField(
+            value = merchant,
+            onValueChange = { merchant = it },
+            label = { Text("Merchant") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = amount,
+            onValueChange = { amount = it },
+            label = { Text("Amount") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = category,
+            onValueChange = { category = it },
+            label = { Text("Category") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = onRetry, modifier = Modifier.weight(1f)) {
+                Text("Retry")
+            }
+            Button(
+                onClick = {
+                    onConfirm(
+                        TransactionData(
+                            id          = System.currentTimeMillis().toString(),
+                            title       = merchant,
+                            category    = category,
+                            amount      = amount.toDoubleOrNull() ?: 0.0,
+                            description = "",
+                            date        = extractedData["date"] ?: "",
+                            isIncome    = false
+                        )
+                    )
+                },
+                enabled = merchant.isNotBlank() && amount.isNotBlank(),
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A2A82))
+            ) {
+                Text("Confirm")
+            }
+        }
     }
 }
 

@@ -61,14 +61,14 @@ val DarkErrorContainer = Color(0xFF93000A)
 val DarkOnError = Color(0xFF690005)
 val DarkOnErrorContainer = Color(0xFFFFDAD6)
 
-val DarkBackground = Color(0xFF111827)
-val DarkOnBackground = Color(0xFFE6E1E5)
-val DarkSurface = Color(0xFF1F2937)
-val DarkOnSurface = Color(0xFFE6E1E5)
-val DarkSurfaceVariant = Color(0xFF49454F)
-val DarkOnSurfaceVariant = Color(0xFFCAC4D0)
+val DarkBackground = Color(0xFF0F0A1E)
+val DarkOnBackground = Color(0xFFEDE9FE)
+val DarkSurface = Color(0xFF1A1030)
+val DarkOnSurface = Color(0xFFEDE9FE)
+val DarkSurfaceVariant = Color(0xFF241840)
+val DarkOnSurfaceVariant = Color(0xFFAB8FD4)
 
-val DarkOutline = Color(0xFF938F99)
+val DarkOutline = Color(0xFF3D2B6B)
 val DarkInverseOnSurface = Color(0xFF1C1B1F)
 val DarkInverseSurface = Color(0xFFE6E1E5)
 val DarkInversePrimary = Color(0xFF5A2A82)
@@ -88,3 +88,33 @@ val InfoColor = Color(0xFF3B82F6)
 // Gradient Colors
 val GradientStart = Color(0xFF5A2A82)
 val GradientEnd = Color(0xFF7C3AED)
+
+// InsighKu Design System — Extended Color Tokens
+// Purple palette
+val PurpleDark = Color(0xFF2D0A5E)
+val PurpleMid = Color(0xFF5A2A82)
+val PurpleViolet = Color(0xFF7C3AED)
+val PurpleLavender = Color(0xFFAB8FD4)
+val PurpleTint = Color(0xFFEDE9FE)
+
+// Semantic colors
+val IncomeGreen = Color(0xFF10B981)
+val IncomeDeep = Color(0xFF064E3B)
+val IncomeMid = Color(0xFF065F46)
+val ExpenseRed = Color(0xFFEF4444)
+val ExpenseCoral = Color(0xFFE53E3E)
+val ExpenseLight = Color(0xFFFC8181)
+val WarningYellow = Color(0xFFEAB308)
+val SafeGreen = Color(0xFF16A34A)
+
+// Surface tokens
+val GlassSurface = Color(0xFFFAF8FF)
+val GlassBorder = Color(0xFFE8DDFF)
+val CardSurface = Color(0xFFF3EEFF)
+val AmountCardExpense = Color(0xFFF0EBFF)
+val AmountCardIncome = Color(0xFFECFDF5)
+
+// Dark mode surface tokens
+val DarkSurface2 = Color(0xFF241840)
+val DarkSurface3 = Color(0xFF2D2050)
+val DarkSurface4 = Color(0xFF3D2B6B)
