@@ -198,6 +198,7 @@ fun DashboardScreenContent(
     if (showStreakDetail) {
         StreakDetailSheet(
             currentStreak = uiState.currentStreak,
+            bestStreak = uiState.bestStreak,
             hasTrackedToday = uiState.hasTrackedToday,
             onDismiss = { showStreakDetail = false }
         )
@@ -710,7 +711,7 @@ fun StreakCelebrationDialog(streak: Int, onDismiss: () -> Unit) {
 // ─── Streak Detail Sheet ──────────────────────────────────────────────────────
 
 @Composable
-fun StreakDetailSheet(currentStreak: Int, hasTrackedToday: Boolean, onDismiss: () -> Unit) {
+fun StreakDetailSheet(currentStreak: Int, bestStreak: Int, hasTrackedToday: Boolean, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
@@ -733,20 +734,33 @@ fun StreakDetailSheet(currentStreak: Int, hasTrackedToday: Boolean, onDismiss: (
                     }
                 }
 
-                // Streak summary
-                Surface(
+                // Streak summary — 3 stat cards yang konsisten
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFF6B35).copy(alpha = 0.1f)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        StreakStat("🔥 Current", "$currentStreak days")
-                        StreakStat("📅 Today", if (hasTrackedToday) "✓ Done" else "Not yet")
-                        StreakStat("🎯 Best", "${maxOf(currentStreak, if (hasTrackedToday) 1 else 0)} days")
-                    }
+                    StreakStatCard(
+                        icon       = "🔥",
+                        value      = "$currentStreak",
+                        unit       = "days",
+                        label      = "Current",
+                        modifier   = Modifier.weight(1f)
+                    )
+                    StreakStatCard(
+                        icon       = "📅",
+                        value      = if (hasTrackedToday) "✓" else "✗",
+                        unit       = if (hasTrackedToday) "Done" else "Missed",
+                        label      = "Today",
+                        highlight  = hasTrackedToday,
+                        modifier   = Modifier.weight(1f)
+                    )
+                    StreakStatCard(
+                        icon       = "🏆",
+                        value      = "$bestStreak",
+                        unit       = "days",
+                        label      = "Best",
+                        modifier   = Modifier.weight(1f)
+                    )
                 }
 
                 // Day labels row
@@ -858,10 +872,59 @@ fun StreakDetailSheet(currentStreak: Int, hasTrackedToday: Boolean, onDismiss: (
 }
 
 @Composable
-private fun StreakStat(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+private fun StreakStatCard(
+    icon: String,
+    value: String,
+    unit: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    highlight: Boolean = false
+) {
+    Surface(
+        modifier = modifier,
+        shape    = RoundedCornerShape(14.dp),
+        color    = if (highlight)
+                       Color(0xFF10B981).copy(alpha = 0.1f)
+                   else
+                       Color(0xFFFF6B35).copy(alpha = 0.07f),
+        tonalElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // Icon
+            Text(
+                text     = icon,
+                fontSize = 20.sp
+            )
+            // Value — paling menonjol
+            Text(
+                text       = value,
+                style      = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color      = if (highlight) Color(0xFF065F46)
+                             else Color(0xFFFF6B35)
+            )
+            // Unit — satu tingkat di bawah value
+            Text(
+                text  = unit,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (highlight) Color(0xFF065F46).copy(alpha = 0.8f)
+                        else Color(0xFFFF6B35).copy(alpha = 0.8f),
+                fontWeight = FontWeight.Medium
+            )
+            // Label — paling kecil, secondary
+            Text(
+                text  = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Normal
+            )
+        }
     }
 }
 

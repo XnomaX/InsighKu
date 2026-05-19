@@ -13,9 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -33,6 +35,7 @@ import com.example.insightku.viewmodel.DashboardViewModel
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.viewmodel.TransactionDetailsViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,37 +48,64 @@ fun MainScreen(
     var showAddTransactionDialog by remember { mutableStateOf(false) }
     var pendingStreakPopup by remember { mutableStateOf(false) }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = { BottomNavBar(navController = navController, onAddClick = { showAddTransactionDialog = true }) }
-    ) { paddingValues ->
-        MainNavHost(
-            navController = navController,
-            rootNavController = rootNavController,
-            dashboardViewModel = dashboardViewModel,
-            onShowAddTransaction = { showAddTransactionDialog = true },
-            onShowAddTransactionForStreak = {
-                showAddTransactionDialog = true
-                pendingStreakPopup = true
-            },
-            modifier = Modifier
-                .padding(paddingValues)
-                .statusBarsPadding()
-        )
+    // Double tap back to exit
+    var backPressedOnce by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    BackHandler(enabled = !showAddTransactionDialog) {
+        if (backPressedOnce) {
+            (context as? android.app.Activity)?.finish()
+        } else {
+            backPressedOnce = true
+        }
     }
 
-    if (showAddTransactionDialog) {
+    // Reset flag after 2 seconds
+    LaunchedEffect(backPressedOnce) {
+        if (backPressedOnce) {
+            snackbarHostState.showSnackbar(
+                message = "Tekan back sekali lagi untuk keluar",
+                duration = SnackbarDuration.Short
+            )
+            delay(2000)
+            backPressedOnce = false
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            bottomBar = { BottomNavBar(navController = navController, onAddClick = { showAddTransactionDialog = true }) }
+        ) { paddingValues ->
+            MainNavHost(
+                navController = navController,
+                rootNavController = rootNavController,
+                dashboardViewModel = dashboardViewModel,
+                onShowAddTransaction = { showAddTransactionDialog = true },
+                onShowAddTransactionForStreak = {
+                    showAddTransactionDialog = true
+                    pendingStreakPopup = true
+                },
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .statusBarsPadding()
+            )
+        }
+
+        // Overlay — di atas Scaffold, dalam window yang sama (bukan Dialog window terpisah)
+        // Ini memastikan BackHandler dan predictive back gesture dikontrol penuh oleh activity
         AddTransactionDialog(
             isOpen = showAddTransactionDialog,
             onDismiss = {
                 showAddTransactionDialog = false
-                pendingStreakPopup = false // cancelled, no popup
+                pendingStreakPopup = false
             },
             onTransactionAdded = { transaction ->
                 dashboardViewModel.onEvent(DashboardEvent.AddTransaction(transaction))
                 showAddTransactionDialog = false
-                // pendingStreakPopup stays true → DashboardScreen will show it
             },
             onOpenScanner = {}
         )
@@ -128,7 +158,7 @@ private fun MainNavHost(
             AnalyticsScreen()
         }
         composable(Route.BUDGETING) {
-            BudgetingScreen()
+            BudgetingScreen(onAddTransaction = onShowAddTransaction)
         }
         composable(Route.SETTINGS) {
             SettingsScreen(onLogout = {

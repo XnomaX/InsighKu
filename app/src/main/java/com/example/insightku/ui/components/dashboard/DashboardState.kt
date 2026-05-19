@@ -16,6 +16,7 @@ data class DashboardUiState(
     val aiInsightMessage: String = "",
     val recentTransactions: List<TransactionItem> = emptyList(),
     val currentStreak: Int = 0,
+    val bestStreak: Int = 0,
     val hasTrackedToday: Boolean = false,
     val forecastPeriod: ForecastPeriod = ForecastPeriod.WEEKLY
 )

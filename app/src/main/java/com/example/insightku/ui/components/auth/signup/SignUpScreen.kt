@@ -257,7 +257,7 @@ fun SignUpScreen(
                         containerColor = primaryPurple,
                         disabledContainerColor = primaryPurple.copy(alpha = 0.5f)
                     ),
-                    shape = CircleShape
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     if (uiState.isLoading) {
                         CircularProgressIndicator(
@@ -334,7 +334,7 @@ private fun NameInputField(
                         "Name input field"
                     }
                 },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             leadingIcon = {
                 Icon(
                     Icons.Default.Person,
@@ -426,7 +426,7 @@ private fun EmailInputField(
                         "Email input field"
                     }
                 },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             leadingIcon = {
                 Icon(
                     Icons.Default.Email,
@@ -522,7 +522,7 @@ private fun PasswordInputField(
                         "$label input field"
                     }
                 },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             leadingIcon = {
                 Icon(
                     Icons.Default.Lock,

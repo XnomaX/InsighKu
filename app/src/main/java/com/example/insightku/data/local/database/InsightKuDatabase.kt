@@ -1,4 +1,4 @@
-package com.insightku.data.local.database
+package com.example.insightku.data.local.database
 
 import androidx.room.Database
 import androidx.room.Room

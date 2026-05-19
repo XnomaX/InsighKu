@@ -73,21 +73,57 @@ object CurrencyUtils {
     fun formatAmountWithoutSymbol(amount: Double): String =
         String.format("%.2f", amount)
 
-    /** Format ringkas: 1.5M / 2.3K, dengan simbol dari [currencyCode]. */
+    /**
+     * Format ringkas dengan skala yang sesuai bahasa/currency:
+     *
+     * IDR  → Rp. 1,5 Jt / Rp. 2,3 M / Rp. 1,2 T  (ribu/juta/miliar/triliun)
+     * Lain → $1.5M / $2.3K / ¥1.2B                 (thousand/million/billion/trillion)
+     *
+     * Aturan pembulatan: 1 desimal jika tidak bulat, tanpa desimal jika bulat.
+     * Contoh IDR: 1.500.000 → "Rp. 1,5 Jt", 2.000.000 → "Rp. 2 Jt"
+     */
     fun formatAmountCompact(amount: Double, currencyCode: String = "IDR"): String {
         val symbol = getOption(currencyCode).symbol
-        return when {
-            amount >= 1_000_000 -> "$symbol${String.format("%.1f", amount / 1_000_000)}M"
-            amount >= 1_000     -> "$symbol${String.format("%.1f", amount / 1_000)}K"
-            else                -> formatAmount(amount, currencyCode)
+        val absAmount = kotlin.math.abs(amount)
+        val sign = if (amount < 0) "-" else ""
+
+        return if (currencyCode == "IDR") {
+            when {
+                absAmount >= 1_000_000_000_000.0 -> "$sign$symbol${formatScale(absAmount / 1_000_000_000_000.0)} T"
+                absAmount >= 1_000_000_000.0     -> "$sign$symbol${formatScale(absAmount / 1_000_000_000.0)} M"
+                absAmount >= 1_000_000.0         -> "$sign$symbol${formatScale(absAmount / 1_000_000.0)} Jt"
+                absAmount >= 1_000.0             -> "$sign$symbol${formatScale(absAmount / 1_000.0)} Rb"
+                else                             -> formatAmount(amount, currencyCode)
+            }
+        } else {
+            when {
+                absAmount >= 1_000_000_000_000.0 -> "$sign$symbol${formatScale(absAmount / 1_000_000_000_000.0)}T"
+                absAmount >= 1_000_000_000.0     -> "$sign$symbol${formatScale(absAmount / 1_000_000_000.0)}B"
+                absAmount >= 1_000_000.0         -> "$sign$symbol${formatScale(absAmount / 1_000_000.0)}M"
+                absAmount >= 1_000.0             -> "$sign$symbol${formatScale(absAmount / 1_000.0)}K"
+                else                             -> formatAmount(amount, currencyCode)
+            }
+        }
+    }
+
+    /**
+     * Format angka skala: hilangkan desimal jika bulat, tampilkan 1 desimal jika tidak.
+     * Contoh: 1.0 → "1", 1.5 → "1,5", 2.35 → "2,4"
+     */
+    private fun formatScale(value: Double): String {
+        return if (value == kotlin.math.floor(value)) {
+            value.toLong().toString()
+        } else {
+            String.format(Locale.getDefault(), "%.1f", value)
         }
     }
 
     fun parseAmount(amountString: String): Double? {
         return try {
             val cleanString = amountString
-                .replace(Constants.CURRENCY_SYMBOL, "")
-                .replace(",", "")
+                .replace(Regex("^[A-Za-z$€¥₩Rp.\\s]+"), "")  // strip currency prefix
+                .replace(".", "")   // strip IDR thousands separator
+                .replace(",", ".")  // normalize decimal separator
                 .trim()
             cleanString.toDoubleOrNull()
         } catch (e: Exception) {

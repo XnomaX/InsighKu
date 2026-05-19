@@ -8,7 +8,7 @@ import com.example.insightku.data.local.dao.CategoryDao
 import com.example.insightku.data.local.dao.RecurringBudgetDao
 import com.example.insightku.data.local.dao.TransactionDao
 import com.example.insightku.data.local.dao.UserDao
-import com.insightku.data.local.database.InsightKuDatabase
+import com.example.insightku.data.local.database.InsightKuDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
