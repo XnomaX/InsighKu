@@ -118,6 +118,29 @@ object CurrencyUtils {
         }
     }
 
+    /**
+     * Format raw digit string with thousand separators for display in input fields.
+     * Input:  "50000"  → Output: "50.000"
+     * Input:  "1000000" → Output: "1.000.000"
+     * Only digits are accepted — non-digit characters are stripped first.
+     */
+    fun formatInputThousands(raw: String): String {
+        val digits = raw.filter { it.isDigit() }
+        if (digits.isEmpty()) return ""
+        val number = digits.toLongOrNull() ?: return digits
+        return NumberFormat.getNumberInstance(Locale("in", "ID")).apply {
+            maximumFractionDigits = 0
+            minimumFractionDigits = 0
+            isGroupingUsed = true
+        }.format(number)
+    }
+
+    /**
+     * Strip thousand separators from a formatted input string back to raw digits.
+     * Input: "50.000" → Output: "50000"
+     */
+    fun stripThousands(formatted: String): String = formatted.filter { it.isDigit() }
+
     fun parseAmount(amountString: String): Double? {
         return try {
             val cleanString = amountString

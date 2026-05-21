@@ -19,6 +19,13 @@ sealed class BudgetingEvent {
     data class ShowEditBudgetDialog(val category: BudgetCategory) : BudgetingEvent()
     object HideEditBudgetDialog : BudgetingEvent()
     data class UpdateCategory(val category: Category) : BudgetingEvent()
+
+    // Delete Category Events
+    data class ShowDeleteConfirmDialog(val category: BudgetCategory) : BudgetingEvent()
+    object HideDeleteConfirmDialog : BudgetingEvent()
+    data class ConfirmDeleteCategory(val categoryId: String, val categoryName: String) : BudgetingEvent()
+
+    // Keep for backward compat — routes through ShowDeleteConfirmDialog now
     data class DeleteCategory(val categoryId: String) : BudgetingEvent()
 
     // Recurring Budgets Dialog Events

@@ -2,10 +2,11 @@
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -46,9 +48,20 @@ import java.util.*
 import kotlin.math.abs
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-private val TxIncomeGreen = Color(0xFF10B981)
-private val TxExpenseRed  = Color(0xFFEF4444)
-private val GlassBorder   = Color(0xFFE8DDFF)
+private val TxIncomeGreen  = Color(0xFF10B981)
+private val TxExpenseRed   = Color(0xFFEF4444)
+private val GlassBorder    = Color(0xFFE8DDFF)
+private val PurpleDark     = Color(0xFF2D0A5E)
+private val PurpleMid      = Color(0xFF5A2A82)
+private val PurpleViolet   = Color(0xFF7C3AED)
+private val PurpleLavender = Color(0xFFAB8FD4)
+private val PurpleTint     = Color(0xFFEDE9FE)
+private val IncomeDeep     = Color(0xFF064E3B)
+private val IncomeMid      = Color(0xFF065F46)
+private val GlassSurface   = Color(0xFFFAF8FF)
+private val CardSurface    = Color(0xFFF3EEFF)
+private val AmountCardExpense = Color(0xFFF0EBFF)
+private val AmountCardIncome  = Color(0xFFECFDF5)
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 enum class FilterType { ALL, INCOME, EXPENSE, TODAY, WEEK, MONTH, YEAR }
@@ -106,6 +119,9 @@ private fun formatDateClean(dateMillis: Long): String {
             SimpleDateFormat("d MMM yyyy", Locale.ENGLISH).format(date)
     }
 }
+
+private fun formatFullDate(dateMillis: Long): String =
+    SimpleDateFormat("EEEE, d MMMM yyyy", Locale.ENGLISH).format(Date(dateMillis))
 
 private fun formatCurrencyRp(amount: Double): String =
     "Rp " + String.format(Locale.getDefault(), "%,.0f", abs(amount))
@@ -165,7 +181,6 @@ fun TransactionDetailsScreen(
         return
     }
 
-    // List view — always rendered
     TransactionListView(
         transactions          = filtered,
         searchTerm            = searchTerm,
@@ -178,7 +193,6 @@ fun TransactionDetailsScreen(
         onBack                = onBack
     )
 
-    // Detail overlay — rendered on top when transaction selected
     selectedTransaction?.let { tx ->
         TransactionDetailOverlay(
             transaction = tx,
@@ -191,7 +205,6 @@ fun TransactionDetailsScreen(
         )
     }
 
-    // Edit overlay
     transactionToEdit?.let { tx ->
         EditTransactionDetail(
             transaction = tx,
@@ -253,7 +266,6 @@ fun TransactionListView(
                 )
                 Spacer(Modifier.height(4.dp))
             }
-
             if (transactions.isEmpty()) {
                 item { TxEmptyState() }
             } else {
@@ -467,7 +479,7 @@ private fun TxFilterControls(
                         SortType.HIGHEST  to "Highest Amount",
                         SortType.LOWEST   to "Lowest Amount",
                         SortType.CATEGORY to "By Category"
-                    ).forEachIndexed { index, (type, label) ->
+                    ).forEach { (type, label) ->
                         DropdownMenuItem(
                             text = {
                                 Text(label, style = MaterialTheme.typography.bodyMedium,
@@ -602,7 +614,7 @@ private fun TxEmptyState() {
     }
 }
 
-// ─── Transaction Detail Overlay (Dialog style, same window as activity) ───────
+// ─── Premium Transaction Detail Overlay ──────────────────────────────────────
 
 @Composable
 fun TransactionDetailOverlay(
@@ -612,226 +624,363 @@ fun TransactionDetailOverlay(
     onDelete: (String) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var dragOffsetY      by remember { mutableFloatStateOf(0f) }
 
     BackHandler { onDismiss() }
 
-    AnimatedVisibility(
-        visible = true,
-        enter   = fadeIn(tween(200)) + slideInVertically(tween(300)) { it / 4 },
-        exit    = fadeOut(tween(200))
+    val isIncome    = transaction.type == TransactionType.INCOME
+    val catColor    = getCategoryColor(transaction.category)
+    val amountColor = if (isIncome) TxIncomeGreen else TxExpenseRed
+    val prefix      = if (isIncome) "+" else "-"
+
+    val headerGradient = if (isIncome)
+        Brush.linearGradient(listOf(IncomeDeep, IncomeMid, TxIncomeGreen))
+    else
+        Brush.linearGradient(listOf(PurpleDark, PurpleMid, PurpleViolet))
+
+    // Animate in: scrim fades, card slides up from below
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    val scrimAlpha by animateFloatAsState(
+        targetValue   = if (visible) 0.6f else 0f,
+        animationSpec = tween(280),
+        label         = "scrim"
+    )
+
+    val cardOffsetY by animateFloatAsState(
+        targetValue   = if (visible) 0f else 300f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+        label         = "card_y"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = scrimAlpha))
+            .pointerInput(Unit) { detectTapGestures { onDismiss() } },
+        contentAlignment = Alignment.BottomCenter
     ) {
+        // Floating card — not full width, with horizontal margin
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 16.dp)
+                .graphicsLayer {
+                    translationY = cardOffsetY + dragOffsetY.coerceAtLeast(0f)
+                }
+                .shadow(
+                    elevation    = 32.dp,
+                    shape        = RoundedCornerShape(32.dp),
+                    ambientColor = PurpleViolet.copy(alpha = 0.25f),
+                    spotColor    = PurpleViolet.copy(alpha = 0.35f)
+                )
+                .clip(RoundedCornerShape(32.dp))
+                .background(GlassSurface)
                 .pointerInput(Unit) {
-                    detectTapGestures(onTap = { onDismiss() })
-                },
-            contentAlignment = Alignment.BottomCenter
+                    detectTapGestures { /* consume — don't dismiss */ }
+                }
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            if (dragOffsetY > 120f) onDismiss()
+                            else dragOffsetY = 0f
+                        },
+                        onDragCancel = { dragOffsetY = 0f },
+                        onVerticalDrag = { _, delta ->
+                            dragOffsetY = (dragOffsetY + delta).coerceAtLeast(0f)
+                        }
+                    )
+                }
         ) {
-            // Bottom sheet style card
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.88f)
-                    .pointerInput(Unit) { detectTapGestures { } }, // consume taps
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp,
-                shadowElevation = 24.dp
-            ) {
-                Column(Modifier.fillMaxSize()) {
-                    // ── Handle bar ────────────────────────────────────────
+            Column(modifier = Modifier.fillMaxWidth()) {
+
+                // ── Drag handle ───────────────────────────────────────────
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp, bottom = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
+                            .width(36.dp)
+                            .height(4.dp)
+                            .clip(CircleShape)
+                            .background(PurpleLavender.copy(alpha = 0.4f))
+                    )
+                }
+
+                // ── Gradient hero header ──────────────────────────────────
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 24.dp, bottomEnd = 24.dp))
+                        .background(headerGradient)
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 8.dp, bottom = 24.dp)
+                ) {
+                    // Close button top-right
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.18f))
+                            .pointerInput(Unit) { detectTapGestures { onDismiss() } },
                         contentAlignment = Alignment.Center
                     ) {
+                        Icon(Icons.Default.Close, null,
+                            tint = Color.White, modifier = Modifier.size(16.dp))
+                    }
+
+                    Column(
+                        modifier            = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(Modifier.height(4.dp))
+
+                        // Circular category icon
                         Box(
                             modifier = Modifier
-                                .width(40.dp)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                                .size(72.dp)
+                                .shadow(12.dp, CircleShape, ambientColor = catColor.copy(alpha = 0.4f))
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(
+                                        listOf(catColor.copy(alpha = 0.9f), catColor.copy(alpha = 0.6f))
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                getCategoryIcon(transaction.category),
+                                contentDescription = null,
+                                tint     = Color.White,
+                                modifier = Modifier.size(34.dp)
+                            )
+                        }
+
+                        Spacer(Modifier.height(14.dp))
+
+                        // Transaction title
+                        Text(
+                            text       = transaction.title,
+                            style      = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color      = Color.White,
+                            textAlign  = TextAlign.Center,
+                            maxLines   = 2,
+                            overflow   = TextOverflow.Ellipsis
+                        )
+
+                        Spacer(Modifier.height(6.dp))
+
+                        // Category pill
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.White.copy(alpha = 0.18f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(catColor)
+                                )
+                                Text(
+                                    transaction.category,
+                                    style      = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color      = Color.White
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(20.dp))
+
+                        // Amount hero
+                        Text(
+                            text       = "$prefix ${formatCurrencyRp(transaction.amount)}",
+                            style      = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color      = Color.White,
+                            letterSpacing = (-0.5).sp
+                        )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        // Type badge
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = (if (isIncome) TxIncomeGreen else TxExpenseRed).copy(alpha = 0.25f)
+                        ) {
+                            Text(
+                                text     = if (isIncome) "INCOME" else "EXPENSE",
+                                style    = MaterialTheme.typography.labelSmall,
+                                color    = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.5.sp,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                }
+
+                // ── Detail info cards ─────────────────────────────────────
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 340.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 16.dp, bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Date & Time row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DetailInfoCard(
+                            icon    = Icons.Default.CalendarMonth,
+                            label   = "Date",
+                            value   = formatFullDate(transaction.date),
+                            color   = PurpleViolet,
+                            modifier = Modifier.weight(1f)
+                        )
+                        DetailInfoCard(
+                            icon    = Icons.Default.AccessTime,
+                            label   = "Time",
+                            value   = transaction.time,
+                            color   = PurpleViolet,
+                            modifier = Modifier.weight(1f)
                         )
                     }
 
-                    // ── Gradient header ───────────────────────────────────
-                    val catColor    = getCategoryColor(transaction.category)
-                    val amountColor = if (transaction.type == TransactionType.INCOME) TxIncomeGreen else TxExpenseRed
-                    val prefix      = if (transaction.type == TransactionType.INCOME) "+ " else "- "
-                    val isIncome    = transaction.type == TransactionType.INCOME
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                if (isIncome)
-                                    Brush.horizontalGradient(listOf(Color(0xFF064E3B), Color(0xFF10B981)))
-                                else
-                                    Brush.horizontalGradient(listOf(Color(0xFF2D0A5E), Color(0xFF7C3AED)))
-                            )
-                            .padding(horizontal = 20.dp, vertical = 20.dp)
+                    // Payment method & sync status row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color.White.copy(alpha = 0.18f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    getCategoryIcon(transaction.category),
-                                    contentDescription = null,
-                                    tint     = Color.White,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                            Spacer(Modifier.width(14.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    transaction.title,
-                                    style      = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = Color.White,
-                                    maxLines   = 2,
-                                    overflow   = TextOverflow.Ellipsis
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Color.White.copy(alpha = 0.18f)
-                                ) {
-                                    Text(
-                                        transaction.category,
-                                        style      = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color      = Color.White,
-                                        modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                    )
-                                }
-                            }
-                            // Close button
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.18f))
-                                    .pointerInput(Unit) { detectTapGestures { onDismiss() } },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Close, null,
-                                    tint = Color.White, modifier = Modifier.size(18.dp))
-                            }
-                        }
-
-                        // Amount row
-                        Spacer(Modifier.height(16.dp))
+                        DetailInfoCard(
+                            icon    = Icons.Default.CreditCard,
+                            label   = "Payment",
+                            value   = transaction.paymentMethod ?: "Not specified",
+                            color   = Color(0xFF3B82F6),
+                            modifier = Modifier.weight(1f)
+                        )
+                        DetailInfoCard(
+                            icon    = if (transaction.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
+                            label   = "Status",
+                            value   = if (transaction.isSynced) "Synced" else "Pending",
+                            color   = if (transaction.isSynced) TxIncomeGreen else Color(0xFFF59E0B),
+                            modifier = Modifier.weight(1f)
+                        )
                     }
 
-                    // Amount hero
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                if (isIncome) Color(0xFFECFDF5) else Color(0xFFF0EBFF)
-                            )
-                            .padding(horizontal = 20.dp, vertical = 14.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Amount", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(
-                                prefix + formatCurrencyRp(transaction.amount),
-                                style      = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.ExtraBold,
-                                color      = amountColor
-                            )
-                        }
+                    // Location (if present)
+                    if (!transaction.location.isNullOrBlank()) {
+                        DetailInfoCardWide(
+                            icon  = Icons.Default.LocationOn,
+                            label = "Location",
+                            value = transaction.location,
+                            color = Color(0xFFEC4899)
+                        )
                     }
 
-                    // ── Info rows ─────────────────────────────────────────
-                    Column(
+                    // Notes (if present)
+                    if (!transaction.description.isNullOrBlank()) {
+                        DetailInfoCardWide(
+                            icon  = Icons.Default.Notes,
+                            label = "Notes",
+                            value = transaction.description,
+                            color = Color(0xFF8B5CF6)
+                        )
+                    }
+                }
+
+                // ── Soft divider ──────────────────────────────────────────
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(1.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color.Transparent, GlassBorder, Color.Transparent)
+                            )
+                        )
+                )
+
+                // ── Action buttons ────────────────────────────────────────
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Edit button — outlined purple
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                            .height(50.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(
+                                width = 1.5.dp,
+                                brush = Brush.horizontalGradient(listOf(PurpleMid, PurpleViolet)),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .background(PurpleViolet.copy(alpha = 0.06f))
+                            .pointerInput(Unit) { detectTapGestures { onEdit(transaction) } },
+                        contentAlignment = Alignment.Center
                     ) {
-                        TxDetailRow(Icons.Default.CalendarMonth, "Date", formatDateClean(transaction.date))
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
-                        TxDetailRow(Icons.Default.AccessTime, "Time", transaction.time)
-                        if (!transaction.paymentMethod.isNullOrBlank()) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
-                            TxDetailRow(Icons.Default.CreditCard, "Payment Method", transaction.paymentMethod)
-                        }
-                        if (!transaction.location.isNullOrBlank()) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
-                            TxDetailRow(Icons.Default.LocationOn, "Location", transaction.location)
-                        }
-                        if (!transaction.description.isNullOrBlank()) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
-                            TxDetailRow(Icons.Default.Notes, "Description", transaction.description)
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
                         Row(
-                            modifier = Modifier.padding(vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(
-                                if (transaction.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
-                                null,
-                                tint     = if (transaction.isSynced) TxIncomeGreen
-                                           else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                if (transaction.isSynced) "Synced to cloud" else "Pending sync",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (transaction.isSynced) TxIncomeGreen
-                                        else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Icon(Icons.Default.Edit, null,
+                                tint = PurpleViolet, modifier = Modifier.size(16.dp))
+                            Text("Edit",
+                                style      = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color      = PurpleViolet)
                         }
                     }
 
-                    // ── Action buttons ────────────────────────────────────
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-                    Row(
+                    // Delete button — gradient red
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 18.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            .weight(1f)
+                            .height(50.dp)
+                            .shadow(6.dp, RoundedCornerShape(16.dp),
+                                ambientColor = TxExpenseRed.copy(alpha = 0.3f),
+                                spotColor    = TxExpenseRed.copy(alpha = 0.3f))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(Color(0xFFE53E3E), TxExpenseRed)
+                                )
+                            )
+                            .pointerInput(Unit) { detectTapGestures { showDeleteDialog = true } },
+                        contentAlignment = Alignment.Center
                     ) {
-                        OutlinedButton(
-                            onClick  = { onEdit(transaction) },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape    = RoundedCornerShape(14.dp),
-                            colors   = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary),
-                            border   = androidx.compose.foundation.BorderStroke(
-                                1.5.dp, MaterialTheme.colorScheme.primary)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Edit", fontWeight = FontWeight.SemiBold)
-                        }
-                        Button(
-                            onClick  = { showDeleteDialog = true },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape    = RoundedCornerShape(14.dp),
-                            colors   = ButtonDefaults.buttonColors(containerColor = TxExpenseRed)
-                        ) {
-                            Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Delete", fontWeight = FontWeight.SemiBold)
+                            Icon(Icons.Default.Delete, null,
+                                tint = Color.White, modifier = Modifier.size(16.dp))
+                            Text("Delete",
+                                style      = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color      = Color.White)
                         }
                     }
                 }
@@ -839,58 +988,157 @@ fun TransactionDetailOverlay(
         }
     }
 
-    // Delete confirmation
+    // ── Delete confirmation dialog ─────────────────────────────────────────────
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            icon  = { Icon(Icons.Default.DeleteForever, null, tint = TxExpenseRed) },
-            title = { Text("Delete Transaction?", fontWeight = FontWeight.Bold) },
+            icon  = {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(TxExpenseRed.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.DeleteForever, null,
+                        tint = TxExpenseRed, modifier = Modifier.size(26.dp))
+                }
+            },
+            title = {
+                Text("Delete Transaction?",
+                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.titleLarge)
+            },
             text  = {
-                Text("\"${transaction.title}\" will be permanently deleted. This cannot be undone.",
-                    style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "\"${transaction.title}\" will be permanently deleted. This cannot be undone.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             },
             confirmButton = {
-                Button(
-                    onClick = { showDeleteDialog = false; onDelete(transaction.id) },
-                    colors  = ButtonDefaults.buttonColors(containerColor = TxExpenseRed),
-                    shape   = RoundedCornerShape(10.dp)
-                ) { Text("Delete", fontWeight = FontWeight.Bold) }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Brush.horizontalGradient(listOf(Color(0xFFE53E3E), TxExpenseRed)))
+                        .pointerInput(Unit) {
+                            detectTapGestures { showDeleteDialog = false; onDelete(transaction.id) }
+                        }
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
+                ) {
+                    Text("Delete", fontWeight = FontWeight.Bold, color = Color.White)
+                }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showDeleteDialog = false },
-                    shape = RoundedCornerShape(10.dp)) { Text("Cancel") }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
+                        .pointerInput(Unit) { detectTapGestures { showDeleteDialog = false } }
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
+                ) {
+                    Text("Cancel",
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             },
-            shape = RoundedCornerShape(20.dp)
+            shape = RoundedCornerShape(24.dp),
+            containerColor = GlassSurface
         )
     }
 }
 
+// ─── Detail Info Cards ────────────────────────────────────────────────────────
+
 @Composable
-private fun TxDetailRow(icon: ImageVector, label: String, value: String) {
-    Row(
+private fun DetailInfoCard(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(color.copy(alpha = 0.07f))
+            .border(1.dp, color.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+            .padding(horizontal = 12.dp, vertical = 12.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(color.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
+                }
+                Text(
+                    label,
+                    style     = MaterialTheme.typography.labelSmall,
+                    color     = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines  = 1
+                )
+            }
+            Text(
+                value,
+                style      = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color      = MaterialTheme.colorScheme.onSurface,
+                maxLines   = 2,
+                overflow   = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun DetailInfoCardWide(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    color: Color
+) {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(color.copy(alpha = 0.07f))
+            .border(1.dp, color.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
-            contentAlignment = Alignment.Center
+        Row(
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(icon, null,
-                tint     = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                modifier = Modifier.size(18.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(2.dp))
-            Text(value, style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium)
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(color.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    label,
+                    style  = MaterialTheme.typography.labelSmall,
+                    color  = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+                Text(
+                    value,
+                    style      = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color      = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
@@ -918,5 +1166,35 @@ private val SAMPLE_TRANSACTIONS = listOf(
 fun TransactionDetailsScreenListPreview() {
     MaterialTheme {
         TransactionDetailsScreen(initialTransactions = SAMPLE_TRANSACTIONS, onBack = {})
+    }
+}
+
+@Preview(showBackground = true, name = "Detail Overlay - Expense", widthDp = 400, heightDp = 800)
+@Composable
+private fun PreviewDetailOverlayExpense() {
+    MaterialTheme {
+        Box(Modifier.fillMaxSize()) {
+            TransactionDetailOverlay(
+                transaction = SAMPLE_TRANSACTIONS[1],
+                onDismiss   = {},
+                onEdit      = {},
+                onDelete    = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Detail Overlay - Income", widthDp = 400, heightDp = 800)
+@Composable
+private fun PreviewDetailOverlayIncome() {
+    MaterialTheme {
+        Box(Modifier.fillMaxSize()) {
+            TransactionDetailOverlay(
+                transaction = SAMPLE_TRANSACTIONS[0],
+                onDismiss   = {},
+                onEdit      = {},
+                onDelete    = {}
+            )
+        }
     }
 }

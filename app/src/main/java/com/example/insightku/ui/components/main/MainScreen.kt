@@ -30,10 +30,10 @@ import com.example.insightku.ui.components.budgeting.BudgetingScreen
 import com.example.insightku.ui.components.dashboard.DashboardScreen
 import com.example.insightku.ui.components.settings.SettingsScreen
 import com.example.insightku.ui.components.addtransaction.AddTransactionDialog
-import com.example.insightku.ui.components.dashboard.DashboardEvent
 import com.example.insightku.viewmodel.DashboardViewModel
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.viewmodel.AddTransactionViewModel
 import com.example.insightku.viewmodel.TransactionDetailsViewModel
 import kotlinx.coroutines.delay
 
@@ -45,8 +45,20 @@ fun MainScreen(
 ) {
     val navController = rememberNavController()
     val dashboardViewModel: DashboardViewModel = hiltViewModel()
+    val addTransactionViewModel: AddTransactionViewModel = hiltViewModel()
+    val categories by addTransactionViewModel.categories.collectAsState()
+    val addTxUiState by addTransactionViewModel.uiState.collectAsState()
     var showAddTransactionDialog by remember { mutableStateOf(false) }
     var pendingStreakPopup by remember { mutableStateOf(false) }
+
+    // Close dialog and reset state after successful save
+    LaunchedEffect(addTxUiState.savedSuccessfully) {
+        if (addTxUiState.savedSuccessfully) {
+            showAddTransactionDialog = false
+            pendingStreakPopup = false
+            addTransactionViewModel.clearSavedState()
+        }
+    }
 
     // Double tap back to exit
     var backPressedOnce by remember { mutableStateOf(false) }
@@ -104,10 +116,21 @@ fun MainScreen(
                 pendingStreakPopup = false
             },
             onTransactionAdded = { transaction ->
-                dashboardViewModel.onEvent(DashboardEvent.AddTransaction(transaction))
-                showAddTransactionDialog = false
+                addTransactionViewModel.addTransaction(transaction)
             },
-            onOpenScanner = {}
+            onOpenScanner = {},
+            categories = categories,
+            onCreateCategory = {
+                // Navigate to budgeting tab so user can add a category there
+                navController.navigate(Route.BUDGETING) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+                showAddTransactionDialog = false
+            }
         )
     }
 }
@@ -158,7 +181,7 @@ private fun MainNavHost(
             AnalyticsScreen()
         }
         composable(Route.BUDGETING) {
-            BudgetingScreen(onAddTransaction = onShowAddTransaction)
+            BudgetingScreen()
         }
         composable(Route.SETTINGS) {
             SettingsScreen(onLogout = {

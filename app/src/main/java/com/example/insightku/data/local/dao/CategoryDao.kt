@@ -18,6 +18,12 @@ interface CategoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategory(category: Category)
 
+    // IGNORE strategy: never restore a category that was deleted locally.
+    // Mirrors the same pattern used for transactions (insertTransactionsFromRemote).
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertCategoriesFromRemote(categories: List<Category>)
+
+    // Keep REPLACE for explicit local inserts (add/update from UI)
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategories(categories: List<Category>)
 

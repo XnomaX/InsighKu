@@ -20,6 +20,7 @@ data class Category(
     val budgetLimit: Double? = null,
     val icon: String? = null,
     val isActive: Boolean = true,
-    val alertThreshold: Int = 80
+    val alertThreshold: Int = 80,
+    val recurringPeriod: String? = null  // "Weekly", "Monthly", "Yearly", or null
 )
 

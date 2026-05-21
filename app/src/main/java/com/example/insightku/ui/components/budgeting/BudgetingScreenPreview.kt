@@ -13,8 +13,7 @@ fun BudgetingScreenNoDataPreview() {
     MaterialTheme {
         BudgetingScreenContent(
             uiState = BudgetingUiState(isLoading = false),
-            onEvent = {},
-            onAddTransaction = {}
+            onEvent = {}
         )
     }
 }
@@ -31,8 +30,7 @@ fun BudgetingScreenSafePreview() {
     MaterialTheme {
         BudgetingScreenContent(
             uiState = budgetingPreviewState(categories),
-            onEvent = {},
-            onAddTransaction = {}
+            onEvent = {}
         )
     }
 }
@@ -49,8 +47,7 @@ fun BudgetingScreenWarningPreview() {
     MaterialTheme {
         BudgetingScreenContent(
             uiState = budgetingPreviewState(categories),
-            onEvent = {},
-            onAddTransaction = {}
+            onEvent = {}
         )
     }
 }
@@ -67,8 +64,7 @@ fun BudgetingScreenOverBudgetPreview() {
     MaterialTheme {
         BudgetingScreenContent(
             uiState = budgetingPreviewState(categories),
-            onEvent = {},
-            onAddTransaction = {}
+            onEvent = {}
         )
     }
 }

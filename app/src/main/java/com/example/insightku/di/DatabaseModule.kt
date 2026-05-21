@@ -9,6 +9,7 @@ import com.example.insightku.data.local.dao.RecurringBudgetDao
 import com.example.insightku.data.local.dao.TransactionDao
 import com.example.insightku.data.local.dao.UserDao
 import com.example.insightku.data.local.database.InsightKuDatabase
+import com.example.insightku.data.local.database.MIGRATION_3_4
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,7 +28,10 @@ object DatabaseModule {
             context,
             InsightKuDatabase::class.java,
             "insightku_database"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .addMigrations(MIGRATION_3_4)
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

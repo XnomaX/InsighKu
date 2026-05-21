@@ -10,6 +10,7 @@ data class BudgetingUiState(
     val totalBudget: Double = 0.0,
     val totalSpent: Double = 0.0,
     val budgetCategories: List<BudgetCategory> = emptyList(),
+    val recurringBudgets: List<RecurringBudget> = emptyList(),
     val selectedPeriod: BudgetPeriod = BudgetPeriod.MONTHLY,
     val dialogState: DialogState = DialogState.None
 ) {
@@ -24,6 +25,7 @@ sealed class DialogState {
     data object None : DialogState()
     data object AddBudget : DialogState()
     data class EditBudget(val category: BudgetCategory) : DialogState()
+    data class DeleteConfirm(val category: BudgetCategory) : DialogState()
     data class ManageRecurring(val budgets: List<RecurringBudget>) : DialogState()
 }
 
@@ -47,7 +49,8 @@ data class BudgetCategory(
     val budgetedAmount: Double?,
     val spentAmount: Double,
     val color: String,
-    val icon: String
+    val icon: String,
+    val recurringPeriod: String? = null
 ) {
     val hasLimit: Boolean get() = (budgetedAmount ?: 0.0) > 0.0
     val limitAmount: Double get() = budgetedAmount ?: 0.0
