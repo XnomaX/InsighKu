@@ -4,9 +4,17 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
 import com.example.insightku.data.local.dao.*
 import com.example.insightku.data.model.*
+
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE categories ADD COLUMN recurringPeriod TEXT")
+    }
+}
 
 @Database(
     entities = [
@@ -16,7 +24,7 @@ import com.example.insightku.data.model.*
         Budget::class,
         User::class
     ],
-    version = 3,       // v3: Tambah isSynced + createdAt ke Transaction (offline-first)
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

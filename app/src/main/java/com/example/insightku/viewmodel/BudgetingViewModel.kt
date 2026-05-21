@@ -12,6 +12,7 @@ import com.example.insightku.ui.components.budgeting.BudgetingEvent
 import com.example.insightku.ui.components.budgeting.BudgetingUiState
 import com.example.insightku.ui.components.budgeting.DialogState
 import com.example.insightku.utils.ErrorBus
+import com.example.insightku.utils.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -42,18 +43,16 @@ import javax.inject.Inject
 class BudgetingViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val authRepository: AuthRepository,
-    private val errorBus: ErrorBus
+    private val errorBus: ErrorBus,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BudgetingUiState())
     val uiState = _uiState.asStateFlow()
 
-    // BUG7 FIX: Track Job agar tidak ada multiple collectors bersamaan
     private var loadJob: Job? = null
-    private var hasSeededDefaultCategories = false
     private var isRefreshComplete = false
 
-    // Cache recurring budgets so ShowRecurringBudgetsDialog can pass real data
     private var cachedRecurringBudgets: List<RecurringBudget> = emptyList()
 
     init {
@@ -75,13 +74,22 @@ class BudgetingViewModel @Inject constructor(
             is BudgetingEvent.HideAddBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
             is BudgetingEvent.ShowEditBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.EditBudget(event.category)) }
             is BudgetingEvent.HideEditBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
+            is BudgetingEvent.ShowDeleteConfirmDialog -> _uiState.update { it.copy(dialogState = DialogState.DeleteConfirm(event.category)) }
+            is BudgetingEvent.HideDeleteConfirmDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
             is BudgetingEvent.ShowRecurringBudgetsDialog -> _uiState.update { it.copy(dialogState = DialogState.ManageRecurring(cachedRecurringBudgets)) }
             is BudgetingEvent.HideRecurringBudgetsDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
 
             // Data Operations
             is BudgetingEvent.AddCategory -> addCategory(event.category)
             is BudgetingEvent.UpdateCategory -> updateCategory(event.category)
-            is BudgetingEvent.DeleteCategory -> deleteCategory(event.categoryId)
+            is BudgetingEvent.DeleteCategory -> {
+                // Route through confirmation dialog
+                val category = _uiState.value.budgetCategories.find { it.id == event.categoryId }
+                if (category != null) {
+                    _uiState.update { it.copy(dialogState = DialogState.DeleteConfirm(category)) }
+                }
+            }
+            is BudgetingEvent.ConfirmDeleteCategory -> deleteCategory(event.categoryId, event.categoryName)
             is BudgetingEvent.AddRecurringBudget -> addRecurringBudget(event.budget)
             is BudgetingEvent.UpdateRecurringBudget -> updateRecurringBudget(event.budget)
             is BudgetingEvent.DeleteRecurringBudget -> deleteRecurringBudget(event.budget)
@@ -116,17 +124,25 @@ class BudgetingViewModel @Inject constructor(
                             budgetedAmount = category.budgetLimit,
                             spentAmount = spentAmount,
                             color = category.color ?: "",
-                            icon = category.icon ?: ""
+                            icon = category.icon ?: "",
+                            recurringPeriod = category.recurringPeriod
                         )
                     }
 
+                    // Only show transaction-only rows for non-blank, non-uncategorized names.
+                    // "Uncategorized" string was written by old migration code and must be
+                    // treated the same as blank — silently ignored, not surfaced as a card.
                     val transactionOnlyRows = monthlyExpenses
-                        .filter { it.category.normalizedCategoryName() !in knownNames }
-                        .groupBy { it.category.ifBlank { "Uncategorized" } }
+                        .filter {
+                            it.category.normalizedCategoryName() !in knownNames
+                                && it.category.isNotBlank()
+                                && it.category.normalizedCategoryName() != "uncategorized"
+                        }
+                        .groupBy { it.category }
                         .map { (categoryName, categoryTransactions) ->
                             BudgetCategory(
                                 id = "transaction-only-${categoryName.normalizedCategoryName()}",
-                                name = categoryName.ifBlank { "Uncategorized" },
+                                name = categoryName,
                                 budgetedAmount = null,
                                 spentAmount = categoryTransactions.sumOf { it.amount },
                                 color = defaultColorForCategory(categoryName),
@@ -142,12 +158,14 @@ class BudgetingViewModel @Inject constructor(
                         )
                     Pair(budgetCategories, recurringBudgets)
                 }.collect { (budgetCategories, recurringBudgets) ->
-                    // Cache recurring budgets so ShowRecurringBudgetsDialog can use real data
                     cachedRecurringBudgets = recurringBudgets
 
-                    if (budgetCategories.isEmpty() && !hasSeededDefaultCategories && isRefreshComplete) {
-                        hasSeededDefaultCategories = true
-                        seedDefaultCategories(userId)
+                    if (budgetCategories.isEmpty() && isRefreshComplete) {
+                        val alreadySeeded = sessionManager.getHasSeededCategories()
+                        if (!alreadySeeded) {
+                            sessionManager.setHasSeededCategories(true)
+                            seedDefaultCategories(userId)
+                        }
                     }
 
                     val totalBudget = budgetCategories.filter { it.hasLimit }.sumOf { it.limitAmount }
@@ -157,7 +175,8 @@ class BudgetingViewModel @Inject constructor(
                             isLoading = false,
                             totalBudget = totalBudget,
                             totalSpent = totalSpent,
-                            budgetCategories = budgetCategories
+                            budgetCategories = budgetCategories,
+                            recurringBudgets = recurringBudgets
                         )
                     }
                 }
@@ -179,11 +198,14 @@ class BudgetingViewModel @Inject constructor(
                 transactionRepository.refreshCategories(userId)
                 transactionRepository.refreshTransactions(userId)
                 transactionRepository.refreshRecurringBudgets(userId)
+                // Clean up stale "Uncategorized" transaction strings from old migration code
+                transactionRepository.cleanupUncategorizedTransactions(userId)
+                // Delete any "transaction-only-" documents that were incorrectly written to Firestore
+                transactionRepository.cleanupVirtualCategoryDocuments(userId)
             } catch (e: CancellationException) {
-                // ISSUE 1 FIX: Rethrow — jangan tampilkan ke user
                 throw e
             } catch (e: Exception) {
-                // Silent fail — Room cache masih bisa dipakai
+                // Silent fail — Room cache still usable
             } finally {
                 isRefreshComplete = true
             }
@@ -209,7 +231,14 @@ class BudgetingViewModel @Inject constructor(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
                 if (category.id.startsWith("transaction-only-")) {
-                    transactionRepository.insertCategory(category, userId)
+                    // Virtual row — create a real Category with a proper UUID.
+                    // Never write the "transaction-only-" id to Room or Firestore.
+                    val realCategory = category.copy(id = java.util.UUID.randomUUID().toString())
+                    transactionRepository.insertCategory(realCategory, userId)
+                    // Also rename the transactions so they match the new real category name
+                    transactionRepository.moveTransactionsByCategory(
+                        category.name, realCategory.name
+                    )
                 } else {
                     transactionRepository.updateCategory(category, userId)
                 }
@@ -222,11 +251,16 @@ class BudgetingViewModel @Inject constructor(
         }
     }
 
-    private fun deleteCategory(categoryId: String) {
+    private fun deleteCategory(categoryId: String, categoryName: String) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                transactionRepository.deleteCategory(categoryId, userId)
+                if (categoryId.startsWith("transaction-only-")) {
+                    // Virtual row — just blank out the category on all its transactions
+                    transactionRepository.moveTransactionsToBlank(categoryName, userId)
+                } else {
+                    transactionRepository.deleteCategoryAndMigrateTransactions(categoryId, categoryName, userId)
+                }
                 _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal hapus kategori"

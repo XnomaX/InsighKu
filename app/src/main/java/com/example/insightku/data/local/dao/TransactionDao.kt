@@ -65,6 +65,12 @@ interface TransactionDao {
     @Query("UPDATE transactions SET isSynced = 1 WHERE id = :transactionId")
     suspend fun markAsSynced(transactionId: String)
 
+    @Query("UPDATE transactions SET category = :newCategory WHERE category = :oldCategory")
+    suspend fun moveTransactionsByCategory(oldCategory: String, newCategory: String)
+
+    @Query("SELECT * FROM transactions WHERE category = :category")
+    suspend fun getTransactionsByCategoryOnce(category: String): List<Transaction>
+
     /**
      * Insert data dari Firestore (remote refresh) tanpa menimpa transaksi lokal
      * yang belum tersinkron (isSynced=0). Penting untuk menghindari data loss

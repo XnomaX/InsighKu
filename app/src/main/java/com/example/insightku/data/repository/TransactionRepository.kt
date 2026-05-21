@@ -1,5 +1,6 @@
 package com.example.insightku.data.repository
 
+import android.util.Log
 import com.example.insightku.data.local.dao.CategoryDao
 import com.example.insightku.data.local.dao.RecurringBudgetDao
 import com.example.insightku.data.local.dao.TransactionDao
@@ -117,30 +118,109 @@ class TransactionRepository @Inject constructor(
     fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategories()
 
     suspend fun refreshCategories(userId: String) {
-        // SEBELUMNYA: catch kosong
-        // SEKARANG: exception dibiarkan propagate ke caller
         val snapshot = firestore.collection("users").document(userId)
             .collection("categories").get().await()
         val categories = snapshot.toObjects(Category::class.java)
-        categoryDao.insertCategories(categories)
+        // IGNORE strategy — never restore a category deleted locally.
+        // If a category was deleted from Room, Firestore still has it until
+        // the delete syncs. Using REPLACE here would resurrect deleted categories
+        // on every refresh, which is the root cause of the "Uncategorized" reappearing bug.
+        categoryDao.insertCategoriesFromRemote(categories)
     }
 
     suspend fun insertCategory(category: Category, userId: String) {
+        Log.d("InsightKu", "insertCategory: id=${category.id} name=${category.name} userId=$userId")
         categoryDao.insertCategory(category)
         firestore.collection("users").document(userId)
-            .collection("categories").document(category.id.toString()).set(category).await()
+            .collection("categories").document(category.id).set(category).await()
+        Log.d("InsightKu", "insertCategory: Firestore write SUCCESS id=${category.id}")
     }
 
     suspend fun updateCategory(category: Category, userId: String) {
+        Log.d("InsightKu", "updateCategory: id=${category.id} name=${category.name} userId=$userId")
         categoryDao.updateCategory(category)
         firestore.collection("users").document(userId)
-            .collection("categories").document(category.id.toString()).set(category).await()
+            .collection("categories").document(category.id).set(category).await()
+        Log.d("InsightKu", "updateCategory: Firestore write SUCCESS id=${category.id}")
     }
 
     suspend fun deleteCategory(categoryId: String, userId: String) {
+        Log.d("InsightKu", "deleteCategory: id=$categoryId userId=$userId")
         categoryDao.deleteCategory(categoryId)
         firestore.collection("users").document(userId)
             .collection("categories").document(categoryId).delete().await()
+        Log.d("InsightKu", "deleteCategory: Firestore delete SUCCESS id=$categoryId")
+    }
+
+    suspend fun cleanupUncategorizedTransactions(userId: String) {
+        transactionDao.moveTransactionsByCategory("Uncategorized", "")
+        transactionDao.moveTransactionsByCategory("uncategorized", "")
+    }
+
+    suspend fun cleanupVirtualCategoryDocuments(userId: String) {
+        // Delete any Firestore category documents with "transaction-only-" ids
+        // that were incorrectly written by old code.
+        try {
+            val snapshot = firestore.collection("users").document(userId)
+                .collection("categories").get().await()
+            snapshot.documents
+                .filter { it.id.startsWith("transaction-only-") }
+                .forEach { doc ->
+                    Log.d("InsightKu", "cleanupVirtual: deleting stale doc id=${doc.id}")
+                    firestore.collection("users").document(userId)
+                        .collection("categories").document(doc.id).delete().await()
+                    // Also delete from Room if it somehow got inserted
+                    categoryDao.deleteCategory(doc.id)
+                }
+        } catch (e: Exception) {
+            Log.w("InsightKu", "cleanupVirtual: failed silently", e)
+        }
+    }
+
+    suspend fun moveTransactionsByCategory(oldCategory: String, newCategory: String) {
+        transactionDao.moveTransactionsByCategory(oldCategory, newCategory)
+    }
+
+    suspend fun moveTransactionsToBlank(categoryName: String, userId: String) {
+        transactionDao.moveTransactionsByCategory(categoryName, "")
+        try {
+            val moved = transactionDao.getTransactionsByCategoryOnce("")
+            moved.forEach { tx ->
+                firestore.collection("users").document(userId)
+                    .collection("transactions").document(tx.id).set(tx).await()
+            }
+        } catch (e: Exception) {
+            // Offline — Room already updated
+        }
+    }
+
+    suspend fun deleteCategoryAndMigrateTransactions(
+        categoryId: String,
+        categoryName: String,
+        userId: String
+    ) {
+        Log.d("InsightKu", "deleteCategoryAndMigrate: id=$categoryId name=$categoryName userId=$userId")
+
+        // Step 1: Blank out transactions locally
+        transactionDao.moveTransactionsByCategory(categoryName, "")
+
+        // Step 2: Delete category from Room
+        categoryDao.deleteCategory(categoryId)
+
+        // Step 3: Sync category delete to Firestore
+        Log.d("InsightKu", "deleteCategoryAndMigrate: deleting from Firestore path=users/$userId/categories/$categoryId")
+        firestore.collection("users").document(userId)
+            .collection("categories").document(categoryId).delete().await()
+        Log.d("InsightKu", "deleteCategoryAndMigrate: Firestore category delete SUCCESS")
+
+        // Step 4: Sync blanked transactions to Firestore
+        val blanked = transactionDao.getTransactionsByCategoryOnce("")
+        Log.d("InsightKu", "deleteCategoryAndMigrate: syncing ${blanked.size} blanked transactions")
+        blanked.forEach { tx ->
+            firestore.collection("users").document(userId)
+                .collection("transactions").document(tx.id).set(tx).await()
+        }
+        Log.d("InsightKu", "deleteCategoryAndMigrate: all done")
     }
 
     suspend fun deleteAllLocalCategories() {

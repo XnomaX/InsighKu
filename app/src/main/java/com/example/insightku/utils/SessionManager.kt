@@ -25,6 +25,7 @@ class SessionManager @Inject constructor(
         private val USER_EMAIL = stringPreferencesKey("user_email")
         private val USER_NAME = stringPreferencesKey("user_name")
         private val USER_ID = stringPreferencesKey("user_id")
+        private val HAS_SEEDED_CATEGORIES = booleanPreferencesKey("has_seeded_categories")
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -55,6 +56,16 @@ class SessionManager @Inject constructor(
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->
             preferences.clear()
+        }
+    }
+
+    suspend fun getHasSeededCategories(): Boolean {
+        return context.dataStore.data.map { it[HAS_SEEDED_CATEGORIES] ?: false }.first()
+    }
+
+    suspend fun setHasSeededCategories(value: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[HAS_SEEDED_CATEGORIES] = value
         }
     }
 

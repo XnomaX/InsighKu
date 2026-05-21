@@ -3,6 +3,7 @@ package com.example.insightku.ui.components.addtransaction
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,10 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -43,8 +45,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.insightku.data.model.Category
 import com.example.insightku.data.model.Transaction
 import com.example.insightku.data.model.TransactionType
+import com.example.insightku.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -52,31 +56,9 @@ import java.util.Locale
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 private val IncomeGreen  = Color(0xFF10B981)
-private val ExpenseRed   = Color(0xFFEF4444)
-
-// Premium purple system — dark → mid → electric violet
-private val GradPurpleDark    = Color(0xFF2D0A5E)
-private val GradPurpleMid     = Color(0xFF5A2A82)
-private val GradPurpleViolet  = Color(0xFF7C3AED)
-private val GradPurpleLavender = Color(0xFFAB8FD4)
-
-// Expense accent — coral/red premium
-private val ExpenseAccent     = Color(0xFFE53E3E)
-private val ExpenseAccentLight = Color(0xFFFC8181)
-
-// Income accent
-private val GradIncomeDeep  = Color(0xFF064E3B)
-private val GradIncomeMid   = Color(0xFF065F46)
-private val GradIncomeLight = Color(0xFF10B981)
-
-// Surface system
+private val ExpenseRed   = Color(0xFFE57373)
 private val GlassSurface = Color(0xFFFAF8FF)
 private val GlassBorder  = Color(0xFFE8DDFF)
-private val CardSurface  = Color(0xFFF3EEFF)
-
-// Amount hero tint
-private val AmountCardExpense = Color(0xFFF0EBFF)
-private val AmountCardIncome  = Color(0xFFECFDF5)
 
 // ─── Payment method chips ─────────────────────────────────────────────────────
 private data class PaymentChip(val label: String, val icon: ImageVector)
@@ -131,7 +113,9 @@ fun AddTransactionDialog(
     isOpen: Boolean,
     onDismiss: () -> Unit,
     onTransactionAdded: (Transaction) -> Unit,
-    onOpenScanner: () -> Unit
+    onOpenScanner: () -> Unit,
+    categories: List<Category> = emptyList(),
+    onCreateCategory: () -> Unit = {}
 ) {
     var currentStep by remember { mutableStateOf<AddTransactionStep>(AddTransactionStep.ModeSelection) }
     var formData    by remember { mutableStateOf(TransactionFormData()) }
@@ -262,6 +246,8 @@ fun AddTransactionDialog(
                             formData = formData,
                             onFormDataChanged = { formData = it },
                             onFocusChanged = { isAnyFieldFocused = it },
+                            categories = categories,
+                            onCreateCategory = onCreateCategory,
                             onSubmit = {
                                 val amount = formData.amount.toDoubleOrNull() ?: 0.0
                                 onTransactionAdded(
@@ -292,7 +278,7 @@ fun AddTransactionDialog(
     } // end AnimatedVisibility
 }
 
-// ─── Gradient Header ──────────────────────────────────────────────────────────
+// ─── Premium Header (no gradient) ────────────────────────────────────────────
 
 @Composable
 private fun DialogGradientHeader(
@@ -302,67 +288,63 @@ private fun DialogGradientHeader(
     onClose: () -> Unit
 ) {
     val isManual = step == AddTransactionStep.ManualForm
-    val gradColors = if (isIncome && isManual)
-        listOf(GradIncomeDeep, GradIncomeMid, GradIncomeLight)
-    else
-        listOf(GradPurpleDark, GradPurpleMid, GradPurpleViolet)
+    val accentColor = if (isIncome && isManual) Color(0xFF10B981) else Color(0xFF7C4DFF)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.linearGradient(gradColors))
+            .background(Color.White)
             .padding(
-                start  = 8.dp,
-                end    = 8.dp,
-                top    = if (isManual) 18.dp else 14.dp,
-                bottom = if (isManual) 18.dp else 14.dp
+                start = 8.dp,
+                end = 8.dp,
+                top = if (isManual) 20.dp else 16.dp,
+                bottom = if (isManual) 20.dp else 16.dp
             )
     ) {
-        // Back button (hanya ManualForm)
+        // Back button (ManualForm only)
         if (isManual) {
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .padding(start = 4.dp)
-                    .size(38.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.18f))
+                    .background(Color(0xFFECE7F6))
                     .clickable { onBack() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint     = Color.White,
-                    modifier = Modifier.size(20.dp)
+                    tint = Color(0xFF6B6B8A),
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
 
         // Center content
         Column(
-            modifier            = Modifier.align(Alignment.Center),
+            modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = when {
-                    !isManual        -> "Add Your Transaction"
-                    isIncome         -> "Add Income"
-                    else             -> "Add Expense"
+                    !isManual -> "Add Transaction"
+                    isIncome  -> "Add Income"
+                    else      -> "Add Expense"
                 },
-                style         = MaterialTheme.typography.titleLarge,
-                fontWeight    = FontWeight.ExtraBold,
-                color         = Color.White,
-                letterSpacing = 0.2.sp
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1A2E)
             )
             Text(
                 text = when {
-                    !isManual -> "Choose how to record it"
+                    !isManual -> "Track every mindful spending"
                     isIncome  -> "Record your income source"
                     else      -> "Record your spending"
                 },
-                style  = MaterialTheme.typography.bodySmall,
-                color  = Color.White.copy(alpha = 0.65f)
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF9E9E9E)
             )
         }
 
@@ -371,20 +353,28 @@ private fun DialogGradientHeader(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 4.dp)
-                .size(38.dp)
+                .size(36.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.18f))
+                .background(Color(0xFFECE7F6))
                 .clickable { onClose() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 Icons.Default.Close,
                 contentDescription = "Close",
-                tint     = Color.White,
-                modifier = Modifier.size(18.dp)
+                tint = Color(0xFF6B6B8A),
+                modifier = Modifier.size(16.dp)
             )
         }
     }
+
+    // Thin divider
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(Color(0xFFECE7F6))
+    )
 }
 
 // ─── Mode Selection ───────────────────────────────────────────────────────────
@@ -403,12 +393,12 @@ private fun ModeSelectionContent(
     ) {
         ModeOptionCard(
             icon        = Icons.Default.CameraAlt,
-            iconBg      = GradPurpleMid.copy(alpha = 0.1f),
-            iconTint    = GradPurpleMid,
+            iconBg      = Color(0xFF7C4DFF).copy(alpha = 0.1f),
+            iconTint    = Color(0xFF7C4DFF),
             title       = "Scan Receipt",
             description = "Foto struk, AI ekstrak detailnya",
             badge       = "AI",
-            badgeColor  = GradPurpleMid,
+            badgeColor  = Color(0xFF7C4DFF),
             onClick     = onOCRSelected
         )
         ModeOptionCard(
@@ -506,32 +496,25 @@ fun ColumnScope.ManualFormContent(
     formData: TransactionFormData,
     onFormDataChanged: (TransactionFormData) -> Unit,
     onFocusChanged: (Boolean) -> Unit = {},
+    categories: List<Category> = emptyList(),
+    onCreateCategory: () -> Unit = {},
     onSubmit: () -> Unit,
     onBack: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val primary      = MaterialTheme.colorScheme.primary
 
-    val expenseCategories = listOf(
-        "Food & Drinks", "Transportation", "Shopping", "Entertainment",
-        "Healthcare", "Utilities", "Housing", "Education", "Others"
-    )
-    val incomeCategories = listOf(
-        "Salary", "Freelance", "Investment", "Business", "Gift", "Others"
-    )
-    val categories = if (formData.isIncome) incomeCategories else expenseCategories
-
-    var showCategoryDropdown by remember { mutableStateOf(false) }
-    var showDatePicker       by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val isFormValid = formData.merchant.isNotBlank()
             && (formData.amount.toDoubleOrNull() ?: -1.0) > 0
             && formData.category.isNotBlank()
 
-    val saveGradient = if (formData.isIncome)
-        Brush.horizontalGradient(listOf(GradIncomeMid, GradIncomeLight))
-    else
-        Brush.horizontalGradient(listOf(GradPurpleDark, GradPurpleMid, GradPurpleViolet))
+    val saveBgColor = when {
+        !isFormValid -> Color(0xFFE0E0E0)
+        formData.isIncome -> Color(0xFF10B981)
+        else -> Color(0xFF7C4DFF)
+    }
 
     // ── DatePickerDialog ──────────────────────────────────────────────────
     if (showDatePicker) {
@@ -571,12 +554,12 @@ fun ColumnScope.ManualFormContent(
             .weight(1f)
             .verticalScroll(rememberScrollState())
             .imePadding()
+            .background(Color(0xFFFAF9FE))
             .padding(horizontal = 18.dp)
-            .padding(top = 16.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(top = 20.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // ── 1. Transaction Type ───────────────────────────────────────────
-        SectionLabel("TRANSACTION TYPE")
         PremiumSegmentedControl(
             isIncome           = formData.isIncome,
             onSelectionChanged = { isIncome ->
@@ -584,8 +567,7 @@ fun ColumnScope.ManualFormContent(
             }
         )
 
-        // ── 2. Amount ─────────────────────────────────────────────────────
-        SectionLabel("AMOUNT")
+        // ── 2. Amount card ────────────────────────────────────────────────
         AmountHeroCard(
             amount         = formData.amount,
             isIncome       = formData.isIncome,
@@ -594,9 +576,10 @@ fun ColumnScope.ManualFormContent(
             onFocusChange  = { onFocusChanged(it) }
         )
 
-        // ── 3. Transaction Details ────────────────────────────────────────
-        SectionLabel("TRANSACTION DETAILS")
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // ── 3. Details card ───────────────────────────────────────────────
+        FormSectionCard {
+            FormSectionTitle("Transaction Details")
+            Spacer(Modifier.height(12.dp))
             FinanceField(
                 icon          = if (formData.isIncome) Icons.Default.Work else Icons.Default.Store,
                 value         = formData.merchant,
@@ -606,121 +589,102 @@ fun ColumnScope.ManualFormContent(
                 onImeAction   = { focusManager.moveFocus(FocusDirection.Down) },
                 onFocusChange = { onFocusChanged(it) }
             )
+        }
 
-            ExposedDropdownMenuBox(
-                expanded         = showCategoryDropdown,
-                onExpandedChange = { showCategoryDropdown = !showCategoryDropdown }
-            ) {
-                FinanceField(
-                    icon          = Icons.Default.Category,
-                    value         = formData.category,
-                    onValueChange = {},
-                    placeholder   = "Category",
-                    readOnly      = true,
-                    modifier      = Modifier.menuAnchor(),
-                    trailingIcon  = {
-                        Icon(
-                            if (showCategoryDropdown) Icons.Default.KeyboardArrowUp
-                            else Icons.Default.KeyboardArrowDown,
-                            contentDescription = null,
-                            tint     = primary.copy(alpha = 0.5f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                )
-                ExposedDropdownMenu(
-                    expanded         = showCategoryDropdown,
-                    onDismissRequest = { showCategoryDropdown = false }
+        // ── 4. Category card ──────────────────────────────────────────────
+        FormSectionCard {
+            FormSectionTitle("Category")
+            Spacer(Modifier.height(12.dp))
+            CategoryChipSelector(
+                categories         = categories,
+                selectedCategory   = formData.category,
+                onCategorySelected = { onFormDataChanged(formData.copy(category = it)) },
+                onCreateCategory   = onCreateCategory
+            )
+        }
+
+        // ── 5. Payment method card ────────────────────────────────────────
+        FormSectionCard {
+            FormSectionTitle("Payment Method")
+            Spacer(Modifier.height(12.dp))
+            PaymentMethodChips(
+                selected = formData.paymentMethod,
+                onSelect = { onFormDataChanged(formData.copy(paymentMethod = it)) }
+            )
+        }
+
+        // ── 6. Date & Note card ───────────────────────────────────────────
+        FormSectionCard {
+            FormSectionTitle("Date & Note")
+            Spacer(Modifier.height(12.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Date row — tappable surface
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true },
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFFFAF9FE),
+                    border = BorderStroke(1.dp, Color(0xFFECE7F6))
                 ) {
-                    categories.forEach { cat ->
-                        DropdownMenuItem(
-                            text = { Text(cat, style = MaterialTheme.typography.bodyMedium) },
-                            onClick = {
-                                onFormDataChanged(formData.copy(category = cat))
-                                showCategoryDropdown = false
-                            },
-                            leadingIcon = {
-                                if (formData.category == cat) {
-                                    Icon(Icons.Default.Check, null, tint = primary, modifier = Modifier.size(16.dp))
-                                }
-                            }
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF7C4DFF).copy(alpha = 0.08f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                tint     = Color(0xFF7C4DFF),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Text(
+                            text      = formData.dateMillis.toDisplayDate(),
+                            style     = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color     = Color(0xFF1A1A2E),
+                            modifier  = Modifier.weight(1f)
+                        )
+                        Icon(
+                            Icons.Default.EditCalendar,
+                            contentDescription = "Change date",
+                            tint     = Color(0xFFB39DDB),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
+
+                // Note field
+                FinanceField(
+                    icon          = Icons.AutoMirrored.Filled.Notes,
+                    value         = formData.description,
+                    onValueChange = { onFormDataChanged(formData.copy(description = it)) },
+                    placeholder   = "What was this for? (optional)",
+                    singleLine    = false,
+                    imeAction     = ImeAction.Done,
+                    onImeAction   = { focusManager.clearFocus() },
+                    onFocusChange = { onFocusChanged(it) },
+                    modifier      = Modifier.height(80.dp)
+                )
             }
         }
 
-        // ── 4. Payment Method ─────────────────────────────────────────────
-        SectionLabel("PAYMENT METHOD")
-        PaymentMethodChips(
-            selected = formData.paymentMethod,
-            onSelect = { onFormDataChanged(formData.copy(paymentMethod = it)) }
-        )
-
-        // ── 5. Additional Info ────────────────────────────────────────────
-        SectionLabel("ADDITIONAL INFO")
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            FinanceField(
-                icon          = Icons.Default.CalendarMonth,
-                value         = formData.dateMillis.toDisplayDate(),
-                onValueChange = {},
-                placeholder   = "Date",
-                readOnly      = true,
-                trailingIcon  = {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(primary.copy(alpha = 0.08f))
-                            .clickable { showDatePicker = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.EditCalendar,
-                            contentDescription = "Pick date",
-                            tint     = primary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                }
-            )
-            FinanceField(
-                icon          = Icons.AutoMirrored.Filled.Notes,
-                value         = formData.description,
-                onValueChange = { onFormDataChanged(formData.copy(description = it)) },
-                placeholder   = "Note (optional)",
-                singleLine    = false,
-                imeAction     = ImeAction.Done,
-                onImeAction   = { focusManager.clearFocus() },
-                onFocusChange = { onFocusChanged(it) },
-                modifier      = Modifier.height(80.dp)
-            )
-        }
-
-        // ── 6. Save Button (inside scroll — always visible above keyboard) ─
-        Spacer(Modifier.height(8.dp))
-
-        // Save CTA
+        // ── 7. Save button ────────────────────────────────────────────────
+        Spacer(Modifier.height(4.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
-                .shadow(
-                    elevation    = if (isFormValid) 8.dp else 0.dp,
-                    shape        = RoundedCornerShape(16.dp),
-                    ambientColor = if (formData.isIncome) GradIncomeLight.copy(alpha = 0.4f)
-                                   else GradPurpleViolet.copy(alpha = 0.4f)
-                )
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    if (isFormValid) saveGradient
-                    else Brush.horizontalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-                        )
-                    )
-                )
+                .height(54.dp)
+                .clip(RoundedCornerShape(50.dp))
+                .background(saveBgColor)
                 .clickable(enabled = isFormValid) { onSubmit() },
             contentAlignment = Alignment.Center
         ) {
@@ -732,16 +696,14 @@ fun ColumnScope.ManualFormContent(
                     imageVector        = if (formData.isIncome) Icons.AutoMirrored.Filled.TrendingUp
                                          else Icons.AutoMirrored.Filled.TrendingDown,
                     contentDescription = null,
-                    tint               = if (isFormValid) Color.White
-                                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    tint               = if (isFormValid) Color.White else Color(0xFF9E9E9E),
                     modifier           = Modifier.size(18.dp)
                 )
                 Text(
                     text          = if (formData.isIncome) "Save Income" else "Save Expense",
                     style         = MaterialTheme.typography.bodyLarge,
                     fontWeight    = FontWeight.Bold,
-                    color         = if (isFormValid) Color.White
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    color         = if (isFormValid) Color.White else Color(0xFF9E9E9E),
                     letterSpacing = 0.5.sp
                 )
             }
@@ -752,8 +714,8 @@ fun ColumnScope.ManualFormContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(44.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .border(1.dp, GlassBorder, RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(50.dp))
+                .border(1.dp, Color(0xFFECE7F6), RoundedCornerShape(50.dp))
                 .clickable { onBack() },
             contentAlignment = Alignment.Center
         ) {
@@ -764,18 +726,216 @@ fun ColumnScope.ManualFormContent(
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = null,
-                    tint     = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint     = Color(0xFF6B6B8A),
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
                     "Back",
                     style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color      = MaterialTheme.colorScheme.onSurfaceVariant
+                    color      = Color(0xFF6B6B8A)
                 )
             }
         }
     }
+}
+
+// ─── Category Chip Selector ───────────────────────────────────────────────────
+
+@Composable
+private fun CategoryChipSelector(
+    categories: List<Category>,
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit,
+    onCreateCategory: () -> Unit
+) {
+    val primary = Color(0xFF7C4DFF)
+    val border  = Color(0xFFECE7F6)
+
+    if (categories.isEmpty()) {
+        // Empty state
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFFFAF9FE),
+            border = BorderStroke(1.dp, border)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "No categories yet",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF9E9E9E)
+                )
+                Surface(
+                    modifier = Modifier.clickable(onClick = onCreateCategory),
+                    shape = RoundedCornerShape(50.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, primary)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = primary
+                        )
+                        Text(
+                            text = "Create Category",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = primary
+                        )
+                    }
+                }
+            }
+        }
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 2.dp)
+        ) {
+            items(categories) { category ->
+                val isSelected = selectedCategory == category.name
+                val catColor = runCatching {
+                    Color(android.graphics.Color.parseColor(category.color.ifBlank { "#7C4DFF" }))
+                }.getOrDefault(primary)
+
+                val chipBg by animateColorAsState(
+                    targetValue = if (isSelected) primary else Color.White,
+                    animationSpec = tween(200),
+                    label = "cat_chip_bg_${category.id}"
+                )
+                val chipContent by animateColorAsState(
+                    targetValue = if (isSelected) Color.White else Color(0xFF6B6B8A),
+                    animationSpec = tween(200),
+                    label = "cat_chip_content_${category.id}"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(chipBg)
+                        .border(
+                            width = 1.dp,
+                            color = if (isSelected) primary else border,
+                            shape = RoundedCornerShape(50.dp)
+                        )
+                        .clickable {
+                            onCategorySelected(if (isSelected) "" else category.name)
+                        }
+                        .padding(horizontal = 14.dp, vertical = 9.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected) Color.White.copy(alpha = 0.25f)
+                                    else catColor.copy(alpha = 0.15f)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = categoryIconForName(category.icon ?: ""),
+                                contentDescription = null,
+                                modifier = Modifier.size(10.dp),
+                                tint = if (isSelected) Color.White else catColor
+                            )
+                        }
+                        Text(
+                            text = category.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = chipContent
+                        )
+                    }
+                }
+            }
+        }
+
+        // Add category shortcut below chips
+        Row(
+            modifier = Modifier
+                .clickable(onClick = onCreateCategory)
+                .padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = primary.copy(alpha = 0.7f)
+            )
+            Text(
+                text = "Add category",
+                style = MaterialTheme.typography.labelSmall,
+                color = primary.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+private fun categoryIconForName(iconName: String): androidx.compose.ui.graphics.vector.ImageVector {
+    val n = iconName.lowercase()
+    return when {
+        "food" in n || "drink" in n || "restaurant" in n -> Icons.Default.Restaurant
+        "transport" in n || "car" in n -> Icons.Default.DirectionsCar
+        "bill" in n || "receipt" in n || "utility" in n -> Icons.Default.Receipt
+        "shop" in n -> Icons.Default.ShoppingBag
+        "entertainment" in n || "game" in n || "lifestyle" in n -> Icons.Default.SportsEsports
+        "health" in n -> Icons.Default.LocalHospital
+        "home" in n || "housing" in n -> Icons.Default.Home
+        "coffee" in n || "cafe" in n -> Icons.Default.Coffee
+        else -> Icons.Default.Category
+    }
+}
+
+// ─── Form Section Card ────────────────────────────────────────────────────────
+
+@Composable
+private fun FormSectionCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            content = content
+        )
+    }
+}
+
+@Composable
+private fun FormSectionTitle(text: String) {
+    Text(
+        text       = text,
+        style      = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color      = Color(0xFF1A1A2E)
+    )
 }
 
 // ─── Section Label ────────────────────────────────────────────────────────────
@@ -792,9 +952,6 @@ private fun SectionLabel(text: String) {
     )
 }
 
-// ─── Amount Hero Card ─────────────────────────────────────────────────────────
-// Focal point utama — angka besar seperti fintech dashboard
-
 @Composable
 private fun AmountHeroCard(
     amount: String,
@@ -803,35 +960,32 @@ private fun AmountHeroCard(
     onImeAction: () -> Unit,
     onFocusChange: (Boolean) -> Unit = {}
 ) {
-    val primary      = MaterialTheme.colorScheme.primary
-    val cardBg       = if (isIncome) AmountCardIncome else AmountCardExpense
-    val accentColor  = if (isIncome) GradIncomeLight else GradPurpleViolet
-    val displayAmount = amount.ifBlank { "0" }
-    var isFocused    by remember { mutableStateOf(false) }
+    val accentColor = if (isIncome) Color(0xFF10B981) else Color(0xFF7C4DFF)
+    val cardBg      = if (isIncome) Color(0xFFF0FFF4) else Color(0xFFF3EEFF)
+    var isFocused   by remember { mutableStateOf(false) }
+
+    // amount stores raw digits ("50000"), display shows formatted ("50.000")
+    val formatted = CurrencyUtils.formatInputThousands(amount)
+    val displayText = if (amount.isBlank()) "0" else formatted
+
+    val borderColor by animateColorAsState(
+        targetValue = if (isFocused) accentColor else Color(0xFFECE7F6),
+        animationSpec = tween(180),
+        label = "amount_border"
+    )
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(24.dp))
             .background(cardBg)
-            .border(
-                width = 1.5.dp,
-                brush = if (isFocused)
-                    Brush.horizontalGradient(
-                        if (isIncome) listOf(GradIncomeMid, GradIncomeLight)
-                        else listOf(GradPurpleMid, GradPurpleViolet)
-                    )
-                else Brush.horizontalGradient(listOf(GlassBorder, GlassBorder)),
-                shape = RoundedCornerShape(20.dp)
-            )
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .border(1.5.dp, borderColor, RoundedCornerShape(24.dp))
+            .padding(horizontal = 20.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Preview amount besar — focal point
         Text(
-            text       = "Rp ${if (displayAmount == "0") "0" else
-                String.format(Locale.getDefault(), "%,.0f", displayAmount.toDoubleOrNull() ?: 0.0)}",
+            text       = "Rp $displayText",
             style      = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.ExtraBold,
             color      = accentColor,
@@ -845,12 +999,14 @@ private fun AmountHeroCard(
 
         Spacer(Modifier.height(4.dp))
 
-        // Input field compact di bawah preview
         OutlinedTextField(
-            value         = amount,
-            onValueChange = onAmountChange,
+            value         = formatted,
+            onValueChange = { input ->
+                // Strip separators, keep only digits, pass raw to state
+                onAmountChange(CurrencyUtils.stripThousands(input))
+            },
             placeholder   = { Text("0", color = accentColor.copy(alpha = 0.35f)) },
-            label         = { Text("Amount Spent", color = accentColor.copy(alpha = 0.7f)) },
+            label         = { Text("Amount", color = accentColor.copy(alpha = 0.7f)) },
             leadingIcon   = {
                 Text(
                     "Rp",
@@ -1087,30 +1243,29 @@ fun PremiumSegmentedControl(
         label         = "seg_pill"
     )
 
-    BoxWithConstraints(
+    var containerWidthPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
             .border(1.dp, GlassBorder, RoundedCornerShape(14.dp))
+            .onSizeChanged { containerWidthPx = it.width }
     ) {
-        val halfWidth = maxWidth / 2
+        val halfWidthDp = with(density) { (containerWidthPx / 2).toDp() }
 
-        // Animated pill — coral/red untuk expense, green untuk income
+        // Animated pill — solid colors
         Box(
             modifier = Modifier
-                .width(halfWidth)
+                .width(halfWidthDp)
                 .fillMaxHeight()
-                .offset(x = halfWidth * pillFraction)
+                .offset(x = halfWidthDp * pillFraction)
                 .padding(3.dp)
                 .clip(RoundedCornerShape(11.dp))
-                .background(
-                    if (isIncome)
-                        Brush.horizontalGradient(listOf(GradIncomeMid, GradIncomeLight))
-                    else
-                        Brush.horizontalGradient(listOf(ExpenseAccent, ExpenseAccentLight))
-                )
+                .background(if (isIncome) Color(0xFF10B981) else Color(0xFFE57373))
         )
 
         // Tap targets — Row di atas pill, tidak ada Button (fix overlap bug)
