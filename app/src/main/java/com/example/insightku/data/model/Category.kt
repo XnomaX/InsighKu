@@ -6,10 +6,6 @@ import androidx.room.PrimaryKey
 import com.google.firebase.firestore.IgnoreExtraProperties
 import java.util.UUID
 
-/**
- * CRITICAL FIX: Sama seperti Transaction, Category juga butuh no-arg constructor
- * agar Firestore toObjects() bisa deserialize. Semua field wajib punya default value.
- */
 @Keep
 @IgnoreExtraProperties
 @Entity(tableName = "categories")
@@ -21,6 +17,16 @@ data class Category(
     val icon: String? = null,
     val isActive: Boolean = true,
     val alertThreshold: Int = 80,
-    val recurringPeriod: String? = null  // "Weekly", "Monthly", "Yearly", or null
-)
+    val recurringPeriod: String? = null,
+    val categoryType: String = CategoryType.EXPENSE.name,
+    val isSystemCategory: Boolean = false
+) {
+    val type: CategoryType get() = runCatching {
+        CategoryType.valueOf(categoryType)
+    }.getOrDefault(CategoryType.EXPENSE)
+
+    // True if this is a protected system category — checked by ID prefix
+    // since Firestore stores "systemCategory" but Room uses "isSystemCategory"
+    val isProtected: Boolean get() = id.startsWith("system-")
+}
 

@@ -2,6 +2,7 @@ package com.example.insightku.ui.dialogs
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,9 +15,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,58 +23,307 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.insightku.data.model.CategoryType
 import com.example.insightku.utils.CurrencyUtils
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToInt
 
-// --- SHARED DATA ---
+// ─── Icon Data ────────────────────────────────────────────────────────────────
 
-internal data class CategoryIconInfo(
+data class CategoryIconInfo(
     val name: String,
     val icon: ImageVector,
     val color: Color
 )
 
-internal val defaultCategoryIcons = listOf(
+// ─── EXPENSE Icon Set — warm lifestyle palette ────────────────────────────────
+
+internal val expenseCategoryIcons = listOf(
+    // Food & Beverage
     CategoryIconInfo("Food & Drinks",   Icons.Default.Restaurant,           Color(0xFFF59E0B)),
-    CategoryIconInfo("Transportation",  Icons.Default.DirectionsCar,        Color(0xFF3B82F6)),
-    CategoryIconInfo("Housing",         Icons.Default.Home,                 Color(0xFFEF4444)),
+    CategoryIconInfo("Groceries",       Icons.Default.ShoppingCart,         Color(0xFFEF4444)),
+    CategoryIconInfo("Coffee & Cafes",  Icons.Default.Coffee,               Color(0xFFD97706)),
+    CategoryIconInfo("Fast Food",       Icons.Default.Fastfood,             Color(0xFFEF4444)),
+    CategoryIconInfo("Bakery",          Icons.Default.BakeryDining,         Color(0xFFD97706)),
+    CategoryIconInfo("Drinks",          Icons.Default.LocalBar,             Color(0xFF8B5CF6)),
+    CategoryIconInfo("Ice Cream",       Icons.Default.Icecream,             Color(0xFFEC4899)),
+    CategoryIconInfo("Dining Out",      Icons.Default.DinnerDining,         Color(0xFFF59E0B)),
+    // Shopping & Lifestyle
     CategoryIconInfo("Shopping",        Icons.Default.ShoppingBag,          Color(0xFFEC4899)),
-    CategoryIconInfo("Entertainment",   Icons.Default.SportsEsports,        Color(0xFF8B5CF6)),
-    CategoryIconInfo("Coffee & Cafes",  Icons.Default.Coffee,               Color(0xFFF59E0B)),
-    CategoryIconInfo("Healthcare",      Icons.Default.LocalHospital,        Color(0xFF10B981)),
-    CategoryIconInfo("Utilities",       Icons.Default.Bolt,                 Color(0xFFF59E0B)),
-    CategoryIconInfo("Education",       Icons.Default.School,               Color(0xFF3B82F6)),
+    CategoryIconInfo("Clothing",        Icons.Default.Checkroom,            Color(0xFFDB2777)),
+    CategoryIconInfo("Electronics",     Icons.Default.Devices,              Color(0xFF3B82F6)),
+    CategoryIconInfo("Furniture",       Icons.Default.Chair,                Color(0xFFD97706)),
+    CategoryIconInfo("Beauty",          Icons.Default.Face,                 Color(0xFFEC4899)),
+    CategoryIconInfo("Accessories",     Icons.Default.Watch,                Color(0xFF8B5CF6)),
+    CategoryIconInfo("Laundry",         Icons.Default.LocalLaundryService,  Color(0xFF06B6D4)),
+    CategoryIconInfo("Haircut",         Icons.Default.ContentCut,           Color(0xFFEC4899)),
+    CategoryIconInfo("Spa & Wellness",  Icons.Default.Spa,                  Color(0xFFEC4899)),
+    // Transport
+    CategoryIconInfo("Transportation",  Icons.Default.DirectionsCar,        Color(0xFF3B82F6)),
+    CategoryIconInfo("Fuel",            Icons.Default.LocalGasStation,      Color(0xFFEF4444)),
+    CategoryIconInfo("Train / Bus",     Icons.Default.Train,                Color(0xFF6366F1)),
+    CategoryIconInfo("Taxi / Ojek",     Icons.Default.LocalTaxi,            Color(0xFFF59E0B)),
+    CategoryIconInfo("Parking",         Icons.Default.LocalParking,         Color(0xFF6366F1)),
     CategoryIconInfo("Travel",          Icons.Default.Flight,               Color(0xFF06B6D4)),
+    CategoryIconInfo("Hotel",           Icons.Default.Hotel,                Color(0xFF06B6D4)),
+    CategoryIconInfo("Motorcycle",      Icons.Default.TwoWheeler,           Color(0xFF3B82F6)),
+    CategoryIconInfo("Vacation",        Icons.Default.BeachAccess,          Color(0xFF06B6D4)),
+    // Home & Bills
+    CategoryIconInfo("Housing / Rent",  Icons.Default.Home,                 Color(0xFFEF4444)),
+    CategoryIconInfo("Electricity",     Icons.Default.ElectricBolt,         Color(0xFFF59E0B)),
+    CategoryIconInfo("Water Bill",      Icons.Default.Water,                Color(0xFF06B6D4)),
+    CategoryIconInfo("Utilities",       Icons.Default.Bolt,                 Color(0xFFF59E0B)),
+    CategoryIconInfo("Internet / WiFi", Icons.Default.Wifi,                 Color(0xFF3B82F6)),
+    CategoryIconInfo("Phone",           Icons.Default.PhoneAndroid,         Color(0xFF8B5CF6)),
+    CategoryIconInfo("Home Repair",     Icons.Default.Handyman,             Color(0xFFD97706)),
+    CategoryIconInfo("Cleaning",        Icons.Default.CleaningServices,     Color(0xFF10B981)),
+    // Health & Wellness
+    CategoryIconInfo("Healthcare",      Icons.Default.LocalHospital,        Color(0xFF10B981)),
+    CategoryIconInfo("Pharmacy",        Icons.Default.MedicalServices,      Color(0xFF059669)),
     CategoryIconInfo("Fitness",         Icons.Default.FitnessCenter,        Color(0xFF10B981)),
+    CategoryIconInfo("Dental",          Icons.Default.Healing,              Color(0xFF06B6D4)),
+    CategoryIconInfo("Mental Health",   Icons.Default.SelfImprovement,      Color(0xFF8B5CF6)),
+    CategoryIconInfo("Vitamins",        Icons.Default.Medication,           Color(0xFF059669)),
+    // Entertainment & Leisure
+    CategoryIconInfo("Entertainment",   Icons.Default.SportsEsports,        Color(0xFF8B5CF6)),
+    CategoryIconInfo("Movies",          Icons.Default.Movie,                Color(0xFF7C3AED)),
+    CategoryIconInfo("Music",           Icons.Default.MusicNote,            Color(0xFFEC4899)),
+    CategoryIconInfo("Sports",          Icons.Default.SportsSoccer,         Color(0xFF10B981)),
+    CategoryIconInfo("Outdoor",         Icons.Default.Park,                 Color(0xFF059669)),
+    CategoryIconInfo("Gaming",          Icons.Default.VideogameAsset,       Color(0xFF7C3AED)),
+    CategoryIconInfo("Concert",         Icons.Default.TheaterComedy,        Color(0xFFEC4899)),
+    CategoryIconInfo("Photography",     Icons.Default.PhotoCamera,          Color(0xFF6366F1)),
+    CategoryIconInfo("Reading",         Icons.Default.AutoStories,          Color(0xFF2563EB)),
+    // Education
+    CategoryIconInfo("Education",       Icons.Default.School,               Color(0xFF3B82F6)),
+    CategoryIconInfo("Books",           Icons.Default.MenuBook,             Color(0xFF2563EB)),
+    CategoryIconInfo("Online Course",   Icons.Default.OndemandVideo,        Color(0xFF7C3AED)),
+    CategoryIconInfo("Stationery",      Icons.Default.Edit,                 Color(0xFF6366F1)),
+    // Subscriptions & Finance
     CategoryIconInfo("Subscriptions",   Icons.Default.Subscriptions,        Color(0xFF8B5CF6)),
-    CategoryIconInfo("Loan/Cicilan",    Icons.Default.AccountBalance,       Color(0xFFEF4444)),
+    CategoryIconInfo("Loan / Cicilan",  Icons.Default.AccountBalance,       Color(0xFFEF4444)),
     CategoryIconInfo("Insurance",       Icons.Default.Security,             Color(0xFF3B82F6)),
+    CategoryIconInfo("Taxes",           Icons.Default.Receipt,              Color(0xFFEF4444)),
     CategoryIconInfo("Savings",         Icons.Default.Savings,              Color(0xFF10B981)),
-    CategoryIconInfo("Investment",      Icons.Default.TrendingUp,           Color(0xFF06B6D4)),
+    CategoryIconInfo("ATM / Bank Fee",  Icons.Default.LocalAtm,             Color(0xFF6366F1)),
+    // Family & Social
+    CategoryIconInfo("Pet",             Icons.Default.Pets,                 Color(0xFFF59E0B)),
     CategoryIconInfo("Gift",            Icons.Default.CardGiftcard,         Color(0xFFEC4899)),
+    CategoryIconInfo("Charity",         Icons.Default.VolunteerActivism,    Color(0xFF10B981)),
+    CategoryIconInfo("Baby / Kids",     Icons.Default.ChildCare,            Color(0xFFEC4899)),
+    CategoryIconInfo("Wedding",         Icons.Default.Celebration,          Color(0xFFDB2777)),
+    CategoryIconInfo("Social",          Icons.Default.People,               Color(0xFF8B5CF6)),
     CategoryIconInfo("Others",          Icons.Default.Category,             Color(0xFF79747E))
 )
 
-// --- SHARED COMPOSABLES ---
+// ─── INCOME Icon Set — cool prosperity palette ────────────────────────────────
+
+internal val incomeCategoryIcons = listOf(
+    // Employment
+    CategoryIconInfo("Salary",          Icons.Default.AccountBalanceWallet, Color(0xFF10B981)),
+    CategoryIconInfo("Bonus",           Icons.Default.EmojiEvents,          Color(0xFFF59E0B)),
+    CategoryIconInfo("Overtime",        Icons.Default.MoreTime,             Color(0xFF059669)),
+    CategoryIconInfo("Commission",      Icons.Default.Percent,              Color(0xFF06B6D4)),
+    CategoryIconInfo("Allowance",       Icons.Default.CardMembership,       Color(0xFF10B981)),
+    CategoryIconInfo("THR",             Icons.Default.Celebration,          Color(0xFFF59E0B)),
+    // Self-Employment & Business
+    CategoryIconInfo("Freelance",       Icons.Default.Laptop,               Color(0xFF06B6D4)),
+    CategoryIconInfo("Business",        Icons.Default.Business,             Color(0xFF3B82F6)),
+    CategoryIconInfo("Side Hustle",     Icons.Default.WorkOutline,          Color(0xFF8B5CF6)),
+    CategoryIconInfo("Consulting",      Icons.Default.Psychology,           Color(0xFF7C3AED)),
+    CategoryIconInfo("Online Shop",     Icons.Default.Storefront,           Color(0xFF06B6D4)),
+    CategoryIconInfo("Content Creator", Icons.Default.VideoCall,            Color(0xFFEC4899)),
+    CategoryIconInfo("Teaching",        Icons.Default.CastForEducation,     Color(0xFF3B82F6)),
+    CategoryIconInfo("Service",         Icons.Default.MiscellaneousServices,Color(0xFF6366F1)),
+    // Investment & Finance
+    CategoryIconInfo("Investment",      Icons.Default.TrendingUp,           Color(0xFF06B6D4)),
+    CategoryIconInfo("Dividends",       Icons.Default.ShowChart,            Color(0xFF0891B2)),
+    CategoryIconInfo("Stock",           Icons.Default.BarChart,             Color(0xFF059669)),
+    CategoryIconInfo("Crypto",          Icons.Default.CurrencyBitcoin,      Color(0xFFF59E0B)),
+    CategoryIconInfo("Mutual Fund",     Icons.Default.PieChart,             Color(0xFF3B82F6)),
+    CategoryIconInfo("Interest",        Icons.Default.Savings,              Color(0xFF10B981)),
+    CategoryIconInfo("Gold",            Icons.Default.Diamond,              Color(0xFFF59E0B)),
+    // Passive Income
+    CategoryIconInfo("Passive Income",  Icons.Default.AutoGraph,            Color(0xFF10B981)),
+    CategoryIconInfo("Rental Income",   Icons.Default.HomeWork,             Color(0xFF3B82F6)),
+    CategoryIconInfo("Royalty",         Icons.Default.Copyright,            Color(0xFF8B5CF6)),
+    CategoryIconInfo("Affiliate",       Icons.Default.Share,                Color(0xFF06B6D4)),
+    CategoryIconInfo("Ads Revenue",     Icons.Default.Campaign,             Color(0xFFEC4899)),
+    // Transfers & Misc
+    CategoryIconInfo("Cashback",        Icons.Default.Redeem,               Color(0xFF10B981)),
+    CategoryIconInfo("Gift / Transfer", Icons.Default.CardGiftcard,         Color(0xFFEC4899)),
+    CategoryIconInfo("Refund",          Icons.Default.AssignmentReturn,     Color(0xFF06B6D4)),
+    CategoryIconInfo("Grant",           Icons.Default.Stars,                Color(0xFFF59E0B)),
+    CategoryIconInfo("Scholarship",     Icons.Default.School,               Color(0xFF3B82F6)),
+    CategoryIconInfo("Pension",         Icons.Default.Elderly,              Color(0xFF6366F1)),
+    CategoryIconInfo("Inheritance",     Icons.Default.AccountBalance,       Color(0xFF6366F1)),
+    CategoryIconInfo("Lottery",         Icons.Default.ConfirmationNumber,   Color(0xFFEC4899)),
+    CategoryIconInfo("Others",          Icons.Default.Category,             Color(0xFF79747E))
+)
+
+// ─── Backward-compat alias (used by existing code that references defaultCategoryIcons) ──
+
+internal val defaultCategoryIcons = expenseCategoryIcons
+
+// ─── Global CategoryIconResolver — single source of truth ────────────────────
+//
+// Maps a category icon name string → ImageVector + Color.
+// Used by transaction list, budgeting cards, and category chips so every
+// screen always renders the same icon for the same category.
+
+object CategoryIconResolver {
+
+    private val allIcons: Map<String, CategoryIconInfo> =
+        (expenseCategoryIcons + incomeCategoryIcons).associateBy { it.name }
+
+    fun resolve(iconName: String?): CategoryIconInfo {
+        if (iconName.isNullOrBlank()) return fallback()
+        // Exact match first
+        allIcons[iconName]?.let { return it }
+        // Fuzzy match by keyword
+        val n = iconName.lowercase()
+        return when {
+            // ── Expense: Food & Beverage ──────────────────────────────────
+            "food" in n || "drink" in n || "restaurant" in n || "makan" in n -> allIcons["Food & Drinks"]!!
+            "grocer" in n || "market" in n || "supermarket" in n             -> allIcons["Groceries"]!!
+            "coffee" in n || "cafe" in n || "kopi" in n                      -> allIcons["Coffee & Cafes"]!!
+            "fast food" in n || "fastfood" in n || "burger" in n             -> allIcons["Fast Food"]!!
+            "bakery" in n || "bread" in n || "roti" in n                     -> allIcons["Bakery"]!!
+            "bar" in n || "alcohol" in n || "beer" in n || "minuman" in n    -> allIcons["Drinks"]!!
+            "ice cream" in n || "dessert" in n || "snack" in n               -> allIcons["Ice Cream"]!!
+            // ── Expense: Shopping & Lifestyle ────────────────────────────
+            "shop" in n || "mall" in n || "belanja" in n                     -> allIcons["Shopping"]!!
+            "cloth" in n || "fashion" in n || "baju" in n || "pakaian" in n  -> allIcons["Clothing"]!!
+            "electron" in n || "gadget" in n || "laptop" in n || "hp" in n   -> allIcons["Electronics"]!!
+            "furnitur" in n || "perabot" in n                                -> allIcons["Furniture"]!!
+            "beauty" in n || "makeup" in n || "kosmetik" in n                -> allIcons["Beauty"]!!
+            "accessori" in n || "watch" in n || "jam" in n                   -> allIcons["Accessories"]!!
+            "laundry" in n || "cuci" in n                                    -> allIcons["Laundry"]!!
+            "haircut" in n || "salon" in n || "barber" in n || "potong" in n -> allIcons["Haircut"]!!
+            // ── Expense: Transport ───────────────────────────────────────
+            "transport" in n || "car" in n || "mobil" in n                   -> allIcons["Transportation"]!!
+            "fuel" in n || "gas" in n || "petrol" in n || "bensin" in n      -> allIcons["Fuel"]!!
+            "train" in n || "bus" in n || "commut" in n || "kereta" in n     -> allIcons["Train / Bus"]!!
+            "taxi" in n || "ojek" in n || "grab" in n || "gojek" in n        -> allIcons["Taxi / Ojek"]!!
+            "parking" in n || "parkir" in n                                  -> allIcons["Parking"]!!
+            "travel" in n || "flight" in n || "trip" in n || "liburan" in n  -> allIcons["Travel"]!!
+            "hotel" in n || "penginapan" in n || "villa" in n                -> allIcons["Hotel"]!!
+            "motor" in n || "motorcycle" in n || "sepeda" in n               -> allIcons["Motorcycle"]!!
+            // ── Expense: Home & Bills ────────────────────────────────────
+            "home" in n || "rent" in n || "hous" in n || "kos" in n || "sewa" in n -> allIcons["Housing / Rent"]!!
+            "util" in n || "listrik" in n || "pln" in n                      -> allIcons["Electricity"]!!
+            "water" in n || "air" in n || "pdam" in n                        -> allIcons["Water Bill"]!!
+            "wifi" in n || "internet" in n || "indihome" in n                -> allIcons["Internet / WiFi"]!!
+            "phone" in n || "mobile" in n || "pulsa" in n || "telpon" in n   -> allIcons["Phone"]!!
+            "repair" in n || "renovasi" in n || "servis" in n                -> allIcons["Home Repair"]!!
+            "clean" in n || "bersih" in n                                    -> allIcons["Cleaning"]!!
+            // ── Expense: Health ──────────────────────────────────────────
+            "health" in n || "hospital" in n || "clinic" in n || "dokter" in n -> allIcons["Healthcare"]!!
+            "pharma" in n || "medicine" in n || "obat" in n || "apotek" in n -> allIcons["Pharmacy"]!!
+            "fitness" in n || "gym" in n || "olahraga" in n                  -> allIcons["Fitness"]!!
+            "dental" in n || "gigi" in n                                     -> allIcons["Dental"]!!
+            "mental" in n || "psikolog" in n || "terapi" in n                -> allIcons["Mental Health"]!!
+            "vitamin" in n || "suplemen" in n                                -> allIcons["Vitamins"]!!
+            "spa" in n || "wellness" in n || "pijat" in n                    -> allIcons["Spa & Wellness"]!!
+            // ── Expense: Entertainment ───────────────────────────────────
+            "entertain" in n || "game" in n || "gaming" in n                 -> allIcons["Entertainment"]!!
+            "movie" in n || "cinema" in n || "film" in n || "bioskop" in n   -> allIcons["Movies"]!!
+            "music" in n || "spotify" in n || "konser" in n                  -> allIcons["Music"]!!
+            "sport" in n || "futsal" in n || "badminton" in n                -> allIcons["Sports"]!!
+            "outdoor" in n || "hiking" in n || "camping" in n                -> allIcons["Outdoor"]!!
+            "concert" in n || "theater" in n || "pertunjukan" in n           -> allIcons["Concert"]!!
+            "photo" in n || "kamera" in n                                    -> allIcons["Photography"]!!
+            "reading" in n || "baca" in n                                    -> allIcons["Reading"]!!
+            // ── Expense: Education ───────────────────────────────────────
+            "edu" in n || "school" in n || "sekolah" in n || "kuliah" in n   -> allIcons["Education"]!!
+            "book" in n || "buku" in n                                       -> allIcons["Books"]!!
+            "course" in n || "kursus" in n || "les" in n || "online" in n    -> allIcons["Online Course"]!!
+            "stationer" in n || "alat tulis" in n                            -> allIcons["Stationery"]!!
+            // ── Expense: Finance ─────────────────────────────────────────
+            "subscri" in n || "netflix" in n || "langganan" in n             -> allIcons["Subscriptions"]!!
+            "loan" in n || "cicilan" in n || "debt" in n || "hutang" in n    -> allIcons["Loan / Cicilan"]!!
+            "insur" in n || "asuransi" in n                                  -> allIcons["Insurance"]!!
+            "tax" in n || "pajak" in n                                       -> allIcons["Taxes"]!!
+            "saving" in n || "tabung" in n                                   -> allIcons["Savings"]!!
+            "atm" in n || "bank fee" in n || "admin" in n                    -> allIcons["ATM / Bank Fee"]!!
+            // ── Expense: Family & Social ─────────────────────────────────
+            "pet" in n || "animal" in n || "hewan" in n                      -> allIcons["Pet"]!!
+            "gift" in n || "present" in n || "hadiah" in n                   -> allIcons["Gift"]!!
+            "charit" in n || "donat" in n || "sedekah" in n || "zakat" in n  -> allIcons["Charity"]!!
+            "baby" in n || "kids" in n || "anak" in n || "bayi" in n         -> allIcons["Baby / Kids"]!!
+            "wedding" in n || "nikah" in n || "pernikahan" in n              -> allIcons["Wedding"]!!
+            "dining" in n || "makan malam" in n                              -> allIcons["Dining Out"]!!
+            "social" in n || "hangout" in n || "nongkrong" in n              -> allIcons["Social"]!!
+            "vacation" in n || "pantai" in n || "wisata" in n                -> allIcons["Vacation"]!!
+            // ── Income: Employment ───────────────────────────────────────
+            "salary" in n || "gaji" in n                                     -> allIcons["Salary"]!!
+            "bonus" in n || "thr" in n                                       -> allIcons["Bonus"]!!
+            "overtime" in n || "lembur" in n                                 -> allIcons["Overtime"]!!
+            "commission" in n || "komisi" in n                               -> allIcons["Commission"]!!
+            "allowance" in n || "tunjangan" in n || "uang saku" in n         -> allIcons["Allowance"]!!
+            // ── Income: Self-Employment ──────────────────────────────────
+            "freelanc" in n                                                  -> allIcons["Freelance"]!!
+            "business" in n || "bisnis" in n || "usaha" in n                 -> allIcons["Business"]!!
+            "side" in n || "hustle" in n || "sampingan" in n                 -> allIcons["Side Hustle"]!!
+            "consult" in n || "konsultan" in n                               -> allIcons["Consulting"]!!
+            "online shop" in n || "jualan" in n || "toko" in n               -> allIcons["Online Shop"]!!
+            "content" in n || "creator" in n || "youtuber" in n              -> allIcons["Content Creator"]!!
+            "teach" in n || "ngajar" in n || "les" in n                      -> allIcons["Teaching"]!!
+            "service" in n || "jasa" in n                                    -> allIcons["Service"]!!
+            // ── Income: Investment ───────────────────────────────────────
+            "invest" in n || "investasi" in n                                -> allIcons["Investment"]!!
+            "dividend" in n || "dividen" in n                                -> allIcons["Dividends"]!!
+            "stock" in n || "saham" in n                                     -> allIcons["Stock"]!!
+            "crypto" in n || "bitcoin" in n || "kripto" in n                 -> allIcons["Crypto"]!!
+            "mutual" in n || "reksa" in n || "reksadana" in n                -> allIcons["Mutual Fund"]!!
+            "interest" in n || "bunga" in n                                  -> allIcons["Interest"]!!
+            "gold" in n || "emas" in n                                       -> allIcons["Gold"]!!
+            // ── Income: Passive ──────────────────────────────────────────
+            "passive" in n || "pasif" in n                                   -> allIcons["Passive Income"]!!
+            "rental" in n || "sewa" in n || "kos" in n                       -> allIcons["Rental Income"]!!
+            "royalt" in n || "royalti" in n                                  -> allIcons["Royalty"]!!
+            "affiliat" in n                                                  -> allIcons["Affiliate"]!!
+            "ads" in n || "iklan" in n || "adsense" in n                     -> allIcons["Ads Revenue"]!!
+            // ── Income: Transfers & Misc ─────────────────────────────────
+            "cashback" in n || "reward" in n                                 -> allIcons["Cashback"]!!
+            "refund" in n || "return" in n || "kembalian" in n               -> allIcons["Refund"]!!
+            "grant" in n                                                     -> allIcons["Grant"]!!
+            "scholar" in n || "beasiswa" in n                                -> allIcons["Scholarship"]!!
+            "pension" in n || "pensiun" in n                                 -> allIcons["Pension"]!!
+            "inherit" in n || "warisan" in n                                 -> allIcons["Inheritance"]!!
+            "lottery" in n || "lotre" in n || "undian" in n                  -> allIcons["Lottery"]!!
+            else -> fallback()
+        }
+    }
+
+    fun resolveIcon(iconName: String?): ImageVector = resolve(iconName).icon
+    fun resolveColor(iconName: String?): Color = resolve(iconName).color
+
+    private fun fallback() = CategoryIconInfo(
+        name  = "Others",
+        icon  = Icons.Default.Category,
+        color = Color(0xFF79747E)
+    )
+}
+
+// ─── Shared Composables ───────────────────────────────────────────────────────
 
 @Composable
 internal fun IconOption(
     iconData: CategoryIconInfo,
     isSelected: Boolean,
+    accentColor: Color = Color(0xFF7C4DFF),
     onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .background(
-                if (isSelected) Color(0xFF7C4DFF).copy(alpha = 0.12f) else Color.White
-            )
+            .background(if (isSelected) accentColor.copy(alpha = 0.12f) else Color.White)
             .border(
                 width = if (isSelected) 1.5.dp else 1.dp,
-                color = if (isSelected) Color(0xFF7C4DFF) else Color(0xFFECE7F6),
+                color = if (isSelected) accentColor else Color(0xFFECE7F6),
                 shape = RoundedCornerShape(12.dp)
             )
             .padding(10.dp),
@@ -98,56 +345,48 @@ internal fun IconOption(
     }
 }
 
+// ─── Category Type Selector ───────────────────────────────────────────────────
+
 @Composable
-internal fun SliderSection(
-    title: String,
-    label: String,
-    value: Float,
-    onValueChange: (Float) -> Unit,
-    range: ClosedFloatingPointRange<Float>,
-    steps: Int,
-    prefix: String = "",
-    suffix: String = ""
+internal fun CategoryTypeSelector(
+    selected: CategoryType,
+    onSelect: (CategoryType) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(label, style = MaterialTheme.typography.bodyMedium)
-            Text(
-                text = "$prefix${value.roundToInt().formatCurrency()}$suffix",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = range,
-            steps = steps
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "$prefix${range.start.roundToInt().formatCurrency()}",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = "$prefix${range.endInclusive.roundToInt().formatCurrency()}",
-                style = MaterialTheme.typography.bodySmall
-            )
+    val purple = Color(0xFF7C4DFF)
+    val green  = Color(0xFF10B981)
+    val border = Color(0xFFECE7F6)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        CategoryType.values().forEach { type ->
+            val isSelected   = selected == type
+            val activeColor  = if (type == CategoryType.EXPENSE) purple else green
+            val bgColor      = if (isSelected) activeColor else Color.White
+            val contentColor = if (isSelected) Color.White else Color(0xFF6B6B8A)
+            val borderColor  = if (isSelected) activeColor else border
+
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .clickable { onSelect(type) },
+                shape  = RoundedCornerShape(50.dp),
+                color  = bgColor,
+                border = BorderStroke(1.dp, borderColor)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text       = if (type == CategoryType.EXPENSE) "Expense" else "Income",
+                        style      = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color      = contentColor
+                    )
+                }
+            }
         }
     }
-}
-
-// Extension function for currency formatting
-internal fun Int.formatCurrency(): String {
-    return NumberFormat.getNumberInstance(Locale("id", "ID")).format(this)
 }
 
 // ─── Recurring Period Selector ────────────────────────────────────────────────
@@ -166,12 +405,11 @@ internal fun RecurringPeriodSelector(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        // "None" option
         val noneSelected = selected == null
         val noneBg by animateColorAsState(
-            targetValue = if (noneSelected) purple else Color.White,
+            targetValue   = if (noneSelected) purple else Color.White,
             animationSpec = tween(180),
-            label = "none_bg"
+            label         = "none_bg"
         )
         Box(
             modifier = Modifier
@@ -184,19 +422,19 @@ internal fun RecurringPeriodSelector(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "None",
-                style = MaterialTheme.typography.labelSmall,
+                text       = "None",
+                style      = MaterialTheme.typography.labelSmall,
                 fontWeight = if (noneSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (noneSelected) Color.White else Color(0xFF6B6B8A)
+                color      = if (noneSelected) Color.White else Color(0xFF6B6B8A)
             )
         }
 
         recurringPeriods.forEach { period ->
             val isSelected = selected == period
             val bg by animateColorAsState(
-                targetValue = if (isSelected) purple else Color.White,
+                targetValue   = if (isSelected) purple else Color.White,
                 animationSpec = tween(180),
-                label = "period_bg_$period"
+                label         = "period_bg_$period"
             )
             Box(
                 modifier = Modifier
@@ -209,10 +447,10 @@ internal fun RecurringPeriodSelector(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = period,
-                    style = MaterialTheme.typography.labelSmall,
+                    text       = period,
+                    style      = MaterialTheme.typography.labelSmall,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) Color.White else Color(0xFF6B6B8A)
+                    color      = if (isSelected) Color.White else Color(0xFF6B6B8A)
                 )
             }
         }
@@ -228,14 +466,14 @@ internal fun BudgetLimitInput(
     alertThreshold: Float,
     onAlertThresholdChange: (Float) -> Unit
 ) {
-    val purple = Color(0xFF7C4DFF)
-    val border = Color(0xFFECE7F6)
+    val purple      = Color(0xFF7C4DFF)
+    val border      = Color(0xFFECE7F6)
     val parsedLimit = budgetLimitText.filter { it.isDigit() }.toLongOrNull() ?: 0L
 
     Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, border)
+        shape  = RoundedCornerShape(14.dp),
+        color  = Color.White,
+        border = BorderStroke(1.dp, border)
     ) {
         Column(
             modifier = Modifier
@@ -249,38 +487,36 @@ internal fun BudgetLimitInput(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Monthly Budget",
+                    text  = "Monthly Budget",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF6B6B8A)
                 )
                 if (parsedLimit > 0) {
                     Text(
-                        text = "Rp ${parsedLimit.formatCurrencyLong()}",
-                        style = MaterialTheme.typography.bodySmall,
+                        text       = "Rp ${parsedLimit.formatCurrencyLong()}",
+                        style      = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = purple
+                        color      = purple
                     )
                 }
             }
             OutlinedTextField(
-                value = CurrencyUtils.formatInputThousands(budgetLimitText),
-                onValueChange = { input ->
-                    onBudgetLimitTextChange(CurrencyUtils.stripThousands(input))
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                placeholder = {
+                value         = CurrencyUtils.formatInputThousands(budgetLimitText),
+                onValueChange = { input -> onBudgetLimitTextChange(CurrencyUtils.stripThousands(input)) },
+                modifier      = Modifier.fillMaxWidth(),
+                singleLine    = true,
+                placeholder   = {
                     Text("e.g. 2.000.000", color = Color(0xFFBDBDBD), style = MaterialTheme.typography.bodyMedium)
                 },
-                leadingIcon = {
+                leadingIcon   = {
                     Text("Rp", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = purple)
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                shape = RoundedCornerShape(10.dp),
+                shape  = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = purple,
-                    unfocusedBorderColor = border,
-                    focusedContainerColor = Color.White,
+                    focusedBorderColor      = purple,
+                    unfocusedBorderColor    = border,
+                    focusedContainerColor   = Color.White,
                     unfocusedContainerColor = Color.White
                 )
             )
@@ -288,9 +524,9 @@ internal fun BudgetLimitInput(
     }
 
     Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, border)
+        shape  = RoundedCornerShape(14.dp),
+        color  = Color.White,
+        border = BorderStroke(1.dp, border)
     ) {
         Column(
             modifier = Modifier
@@ -306,9 +542,9 @@ internal fun BudgetLimitInput(
                 Text("Alert at", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF6B6B8A))
                 Text(
                     "${alertThreshold.roundToInt()}% of budget",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
-                    color = purple
+                    color      = purple
                 )
             }
             if (parsedLimit > 0) {
@@ -319,23 +555,28 @@ internal fun BudgetLimitInput(
                 )
             }
             Slider(
-                value = alertThreshold,
+                value         = alertThreshold,
                 onValueChange = onAlertThresholdChange,
-                valueRange = 50f..100f,
-                steps = 9,
-                colors = SliderDefaults.colors(
-                    thumbColor = purple,
-                    activeTrackColor = purple,
+                valueRange    = 50f..100f,
+                steps         = 9,
+                colors        = SliderDefaults.colors(
+                    thumbColor        = purple,
+                    activeTrackColor  = purple,
                     inactiveTrackColor = border
                 )
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("50%", style = MaterialTheme.typography.labelSmall, color = Color(0xFFBDBDBD))
+                Text("50%",  style = MaterialTheme.typography.labelSmall, color = Color(0xFFBDBDBD))
                 Text("100%", style = MaterialTheme.typography.labelSmall, color = Color(0xFFBDBDBD))
             }
         }
     }
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+internal fun Int.formatCurrency(): String =
+    NumberFormat.getNumberInstance(Locale("id", "ID")).format(this)
 
 private fun Long.formatCurrencyLong(): String =
     NumberFormat.getNumberInstance(Locale("id", "ID")).format(this)

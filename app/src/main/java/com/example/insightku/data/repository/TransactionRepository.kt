@@ -2,9 +2,12 @@ package com.example.insightku.data.repository
 
 import android.util.Log
 import com.example.insightku.data.local.dao.CategoryDao
+import com.example.insightku.data.local.dao.InstallmentDao
 import com.example.insightku.data.local.dao.RecurringBudgetDao
 import com.example.insightku.data.local.dao.TransactionDao
 import com.example.insightku.data.model.Category
+import com.example.insightku.data.model.CategoryType
+import com.example.insightku.data.model.Installment
 import com.example.insightku.data.model.RecurringBudget
 import com.example.insightku.data.model.Transaction
 import com.google.firebase.firestore.FirebaseFirestore
@@ -30,6 +33,7 @@ class TransactionRepository @Inject constructor(
     private val transactionDao: TransactionDao,
     private val categoryDao: CategoryDao,
     private val recurringBudgetDao: RecurringBudgetDao,
+    private val installmentDao: InstallmentDao,
     private val firestore: FirebaseFirestore
 ) {
     // ─── Transaction ───────────────────────────────────────────────────────────
@@ -117,6 +121,14 @@ class TransactionRepository @Inject constructor(
 
     fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategories()
 
+    suspend fun hasAnyCategories(): Boolean = categoryDao.countActiveCategories() > 0
+
+    fun getExpenseCategories(): Flow<List<Category>> =
+        categoryDao.getCategoriesByType(CategoryType.EXPENSE.name)
+
+    fun getIncomeCategories(): Flow<List<Category>> =
+        categoryDao.getCategoriesByType(CategoryType.INCOME.name)
+
     suspend fun refreshCategories(userId: String) {
         val snapshot = firestore.collection("users").document(userId)
             .collection("categories").get().await()
@@ -150,6 +162,40 @@ class TransactionRepository @Inject constructor(
         firestore.collection("users").document(userId)
             .collection("categories").document(categoryId).delete().await()
         Log.d("InsightKu", "deleteCategory: Firestore delete SUCCESS id=$categoryId")
+    }
+
+    suspend fun repairSystemCategories(userId: String) {
+        val systemExpense = Category(
+            id = "system-uncategorized-expense",
+            name = "Uncategorized",
+            color = "#79747E",
+            icon = "Others",
+            isActive = true,
+            alertThreshold = 80,
+            categoryType = "EXPENSE",
+            isSystemCategory = true
+        )
+        val systemIncome = Category(
+            id = "system-uncategorized-income",
+            name = "Uncategorized Income",
+            color = "#79747E",
+            icon = "Others",
+            isActive = true,
+            alertThreshold = 80,
+            categoryType = "INCOME",
+            isSystemCategory = true
+        )
+        // Always overwrite system categories with correct values
+        categoryDao.insertCategory(systemExpense)
+        categoryDao.insertCategory(systemIncome)
+        try {
+            firestore.collection("users").document(userId)
+                .collection("categories").document(systemExpense.id).set(systemExpense).await()
+            firestore.collection("users").document(userId)
+                .collection("categories").document(systemIncome.id).set(systemIncome).await()
+        } catch (e: Exception) {
+            // Offline — Room already repaired
+        }
     }
 
     suspend fun cleanupUncategorizedTransactions(userId: String) {
@@ -199,13 +245,19 @@ class TransactionRepository @Inject constructor(
         categoryName: String,
         userId: String
     ) {
+        if (categoryId.startsWith("system-")) {
+            Log.w("InsightKu", "deleteCategoryAndMigrate: blocked protected category id=$categoryId")
+            return
+        }
         Log.d("InsightKu", "deleteCategoryAndMigrate: id=$categoryId name=$categoryName userId=$userId")
 
-        // Step 1: Blank out transactions locally
-        transactionDao.moveTransactionsByCategory(categoryName, "")
-
-        // Step 2: Delete category from Room
+        // Step 1: Delete category from Room first so the Flow emits the correct
+        // post-delete list before transactions are blanked. This prevents an
+        // intermediate combine() emission that would still include the deleted category.
         categoryDao.deleteCategory(categoryId)
+
+        // Step 2: Blank out transactions locally
+        transactionDao.moveTransactionsByCategory(categoryName, "")
 
         // Step 3: Sync category delete to Firestore
         Log.d("InsightKu", "deleteCategoryAndMigrate: deleting from Firestore path=users/$userId/categories/$categoryId")
@@ -255,5 +307,50 @@ class TransactionRepository @Inject constructor(
         recurringBudgetDao.deleteRecurringBudget(budgetId)
         firestore.collection("users").document(userId)
             .collection("recurring_budgets").document(budgetId).delete().await()
+    }
+
+    // ─── Installment ───────────────────────────────────────────────────────────
+
+    fun getAllInstallments(): Flow<List<Installment>> = installmentDao.getAllInstallments()
+
+    suspend fun insertInstallment(installment: Installment, userId: String) {
+        installmentDao.insertInstallment(installment)
+        try {
+            firestore.collection("users").document(userId)
+                .collection("installments").document(installment.id).set(installment).await()
+        } catch (e: Exception) {
+            // Offline — Room already saved
+        }
+    }
+
+    suspend fun updateInstallment(installment: Installment, userId: String) {
+        installmentDao.updateInstallment(installment)
+        try {
+            firestore.collection("users").document(userId)
+                .collection("installments").document(installment.id).set(installment).await()
+        } catch (e: Exception) {
+            // Offline — Room already updated
+        }
+    }
+
+    suspend fun deleteInstallment(installmentId: String, userId: String) {
+        installmentDao.deleteInstallment(installmentId)
+        try {
+            firestore.collection("users").document(userId)
+                .collection("installments").document(installmentId).delete().await()
+        } catch (e: Exception) {
+            // Offline — Room already deleted
+        }
+    }
+
+    suspend fun refreshInstallments(userId: String) {
+        val snapshot = firestore.collection("users").document(userId)
+            .collection("installments").get().await()
+        val installments = snapshot.toObjects(Installment::class.java)
+        installmentDao.insertInstallmentsFromRemote(installments)
+    }
+
+    suspend fun deleteAllLocalInstallments() {
+        installmentDao.deleteAllInstallments()
     }
 }

@@ -1,37 +1,46 @@
 package com.example.insightku.ui.components.budgeting
 
 import com.example.insightku.data.model.Category
+import com.example.insightku.data.model.CategoryType
+import com.example.insightku.data.model.Installment
 import com.example.insightku.data.model.RecurringBudget
 
 sealed class BudgetingEvent {
-    // General Events
+    // General
     object LoadBudgetData : BudgetingEvent()
     object RefreshData : BudgetingEvent()
     object ClearError : BudgetingEvent()
     data class ChangePeriod(val period: BudgetPeriod) : BudgetingEvent()
 
-    // Add Category Dialog Events
-    object ShowAddBudgetDialog : BudgetingEvent()
+    // Category dialogs
+    data class ShowAddBudgetDialog(val categoryType: CategoryType) : BudgetingEvent()
     object HideAddBudgetDialog : BudgetingEvent()
     data class AddCategory(val category: Category) : BudgetingEvent()
-
-    // Edit Category Dialog Events
     data class ShowEditBudgetDialog(val category: BudgetCategory) : BudgetingEvent()
     object HideEditBudgetDialog : BudgetingEvent()
     data class UpdateCategory(val category: Category) : BudgetingEvent()
-
-    // Delete Category Events
     data class ShowDeleteConfirmDialog(val category: BudgetCategory) : BudgetingEvent()
     object HideDeleteConfirmDialog : BudgetingEvent()
     data class ConfirmDeleteCategory(val categoryId: String, val categoryName: String) : BudgetingEvent()
-
-    // Keep for backward compat — routes through ShowDeleteConfirmDialog now
     data class DeleteCategory(val categoryId: String) : BudgetingEvent()
 
-    // Recurring Budgets Dialog Events
-    object ShowRecurringBudgetsDialog : BudgetingEvent()
-    object HideRecurringBudgetsDialog : BudgetingEvent()
+    // Recurring payment dialogs
+    object ShowAddRecurringDialog : BudgetingEvent()
+    data class ShowEditRecurringDialog(val budget: RecurringBudget) : BudgetingEvent()
+    object HideRecurringDialog : BudgetingEvent()
     data class AddRecurringBudget(val budget: RecurringBudget) : BudgetingEvent()
     data class UpdateRecurringBudget(val budget: RecurringBudget) : BudgetingEvent()
     data class DeleteRecurringBudget(val budget: RecurringBudget) : BudgetingEvent()
+
+    // Legacy — kept for backward compat
+    object ShowRecurringBudgetsDialog : BudgetingEvent()
+    object HideRecurringBudgetsDialog : BudgetingEvent()
+
+    // Installment dialogs
+    object ShowAddInstallmentDialog : BudgetingEvent()
+    data class ShowEditInstallmentDialog(val installment: Installment) : BudgetingEvent()
+    object HideInstallmentDialog : BudgetingEvent()
+    data class AddInstallment(val installment: Installment) : BudgetingEvent()
+    data class UpdateInstallment(val installment: Installment) : BudgetingEvent()
+    data class DeleteInstallment(val installmentId: String) : BudgetingEvent()
 }

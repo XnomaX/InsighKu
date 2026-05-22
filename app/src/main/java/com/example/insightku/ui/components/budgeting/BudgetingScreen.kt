@@ -32,21 +32,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocalHospital
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
@@ -79,12 +69,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.insightku.data.model.BudgetFrequency
 import com.example.insightku.data.model.Category
+import com.example.insightku.data.model.CategoryType
+import com.example.insightku.data.model.Installment
 import com.example.insightku.data.model.RecurringBudget
 import com.example.insightku.ui.dialogs.AddCategoryDialog
+import com.example.insightku.ui.dialogs.CategoryIconResolver
 import com.example.insightku.ui.dialogs.EditCategoryDialog
-import com.example.insightku.ui.dialogs.RecurringBudgetsDialog
 import com.example.insightku.ui.theme.Dimens
 import com.example.insightku.ui.theme.formatCurrency
 import com.example.insightku.viewmodel.BudgetingViewModel
@@ -163,12 +154,12 @@ fun BudgetingScreenContent(
                 )
             }
 
-            // Section label with inline Add Category button
+            // ── EXPENSE BUDGETS SECTION ──────────────────────────────────────
             item {
                 BudgetSectionLabel(
-                    title = "Category Budgets",
+                    title = "Expense Budgets",
                     subtitle = categoryListSubtitle(uiState),
-                    onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog) },
+                    onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
                     modifier = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical = 8.dp
@@ -176,11 +167,10 @@ fun BudgetingScreenContent(
                 )
             }
 
-            // Category list or empty state
             if (!uiState.isLoading && uiState.budgetCategories.isEmpty()) {
                 item {
                     EmptyBudgetState(
-                        onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog) },
+                        onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
                         modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
                     )
                 }
@@ -201,7 +191,7 @@ fun BudgetingScreenContent(
                 }
             }
 
-            // Insights section
+            // Insights
             if (uiState.budgetCategories.isNotEmpty()) {
                 item {
                     BudgetInsightsSection(
@@ -214,11 +204,65 @@ fun BudgetingScreenContent(
                 }
             }
 
-            // Recurring budgets section
+            // ── INCOME SOURCES SECTION ───────────────────────────────────────
             item {
-                RecurringBudgetSection(
+                IncomeSectionLabel(
+                    title = "Income Sources",
+                    subtitle = if (uiState.incomeCategories.isEmpty()) "No income sources yet"
+                               else "${uiState.incomeCategories.size} sources tracked",
+                    onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
+                    modifier = Modifier.padding(
+                        horizontal = Dimens.ScreenHorizontalPadding,
+                        vertical = 8.dp
+                    )
+                )
+            }
+
+            if (uiState.incomeCategories.isEmpty()) {
+                item {
+                    EmptyIncomeState(
+                        onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
+                        modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
+                    )
+                }
+            } else {
+                items(
+                    items = uiState.incomeCategories,
+                    key = { "income-${it.id}" }
+                ) { category ->
+                    IncomeCategoryCard(
+                        category = category,
+                        onEdit = { onEvent(BudgetingEvent.ShowEditBudgetDialog(category)) },
+                        onDelete = { onEvent(BudgetingEvent.ShowDeleteConfirmDialog(category)) },
+                        modifier = Modifier.padding(
+                            horizontal = Dimens.ScreenHorizontalPadding,
+                            vertical = 6.dp
+                        )
+                    )
+                }
+            }
+
+            // Recurring Payments section
+            item {
+                RecurringSection(
                     recurringBudgets = uiState.recurringBudgets,
-                    onManage = { onEvent(BudgetingEvent.ShowRecurringBudgetsDialog) },
+                    onAdd    = { onEvent(BudgetingEvent.ShowAddRecurringDialog) },
+                    onEdit   = { onEvent(BudgetingEvent.ShowEditRecurringDialog(it)) },
+                    onDelete = { onEvent(BudgetingEvent.DeleteRecurringBudget(it)) },
+                    modifier = Modifier.padding(
+                        horizontal = Dimens.ScreenHorizontalPadding,
+                        vertical = 4.dp
+                    )
+                )
+            }
+
+            // Installments section
+            item {
+                InstallmentsSection(
+                    installments = uiState.installments,
+                    onAdd    = { onEvent(BudgetingEvent.ShowAddInstallmentDialog) },
+                    onEdit   = { onEvent(BudgetingEvent.ShowEditInstallmentDialog(it)) },
+                    onDelete = { onEvent(BudgetingEvent.DeleteInstallment(it.id)) },
                     modifier = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical = 4.dp
@@ -241,9 +285,10 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
     when (val dialogState = uiState.dialogState) {
         is DialogState.AddBudget -> {
             AddCategoryDialog(
-                isOpen = true,
-                onDismiss = { onEvent(BudgetingEvent.HideAddBudgetDialog) },
-                onCategoryAdded = { category -> onEvent(BudgetingEvent.AddCategory(category)) }
+                isOpen          = true,
+                onDismiss       = { onEvent(BudgetingEvent.HideAddBudgetDialog) },
+                onCategoryAdded = { category -> onEvent(BudgetingEvent.AddCategory(category)) },
+                initialType     = dialogState.categoryType
             )
         }
 
@@ -252,13 +297,16 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
                 isOpen = true,
                 onDismiss = { onEvent(BudgetingEvent.HideEditBudgetDialog) },
                 category = Category(
-                    id = dialogState.category.id,
-                    name = dialogState.category.name,
-                    budgetLimit = dialogState.category.budgetedAmount,
-                    color = dialogState.category.color,
-                    icon = dialogState.category.icon
+                    id               = dialogState.category.id,
+                    name             = dialogState.category.name,
+                    budgetLimit      = dialogState.category.budgetedAmount,
+                    color            = dialogState.category.color,
+                    icon             = dialogState.category.icon,
+                    recurringPeriod  = dialogState.category.recurringPeriod,
+                    categoryType     = dialogState.category.categoryType.name,
+                    isSystemCategory = dialogState.category.isSystemCategory
                 ),
-                onCategoryEdited = { onEvent(BudgetingEvent.UpdateCategory(it)) },
+                onCategoryEdited  = { onEvent(BudgetingEvent.UpdateCategory(it)) },
                 onCategoryDeleted = { onEvent(BudgetingEvent.ShowDeleteConfirmDialog(dialogState.category)) }
             )
         }
@@ -266,10 +314,10 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
         is DialogState.DeleteConfirm -> {
             DeleteCategoryDialog(
                 categoryName = dialogState.category.name,
-                onDismiss = { onEvent(BudgetingEvent.HideDeleteConfirmDialog) },
-                onConfirm = {
+                onDismiss    = { onEvent(BudgetingEvent.HideDeleteConfirmDialog) },
+                onConfirm    = {
                     onEvent(BudgetingEvent.ConfirmDeleteCategory(
-                        categoryId = dialogState.category.id,
+                        categoryId   = dialogState.category.id,
                         categoryName = dialogState.category.name
                     ))
                 }
@@ -277,17 +325,49 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
         }
 
         is DialogState.ManageRecurring -> {
-            RecurringBudgetsDialog(
-                isOpen = true,
-                onDismiss = { onEvent(BudgetingEvent.HideRecurringBudgetsDialog) },
-                recurringBudgets = dialogState.budgets,
-                onBudgetAdded = { onEvent(BudgetingEvent.AddRecurringBudget(it)) },
-                onBudgetEdited = { onEvent(BudgetingEvent.UpdateRecurringBudget(it)) },
-                onBudgetDeleted = { onEvent(BudgetingEvent.DeleteRecurringBudget(it)) }
+            // Legacy — redirect to new add dialog
+            AddRecurringPaymentDialog(
+                isOpen    = true,
+                onDismiss = { onEvent(BudgetingEvent.HideRecurringDialog) },
+                onSave    = { onEvent(BudgetingEvent.AddRecurringBudget(it)) }
             )
         }
 
-        DialogState.None -> Unit
+        is DialogState.AddRecurringPayment -> {
+            AddRecurringPaymentDialog(
+                isOpen    = true,
+                onDismiss = { onEvent(BudgetingEvent.HideRecurringDialog) },
+                onSave    = { onEvent(BudgetingEvent.AddRecurringBudget(it)) }
+            )
+        }
+
+        is DialogState.EditRecurringPayment -> {
+            AddRecurringPaymentDialog(
+                isOpen    = true,
+                onDismiss = { onEvent(BudgetingEvent.HideRecurringDialog) },
+                onSave    = { onEvent(BudgetingEvent.UpdateRecurringBudget(it)) },
+                editing   = dialogState.budget
+            )
+        }
+
+        is DialogState.AddInstallment -> {
+            AddInstallmentDialog(
+                isOpen    = true,
+                onDismiss = { onEvent(BudgetingEvent.HideInstallmentDialog) },
+                onSave    = { onEvent(BudgetingEvent.AddInstallment(it)) }
+            )
+        }
+
+        is DialogState.EditInstallment -> {
+            AddInstallmentDialog(
+                isOpen    = true,
+                onDismiss = { onEvent(BudgetingEvent.HideInstallmentDialog) },
+                onSave    = { onEvent(BudgetingEvent.UpdateInstallment(it)) },
+                editing   = dialogState.installment
+            )
+        }
+
+        is DialogState.None -> Unit
     }
 }
 
@@ -687,6 +767,221 @@ private fun BudgetErrorCard(
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold
             )
+        }
+    }
+}
+
+@Composable
+private fun IncomeSectionLabel(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    onAddCategory: (() -> Unit)? = null
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1A2E)
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF9E9E9E)
+                )
+            }
+            if (onAddCategory != null) {
+                Surface(
+                    modifier = Modifier.clickable(onClick = onAddCategory),
+                    shape = RoundedCornerShape(50.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFF10B981))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = Color(0xFF10B981)
+                        )
+                        Text(
+                            text = "Add Source",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF10B981)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyIncomeState(
+    onAddCategory: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF10B981).copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.TrendingUp,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = Color(0xFF10B981).copy(alpha = 0.5f)
+                )
+            }
+            Text(
+                text = "No income sources yet",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF1A1A2E),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Track where your money comes from.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF9E9E9E),
+                textAlign = TextAlign.Center
+            )
+            Surface(
+                modifier = Modifier.clickable(onClick = onAddCategory),
+                shape = RoundedCornerShape(50.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFF10B981))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = Color(0xFF10B981)
+                    )
+                    Text(
+                        "Add Income Source",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF10B981)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IncomeCategoryCard(
+    category: BudgetCategory,
+    onEdit: () -> Unit,
+    onDelete: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val categoryColor = parseCategoryColor(category.color)
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(categoryColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = categoryIcon(category),
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = categoryColor
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = category.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1A2E),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = if (category.spentAmount > 0)
+                        "${formatCurrency(category.spentAmount)} this month"
+                    else "No income recorded",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF9E9E9E)
+                )
+            }
+            if (category.spentAmount > 0) {
+                Text(
+                    text = formatCurrency(category.spentAmount),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF10B981)
+                )
+            }
+            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit",
+                    modifier = Modifier.size(16.dp),
+                    tint = Color(0xFFB39DDB)
+                )
+            }
+            if (onDelete != null) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Default.DeleteOutline,
+                        contentDescription = "Delete",
+                        modifier = Modifier.size(16.dp),
+                        tint = Color(0xFFE57373).copy(alpha = 0.7f)
+                    )
+                }
+            }
         }
     }
 }
@@ -1115,197 +1410,6 @@ private fun InsightCard(
 }
 
 @Composable
-private fun RecurringBudgetSection(
-    recurringBudgets: List<RecurringBudget>,
-    onManage: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "Recurring & Cicilan",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
-                )
-                Text(
-                    text = if (recurringBudgets.isEmpty()) "No recurring budgets set"
-                           else "${recurringBudgets.size} active",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
-                )
-            }
-            Surface(
-                modifier = Modifier.clickable(onClick = onManage),
-                shape = RoundedCornerShape(50.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFF7C4DFF))
-            ) {
-                Text(
-                    text = if (recurringBudgets.isEmpty()) "+ Add" else "Manage",
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF7C4DFF)
-                )
-            }
-        }
-
-        if (recurringBudgets.isEmpty()) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFECE7F6))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF7C4DFF).copy(alpha = 0.08f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Repeat,
-                            contentDescription = null,
-                            tint = Color(0xFF7C4DFF).copy(alpha = 0.5f),
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-                    Text(
-                        text = "Track cicilan & subscriptions",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF9E9E9E),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        } else {
-            recurringBudgets.forEach { budget ->
-                RecurringBudgetCard(budget = budget)
-            }
-        }
-    }
-}
-
-@Composable
-private fun RecurringBudgetCard(budget: RecurringBudget) {
-    val daysUntilDue = ((budget.nextDue - System.currentTimeMillis()) /
-            (1000 * 60 * 60 * 24)).toInt().coerceAtLeast(0)
-
-    val statusColor = when {
-        daysUntilDue <= 1 -> Color(0xFFE57373)
-        daysUntilDue <= 3 -> Color(0xFFFFB74D)
-        else -> Color(0xFF81C784)
-    }
-    val dueText = when {
-        daysUntilDue == 0 -> "Due today"
-        daysUntilDue == 1 -> "Due tomorrow"
-        else -> "Due in $daysUntilDue days"
-    }
-    val freqLabel = when (budget.frequency) {
-        BudgetFrequency.WEEKLY -> "Weekly"
-        BudgetFrequency.BIWEEKLY -> "Biweekly"
-        BudgetFrequency.MONTHLY -> "Monthly"
-        BudgetFrequency.QUARTERLY -> "Quarterly"
-        BudgetFrequency.YEARLY -> "Yearly"
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFECE7F6))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF7C4DFF).copy(alpha = 0.10f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Repeat,
-                    contentDescription = null,
-                    tint = Color(0xFF7C4DFF),
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = budget.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = Color(0xFF7C4DFF).copy(alpha = 0.08f)
-                    ) {
-                        Text(
-                            text = freqLabel,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF7C4DFF),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = statusColor.copy(alpha = 0.10f)
-                    ) {
-                        Text(
-                            text = dueText,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = statusColor,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = formatCurrency(budget.amount),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
-                )
-                Text(
-                    text = "per cycle",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF9E9E9E)
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun budgetStatusColor(health: BudgetHealth): Color = when (health) {
     BudgetHealth.Unlimited -> Color(0xFF7C4DFF)
     BudgetHealth.Good -> Color(0xFF81C784)
@@ -1383,23 +1487,8 @@ private fun parseCategoryColor(value: String): Color {
     }.getOrDefault(Color(0xFF79747E))
 }
 
-private fun categoryIcon(category: BudgetCategory): ImageVector {
-    val icon = category.icon.lowercase(Locale.getDefault())
-    val name = category.name.lowercase(Locale.getDefault())
-    return when {
-        "food" in icon || "drink" in icon || "restaurant" in icon || "food" in name -> Icons.Default.Restaurant
-        "transport" in icon || "car" in icon || "transport" in name -> Icons.Default.DirectionsCar
-        "bill" in icon || "receipt" in icon || "bill" in name -> Icons.Default.Receipt
-        "utility" in icon || "bolt" in icon || "utility" in name -> Icons.Default.Bolt
-        "shopping" in icon || "shopping" in name -> Icons.Default.ShoppingBag
-        "entertainment" in icon || "game" in icon || "movie" in icon || "lifestyle" in name -> Icons.Default.SportsEsports
-        "health" in icon || "health" in name -> Icons.Default.LocalHospital
-        "housing" in icon || "home" in icon || "rent" in name -> Icons.Default.Home
-        "coffee" in icon || "cafe" in name -> Icons.Default.Coffee
-        category.icon.isBlank() -> Icons.Default.Category
-        else -> Icons.Default.MoreHoriz
-    }
-}
+private fun categoryIcon(category: BudgetCategory): ImageVector =
+    CategoryIconResolver.resolveIcon(category.icon.ifBlank { category.name })
 
 private fun currentMonthLabel(): String {
     return SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date())

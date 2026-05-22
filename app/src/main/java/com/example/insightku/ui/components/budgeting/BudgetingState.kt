@@ -1,6 +1,8 @@
 package com.example.insightku.ui.components.budgeting
 
 import androidx.compose.runtime.Immutable
+import com.example.insightku.data.model.CategoryType
+import com.example.insightku.data.model.Installment
 import com.example.insightku.data.model.RecurringBudget
 
 @Immutable
@@ -10,7 +12,9 @@ data class BudgetingUiState(
     val totalBudget: Double = 0.0,
     val totalSpent: Double = 0.0,
     val budgetCategories: List<BudgetCategory> = emptyList(),
+    val incomeCategories: List<BudgetCategory> = emptyList(),
     val recurringBudgets: List<RecurringBudget> = emptyList(),
+    val installments: List<Installment> = emptyList(),
     val selectedPeriod: BudgetPeriod = BudgetPeriod.MONTHLY,
     val dialogState: DialogState = DialogState.None
 ) {
@@ -23,10 +27,14 @@ data class BudgetingUiState(
 
 sealed class DialogState {
     data object None : DialogState()
-    data object AddBudget : DialogState()
+    data class AddBudget(val categoryType: CategoryType) : DialogState()
     data class EditBudget(val category: BudgetCategory) : DialogState()
     data class DeleteConfirm(val category: BudgetCategory) : DialogState()
     data class ManageRecurring(val budgets: List<RecurringBudget>) : DialogState()
+    data object AddRecurringPayment : DialogState()
+    data class EditRecurringPayment(val budget: RecurringBudget) : DialogState()
+    data object AddInstallment : DialogState()
+    data class EditInstallment(val installment: Installment) : DialogState()
 }
 
 enum class BudgetPeriod(val displayName: String) {
@@ -50,7 +58,9 @@ data class BudgetCategory(
     val spentAmount: Double,
     val color: String,
     val icon: String,
-    val recurringPeriod: String? = null
+    val recurringPeriod: String? = null,
+    val isSystemCategory: Boolean = false,
+    val categoryType: CategoryType = CategoryType.EXPENSE
 ) {
     val hasLimit: Boolean get() = (budgetedAmount ?: 0.0) > 0.0
     val limitAmount: Double get() = budgetedAmount ?: 0.0
