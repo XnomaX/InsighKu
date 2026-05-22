@@ -11,18 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -33,19 +22,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,39 +38,46 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.data.model.Category
+import com.example.insightku.data.model.CategoryType
 import kotlin.math.roundToInt
 
-private val AddDialogPurple = Color(0xFF7C4DFF)
-private val AddDialogBorder = Color(0xFFECE7F6)
-private val AddDialogBg = Color(0xFFFAF9FE)
+private val DialogBorder  = Color(0xFFECE7F6)
+private val DialogBg      = Color(0xFFFAF9FE)
+private val ExpenseAccent = Color(0xFF7C4DFF)
+private val IncomeAccent  = Color(0xFF10B981)
 
 @Composable
 fun AddCategoryDialog(
     isOpen: Boolean,
     onDismiss: () -> Unit,
-    onCategoryAdded: (Category) -> Unit
+    onCategoryAdded: (Category) -> Unit,
+    // Fixed type — caller decides context. Defaults to EXPENSE for backward compat.
+    initialType: CategoryType = CategoryType.EXPENSE
 ) {
-    val focusManager = LocalFocusManager.current
+    val focusManager       = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    var name by remember { mutableStateOf("") }
-    var nameError by remember { mutableStateOf<String?>(null) }
-    var nameFocused by remember { mutableStateOf(false) }
-    var budgetLimitText by remember { mutableStateOf("") }
-    var alertThreshold by remember { mutableStateOf(80f) }
-    var selectedIconName by remember { mutableStateOf("Food & Drinks") }
-    var selectedPeriod by remember { mutableStateOf<String?>(null) }
+    val accentColor = if (initialType == CategoryType.EXPENSE) ExpenseAccent else IncomeAccent
+    val iconSet     = if (initialType == CategoryType.EXPENSE) expenseCategoryIcons else incomeCategoryIcons
 
-    val selectedIcon = defaultCategoryIcons.find { it.name == selectedIconName } ?: defaultCategoryIcons.first()
+    var name            by remember { mutableStateOf("") }
+    var nameError       by remember { mutableStateOf<String?>(null) }
+    var nameFocused     by remember { mutableStateOf(false) }
+    var budgetLimitText by remember { mutableStateOf("") }
+    var alertThreshold  by remember { mutableStateOf(80f) }
+    var selectedIconName by remember { mutableStateOf(iconSet.first().name) }
+    var selectedPeriod  by remember { mutableStateOf<String?>(null) }
+
+    val selectedIcon = iconSet.find { it.name == selectedIconName } ?: iconSet.first()
 
     LaunchedEffect(isOpen) {
         if (!isOpen) {
-            name = ""
-            nameError = null
-            budgetLimitText = ""
-            alertThreshold = 80f
-            selectedIconName = "Food & Drinks"
-            selectedPeriod = null
+            name             = ""
+            nameError        = null
+            budgetLimitText  = ""
+            alertThreshold   = 80f
+            selectedIconName = iconSet.first().name
+            selectedPeriod   = null
         }
     }
 
@@ -116,8 +101,8 @@ fun AddCategoryDialog(
 
     AnimatedVisibility(
         visible = isOpen,
-        enter = fadeIn(tween(200)),
-        exit = fadeOut(tween(200))
+        enter   = fadeIn(tween(200)),
+        exit    = fadeOut(tween(200))
     ) {
         Box(
             modifier = Modifier
@@ -135,7 +120,7 @@ fun AddCategoryDialog(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
-                    .heightIn(max = 680.dp)
+                    .heightIn(max = 700.dp)
                     .clip(RoundedCornerShape(28.dp))
                     .shadow(elevation = 24.dp, shape = RoundedCornerShape(28.dp), clip = false)
                     .pointerInput(Unit) {
@@ -144,12 +129,13 @@ fun AddCategoryDialog(
                             keyboardController?.hide()
                         })
                     },
-                shape = RoundedCornerShape(28.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, AddDialogBorder)
+                shape  = RoundedCornerShape(28.dp),
+                color  = Color.White,
+                border = BorderStroke(1.dp, DialogBorder)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    // Header
+
+                    // ── Header ────────────────────────────────────────────
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -157,34 +143,51 @@ fun AddCategoryDialog(
                             .padding(horizontal = 24.dp, vertical = 20.dp)
                     ) {
                         Column(modifier = Modifier.align(Alignment.CenterStart)) {
+                            // Type badge
+                            Surface(
+                                shape = RoundedCornerShape(50.dp),
+                                color = accentColor.copy(alpha = 0.10f)
+                            ) {
+                                Text(
+                                    text     = if (initialType == CategoryType.EXPENSE) "Expense Category" else "Income Category",
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    style    = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color    = accentColor
+                                )
+                            }
+                            Spacer(Modifier.height(6.dp))
                             Text(
-                                text = "Add Category",
-                                style = MaterialTheme.typography.titleLarge,
+                                text       = if (initialType == CategoryType.EXPENSE) "Add Expense Category" else "Add Income Source",
+                                style      = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1A1A2E)
+                                color      = Color(0xFF1A1A2E)
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(Modifier.height(2.dp))
                             Text(
-                                text = "Set a new budget category",
+                                text  = if (initialType == CategoryType.EXPENSE)
+                                    "Track and limit your spending"
+                                else
+                                    "Track where your money comes from",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color(0xFF9E9E9E)
                             )
                         }
                         IconButton(
-                            onClick = { handleBack() },
-                            modifier = Modifier.align(Alignment.CenterEnd)
+                            onClick  = { handleBack() },
+                            modifier = Modifier.align(Alignment.TopEnd)
                         ) {
                             Box(
                                 modifier = Modifier
                                     .size(32.dp)
                                     .clip(CircleShape)
-                                    .background(AddDialogBorder),
+                                    .background(DialogBorder),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     Icons.Default.Close,
                                     contentDescription = "Close",
-                                    tint = Color(0xFF6B6B8A),
+                                    tint     = Color(0xFF6B6B8A),
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -192,127 +195,132 @@ fun AddCategoryDialog(
                     }
 
                     // Divider
-                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(AddDialogBorder))
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(DialogBorder))
 
-                    // Scrollable content
+                    // ── Scrollable content ────────────────────────────────
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
                             .verticalScroll(rememberScrollState())
-                            .background(AddDialogBg)
+                            .background(DialogBg)
                             .padding(24.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
                         // Category name
                         val nameBorderColor by animateColorAsState(
-                            targetValue = when {
+                            targetValue   = when {
                                 nameError != null -> MaterialTheme.colorScheme.error
-                                nameFocused -> AddDialogPurple
-                                else -> AddDialogBorder
+                                nameFocused       -> accentColor
+                                else              -> DialogBorder
                             },
                             animationSpec = tween(180),
-                            label = "nameBorder"
+                            label         = "nameBorder"
                         )
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                text = "CATEGORY NAME",
-                                style = MaterialTheme.typography.labelSmall,
+                                text       = "CATEGORY NAME",
+                                style      = MaterialTheme.typography.labelSmall,
                                 letterSpacing = 1.2.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF9E9E9E)
+                                color      = Color(0xFF9E9E9E)
                             )
                             OutlinedTextField(
-                                value = name,
+                                value         = name,
                                 onValueChange = { name = it; nameError = null },
-                                modifier = Modifier
+                                modifier      = Modifier
                                     .fillMaxWidth()
                                     .onFocusChanged { nameFocused = it.isFocused },
-                                singleLine = true,
-                                isError = nameError != null,
-                                shape = RoundedCornerShape(14.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = AddDialogPurple,
-                                    unfocusedBorderColor = AddDialogBorder,
-                                    errorBorderColor = MaterialTheme.colorScheme.error,
-                                    focusedContainerColor = Color.White,
+                                singleLine    = true,
+                                isError       = nameError != null,
+                                shape         = RoundedCornerShape(14.dp),
+                                colors        = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor      = accentColor,
+                                    unfocusedBorderColor    = DialogBorder,
+                                    errorBorderColor        = MaterialTheme.colorScheme.error,
+                                    focusedContainerColor   = Color.White,
                                     unfocusedContainerColor = Color.White
                                 ),
                                 placeholder = {
-                                    Text("e.g. Groceries, Bills", color = Color(0xFFBDBDBD))
+                                    Text(
+                                        text  = if (initialType == CategoryType.EXPENSE) "e.g. Groceries, Bills" else "e.g. Salary, Freelance",
+                                        color = Color(0xFFBDBDBD)
+                                    )
                                 }
                             )
                             if (nameError != null) {
                                 Text(
-                                    text = nameError!!,
+                                    text  = nameError!!,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
 
-                        // Icon & Color
+                        // Icon picker
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                text = "ICON & COLOR",
-                                style = MaterialTheme.typography.labelSmall,
+                                text       = "ICON",
+                                style      = MaterialTheme.typography.labelSmall,
                                 letterSpacing = 1.2.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF9E9E9E)
+                                color      = Color(0xFF9E9E9E)
                             )
                             LazyVerticalGrid(
-                                columns = GridCells.Adaptive(56.dp),
+                                columns             = GridCells.Adaptive(56.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.height(200.dp)
+                                modifier            = Modifier.height(220.dp)
                             ) {
-                                items(defaultCategoryIcons) { iconData ->
-                                    AddDialogIconOption(
-                                        iconData = iconData,
-                                        isSelected = selectedIconName == iconData.name,
-                                        onClick = { selectedIconName = iconData.name }
+                                items(iconSet) { iconData ->
+                                    IconOption(
+                                        iconData    = iconData,
+                                        isSelected  = selectedIconName == iconData.name,
+                                        accentColor = accentColor,
+                                        onClick     = { selectedIconName = iconData.name }
                                     )
                                 }
                             }
                         }
 
-                        // Budget limit + alert
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "BUDGET LIMIT & ALERT",
-                                style = MaterialTheme.typography.labelSmall,
-                                letterSpacing = 1.2.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF9E9E9E)
-                            )
-                            BudgetLimitInput(
-                                budgetLimitText = budgetLimitText,
-                                onBudgetLimitTextChange = { budgetLimitText = it },
-                                alertThreshold = alertThreshold,
-                                onAlertThresholdChange = { alertThreshold = it }
-                            )
-                        }
+                        // Budget limit + recurring (EXPENSE only)
+                        if (initialType == CategoryType.EXPENSE) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    text       = "BUDGET LIMIT & ALERT",
+                                    style      = MaterialTheme.typography.labelSmall,
+                                    letterSpacing = 1.2.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color      = Color(0xFF9E9E9E)
+                                )
+                                BudgetLimitInput(
+                                    budgetLimitText        = budgetLimitText,
+                                    onBudgetLimitTextChange = { budgetLimitText = it },
+                                    alertThreshold         = alertThreshold,
+                                    onAlertThresholdChange = { alertThreshold = it }
+                                )
+                            }
 
-                        // Recurring period
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = "BUDGET RESET",
-                                style = MaterialTheme.typography.labelSmall,
-                                letterSpacing = 1.2.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF9E9E9E)
-                            )
-                            RecurringPeriodSelector(
-                                selected = selectedPeriod,
-                                onSelect = { selectedPeriod = it }
-                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text       = "BUDGET RESET",
+                                    style      = MaterialTheme.typography.labelSmall,
+                                    letterSpacing = 1.2.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color      = Color(0xFF9E9E9E)
+                                )
+                                RecurringPeriodSelector(
+                                    selected  = selectedPeriod,
+                                    onSelect  = { selectedPeriod = it }
+                                )
+                            }
                         }
 
                         // Live preview
                         Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = Color.White,
-                            border = BorderStroke(1.dp, AddDialogBorder)
+                            shape  = RoundedCornerShape(16.dp),
+                            color  = Color.White,
+                            border = BorderStroke(1.dp, DialogBorder)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -328,36 +336,38 @@ fun AddCategoryDialog(
                                     Icon(
                                         selectedIcon.icon,
                                         contentDescription = null,
-                                        tint = selectedIcon.color,
+                                        tint     = selectedIcon.color,
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = name.ifEmpty { "Category Name" },
-                                        style = MaterialTheme.typography.titleSmall,
+                                        text       = name.ifEmpty { "Category Name" },
+                                        style      = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (name.isEmpty()) Color(0xFFBDBDBD) else Color(0xFF1A1A2E)
+                                        color      = if (name.isEmpty()) Color(0xFFBDBDBD) else Color(0xFF1A1A2E)
                                     )
                                     Text(
-                                        text = if (budgetLimitText.isNotBlank())
-                                            "Rp ${budgetLimitText.filter { it.isDigit() }.toLongOrNull()?.let {
-                                                java.text.NumberFormat.getNumberInstance(java.util.Locale("id", "ID")).format(it)
-                                            } ?: "0"} / month"
-                                        else "No limit set",
+                                        text  = if (initialType == CategoryType.EXPENSE) {
+                                            if (budgetLimitText.isNotBlank())
+                                                "Rp ${budgetLimitText.filter { it.isDigit() }.toLongOrNull()?.let {
+                                                    java.text.NumberFormat.getNumberInstance(java.util.Locale("id", "ID")).format(it)
+                                                } ?: "0"} / month"
+                                            else "No limit set"
+                                        } else "Income tracking",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = Color(0xFF9E9E9E)
                                     )
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(50),
-                                    color = AddDialogPurple.copy(alpha = 0.10f)
+                                    color = accentColor.copy(alpha = 0.10f)
                                 ) {
                                     Text(
-                                        text = "Preview",
+                                        text     = "Preview",
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = AddDialogPurple,
+                                        style    = MaterialTheme.typography.labelSmall,
+                                        color    = accentColor,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -365,29 +375,28 @@ fun AddCategoryDialog(
                         }
                     }
 
-                    // Action buttons
+                    // ── Action buttons ────────────────────────────────────
                     Column(
                         modifier = Modifier
                             .background(Color.White)
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                            .padding(horizontal = 24.dp, vertical = 16.dp)
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(46.dp)
-                                    .clickable(onClick = { handleBack() }),
-                                shape = RoundedCornerShape(14.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, AddDialogBorder)
+                                    .clickable { handleBack() },
+                                shape  = RoundedCornerShape(14.dp),
+                                color  = Color.White,
+                                border = BorderStroke(1.dp, DialogBorder)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
-                                        text = "Cancel",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        text       = "Cancel",
+                                        style      = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF6B6B8A)
+                                        color      = Color(0xFF6B6B8A)
                                     )
                                 }
                             }
@@ -397,37 +406,46 @@ fun AddCategoryDialog(
                                     .weight(1f)
                                     .height(46.dp)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(AddDialogPurple)
+                                    .background(accentColor)
                                     .clickable {
                                         if (validate()) {
-                                            val newCategory = Category(
-                                                name = name.trim(),
-                                                color = "#" + selectedIcon.color.value.toString(16).substring(2, 8).uppercase(),
-                                                icon = selectedIcon.name,
-                                                budgetLimit = budgetLimitText.filter { it.isDigit() }.toLongOrNull()?.toDouble(),
-                                                alertThreshold = alertThreshold.roundToInt(),
-                                                recurringPeriod = selectedPeriod
+                                            val colorHex = "#" + selectedIcon.color.value
+                                                .toString(16)
+                                                .padStart(8, '0')
+                                                .substring(2, 8)
+                                                .uppercase()
+                                            onCategoryAdded(
+                                                Category(
+                                                    name           = name.trim(),
+                                                    color          = colorHex,
+                                                    icon           = selectedIcon.name,
+                                                    budgetLimit    = if (initialType == CategoryType.EXPENSE)
+                                                        budgetLimitText.filter { it.isDigit() }.toLongOrNull()?.toDouble()
+                                                    else null,
+                                                    alertThreshold = alertThreshold.roundToInt(),
+                                                    recurringPeriod = if (initialType == CategoryType.EXPENSE) selectedPeriod else null,
+                                                    categoryType   = initialType.name
+                                                )
                                             )
-                                            onCategoryAdded(newCategory)
                                         }
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment     = Alignment.CenterVertically
                                 ) {
                                     Icon(
                                         Icons.Default.Add,
                                         contentDescription = null,
-                                        tint = Color.White,
+                                        tint     = Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Text(
-                                        text = "Add Category",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        text       = if (initialType == CategoryType.EXPENSE) "Add Category" else "Add Source",
+                                        style      = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White
+                                        color      = Color.White
                                     )
                                 }
                             }
@@ -439,117 +457,28 @@ fun AddCategoryDialog(
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-private fun AddDialogIconOption(
-    iconData: CategoryIconInfo,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .background(if (isSelected) AddDialogPurple.copy(alpha = 0.08f) else Color.White)
-            .border(
-                width = if (isSelected) 1.5.dp else 1.dp,
-                color = if (isSelected) AddDialogPurple else AddDialogBorder,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .padding(10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .background(iconData.color.copy(alpha = 0.15f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                iconData.icon,
-                contentDescription = iconData.name,
-                tint = iconData.color,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun AddDialogSlider(
-    label: String,
-    value: Float,
-    onValueChange: (Float) -> Unit,
-    range: ClosedFloatingPointRange<Float>,
-    steps: Int,
-    prefix: String = "",
-    suffix: String = ""
-) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, AddDialogBorder)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF6B6B8A)
-                )
-                Text(
-                    text = "$prefix${value.roundToInt().formatCurrency()}$suffix",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AddDialogPurple
-                )
-            }
-            androidx.compose.material3.Slider(
-                value = value,
-                onValueChange = onValueChange,
-                valueRange = range,
-                steps = steps,
-                colors = androidx.compose.material3.SliderDefaults.colors(
-                    thumbColor = AddDialogPurple,
-                    activeTrackColor = AddDialogPurple,
-                    inactiveTrackColor = AddDialogBorder
-                )
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "$prefix${range.start.roundToInt().formatCurrency()}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFFBDBDBD)
-                )
-                Text(
-                    text = "$prefix${range.endInclusive.roundToInt().formatCurrency()}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFFBDBDBD)
-                )
-            }
-        }
+fun AddExpenseCategoryDialogPreview() {
+    MaterialTheme {
+        AddCategoryDialog(
+            isOpen          = true,
+            onDismiss       = {},
+            onCategoryAdded = {},
+            initialType     = CategoryType.EXPENSE
+        )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun AddCategoryDialogPreview() {
+fun AddIncomeCategoryDialogPreview() {
     MaterialTheme {
         AddCategoryDialog(
-            isOpen = true,
-            onDismiss = {},
-            onCategoryAdded = {}
+            isOpen          = true,
+            onDismiss       = {},
+            onCategoryAdded = {},
+            initialType     = CategoryType.INCOME
         )
     }
 }

@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.example.insightku.data.model.Category
 import com.example.insightku.data.model.Transaction
 import com.example.insightku.data.model.TransactionType
+import com.example.insightku.ui.dialogs.CategoryIconResolver
 import com.example.insightku.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -115,6 +116,8 @@ fun AddTransactionDialog(
     onTransactionAdded: (Transaction) -> Unit,
     onOpenScanner: () -> Unit,
     categories: List<Category> = emptyList(),
+    expenseCategories: List<Category> = emptyList(),
+    incomeCategories: List<Category> = emptyList(),
     onCreateCategory: () -> Unit = {}
 ) {
     var currentStep by remember { mutableStateOf<AddTransactionStep>(AddTransactionStep.ModeSelection) }
@@ -246,7 +249,8 @@ fun AddTransactionDialog(
                             formData = formData,
                             onFormDataChanged = { formData = it },
                             onFocusChanged = { isAnyFieldFocused = it },
-                            categories = categories,
+                            categories = if (formData.isIncome) incomeCategories.ifEmpty { categories }
+                                         else expenseCategories.ifEmpty { categories },
                             onCreateCategory = onCreateCategory,
                             onSubmit = {
                                 val amount = formData.amount.toDoubleOrNull() ?: 0.0
@@ -893,20 +897,8 @@ private fun CategoryChipSelector(
     }
 }
 
-private fun categoryIconForName(iconName: String): androidx.compose.ui.graphics.vector.ImageVector {
-    val n = iconName.lowercase()
-    return when {
-        "food" in n || "drink" in n || "restaurant" in n -> Icons.Default.Restaurant
-        "transport" in n || "car" in n -> Icons.Default.DirectionsCar
-        "bill" in n || "receipt" in n || "utility" in n -> Icons.Default.Receipt
-        "shop" in n -> Icons.Default.ShoppingBag
-        "entertainment" in n || "game" in n || "lifestyle" in n -> Icons.Default.SportsEsports
-        "health" in n -> Icons.Default.LocalHospital
-        "home" in n || "housing" in n -> Icons.Default.Home
-        "coffee" in n || "cafe" in n -> Icons.Default.Coffee
-        else -> Icons.Default.Category
-    }
-}
+private fun categoryIconForName(iconName: String): androidx.compose.ui.graphics.vector.ImageVector =
+    CategoryIconResolver.resolveIcon(iconName)
 
 // ─── Form Section Card ────────────────────────────────────────────────────────
 

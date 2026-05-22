@@ -16,15 +16,50 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE categories ADD COLUMN categoryType TEXT NOT NULL DEFAULT 'EXPENSE'")
+        db.execSQL("ALTER TABLE categories ADD COLUMN isSystemCategory INTEGER NOT NULL DEFAULT 0")
+        // Seed system categories for existing users
+        db.execSQL("""
+            INSERT OR IGNORE INTO categories (id, name, color, budgetLimit, icon, isActive, alertThreshold, recurringPeriod, categoryType, isSystemCategory)
+            VALUES
+            ('system-uncategorized-expense', 'Uncategorized', '#79747E', NULL, 'Others', 1, 80, NULL, 'EXPENSE', 1),
+            ('system-uncategorized-income', 'Uncategorized Income', '#79747E', NULL, 'Others', 1, 80, NULL, 'INCOME', 1)
+        """.trimIndent())
+    }
+}
+
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS installments (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL DEFAULT '',
+                categoryId TEXT,
+                totalAmount REAL NOT NULL DEFAULT 0.0,
+                monthlyPayment REAL NOT NULL DEFAULT 0.0,
+                totalMonths INTEGER NOT NULL DEFAULT 0,
+                paidMonths INTEGER NOT NULL DEFAULT 0,
+                firstPaymentDate INTEGER NOT NULL DEFAULT 0,
+                nextDueDate INTEGER NOT NULL DEFAULT 0,
+                isActive INTEGER NOT NULL DEFAULT 1,
+                notes TEXT NOT NULL DEFAULT ''
+            )
+        """.trimIndent())
+    }
+}
+
 @Database(
     entities = [
         Transaction::class,
         Category::class,
         RecurringBudget::class,
         Budget::class,
-        User::class
+        User::class,
+        Installment::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -34,5 +69,6 @@ abstract class InsightKuDatabase : RoomDatabase() {
     abstract fun recurringBudgetDao(): RecurringBudgetDao
     abstract fun budgetDao(): BudgetDao
     abstract fun userDao(): UserDao
+    abstract fun installmentDao(): InstallmentDao
 }
 
