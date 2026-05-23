@@ -124,10 +124,10 @@ class TransactionRepository @Inject constructor(
     suspend fun hasAnyCategories(): Boolean = categoryDao.countActiveCategories() > 0
 
     fun getExpenseCategories(): Flow<List<Category>> =
-        categoryDao.getCategoriesByType(CategoryType.EXPENSE.name)
+        categoryDao.getUserCategoriesByType(CategoryType.EXPENSE.name)
 
     fun getIncomeCategories(): Flow<List<Category>> =
-        categoryDao.getCategoriesByType(CategoryType.INCOME.name)
+        categoryDao.getUserCategoriesByType(CategoryType.INCOME.name)
 
     suspend fun refreshCategories(userId: String) {
         val snapshot = firestore.collection("users").document(userId)
