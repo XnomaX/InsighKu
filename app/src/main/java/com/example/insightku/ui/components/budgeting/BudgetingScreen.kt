@@ -8,7 +8,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,6 +39,7 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -377,119 +377,57 @@ private fun DeleteCategoryDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    val focusManager = LocalFocusManager.current
-
-    BackHandler(enabled = true, onBack = onDismiss)
-
-    AnimatedVisibility(
-        visible = true,
-        enter = fadeIn(tween(150)),
-        exit = fadeOut(tween(150))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-                .clickable(onClick = onDismiss),
-            contentAlignment = Alignment.Center
-        ) {
-            AnimatedVisibility(
-                visible = true,
-                enter = scaleIn(animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)) + fadeIn()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape            = RoundedCornerShape(28.dp),
+        containerColor   = Color.White,
+        icon             = {
+            Box(
+                modifier         = Modifier.size(52.dp).clip(CircleShape).background(Color(0xFFFFF5F5)),
+                contentAlignment = Alignment.Center
             ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth(0.88f)
-                        .clickable(enabled = false) {},
-                    shape = RoundedCornerShape(28.dp),
-                    color = Color.White,
-                    shadowElevation = 24.dp,
-                    border = BorderStroke(1.dp, Color(0xFFECE7F6))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(28.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(60.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFFF5F5)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = Color(0xFFE57373),
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Delete Category?",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1A1A2E)
-                            )
-                            Text(
-                                text = "\"$categoryName\" will be removed. Its transactions will be unlinked.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF9E9E9E),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(46.dp)
-                                    .clickable(onClick = onDismiss),
-                                shape = RoundedCornerShape(50.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFECE7F6))
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "Cancel",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF6B6B8A)
-                                    )
-                                }
-                            }
-
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(46.dp)
-                                    .clickable(onClick = onConfirm),
-                                shape = RoundedCornerShape(50.dp),
-                                color = Color(0xFFE57373)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "Delete",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
-                            }
-                        }
-                    }
+                Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFE57373), modifier = Modifier.size(26.dp))
+            }
+        },
+        title = {
+            Text(
+                text       = "Delete Category?",
+                style      = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color      = Color(0xFF1A1A2E)
+            )
+        },
+        text = {
+            Text(
+                text  = "\"$categoryName\" will be removed. Its transactions will be unlinked.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF9E9E9E)
+            )
+        },
+        dismissButton = {
+            Surface(
+                modifier = Modifier.height(42.dp).clickable(onClick = onDismiss),
+                shape    = RoundedCornerShape(50.dp),
+                color    = Color.White,
+                border   = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECE7F6))
+            ) {
+                Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+                    Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
+                }
+            }
+        },
+        confirmButton = {
+            Surface(
+                modifier = Modifier.height(42.dp).clickable(onClick = onConfirm),
+                shape    = RoundedCornerShape(50.dp),
+                color    = Color(0xFFE57373)
+            ) {
+                Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+                    Text("Delete", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
-    }
+    )
 }
 
 @Composable

@@ -36,11 +36,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.insightku.navigation.Route
 import com.example.insightku.ui.components.analytics.AnalyticsScreen
+import com.example.insightku.ui.components.budgeting.BudgetingEvent
 import com.example.insightku.ui.components.budgeting.BudgetingScreen
 import com.example.insightku.ui.components.dashboard.DashboardScreen
 import com.example.insightku.ui.components.settings.SettingsScreen
 import com.example.insightku.ui.components.addtransaction.AddTransactionDialog
+import com.example.insightku.ui.components.budgeting.DialogState
 import com.example.insightku.viewmodel.AddTransactionViewModel
+import com.example.insightku.viewmodel.BudgetingViewModel
 import com.example.insightku.viewmodel.DashboardViewModel
 import com.example.insightku.viewmodel.TransactionDetailsViewModel
 import kotlinx.coroutines.delay
@@ -75,14 +78,24 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     rootNavController: NavHostController
 ) {
-    val navController              = rememberNavController()
-    val dashboardViewModel: DashboardViewModel         = hiltViewModel()
+    val navController                = rememberNavController()
+    val dashboardViewModel: DashboardViewModel           = hiltViewModel()
     val addTransactionViewModel: AddTransactionViewModel = hiltViewModel()
+    val budgetingViewModel: BudgetingViewModel           = hiltViewModel()
     val expenseCategories          by addTransactionViewModel.expenseCategories.collectAsState()
     val incomeCategories           by addTransactionViewModel.incomeCategories.collectAsState()
     val addTxUiState               by addTransactionViewModel.uiState.collectAsState()
+    val budgetingUiState           by budgetingViewModel.uiState.collectAsState()
     var showAddTransactionDialog   by remember { mutableStateOf(false) }
     var pendingStreakPopup          by remember { mutableStateOf(false) }
+
+    // Derived — nav hides whenever ANY overlay is open.
+    // derivedStateOf ensures recomposition only when the boolean value actually changes.
+    val anyDialogOpen by remember {
+        derivedStateOf {
+            showAddTransactionDialog || budgetingUiState.dialogState !is DialogState.None
+        }
+    }
 
     LaunchedEffect(addTxUiState.savedSuccessfully) {
         if (addTxUiState.savedSuccessfully) {
@@ -96,7 +109,29 @@ fun MainScreen(
     val snackbarHostState    = remember { SnackbarHostState() }
     val context              = LocalContext.current
 
-    BackHandler(enabled = !showAddTransactionDialog) {
+    // Handle back: dismiss budgeting dialogs first, then add-transaction, then double-tap exit
+    BackHandler(enabled = budgetingUiState.dialogState !is DialogState.None) {
+        budgetingViewModel.onEvent(
+            when (budgetingUiState.dialogState) {
+                is DialogState.AddBudget            -> BudgetingEvent.HideAddBudgetDialog
+                is DialogState.EditBudget           -> BudgetingEvent.HideEditBudgetDialog
+                is DialogState.DeleteConfirm        -> BudgetingEvent.HideDeleteConfirmDialog
+                is DialogState.ManageRecurring      -> BudgetingEvent.HideRecurringDialog
+                is DialogState.AddRecurringPayment  -> BudgetingEvent.HideRecurringDialog
+                is DialogState.EditRecurringPayment -> BudgetingEvent.HideRecurringDialog
+                is DialogState.AddInstallment       -> BudgetingEvent.HideInstallmentDialog
+                is DialogState.EditInstallment      -> BudgetingEvent.HideInstallmentDialog
+                else                                -> BudgetingEvent.ClearError
+            }
+        )
+    }
+
+    BackHandler(enabled = showAddTransactionDialog) {
+        showAddTransactionDialog = false
+        pendingStreakPopup        = false
+    }
+
+    BackHandler(enabled = !anyDialogOpen) {
         if (backPressedOnce) {
             (context as? android.app.Activity)?.finish()
         } else {
@@ -127,6 +162,7 @@ fun MainScreen(
                 navController                = navController,
                 rootNavController            = rootNavController,
                 dashboardViewModel           = dashboardViewModel,
+                budgetingViewModel           = budgetingViewModel,
                 onShowAddTransaction         = { showAddTransactionDialog = true },
                 onShowAddTransactionForStreak = {
                     showAddTransactionDialog = true
@@ -135,14 +171,13 @@ fun MainScreen(
                 modifier = Modifier
                     .padding(paddingValues)
                     .statusBarsPadding()
-                    // Reserve space for the floating nav bar
                     .padding(bottom = 88.dp)
             )
         }
 
         // Floating premium bottom nav — hides when any dialog is open
         AnimatedVisibility(
-            visible = !showAddTransactionDialog,
+            visible = !anyDialogOpen,
             enter   = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 2 },
             exit    = fadeOut(tween(180)) + slideOutVertically(tween(180)) { it / 2 },
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -253,7 +288,7 @@ fun PremiumBottomNav(
 // ─── Nav Item ─────────────────────────────────────────────────────────────────
 
 @Composable
-fun BottomNavItem(
+private fun BottomNavItem(
     item: NavItem,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -385,6 +420,7 @@ private fun MainNavHost(
     navController: NavHostController,
     rootNavController: NavHostController,
     dashboardViewModel: DashboardViewModel,
+    budgetingViewModel: BudgetingViewModel,
     onShowAddTransaction: () -> Unit = {},
     onShowAddTransactionForStreak: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -396,27 +432,27 @@ private fun MainNavHost(
     ) {
         composable(Route.HOME) {
             DashboardScreen(
-                viewModel                    = dashboardViewModel,
+                viewModel                      = dashboardViewModel,
                 onNavigateToTransactionDetails = { navController.navigate(Route.TRANSACTION_DETAILS) },
-                onAddTransaction             = onShowAddTransaction,
-                onAddTransactionForStreak    = onShowAddTransactionForStreak
+                onAddTransaction               = onShowAddTransaction,
+                onAddTransactionForStreak      = onShowAddTransactionForStreak
             )
         }
         composable(Route.TRANSACTION_DETAILS) {
             val txDetailsViewModel: TransactionDetailsViewModel = hiltViewModel()
             com.example.insightku.ui.components.details.TransactionDetailsScreen(
-                viewModel            = txDetailsViewModel,
-                initialTransactions  = emptyList(),
-                onBack               = { navController.popBackStack() },
-                onEditTransaction    = { txDetailsViewModel.updateTransaction(it) },
-                onDeleteTransaction  = { id ->
+                viewModel           = txDetailsViewModel,
+                initialTransactions = emptyList(),
+                onBack              = { navController.popBackStack() },
+                onEditTransaction   = { txDetailsViewModel.updateTransaction(it) },
+                onDeleteTransaction = { id ->
                     txDetailsViewModel.deleteTransaction(id)
                     navController.popBackStack()
                 }
             )
         }
         composable(Route.ANALYSIS) { AnalyticsScreen() }
-        composable(Route.BUDGETING) { BudgetingScreen() }
+        composable(Route.BUDGETING) { BudgetingScreen(viewModel = budgetingViewModel) }
         composable(Route.SETTINGS) {
             SettingsScreen(onLogout = {
                 rootNavController.navigate(Route.AUTH_GRAPH) {

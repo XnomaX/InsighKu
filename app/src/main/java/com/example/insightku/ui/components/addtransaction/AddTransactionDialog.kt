@@ -9,8 +9,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +28,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
@@ -61,14 +62,27 @@ private val ExpenseRed   = Color(0xFFE57373)
 private val GlassSurface = Color(0xFFFAF8FF)
 private val GlassBorder  = Color(0xFFE8DDFF)
 
-// ─── Payment method chips ─────────────────────────────────────────────────────
-private data class PaymentChip(val label: String, val icon: ImageVector)
+// ─── Payment method data ──────────────────────────────────────────────────────
+
+private data class PaymentChip(val label: String, val icon: ImageVector, val color: Color)
+
 private val paymentChips = listOf(
-    PaymentChip("Cash",     Icons.Default.Payments),
-    PaymentChip("QRIS",     Icons.Default.QrCode),
-    PaymentChip("Debit",    Icons.Default.CreditCard),
-    PaymentChip("E-Wallet", Icons.Default.AccountBalanceWallet),
-    PaymentChip("Transfer", Icons.Default.AccountBalance)
+    PaymentChip("Cash",            Icons.Default.Payments,              Color(0xFF10B981)),
+    PaymentChip("QRIS",            Icons.Default.QrCode,                Color(0xFF7C4DFF)),
+    PaymentChip("Debit Card",      Icons.Default.CreditCard,            Color(0xFF3B82F6)),
+    PaymentChip("Credit Card",     Icons.Default.CreditScore,           Color(0xFFEF4444)),
+    PaymentChip("Bank Transfer",   Icons.Default.AccountBalance,        Color(0xFF6366F1)),
+    PaymentChip("E-Wallet",        Icons.Default.AccountBalanceWallet,  Color(0xFF8B5CF6)),
+    PaymentChip("GoPay",           Icons.Default.AccountBalanceWallet,  Color(0xFF00AED6)),
+    PaymentChip("OVO",             Icons.Default.AccountBalanceWallet,  Color(0xFF4C3494)),
+    PaymentChip("DANA",            Icons.Default.AccountBalanceWallet,  Color(0xFF118EEA)),
+    PaymentChip("ShopeePay",       Icons.Default.AccountBalanceWallet,  Color(0xFFEE4D2D)),
+    PaymentChip("Google Pay",      Icons.Default.Payment,               Color(0xFF4285F4)),
+    PaymentChip("PayPal",          Icons.Default.Payment,               Color(0xFF003087)),
+    PaymentChip("PayLater",        Icons.Default.AccessTime,            Color(0xFFFF9800)),
+    PaymentChip("Virtual Account", Icons.Default.AccountBalance,        Color(0xFF059669)),
+    PaymentChip("Crypto",          Icons.Default.CurrencyBitcoin,       Color(0xFFF59E0B)),
+    PaymentChip("Other",           Icons.Default.MoreHoriz,             Color(0xFF79747E))
 )
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
@@ -249,8 +263,10 @@ fun AddTransactionDialog(
                             formData = formData,
                             onFormDataChanged = { formData = it },
                             onFocusChanged = { isAnyFieldFocused = it },
-                            categories = if (formData.isIncome) incomeCategories.ifEmpty { categories }
-                                         else expenseCategories.ifEmpty { categories },
+                            // BUGFIX: never fall back to mixed categories list.
+                            // If the typed list is empty, pass empty — the empty state UI handles it.
+                            categories = if (formData.isIncome) incomeCategories
+                                         else expenseCategories,
                             onCreateCategory = onCreateCategory,
                             onSubmit = {
                                 val amount = formData.amount.toDoubleOrNull() ?: 0.0
@@ -744,7 +760,7 @@ fun ColumnScope.ManualFormContent(
     }
 }
 
-// ─── Category Chip Selector ───────────────────────────────────────────────────
+// ─── Category Selector ────────────────────────────────────────────────────────
 
 @Composable
 private fun CategoryChipSelector(
@@ -754,51 +770,40 @@ private fun CategoryChipSelector(
     onCreateCategory: () -> Unit
 ) {
     val primary = Color(0xFF7C4DFF)
-    val border  = Color(0xFFECE7F6)
 
     if (categories.isEmpty()) {
-        // Empty state
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = Color(0xFFFAF9FE),
-            border = BorderStroke(1.dp, border)
+            shape    = RoundedCornerShape(16.dp),
+            color    = Color(0xFFFAF9FE),
+            border   = BorderStroke(1.dp, Color(0xFFECE7F6))
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
+                modifier            = Modifier.fillMaxWidth().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "No categories yet",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF9E9E9E)
-                )
+                Box(
+                    modifier         = Modifier.size(48.dp).clip(CircleShape).background(primary.copy(alpha = 0.08f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Category, contentDescription = null, tint = primary.copy(alpha = 0.5f), modifier = Modifier.size(22.dp))
+                }
+                Text("No categories yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A2E))
+                Text("Create a category to get started.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9E9E9E))
                 Surface(
                     modifier = Modifier.clickable(onClick = onCreateCategory),
-                    shape = RoundedCornerShape(50.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, primary)
+                    shape    = RoundedCornerShape(50.dp),
+                    color    = Color.White,
+                    border   = BorderStroke(1.dp, primary)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier              = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment     = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = primary
-                        )
-                        Text(
-                            text = "Create Category",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = primary
-                        )
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = primary)
+                        Text("Create Category", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = primary)
                     }
                 }
             }
@@ -806,94 +811,101 @@ private fun CategoryChipSelector(
         return
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 2.dp)
-        ) {
-            items(categories) { category ->
-                val isSelected = selectedCategory == category.name
-                val catColor = runCatching {
-                    Color(android.graphics.Color.parseColor(category.color.ifBlank { "#7C4DFF" }))
-                }.getOrDefault(primary)
-
-                val chipBg by animateColorAsState(
-                    targetValue = if (isSelected) primary else Color.White,
-                    animationSpec = tween(200),
-                    label = "cat_chip_bg_${category.id}"
-                )
-                val chipContent by animateColorAsState(
-                    targetValue = if (isSelected) Color.White else Color(0xFF6B6B8A),
-                    animationSpec = tween(200),
-                    label = "cat_chip_content_${category.id}"
-                )
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(chipBg)
-                        .border(
-                            width = 1.dp,
-                            color = if (isSelected) primary else border,
-                            shape = RoundedCornerShape(50.dp)
-                        )
-                        .clickable {
-                            onCategorySelected(if (isSelected) "" else category.name)
-                        }
-                        .padding(horizontal = 14.dp, vertical = 9.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(18.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isSelected) Color.White.copy(alpha = 0.25f)
-                                    else catColor.copy(alpha = 0.15f)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = categoryIconForName(category.icon ?: ""),
-                                contentDescription = null,
-                                modifier = Modifier.size(10.dp),
-                                tint = if (isSelected) Color.White else catColor
-                            )
-                        }
-                        Text(
-                            text = category.name,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = chipContent
-                        )
-                    }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Vertical adaptive grid — 4 columns
+        val rows = categories.chunked(3)
+        rows.forEach { rowItems ->
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowItems.forEach { category ->
+                    CategoryItemCard(
+                        category         = category,
+                        isSelected       = selectedCategory == category.name,
+                        onSelect         = { onCategorySelected(if (selectedCategory == category.name) "" else category.name) },
+                        modifier         = Modifier.weight(1f)
+                    )
+                }
+                // Fill remaining slots in last row
+                repeat(3 - rowItems.size) {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
 
-        // Add category shortcut below chips
+        // Add category shortcut
         Row(
-            modifier = Modifier
+            modifier              = Modifier
                 .clickable(onClick = onCreateCategory)
                 .padding(horizontal = 2.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment     = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = null,
-                modifier = Modifier.size(12.dp),
-                tint = primary.copy(alpha = 0.7f)
-            )
-            Text(
-                text = "Add category",
-                style = MaterialTheme.typography.labelSmall,
-                color = primary.copy(alpha = 0.7f)
-            )
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(12.dp), tint = primary.copy(alpha = 0.7f))
+            Text("Add category", style = MaterialTheme.typography.labelSmall, color = primary.copy(alpha = 0.7f))
         }
+    }
+}
+
+@Composable
+private fun CategoryItemCard(
+    category: Category,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val catColor = runCatching {
+        Color(android.graphics.Color.parseColor(category.color.ifBlank { "#7C4DFF" }))
+    }.getOrDefault(Color(0xFF7C4DFF))
+    val iconInfo          = CategoryIconResolver.resolve(category.icon ?: category.name)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed         by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue   = if (isPressed) 0.92f else 1f,
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
+        label         = "cat_scale_${category.id}"
+    )
+    val bgColor by animateColorAsState(
+        targetValue   = if (isSelected) catColor.copy(alpha = 0.10f) else Color.White,
+        animationSpec = tween(200),
+        label         = "cat_bg_${category.id}"
+    )
+    val borderColor by animateColorAsState(
+        targetValue   = if (isSelected) catColor else Color(0xFFECE7F6),
+        animationSpec = tween(200),
+        label         = "cat_border_${category.id}"
+    )
+
+    Column(
+        modifier = modifier
+            .scale(scale)
+            .clip(RoundedCornerShape(14.dp))
+            .background(bgColor)
+            .border(1.5.dp, borderColor, RoundedCornerShape(14.dp))
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onSelect)
+            .padding(vertical = 10.dp, horizontal = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Box(
+            modifier         = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(catColor.copy(alpha = if (isSelected) 0.18f else 0.10f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(iconInfo.icon, contentDescription = null, tint = catColor, modifier = Modifier.size(17.dp))
+        }
+        Text(
+            text       = category.name,
+            style      = MaterialTheme.typography.labelSmall,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color      = if (isSelected) catColor else Color(0xFF9E9E9E),
+            maxLines   = 2,
+            textAlign  = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }
 
@@ -1165,58 +1177,94 @@ private fun PaymentMethodChips(
     selected: String,
     onSelect: (String) -> Unit
 ) {
-    val primary = MaterialTheme.colorScheme.primary
-
-    // Wrap chips dalam Row yang bisa scroll horizontal
-    androidx.compose.foundation.lazy.LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding        = PaddingValues(horizontal = 2.dp)
+    // Scrollable vertical grid — 4 fixed-width columns, consistent card sizes
+    val rows = paymentChips.chunked(3)
+    Column(
+        modifier            = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 320.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(paymentChips) { chip ->
-            val isSelected = selected == chip.label
-
-            val chipBg by animateColorAsState(
-                targetValue   = if (isSelected) primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                animationSpec = tween(200),
-                label         = "chip_bg_${chip.label}"
-            )
-            val chipContent by animateColorAsState(
-                targetValue   = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                animationSpec = tween(200),
-                label         = "chip_content_${chip.label}"
-            )
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(chipBg)
-                    .border(
-                        width = 1.dp,
-                        color = if (isSelected) primary else GlassBorder,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .clickable { onSelect(if (isSelected) "" else chip.label) }
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+        rows.forEach { rowItems ->
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    Icon(
-                        chip.icon,
-                        contentDescription = null,
-                        tint     = chipContent,
-                        modifier = Modifier.size(15.dp)
+                rowItems.forEach { chip ->
+                    PaymentMethodCard(
+                        chip       = chip,
+                        isSelected = selected == chip.label,
+                        onSelect   = { onSelect(if (selected == chip.label) "" else chip.label) },
+                        modifier   = Modifier.weight(1f)
                     )
-                    Text(
-                        chip.label,
-                        style      = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color      = chipContent
-                    )
+                }
+                repeat(3 - rowItems.size) {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PaymentMethodCard(
+    chip: PaymentChip,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed         by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue   = if (isPressed) 0.92f else 1f,
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
+        label         = "pay_scale_${chip.label}"
+    )
+    val bgColor by animateColorAsState(
+        targetValue   = if (isSelected) chip.color.copy(alpha = 0.10f) else Color.White,
+        animationSpec = tween(200),
+        label         = "pay_bg_${chip.label}"
+    )
+    val borderColor by animateColorAsState(
+        targetValue   = if (isSelected) chip.color else Color(0xFFECE7F6),
+        animationSpec = tween(200),
+        label         = "pay_border_${chip.label}"
+    )
+
+    Column(
+        modifier = modifier
+            .scale(scale)
+            // Fixed height so all cards are identical regardless of label length
+            .height(76.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(bgColor)
+            .border(1.5.dp, borderColor, RoundedCornerShape(14.dp))
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onSelect)
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier         = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(chip.color.copy(alpha = if (isSelected) 0.18f else 0.10f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(chip.icon, contentDescription = chip.label, tint = chip.color, modifier = Modifier.size(16.dp))
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text       = chip.label,
+            style      = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color      = if (isSelected) chip.color else Color(0xFF9E9E9E),
+            maxLines   = 2,
+            overflow   = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            textAlign  = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }
 
