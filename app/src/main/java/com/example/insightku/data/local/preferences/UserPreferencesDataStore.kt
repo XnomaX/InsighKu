@@ -25,6 +25,12 @@ class UserPreferencesDataStore @Inject constructor(
         private val CURRENT_STREAK_KEY = intPreferencesKey("current_streak")
         private val BEST_STREAK_KEY = intPreferencesKey("best_streak")
         private val TOTAL_DAYS_KEY = intPreferencesKey("total_days")
+        private val FREEZE_COUNT_KEY = intPreferencesKey("streak_freeze_count")
+        private val PERFECT_STREAK_KEY = booleanPreferencesKey("streak_perfect")
+        private val STREAK_GOAL_KEY = intPreferencesKey("streak_goal")
+        private val LAST_FREEZE_DATE_KEY = stringPreferencesKey("last_freeze_date")
+        private val REPAIR_AVAILABLE_KEY = booleanPreferencesKey("streak_repair_available")
+        private val REPAIR_EXPIRY_KEY = longPreferencesKey("streak_repair_expiry")
         private val BIOMETRIC_ENABLED_KEY = booleanPreferencesKey("biometric_enabled")
         private val NOTIFICATION_ENABLED_KEY = booleanPreferencesKey("notification_enabled")
         private val FIRST_TIME_USER_KEY = booleanPreferencesKey("first_time_user")
@@ -61,6 +67,30 @@ class UserPreferencesDataStore @Inject constructor(
 
     val totalDays: Flow<Int> = context.dataStore.data.map { preferences ->
         preferences[TOTAL_DAYS_KEY] ?: 0
+    }
+
+    val freezeCount: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[FREEZE_COUNT_KEY] ?: 0
+    }
+
+    val isPerfectStreak: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PERFECT_STREAK_KEY] ?: false
+    }
+
+    val streakGoal: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[STREAK_GOAL_KEY] ?: 7
+    }
+
+    val lastFreezeDate: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[LAST_FREEZE_DATE_KEY] ?: ""
+    }
+
+    val repairAvailable: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[REPAIR_AVAILABLE_KEY] ?: false
+    }
+
+    val repairExpiry: Flow<Long> = context.dataStore.data.map { preferences ->
+        preferences[REPAIR_EXPIRY_KEY] ?: 0L
     }
 
     val biometricEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -125,6 +155,37 @@ class UserPreferencesDataStore @Inject constructor(
     suspend fun updateTotalDays(days: Int) {
         context.dataStore.edit { preferences ->
             preferences[TOTAL_DAYS_KEY] = days
+        }
+    }
+
+    suspend fun updateFreezeCount(count: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[FREEZE_COUNT_KEY] = count.coerceIn(0, 2)
+        }
+    }
+
+    suspend fun setPerfectStreak(perfect: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PERFECT_STREAK_KEY] = perfect
+        }
+    }
+
+    suspend fun setStreakGoal(goal: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[STREAK_GOAL_KEY] = goal
+        }
+    }
+
+    suspend fun setLastFreezeDate(dateKey: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_FREEZE_DATE_KEY] = dateKey
+        }
+    }
+
+    suspend fun setRepairAvailable(available: Boolean, expiryMs: Long = 0L) {
+        context.dataStore.edit { preferences ->
+            preferences[REPAIR_AVAILABLE_KEY] = available
+            preferences[REPAIR_EXPIRY_KEY]    = expiryMs
         }
     }
 

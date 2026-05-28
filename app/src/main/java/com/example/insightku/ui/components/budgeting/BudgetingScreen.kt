@@ -1,6 +1,5 @@
 package com.example.insightku.ui.components.budgeting
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -25,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -39,6 +39,11 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.PieChart
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,8 +66,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -77,6 +82,12 @@ import com.example.insightku.ui.dialogs.AddCategoryDialog
 import com.example.insightku.ui.dialogs.CategoryIconResolver
 import com.example.insightku.ui.dialogs.EditCategoryDialog
 import com.example.insightku.ui.theme.Dimens
+import com.example.insightku.ui.theme.ExpenseRed
+import com.example.insightku.ui.theme.IncomeGreen
+import com.example.insightku.ui.theme.IncomeMid
+import com.example.insightku.ui.theme.PurpleTint
+import com.example.insightku.ui.theme.PurpleViolet
+import com.example.insightku.ui.theme.WarningYellow
 import com.example.insightku.ui.theme.formatCurrency
 import com.example.insightku.viewmodel.BudgetingViewModel
 import java.text.SimpleDateFormat
@@ -140,16 +151,17 @@ fun BudgetingScreenContent(
 
             // Overview card
             item {
-                BudgetStatusCard(
-                    remaining = uiState.remainingBudget,
-                    percentage = uiState.budgetUtilizationPercentage,
-                    totalBudget = uiState.totalBudget,
-                    limitedSpent = uiState.limitedSpent,
-                    riskyCount = uiState.budgetCategories.count { it.health == BudgetHealth.Warning },
+                BudgetHealthCard(
+                    percentage      = uiState.budgetUtilizationPercentage,
+                    totalBudget     = uiState.totalBudget,
+                    limitedSpent    = uiState.limitedSpent,
+                    remaining       = uiState.remainingBudget,
+                    riskyCount      = uiState.budgetCategories.count { it.health == BudgetHealth.Warning },
                     overBudgetCount = uiState.overBudgetCategories.size,
-                    modifier = Modifier.padding(
+                    safeCount       = uiState.budgetCategories.count { it.health == BudgetHealth.Good },
+                    modifier        = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical = 12.dp
+                        vertical   = 12.dp
                     )
                 )
             }
@@ -325,45 +337,49 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
         }
 
         is DialogState.ManageRecurring -> {
-            // Legacy — redirect to new add dialog
             AddRecurringPaymentDialog(
-                isOpen    = true,
-                onDismiss = { onEvent(BudgetingEvent.HideRecurringDialog) },
-                onSave    = { onEvent(BudgetingEvent.AddRecurringBudget(it)) }
+                isOpen              = true,
+                onDismiss           = { onEvent(BudgetingEvent.HideRecurringDialog) },
+                onSave              = { onEvent(BudgetingEvent.AddRecurringBudget(it)) },
+                availableCategories = uiState.allCategoriesForPicker
             )
         }
 
         is DialogState.AddRecurringPayment -> {
             AddRecurringPaymentDialog(
-                isOpen    = true,
-                onDismiss = { onEvent(BudgetingEvent.HideRecurringDialog) },
-                onSave    = { onEvent(BudgetingEvent.AddRecurringBudget(it)) }
+                isOpen              = true,
+                onDismiss           = { onEvent(BudgetingEvent.HideRecurringDialog) },
+                onSave              = { onEvent(BudgetingEvent.AddRecurringBudget(it)) },
+                availableCategories = uiState.allCategoriesForPicker
             )
         }
 
         is DialogState.EditRecurringPayment -> {
             AddRecurringPaymentDialog(
-                isOpen    = true,
-                onDismiss = { onEvent(BudgetingEvent.HideRecurringDialog) },
-                onSave    = { onEvent(BudgetingEvent.UpdateRecurringBudget(it)) },
-                editing   = dialogState.budget
+                isOpen              = true,
+                onDismiss           = { onEvent(BudgetingEvent.HideRecurringDialog) },
+                onSave              = { onEvent(BudgetingEvent.UpdateRecurringBudget(it)) },
+                editing             = dialogState.budget,
+                availableCategories = uiState.allCategoriesForPicker
             )
         }
 
         is DialogState.AddInstallment -> {
             AddInstallmentDialog(
-                isOpen    = true,
-                onDismiss = { onEvent(BudgetingEvent.HideInstallmentDialog) },
-                onSave    = { onEvent(BudgetingEvent.AddInstallment(it)) }
+                isOpen              = true,
+                onDismiss           = { onEvent(BudgetingEvent.HideInstallmentDialog) },
+                onSave              = { onEvent(BudgetingEvent.AddInstallment(it)) },
+                availableCategories = uiState.allCategoriesForPicker
             )
         }
 
         is DialogState.EditInstallment -> {
             AddInstallmentDialog(
-                isOpen    = true,
-                onDismiss = { onEvent(BudgetingEvent.HideInstallmentDialog) },
-                onSave    = { onEvent(BudgetingEvent.UpdateInstallment(it)) },
-                editing   = dialogState.installment
+                isOpen              = true,
+                onDismiss           = { onEvent(BudgetingEvent.HideInstallmentDialog) },
+                onSave              = { onEvent(BudgetingEvent.UpdateInstallment(it)) },
+                editing             = dialogState.installment,
+                availableCategories = uiState.allCategoriesForPicker
             )
         }
 
@@ -441,31 +457,38 @@ private fun BudgetGradientHeader(
             .background(Color(0xFFFAF9FE))
             .statusBarsPadding()
             .padding(horizontal = Dimens.ScreenHorizontalPadding)
-            .padding(top = 28.dp, bottom = 8.dp),
+            .padding(top = 20.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
-            text = "Stay mindful with your spending",
+            text = month,
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 0.5.sp,
-            color = Color(0xFFB39DDB)
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 0.5.sp
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Budgeting",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A2E)
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Budget",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "Spending control center",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             if (isLoading) {
                 Surface(
                     shape = RoundedCornerShape(50),
-                    color = Color(0xFF7C4DFF).copy(alpha = 0.10f),
-                    contentColor = Color(0xFF7C4DFF)
+                    color = PurpleViolet.copy(alpha = 0.10f),
+                    contentColor = PurpleViolet
                 ) {
                     Text(
                         text = "Syncing",
@@ -476,198 +499,226 @@ private fun BudgetGradientHeader(
                 }
             }
         }
-        Text(
-            text = month,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF9E9E9E)
-        )
     }
 }
 
+// ─── Budget Health Card (new hero) ───────────────────────────────────────────
+
 @Composable
-private fun BudgetStatusCard(
-    remaining: Double,
+fun BudgetHealthCard(
     percentage: Double,
     totalBudget: Double,
     limitedSpent: Double,
+    remaining: Double,
     riskyCount: Int,
     overBudgetCount: Int,
+    safeCount: Int,
     modifier: Modifier = Modifier
 ) {
-    val status = monthlyStatus(remaining, percentage, totalBudget)
-    val statusColor by animateColorAsState(
-        targetValue = budgetStatusColor(status.health),
-        animationSpec = tween(300),
-        label = "statusColor"
-    )
-
-    var progressAnimated by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { progressAnimated = true }
-    val animatedProgress by animateFloatAsState(
-        targetValue = if (progressAnimated) (percentage / 100.0).coerceIn(0.0, 1.0).toFloat() else 0f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 200f),
-        label = "statusProgress"
-    )
     val progressColor by animateColorAsState(
-        targetValue = budgetProgressColor(percentage),
-        animationSpec = tween(300),
-        label = "progressColor"
-    )
-
-    val motivationalText = when {
-        totalBudget <= 0.0 -> "Set limits to start tracking your budget"
-        remaining < 0.0 -> "You've exceeded your budget this month"
-        percentage >= 70.0 -> "Watch your spending — you're getting close"
-        else -> "You're staying on track this month"
-    }
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECE7F6))
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 22.dp, vertical = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Top row: totals
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                OverviewStatItem(
-                    label = "Total Budget",
-                    value = if (totalBudget > 0) formatCurrency(totalBudget) else "—",
-                    valueColor = Color(0xFF1A1A2E)
-                )
-                OverviewStatItem(
-                    label = "Spent",
-                    value = formatCurrency(limitedSpent),
-                    valueColor = Color(0xFF1A1A2E),
-                    align = Alignment.CenterHorizontally
-                )
-                OverviewStatItem(
-                    label = "Remaining",
-                    value = if (totalBudget > 0) formatCurrency(remaining) else "—",
-                    valueColor = statusColor,
-                    align = Alignment.End
-                )
-            }
-
-            // Progress bar
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                LinearProgressIndicator(
-                    progress = { animatedProgress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(50.dp)),
-                    color = progressColor,
-                    trackColor = Color(0xFFECE7F6)
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = motivationalText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF9E9E9E),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "${percentage.formatPercent()}%",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = statusColor
-                    )
-                }
-            }
-
-            RiskSignalRow(
-                riskyCount = riskyCount,
-                overBudgetCount = overBudgetCount
-            )
-        }
-    }
-}
-
-@Composable
-private fun OverviewStatItem(
-    label: String,
-    value: String,
-    valueColor: Color,
-    align: Alignment.Horizontal = Alignment.Start
-) {
-    Column(horizontalAlignment = align) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFF9E9E9E),
-            letterSpacing = 0.5.sp
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = valueColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
-private fun RiskSignalRow(
-    riskyCount: Int,
-    overBudgetCount: Int
-) {
-    val color by animateColorAsState(
         targetValue = when {
-            overBudgetCount > 0 -> Color(0xFFE57373)
-            riskyCount > 0 -> Color(0xFFFFB74D)
-            else -> Color(0xFF81C784)
+            percentage >= 100.0 -> ExpenseRed
+            percentage >= 70.0  -> WarningYellow
+            else                -> IncomeGreen
         },
-        animationSpec = tween(300),
-        label = "riskColor"
+        animationSpec = tween(400),
+        label = "healthColor"
     )
-    val text = when {
-        overBudgetCount > 0 -> "$overBudgetCount over budget"
-        riskyCount > 0 -> "$riskyCount need attention"
-        else -> "All limited categories are safe"
+
+    var animated by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { animated = true }
+    val animatedProgress by animateFloatAsState(
+        targetValue = if (animated) (percentage / 100.0).coerceIn(0.0, 1.0).toFloat() else 0f,
+        animationSpec = tween(900, easing = androidx.compose.animation.core.EaseOutCubic),
+        label = "circularProgress"
+    )
+
+    val healthLabel = when {
+        totalBudget <= 0.0  -> "No limits set"
+        percentage >= 100.0 -> "Over budget"
+        percentage >= 70.0  -> "Watch spending"
+        else                -> "On track"
     }
-    val icon = when {
-        overBudgetCount > 0 -> Icons.Default.Warning
-        riskyCount > 0 -> Icons.Default.Warning
-        else -> Icons.Default.CheckCircle
+    val healthSubtitle = when {
+        totalBudget <= 0.0  -> "Set category limits to start tracking"
+        remaining < 0.0     -> "You've exceeded your monthly budget"
+        percentage >= 70.0  -> "You're approaching your monthly limit"
+        else                -> "You're spending within healthy limits"
     }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = color.copy(alpha = 0.10f),
-        contentColor = color
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
+        shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.07f))
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // Top row: circular progress + stats
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Circular progress
+                Box(contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        progress = { 1f },
+                        modifier = Modifier.size(88.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        strokeWidth = 8.dp,
+                        strokeCap = StrokeCap.Round
+                    )
+                    CircularProgressIndicator(
+                        progress = { animatedProgress },
+                        modifier = Modifier.size(88.dp),
+                        color = progressColor,
+                        strokeWidth = 8.dp,
+                        strokeCap = StrokeCap.Round
+                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${percentage.toInt()}%",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = progressColor
+                        )
+                        Text(
+                            text = "used",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Right side stats
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = healthLabel,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = progressColor
+                        )
+                        Text(
+                            text = healthSubtitle,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 16.sp
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        BudgetMiniStat(
+                            label = "Spent",
+                            value = formatCurrencyPlain(limitedSpent),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        BudgetMiniStat(
+                            label = "Left",
+                            value = if (totalBudget > 0) formatCurrencyPlain(remaining.coerceAtLeast(0.0)) else "—",
+                            color = if (remaining < 0) ExpenseRed else IncomeGreen,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // Divider
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.07f))
+            )
+
+            // Category health chips row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                BudgetInsightChip(
+                    label = "$safeCount safe",
+                    icon = Icons.Outlined.Shield,
+                    color = IncomeGreen,
+                    modifier = Modifier.weight(1f)
+                )
+                BudgetInsightChip(
+                    label = "$riskyCount warning",
+                    icon = Icons.Outlined.Warning,
+                    color = WarningYellow,
+                    modifier = Modifier.weight(1f)
+                )
+                BudgetInsightChip(
+                    label = "$overBudgetCount over",
+                    icon = Icons.Outlined.PieChart,
+                    color = ExpenseRed,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun BudgetInsightChip(
+    label: String,
+    icon: ImageVector,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = color.copy(alpha = 0.08f),
+        tonalElevation = 0.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
+            Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
             Text(
-                text = text,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
+    }
+}
+
+@Composable
+private fun BudgetMiniStat(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -1353,31 +1404,6 @@ private fun budgetStatusColor(health: BudgetHealth): Color = when (health) {
     BudgetHealth.Good -> Color(0xFF81C784)
     BudgetHealth.Warning -> Color(0xFFFFB74D)
     BudgetHealth.Over -> Color(0xFFE57373)
-}
-
-@Composable
-private fun budgetProgressColor(percentage: Double): Color = when {
-    percentage < 70.0 -> Color(0xFF81C784)
-    percentage <= 100.0 -> Color(0xFFFFB74D)
-    else -> Color(0xFFE57373)
-}
-
-private data class MonthlyBudgetStatus(
-    val label: String,
-    val health: BudgetHealth
-)
-
-private fun monthlyStatus(
-    remaining: Double,
-    percentage: Double,
-    totalBudget: Double
-): MonthlyBudgetStatus {
-    return when {
-        totalBudget <= 0.0 -> MonthlyBudgetStatus("No limits", BudgetHealth.Unlimited)
-        remaining < 0.0 -> MonthlyBudgetStatus("Over budget", BudgetHealth.Over)
-        percentage >= 70.0 -> MonthlyBudgetStatus("Watch closely", BudgetHealth.Warning)
-        else -> MonthlyBudgetStatus("Safe", BudgetHealth.Good)
-    }
 }
 
 private fun categoryListSubtitle(uiState: BudgetingUiState): String {

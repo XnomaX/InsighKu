@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -50,6 +51,7 @@ import com.example.insightku.data.model.Category
 import com.example.insightku.data.model.Transaction
 import com.example.insightku.data.model.TransactionType
 import com.example.insightku.ui.dialogs.CategoryIconResolver
+import com.example.insightku.ui.components.common.PremiumDatePicker
 import com.example.insightku.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -91,13 +93,8 @@ private val paymentChips = listOf(
 private fun Long.toDisplayDate(): String =
     SimpleDateFormat("d MMM yyyy", Locale.ENGLISH).format(Date(this))
 
-/** Epoch ms → "yyyy-MM-dd" untuk disimpan ke Transaction.date (Long) */
-private fun todayMillis(): Long = Calendar.getInstance().apply {
-    set(Calendar.HOUR_OF_DAY, 0)
-    set(Calendar.MINUTE, 0)
-    set(Calendar.SECOND, 0)
-    set(Calendar.MILLISECOND, 0)
-}.timeInMillis
+/** Epoch ms dari saat ini — dipakai sebagai default date untuk transaksi baru */
+private fun todayMillis(): Long = System.currentTimeMillis()
 
 // ─── Data & State ─────────────────────────────────────────────────────────────
 
@@ -136,6 +133,7 @@ fun AddTransactionDialog(
 ) {
     var currentStep by remember { mutableStateOf<AddTransactionStep>(AddTransactionStep.ModeSelection) }
     var formData    by remember { mutableStateOf(TransactionFormData()) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val focusManager       = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -263,13 +261,12 @@ fun AddTransactionDialog(
                             formData = formData,
                             onFormDataChanged = { formData = it },
                             onFocusChanged = { isAnyFieldFocused = it },
-                            // BUGFIX: never fall back to mixed categories list.
-                            // If the typed list is empty, pass empty — the empty state UI handles it.
                             categories = if (formData.isIncome) incomeCategories
                                          else expenseCategories,
                             onCreateCategory = onCreateCategory,
+                            onShowDatePicker = { showDatePicker = true },
                             onSubmit = {
-                                val amount = formData.amount.toDoubleOrNull() ?: 0.0
+                                val amount = formData.amount.toLongOrNull()?.toDouble() ?: 0.0
                                 onTransactionAdded(
                                     Transaction(
                                         title         = formData.merchant,
@@ -296,6 +293,18 @@ fun AddTransactionDialog(
         }
     }
     } // end AnimatedVisibility
+
+    // PremiumDatePicker hoisted to top-level so it renders above the dialog overlay
+    if (showDatePicker) {
+        PremiumDatePicker(
+            initialMillis  = formData.dateMillis,
+            onDateSelected = { millis ->
+                formData = formData.copy(dateMillis = millis)
+                showDatePicker = false
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
 }
 
 // ─── Premium Header (no gradient) ────────────────────────────────────────────
@@ -518,13 +527,12 @@ fun ColumnScope.ManualFormContent(
     onFocusChanged: (Boolean) -> Unit = {},
     categories: List<Category> = emptyList(),
     onCreateCategory: () -> Unit = {},
+    onShowDatePicker: () -> Unit = {},
     onSubmit: () -> Unit,
     onBack: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val primary      = MaterialTheme.colorScheme.primary
-
-    var showDatePicker by remember { mutableStateOf(false) }
 
     val isFormValid = formData.merchant.isNotBlank()
             && (formData.amount.toDoubleOrNull() ?: -1.0) > 0
@@ -534,38 +542,6 @@ fun ColumnScope.ManualFormContent(
         !isFormValid -> Color(0xFFE0E0E0)
         formData.isIncome -> Color(0xFF10B981)
         else -> Color(0xFF7C4DFF)
-    }
-
-    // ── DatePickerDialog ──────────────────────────────────────────────────
-    if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = formData.dateMillis
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        onFormDataChanged(formData.copy(dateMillis = millis))
-                    }
-                    showDatePicker = false
-                }) { Text("OK", fontWeight = FontWeight.Bold, color = primary) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        ) {
-            DatePicker(
-                state  = datePickerState,
-                colors = DatePickerDefaults.colors(
-                    selectedDayContainerColor = primary,
-                    todayDateBorderColor      = primary,
-                    todayContentColor         = primary
-                )
-            )
-        }
     }
 
     // ── Scrollable form content ───────────────────────────────────────────
@@ -642,7 +618,7 @@ fun ColumnScope.ManualFormContent(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showDatePicker = true },
+                        .clickable { onShowDatePicker() },
                     shape = RoundedCornerShape(14.dp),
                     color = Color(0xFFFAF9FE),
                     border = BorderStroke(1.dp, Color(0xFFECE7F6))
@@ -968,14 +944,31 @@ private fun AmountHeroCard(
     val cardBg      = if (isIncome) Color(0xFFF0FFF4) else Color(0xFFF3EEFF)
     var isFocused   by remember { mutableStateOf(false) }
 
-    // amount stores raw digits ("50000"), display shows formatted ("50.000")
-    val formatted = CurrencyUtils.formatInputThousands(amount)
+    // TextFieldValue preserves cursor position — prevents jumping cursor bug.
+    // We keep the field value as raw digits only. The formatted display is shown
+    // in the hero Text above, not inside the field.
+    var fieldValue by remember(amount) {
+        mutableStateOf(TextFieldValue(text = amount, selection = androidx.compose.ui.text.TextRange(amount.length)))
+    }
+
+    // Sync external state → field only when the raw digits actually differ
+    // (avoids overwriting cursor position on every recomposition)
+    LaunchedEffect(amount) {
+        if (fieldValue.text != amount) {
+            fieldValue = TextFieldValue(
+                text      = amount,
+                selection = androidx.compose.ui.text.TextRange(amount.length)
+            )
+        }
+    }
+
+    val formatted   = CurrencyUtils.formatInputThousands(amount)
     val displayText = if (amount.isBlank()) "0" else formatted
 
     val borderColor by animateColorAsState(
-        targetValue = if (isFocused) accentColor else Color(0xFFECE7F6),
+        targetValue   = if (isFocused) accentColor else Color(0xFFECE7F6),
         animationSpec = tween(180),
-        label = "amount_border"
+        label         = "amount_border"
     )
 
     Column(
@@ -988,6 +981,7 @@ private fun AmountHeroCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
+        // Formatted display — purely visual, not editable
         Text(
             text       = "Rp $displayText",
             style      = MaterialTheme.typography.headlineLarge,
@@ -1003,14 +997,23 @@ private fun AmountHeroCard(
 
         Spacer(Modifier.height(4.dp))
 
+        // Input field — raw digits only, cursor position preserved via TextFieldValue
         OutlinedTextField(
-            value         = formatted,
-            onValueChange = { input ->
-                // Strip separators, keep only digits, pass raw to state
-                onAmountChange(CurrencyUtils.stripThousands(input))
+            value         = fieldValue,
+            onValueChange = { newValue ->
+                // Strip all non-digits from whatever was typed
+                val rawDigits = newValue.text.filter { it.isDigit() }
+                // Clamp cursor to end of raw digits (safe position)
+                val newCursor = rawDigits.length
+                val next = newValue.copy(
+                    text      = rawDigits,
+                    selection = androidx.compose.ui.text.TextRange(newCursor)
+                )
+                fieldValue = next
+                onAmountChange(rawDigits)
             },
             placeholder   = { Text("0", color = accentColor.copy(alpha = 0.35f)) },
-            label         = { Text("Amount", color = accentColor.copy(alpha = 0.7f)) },
+            label         = { Text("Amount (Rp)", color = accentColor.copy(alpha = 0.7f)) },
             leadingIcon   = {
                 Text(
                     "Rp",
@@ -1026,9 +1029,9 @@ private fun AmountHeroCard(
                     isFocused = it.isFocused
                     onFocusChange(it.isFocused)
                 },
-            singleLine    = true,
+            singleLine      = true,
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Decimal,
+                keyboardType = KeyboardType.Number,
                 imeAction    = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(onNext = { onImeAction() }),

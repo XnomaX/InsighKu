@@ -181,118 +181,119 @@ object CategoryIconResolver {
         if (iconName.isNullOrBlank()) return fallback()
         // Exact match first
         allIcons[iconName]?.let { return it }
-        // Fuzzy match by keyword
+        // Fuzzy match by keyword — use safe ?: fallback() instead of !!
         val n = iconName.lowercase()
         return when {
             // ── Expense: Food & Beverage ──────────────────────────────────
-            "food" in n || "drink" in n || "restaurant" in n || "makan" in n -> allIcons["Food & Drinks"]!!
-            "grocer" in n || "market" in n || "supermarket" in n             -> allIcons["Groceries"]!!
-            "coffee" in n || "cafe" in n || "kopi" in n                      -> allIcons["Coffee & Cafes"]!!
-            "fast food" in n || "fastfood" in n || "burger" in n             -> allIcons["Fast Food"]!!
-            "bakery" in n || "bread" in n || "roti" in n                     -> allIcons["Bakery"]!!
-            "bar" in n || "alcohol" in n || "beer" in n || "minuman" in n    -> allIcons["Drinks"]!!
-            "ice cream" in n || "dessert" in n || "snack" in n               -> allIcons["Ice Cream"]!!
+            "food" in n || "drink" in n || "restaurant" in n || "makan" in n -> allIcons["Food & Drinks"] ?: fallback()
+            "grocer" in n || "market" in n || "supermarket" in n             -> allIcons["Groceries"] ?: fallback()
+            "coffee" in n || "cafe" in n || "kopi" in n                      -> allIcons["Coffee & Cafes"] ?: fallback()
+            "fast food" in n || "fastfood" in n || "burger" in n             -> allIcons["Fast Food"] ?: fallback()
+            "bakery" in n || "bread" in n || "roti" in n                     -> allIcons["Bakery"] ?: fallback()
+            "bar" in n || "alcohol" in n || "beer" in n || "minuman" in n    -> allIcons["Drinks"] ?: fallback()
+            "ice cream" in n || "dessert" in n || "snack" in n               -> allIcons["Ice Cream"] ?: fallback()
+            "dining" in n || "makan malam" in n                              -> allIcons["Dining Out"] ?: fallback()
             // ── Expense: Shopping & Lifestyle ────────────────────────────
-            "shop" in n || "mall" in n || "belanja" in n                     -> allIcons["Shopping"]!!
-            "cloth" in n || "fashion" in n || "baju" in n || "pakaian" in n  -> allIcons["Clothing"]!!
-            "electron" in n || "gadget" in n || "laptop" in n || "hp" in n   -> allIcons["Electronics"]!!
-            "furnitur" in n || "perabot" in n                                -> allIcons["Furniture"]!!
-            "beauty" in n || "makeup" in n || "kosmetik" in n                -> allIcons["Beauty"]!!
-            "accessori" in n || "watch" in n || "jam" in n                   -> allIcons["Accessories"]!!
-            "laundry" in n || "cuci" in n                                    -> allIcons["Laundry"]!!
-            "haircut" in n || "salon" in n || "barber" in n || "potong" in n -> allIcons["Haircut"]!!
+            "shop" in n || "mall" in n || "belanja" in n                     -> allIcons["Shopping"] ?: fallback()
+            "cloth" in n || "fashion" in n || "baju" in n || "pakaian" in n  -> allIcons["Clothing"] ?: fallback()
+            "electron" in n || "gadget" in n || "laptop" in n                -> allIcons["Electronics"] ?: fallback()
+            "furnitur" in n || "perabot" in n                                -> allIcons["Furniture"] ?: fallback()
+            "beauty" in n || "makeup" in n || "kosmetik" in n                -> allIcons["Beauty"] ?: fallback()
+            "accessori" in n || "watch" in n || "jam" in n                   -> allIcons["Accessories"] ?: fallback()
+            "laundry" in n || "cuci" in n                                    -> allIcons["Laundry"] ?: fallback()
+            "haircut" in n || "salon" in n || "barber" in n || "potong" in n -> allIcons["Haircut"] ?: fallback()
+            "spa" in n || "wellness" in n || "pijat" in n                    -> allIcons["Spa & Wellness"] ?: fallback()
             // ── Expense: Transport ───────────────────────────────────────
-            "transport" in n || "car" in n || "mobil" in n                   -> allIcons["Transportation"]!!
-            "fuel" in n || "gas" in n || "petrol" in n || "bensin" in n      -> allIcons["Fuel"]!!
-            "train" in n || "bus" in n || "commut" in n || "kereta" in n     -> allIcons["Train / Bus"]!!
-            "taxi" in n || "ojek" in n || "grab" in n || "gojek" in n        -> allIcons["Taxi / Ojek"]!!
-            "parking" in n || "parkir" in n                                  -> allIcons["Parking"]!!
-            "travel" in n || "flight" in n || "trip" in n || "liburan" in n  -> allIcons["Travel"]!!
-            "hotel" in n || "penginapan" in n || "villa" in n                -> allIcons["Hotel"]!!
-            "motor" in n || "motorcycle" in n || "sepeda" in n               -> allIcons["Motorcycle"]!!
+            "transport" in n || "car" in n || "mobil" in n                   -> allIcons["Transportation"] ?: fallback()
+            "fuel" in n || "gas" in n || "petrol" in n || "bensin" in n      -> allIcons["Fuel"] ?: fallback()
+            "train" in n || "bus" in n || "commut" in n || "kereta" in n     -> allIcons["Train / Bus"] ?: fallback()
+            "taxi" in n || "ojek" in n || "grab" in n || "gojek" in n        -> allIcons["Taxi / Ojek"] ?: fallback()
+            "parking" in n || "parkir" in n                                  -> allIcons["Parking"] ?: fallback()
+            "travel" in n || "flight" in n || "trip" in n || "liburan" in n  -> allIcons["Travel"] ?: fallback()
+            "hotel" in n || "penginapan" in n || "villa" in n                -> allIcons["Hotel"] ?: fallback()
+            "motor" in n || "motorcycle" in n || "sepeda" in n               -> allIcons["Motorcycle"] ?: fallback()
+            "vacation" in n || "pantai" in n || "wisata" in n                -> allIcons["Vacation"] ?: fallback()
             // ── Expense: Home & Bills ────────────────────────────────────
-            "home" in n || "rent" in n || "hous" in n || "kos" in n || "sewa" in n -> allIcons["Housing / Rent"]!!
-            "util" in n || "listrik" in n || "pln" in n                      -> allIcons["Electricity"]!!
-            "water" in n || "air" in n || "pdam" in n                        -> allIcons["Water Bill"]!!
-            "wifi" in n || "internet" in n || "indihome" in n                -> allIcons["Internet / WiFi"]!!
-            "phone" in n || "mobile" in n || "pulsa" in n || "telpon" in n   -> allIcons["Phone"]!!
-            "repair" in n || "renovasi" in n || "servis" in n                -> allIcons["Home Repair"]!!
-            "clean" in n || "bersih" in n                                    -> allIcons["Cleaning"]!!
+            "home" in n || "rent" in n || "hous" in n || "kos" in n || "sewa" in n -> allIcons["Housing / Rent"] ?: fallback()
+            "util" in n || "listrik" in n || "pln" in n || "electric" in n   -> allIcons["Electricity"] ?: fallback()
+            "water" in n || "air" in n || "pdam" in n                        -> allIcons["Water Bill"] ?: fallback()
+            "wifi" in n || "internet" in n || "indihome" in n                -> allIcons["Internet / WiFi"] ?: fallback()
+            "phone" in n || "mobile" in n || "pulsa" in n || "telpon" in n   -> allIcons["Phone"] ?: fallback()
+            "repair" in n || "renovasi" in n || "servis" in n                -> allIcons["Home Repair"] ?: fallback()
+            "clean" in n || "bersih" in n                                    -> allIcons["Cleaning"] ?: fallback()
+            "bill" in n                                                       -> allIcons["Utilities"] ?: fallback()
             // ── Expense: Health ──────────────────────────────────────────
-            "health" in n || "hospital" in n || "clinic" in n || "dokter" in n -> allIcons["Healthcare"]!!
-            "pharma" in n || "medicine" in n || "obat" in n || "apotek" in n -> allIcons["Pharmacy"]!!
-            "fitness" in n || "gym" in n || "olahraga" in n                  -> allIcons["Fitness"]!!
-            "dental" in n || "gigi" in n                                     -> allIcons["Dental"]!!
-            "mental" in n || "psikolog" in n || "terapi" in n                -> allIcons["Mental Health"]!!
-            "vitamin" in n || "suplemen" in n                                -> allIcons["Vitamins"]!!
-            "spa" in n || "wellness" in n || "pijat" in n                    -> allIcons["Spa & Wellness"]!!
+            "health" in n || "hospital" in n || "clinic" in n || "dokter" in n -> allIcons["Healthcare"] ?: fallback()
+            "pharma" in n || "medicine" in n || "obat" in n || "apotek" in n -> allIcons["Pharmacy"] ?: fallback()
+            "fitness" in n || "gym" in n || "olahraga" in n                  -> allIcons["Fitness"] ?: fallback()
+            "dental" in n || "gigi" in n                                     -> allIcons["Dental"] ?: fallback()
+            "mental" in n || "psikolog" in n || "terapi" in n                -> allIcons["Mental Health"] ?: fallback()
+            "vitamin" in n || "suplemen" in n                                -> allIcons["Vitamins"] ?: fallback()
             // ── Expense: Entertainment ───────────────────────────────────
-            "entertain" in n || "game" in n || "gaming" in n                 -> allIcons["Entertainment"]!!
-            "movie" in n || "cinema" in n || "film" in n || "bioskop" in n   -> allIcons["Movies"]!!
-            "music" in n || "spotify" in n || "konser" in n                  -> allIcons["Music"]!!
-            "sport" in n || "futsal" in n || "badminton" in n                -> allIcons["Sports"]!!
-            "outdoor" in n || "hiking" in n || "camping" in n                -> allIcons["Outdoor"]!!
-            "concert" in n || "theater" in n || "pertunjukan" in n           -> allIcons["Concert"]!!
-            "photo" in n || "kamera" in n                                    -> allIcons["Photography"]!!
-            "reading" in n || "baca" in n                                    -> allIcons["Reading"]!!
+            "entertain" in n || "game" in n || "gaming" in n                 -> allIcons["Entertainment"] ?: fallback()
+            "movie" in n || "cinema" in n || "film" in n || "bioskop" in n   -> allIcons["Movies"] ?: fallback()
+            "music" in n || "spotify" in n || "konser" in n                  -> allIcons["Music"] ?: fallback()
+            "sport" in n || "futsal" in n || "badminton" in n                -> allIcons["Sports"] ?: fallback()
+            "outdoor" in n || "hiking" in n || "camping" in n                -> allIcons["Outdoor"] ?: fallback()
+            "concert" in n || "theater" in n || "pertunjukan" in n           -> allIcons["Concert"] ?: fallback()
+            "photo" in n || "kamera" in n                                    -> allIcons["Photography"] ?: fallback()
+            "reading" in n || "baca" in n                                    -> allIcons["Reading"] ?: fallback()
             // ── Expense: Education ───────────────────────────────────────
-            "edu" in n || "school" in n || "sekolah" in n || "kuliah" in n   -> allIcons["Education"]!!
-            "book" in n || "buku" in n                                       -> allIcons["Books"]!!
-            "course" in n || "kursus" in n || "les" in n || "online" in n    -> allIcons["Online Course"]!!
-            "stationer" in n || "alat tulis" in n                            -> allIcons["Stationery"]!!
+            "edu" in n || "school" in n || "sekolah" in n || "kuliah" in n   -> allIcons["Education"] ?: fallback()
+            "book" in n || "buku" in n                                       -> allIcons["Books"] ?: fallback()
+            "course" in n || "kursus" in n || "les" in n || "online" in n    -> allIcons["Online Course"] ?: fallback()
+            "stationer" in n || "alat tulis" in n                            -> allIcons["Stationery"] ?: fallback()
             // ── Expense: Finance ─────────────────────────────────────────
-            "subscri" in n || "netflix" in n || "langganan" in n             -> allIcons["Subscriptions"]!!
-            "loan" in n || "cicilan" in n || "debt" in n || "hutang" in n    -> allIcons["Loan / Cicilan"]!!
-            "insur" in n || "asuransi" in n                                  -> allIcons["Insurance"]!!
-            "tax" in n || "pajak" in n                                       -> allIcons["Taxes"]!!
-            "saving" in n || "tabung" in n                                   -> allIcons["Savings"]!!
-            "atm" in n || "bank fee" in n || "admin" in n                    -> allIcons["ATM / Bank Fee"]!!
+            "subscri" in n || "netflix" in n || "langganan" in n             -> allIcons["Subscriptions"] ?: fallback()
+            "loan" in n || "cicilan" in n || "debt" in n || "hutang" in n    -> allIcons["Loan / Cicilan"] ?: fallback()
+            "insur" in n || "asuransi" in n                                  -> allIcons["Insurance"] ?: fallback()
+            "tax" in n || "pajak" in n                                       -> allIcons["Taxes"] ?: fallback()
+            "saving" in n || "tabung" in n                                   -> allIcons["Savings"] ?: fallback()
+            "atm" in n || "bank fee" in n || "admin" in n                    -> allIcons["ATM / Bank Fee"] ?: fallback()
             // ── Expense: Family & Social ─────────────────────────────────
-            "pet" in n || "animal" in n || "hewan" in n                      -> allIcons["Pet"]!!
-            "gift" in n || "present" in n || "hadiah" in n                   -> allIcons["Gift"]!!
-            "charit" in n || "donat" in n || "sedekah" in n || "zakat" in n  -> allIcons["Charity"]!!
-            "baby" in n || "kids" in n || "anak" in n || "bayi" in n         -> allIcons["Baby / Kids"]!!
-            "wedding" in n || "nikah" in n || "pernikahan" in n              -> allIcons["Wedding"]!!
-            "dining" in n || "makan malam" in n                              -> allIcons["Dining Out"]!!
-            "social" in n || "hangout" in n || "nongkrong" in n              -> allIcons["Social"]!!
-            "vacation" in n || "pantai" in n || "wisata" in n                -> allIcons["Vacation"]!!
+            "pet" in n || "animal" in n || "hewan" in n                      -> allIcons["Pet"] ?: fallback()
+            "gift" in n || "present" in n || "hadiah" in n                   -> allIcons["Gift"] ?: fallback()
+            "charit" in n || "donat" in n || "sedekah" in n || "zakat" in n  -> allIcons["Charity"] ?: fallback()
+            "baby" in n || "kids" in n || "anak" in n || "bayi" in n         -> allIcons["Baby / Kids"] ?: fallback()
+            "wedding" in n || "nikah" in n || "pernikahan" in n              -> allIcons["Wedding"] ?: fallback()
+            "social" in n || "hangout" in n || "nongkrong" in n              -> allIcons["Social"] ?: fallback()
             // ── Income: Employment ───────────────────────────────────────
-            "salary" in n || "gaji" in n                                     -> allIcons["Salary"]!!
-            "bonus" in n || "thr" in n                                       -> allIcons["Bonus"]!!
-            "overtime" in n || "lembur" in n                                 -> allIcons["Overtime"]!!
-            "commission" in n || "komisi" in n                               -> allIcons["Commission"]!!
-            "allowance" in n || "tunjangan" in n || "uang saku" in n         -> allIcons["Allowance"]!!
+            "salary" in n || "gaji" in n                                     -> allIcons["Salary"] ?: fallback()
+            "bonus" in n || "thr" in n                                       -> allIcons["Bonus"] ?: fallback()
+            "overtime" in n || "lembur" in n                                 -> allIcons["Overtime"] ?: fallback()
+            "commission" in n || "komisi" in n                               -> allIcons["Commission"] ?: fallback()
+            "allowance" in n || "tunjangan" in n || "uang saku" in n         -> allIcons["Allowance"] ?: fallback()
             // ── Income: Self-Employment ──────────────────────────────────
-            "freelanc" in n                                                  -> allIcons["Freelance"]!!
-            "business" in n || "bisnis" in n || "usaha" in n                 -> allIcons["Business"]!!
-            "side" in n || "hustle" in n || "sampingan" in n                 -> allIcons["Side Hustle"]!!
-            "consult" in n || "konsultan" in n                               -> allIcons["Consulting"]!!
-            "online shop" in n || "jualan" in n || "toko" in n               -> allIcons["Online Shop"]!!
-            "content" in n || "creator" in n || "youtuber" in n              -> allIcons["Content Creator"]!!
-            "teach" in n || "ngajar" in n || "les" in n                      -> allIcons["Teaching"]!!
-            "service" in n || "jasa" in n                                    -> allIcons["Service"]!!
+            "freelanc" in n                                                  -> allIcons["Freelance"] ?: fallback()
+            "business" in n || "bisnis" in n || "usaha" in n                 -> allIcons["Business"] ?: fallback()
+            "side" in n || "hustle" in n || "sampingan" in n                 -> allIcons["Side Hustle"] ?: fallback()
+            "consult" in n || "konsultan" in n                               -> allIcons["Consulting"] ?: fallback()
+            "online shop" in n || "jualan" in n || "toko" in n               -> allIcons["Online Shop"] ?: fallback()
+            "content" in n || "creator" in n || "youtuber" in n              -> allIcons["Content Creator"] ?: fallback()
+            "teach" in n || "ngajar" in n                                    -> allIcons["Teaching"] ?: fallback()
+            "service" in n || "jasa" in n                                    -> allIcons["Service"] ?: fallback()
             // ── Income: Investment ───────────────────────────────────────
-            "invest" in n || "investasi" in n                                -> allIcons["Investment"]!!
-            "dividend" in n || "dividen" in n                                -> allIcons["Dividends"]!!
-            "stock" in n || "saham" in n                                     -> allIcons["Stock"]!!
-            "crypto" in n || "bitcoin" in n || "kripto" in n                 -> allIcons["Crypto"]!!
-            "mutual" in n || "reksa" in n || "reksadana" in n                -> allIcons["Mutual Fund"]!!
-            "interest" in n || "bunga" in n                                  -> allIcons["Interest"]!!
-            "gold" in n || "emas" in n                                       -> allIcons["Gold"]!!
+            "invest" in n || "investasi" in n                                -> allIcons["Investment"] ?: fallback()
+            "dividend" in n || "dividen" in n                                -> allIcons["Dividends"] ?: fallback()
+            "stock" in n || "saham" in n                                     -> allIcons["Stock"] ?: fallback()
+            "crypto" in n || "bitcoin" in n || "kripto" in n                 -> allIcons["Crypto"] ?: fallback()
+            "mutual" in n || "reksa" in n || "reksadana" in n                -> allIcons["Mutual Fund"] ?: fallback()
+            "interest" in n || "bunga" in n                                  -> allIcons["Interest"] ?: fallback()
+            "gold" in n || "emas" in n                                       -> allIcons["Gold"] ?: fallback()
             // ── Income: Passive ──────────────────────────────────────────
-            "passive" in n || "pasif" in n                                   -> allIcons["Passive Income"]!!
-            "rental" in n || "sewa" in n || "kos" in n                       -> allIcons["Rental Income"]!!
-            "royalt" in n || "royalti" in n                                  -> allIcons["Royalty"]!!
-            "affiliat" in n                                                  -> allIcons["Affiliate"]!!
-            "ads" in n || "iklan" in n || "adsense" in n                     -> allIcons["Ads Revenue"]!!
+            "passive" in n || "pasif" in n                                   -> allIcons["Passive Income"] ?: fallback()
+            "rental" in n || "sewa" in n                                     -> allIcons["Rental Income"] ?: fallback()
+            "royalt" in n || "royalti" in n                                  -> allIcons["Royalty"] ?: fallback()
+            "affiliat" in n                                                  -> allIcons["Affiliate"] ?: fallback()
+            "ads" in n || "iklan" in n || "adsense" in n                     -> allIcons["Ads Revenue"] ?: fallback()
             // ── Income: Transfers & Misc ─────────────────────────────────
-            "cashback" in n || "reward" in n                                 -> allIcons["Cashback"]!!
-            "refund" in n || "return" in n || "kembalian" in n               -> allIcons["Refund"]!!
-            "grant" in n                                                     -> allIcons["Grant"]!!
-            "scholar" in n || "beasiswa" in n                                -> allIcons["Scholarship"]!!
-            "pension" in n || "pensiun" in n                                 -> allIcons["Pension"]!!
-            "inherit" in n || "warisan" in n                                 -> allIcons["Inheritance"]!!
-            "lottery" in n || "lotre" in n || "undian" in n                  -> allIcons["Lottery"]!!
+            "cashback" in n || "reward" in n                                 -> allIcons["Cashback"] ?: fallback()
+            "refund" in n || "return" in n || "kembalian" in n               -> allIcons["Refund"] ?: fallback()
+            "grant" in n                                                     -> allIcons["Grant"] ?: fallback()
+            "scholar" in n || "beasiswa" in n                                -> allIcons["Scholarship"] ?: fallback()
+            "pension" in n || "pensiun" in n                                 -> allIcons["Pension"] ?: fallback()
+            "inherit" in n || "warisan" in n                                 -> allIcons["Inheritance"] ?: fallback()
+            "lottery" in n || "lotre" in n || "undian" in n                  -> allIcons["Lottery"] ?: fallback()
             else -> fallback()
         }
     }

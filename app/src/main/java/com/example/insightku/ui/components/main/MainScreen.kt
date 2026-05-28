@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -51,7 +50,7 @@ import kotlinx.coroutines.delay
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 private val NavPurple   = Color(0xFF7C4DFF)
-private val NavBorder   = Color(0xFFECE7F6)
+private val NavBorder   = Color(0xFFE8E0F0).copy(alpha = 0.6f)
 private val NavBg       = Color(0xFFFFFFFF)
 private val NavInactive = Color(0xFFB0AABF)
 
@@ -89,11 +88,15 @@ fun MainScreen(
     var showAddTransactionDialog   by remember { mutableStateOf(false) }
     var pendingStreakPopup          by remember { mutableStateOf(false) }
 
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
     // Derived — nav hides whenever ANY overlay is open.
-    // derivedStateOf ensures recomposition only when the boolean value actually changes.
+    // TRANSACTION_DETAILS is a regular nav destination — navbar stays visible so
+    // user can tap Home to return. Overlays (dialogs/sheets) hide it.
     val anyDialogOpen by remember {
         derivedStateOf {
-            showAddTransactionDialog || budgetingUiState.dialogState !is DialogState.None
+            showAddTransactionDialog ||
+            budgetingUiState.dialogState !is DialogState.None
         }
     }
 
@@ -153,39 +156,43 @@ fun MainScreen(
     Box(modifier = modifier.fillMaxSize()) {
         // Main content — full screen, nav bar floats on top
         Scaffold(
-            modifier              = Modifier.fillMaxSize(),
-            contentWindowInsets   = WindowInsets(0, 0, 0, 0),
-            snackbarHost          = { SnackbarHost(snackbarHostState) },
-            containerColor        = Color(0xFFFAF9FE)
-        ) { paddingValues ->
+            modifier            = Modifier.fillMaxSize(),
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            snackbarHost        = { SnackbarHost(snackbarHostState) },
+            containerColor      = Color.Transparent,
+            bottomBar           = {}
+        ) { _ ->
             MainNavHost(
-                navController                = navController,
-                rootNavController            = rootNavController,
-                dashboardViewModel           = dashboardViewModel,
-                budgetingViewModel           = budgetingViewModel,
-                onShowAddTransaction         = { showAddTransactionDialog = true },
+                navController                 = navController,
+                rootNavController             = rootNavController,
+                dashboardViewModel            = dashboardViewModel,
+                budgetingViewModel            = budgetingViewModel,
+                onShowAddTransaction          = { showAddTransactionDialog = true },
                 onShowAddTransactionForStreak = {
                     showAddTransactionDialog = true
                     pendingStreakPopup        = true
                 },
                 modifier = Modifier
-                    .padding(paddingValues)
-                    .statusBarsPadding()
+                    .fillMaxSize()
+                    .background(Color(0xFFFAF9FE))
                     .padding(bottom = 88.dp)
             )
         }
 
         // Floating premium bottom nav — hides when any dialog is open
         AnimatedVisibility(
-            visible = !anyDialogOpen,
-            enter   = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 2 },
-            exit    = fadeOut(tween(180)) + slideOutVertically(tween(180)) { it / 2 },
-            modifier = Modifier.align(Alignment.BottomCenter)
+            visible  = !anyDialogOpen,
+            enter    = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 2 },
+            exit     = fadeOut(tween(180)) + slideOutVertically(tween(180)) { it / 2 },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .background(Color.Transparent)
         ) {
             PremiumBottomNav(
                 navController = navController,
                 onAddClick    = { showAddTransactionDialog = true },
-                modifier      = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                modifier      = Modifier
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
             )
         }
 
@@ -226,61 +233,62 @@ fun PremiumBottomNav(
 
     fun navigateToTab(route: String) {
         navController.navigate(route) {
-            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            popUpTo(navController.graph.findStartDestination().id) {
+                // Don't save HOME state — always return to clean root
+                saveState = route != Route.HOME
+            }
             launchSingleTop = true
-            restoreState    = true
+            restoreState    = route != Route.HOME
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation    = 16.dp,
-                shape        = RoundedCornerShape(32.dp),
-                ambientColor = Color(0xFF7C4DFF).copy(alpha = 0.08f),
-                spotColor    = Color(0xFF7C4DFF).copy(alpha = 0.12f)
-            )
-            .clip(RoundedCornerShape(32.dp))
-            .background(NavBg)
-            .border(1.dp, NavBorder, RoundedCornerShape(32.dp))
-            .padding(horizontal = 8.dp, vertical = 10.dp)
+    Surface(
+        modifier        = modifier.fillMaxWidth(),
+        shape           = RoundedCornerShape(32.dp),
+        color           = NavBg,
+        tonalElevation  = 0.dp,
+        shadowElevation = 4.dp,
+        border          = androidx.compose.foundation.BorderStroke(
+            1.dp, NavBorder
+        )
     ) {
         Row(
-            modifier              = Modifier.fillMaxWidth(),
+            modifier              = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            // Home
-            BottomNavItem(
-                item      = navItems[0],
-                isSelected = currentRoute == navItems[0].route,
-                onClick   = { navigateToTab(navItems[0].route) }
-            )
+                // Home
+                BottomNavItem(
+                    item       = navItems[0],
+                    isSelected = currentRoute == navItems[0].route,
+                    onClick    = { navigateToTab(navItems[0].route) }
+                )
 
-            // Analytics
-            BottomNavItem(
-                item      = navItems[1],
-                isSelected = currentRoute == navItems[1].route,
-                onClick   = { navigateToTab(navItems[1].route) }
-            )
+                // Analytics
+                BottomNavItem(
+                    item       = navItems[1],
+                    isSelected = currentRoute == navItems[1].route,
+                    onClick    = { navigateToTab(navItems[1].route) }
+                )
 
-            // Center Add button
-            CenterAddButton(onClick = onAddClick)
+                // Center Add button
+                CenterAddButton(onClick = onAddClick)
 
-            // Budgeting
-            BottomNavItem(
-                item      = navItems[2],
-                isSelected = currentRoute == navItems[2].route,
-                onClick   = { navigateToTab(navItems[2].route) }
-            )
+                // Budgeting
+                BottomNavItem(
+                    item       = navItems[2],
+                    isSelected = currentRoute == navItems[2].route,
+                    onClick    = { navigateToTab(navItems[2].route) }
+                )
 
-            // Settings
-            BottomNavItem(
-                item      = navItems[3],
-                isSelected = currentRoute == navItems[3].route,
-                onClick   = { navigateToTab(navItems[3].route) }
-            )
+                // Settings
+                BottomNavItem(
+                    item       = navItems[3],
+                    isSelected = currentRoute == navItems[3].route,
+                    onClick    = { navigateToTab(navItems[3].route) }
+                )
         }
     }
 }
@@ -386,10 +394,10 @@ fun CenterAddButton(onClick: () -> Unit) {
                 .size(44.dp)
                 .scale(scale)
                 .shadow(
-                    elevation    = 6.dp,
+                    elevation    = 4.dp,
                     shape        = CircleShape,
-                    ambientColor = NavPurple.copy(alpha = 0.25f),
-                    spotColor    = NavPurple.copy(alpha = 0.35f)
+                    ambientColor = NavPurple.copy(alpha = 0.15f),
+                    spotColor    = NavPurple.copy(alpha = 0.20f)
                 )
                 .clip(CircleShape)
                 .background(NavPurple),
@@ -433,7 +441,12 @@ private fun MainNavHost(
         composable(Route.HOME) {
             DashboardScreen(
                 viewModel                      = dashboardViewModel,
-                onNavigateToTransactionDetails = { navController.navigate(Route.TRANSACTION_DETAILS) },
+                onNavigateToTransactionDetails = {
+                    navController.navigate(Route.TRANSACTION_DETAILS) {
+                        // Keep HOME in back stack so Back returns to it
+                        launchSingleTop = true
+                    }
+                },
                 onAddTransaction               = onShowAddTransaction,
                 onAddTransactionForStreak      = onShowAddTransactionForStreak
             )
@@ -446,8 +459,8 @@ private fun MainNavHost(
                 onBack              = { navController.popBackStack() },
                 onEditTransaction   = { txDetailsViewModel.updateTransaction(it) },
                 onDeleteTransaction = { id ->
+                    // Delete but stay in All Transactions — list updates reactively via Flow
                     txDetailsViewModel.deleteTransaction(id)
-                    navController.popBackStack()
                 }
             )
         }

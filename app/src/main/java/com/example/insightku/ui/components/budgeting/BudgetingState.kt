@@ -1,6 +1,7 @@
 package com.example.insightku.ui.components.budgeting
 
 import androidx.compose.runtime.Immutable
+import com.example.insightku.data.model.Category
 import com.example.insightku.data.model.CategoryType
 import com.example.insightku.data.model.Installment
 import com.example.insightku.data.model.RecurringBudget
@@ -16,13 +17,16 @@ data class BudgetingUiState(
     val recurringBudgets: List<RecurringBudget> = emptyList(),
     val installments: List<Installment> = emptyList(),
     val selectedPeriod: BudgetPeriod = BudgetPeriod.MONTHLY,
-    val dialogState: DialogState = DialogState.None
+    val dialogState: DialogState = DialogState.None,
+    val rawCategories: List<Category> = emptyList()
 ) {
     val remainingBudget: Double get() = totalBudget - limitedSpent
     val limitedSpent: Double get() = budgetCategories.filter { it.hasLimit }.sumOf { it.spentAmount }
     val unlimitedSpent: Double get() = budgetCategories.filterNot { it.hasLimit }.sumOf { it.spentAmount }
     val budgetUtilizationPercentage: Double get() = if (totalBudget > 0) (limitedSpent / totalBudget) * 100 else 0.0
     val overBudgetCategories: List<BudgetCategory> get() = budgetCategories.filter { it.isOverBudget }
+    // All non-system categories for use in pickers
+    val allCategoriesForPicker: List<Category> get() = rawCategories.filter { !it.isSystemCategory }
 }
 
 sealed class DialogState {

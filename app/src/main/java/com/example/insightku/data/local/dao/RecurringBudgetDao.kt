@@ -6,6 +6,15 @@ import com.example.insightku.data.model.RecurringBudget
 
 @Dao
 interface RecurringBudgetDao {
+    @Query("DELETE FROM recurring_budgets WHERE id = 0 OR name = '' OR name IS NULL")
+    suspend fun deleteInvalidRecurringBudgets()
+
+    @Query("DELETE FROM recurring_budgets")
+    suspend fun deleteAllRecurringBudgets()
+
+    @Query("SELECT COUNT(*) FROM recurring_budgets WHERE isActive = 1")
+    suspend fun countActiveRecurringBudgets(): Int
+
     @Query("SELECT * FROM recurring_budgets WHERE isActive = 1 ORDER BY name ASC")
     fun getAllRecurringBudgets(): Flow<List<RecurringBudget>>
 

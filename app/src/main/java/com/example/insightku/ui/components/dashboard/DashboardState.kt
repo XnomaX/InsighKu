@@ -1,12 +1,15 @@
 package com.example.insightku.ui.components.dashboard
 
+import com.example.insightku.data.model.Installment
+import com.example.insightku.data.model.RecurringBudget
+
 /**
  * Represents the entire state for the Dashboard screen.
  */
 data class DashboardUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
-    val userName: String = "User", // Default name
+    val userName: String = "User",
     val totalBalance: Double = 0.0,
     val monthlyIncome: Double = 0.0,
     val monthlyExpenses: Double = 0.0,
@@ -15,17 +18,49 @@ data class DashboardUiState(
     val monthlyForecastData: List<Float> = emptyList(),
     val aiInsightMessage: String = "",
     val recentTransactions: List<TransactionItem> = emptyList(),
+    // ── Streak system ──────────────────────────────────────────────────────────
     val currentStreak: Int = 0,
     val bestStreak: Int = 0,
     val hasTrackedToday: Boolean = false,
-    val forecastPeriod: ForecastPeriod = ForecastPeriod.WEEKLY
-)
+    val freezeCount: Int = 0,
+    val isPerfectStreak: Boolean = false,
+    val streakGoal: Int = 7,
+    val repairAvailable: Boolean = false,
+    val repairExpiryMs: Long = 0L,
+    val streakMilestone: StreakMilestone? = null,
+    // ──────────────────────────────────────────────────────────────────────────
+    val forecastPeriod: ForecastPeriod = ForecastPeriod.WEEKLY,
+    val recurringBudgets: List<RecurringBudget> = emptyList(),
+    val installments: List<Installment> = emptyList(),
+    val budgetCategorySpending: List<BudgetSpendingItem> = emptyList(),
+    val monthlySavings: Double = 0.0,
+    val insightMessages: List<String> = emptyList()
+) {
+    // Visual-only streak: shows 0 (dormant) until user logs a transaction today.
+    // The real currentStreak is preserved — this never touches streak history.
+    val displayedStreak: Int get() = if (hasTrackedToday) currentStreak else 0
+}
 
 enum class ForecastPeriod {
     WEEKLY, MONTHLY
 }
 
-// Data class for Transactions - This might be shared or moved to a model package
+enum class StreakMilestone(val days: Int, val label: String, val emoji: String) {
+    DAY_3(3,   "3-Day Habit",      "✦"),
+    DAY_7(7,   "Week Warrior",     "⬡"),
+    DAY_14(14, "Two Week Strong",  "◈"),
+    DAY_30(30, "Monthly Master",   "❋"),
+    DAY_100(100,"Century Legend",  "✺");
+
+    companion object {
+        fun forStreak(streak: Int): StreakMilestone? =
+            values().sortedByDescending { it.days }.firstOrNull { streak >= it.days }
+
+        fun next(streak: Int): StreakMilestone? =
+            values().sortedBy { it.days }.firstOrNull { it.days > streak }
+    }
+}
+
 data class TransactionItem(
     val id: String,
     val title: String,
@@ -35,4 +70,12 @@ data class TransactionItem(
     val isIncome: Boolean = false,
     val iconName: String,
     val colorHex: String
+)
+
+data class BudgetSpendingItem(
+    val categoryName: String,
+    val iconName: String,
+    val colorHex: String,
+    val spent: Double,
+    val limit: Double?
 )
