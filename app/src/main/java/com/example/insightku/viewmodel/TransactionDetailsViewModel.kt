@@ -29,6 +29,12 @@ class TransactionDetailsViewModel @Inject constructor(
     private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories: StateFlow<List<Category>> = _categories.asStateFlow()
 
+    private val _expenseCategories = MutableStateFlow<List<Category>>(emptyList())
+    val expenseCategories: StateFlow<List<Category>> = _expenseCategories.asStateFlow()
+
+    private val _incomeCategories = MutableStateFlow<List<Category>>(emptyList())
+    val incomeCategories: StateFlow<List<Category>> = _incomeCategories.asStateFlow()
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -65,9 +71,25 @@ class TransactionDetailsViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                // silent — categories are optional for icon resolution
-            }
+            } catch (e: Exception) { }
+        }
+        viewModelScope.launch {
+            try {
+                transactionRepository.getExpenseCategories().collect { cats ->
+                    _expenseCategories.value = cats
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) { }
+        }
+        viewModelScope.launch {
+            try {
+                transactionRepository.getIncomeCategories().collect { cats ->
+                    _incomeCategories.value = cats
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) { }
         }
     }
 

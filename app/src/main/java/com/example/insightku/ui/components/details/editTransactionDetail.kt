@@ -39,6 +39,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.data.model.Category
@@ -83,28 +86,37 @@ fun EditTransactionDetail(
     onDismiss: () -> Unit,
     onSave: (Transaction) -> Unit,
     categoryMap: Map<String, com.example.insightku.data.model.Category> = emptyMap(),
-    categories: List<com.example.insightku.data.model.Category> = emptyList()
+    categories: List<com.example.insightku.data.model.Category> = emptyList(),
+    expenseCategories: List<com.example.insightku.data.model.Category> = emptyList(),
+    incomeCategories: List<com.example.insightku.data.model.Category> = emptyList()
 ) {
     val focusManager = LocalFocusManager.current
 
     var title         by remember { mutableStateOf(transaction.title) }
     var amountRaw     by remember { mutableStateOf(abs(transaction.amount).toLong().toString()) }
     var amountFieldValue by remember {
-        mutableStateOf(TextFieldValue(
-            text      = abs(transaction.amount).toLong().toString(),
-            selection = androidx.compose.ui.text.TextRange(abs(transaction.amount).toLong().toString().length)
-        ))
+        val initial = abs(transaction.amount).toLong().toString()
+        mutableStateOf(TextFieldValue(text = initial, selection = androidx.compose.ui.text.TextRange(initial.length)))
     }
     var type          by remember { mutableStateOf(transaction.type) }
     var category      by remember { mutableStateOf(transaction.category) }
     var dateMillis    by remember { mutableStateOf(transaction.date) }
     var notes         by remember { mutableStateOf(transaction.description ?: "") }
     var paymentMethod by remember { mutableStateOf(transaction.paymentMethod ?: "Cash") }
-    var showDatePicker by remember { mutableStateOf(false) }
+    var showDatePicker    by remember { mutableStateOf(false) }
+    var showCategoryPicker by remember { mutableStateOf(false) }
 
     val isIncome    = type == TransactionType.INCOME
     val accentColor = if (isIncome) EditIncomeGreen else EditPurple
     val amountColor = if (isIncome) EditIncomeGreen else EditExpenseRed
+
+    // Use type-filtered lists (same as AddTransaction). Fall back to unfiltered `categories`
+    // only if the caller didn't provide the split lists (backward compat).
+    val pickerCategories = when {
+        isIncome  && incomeCategories.isNotEmpty()  -> incomeCategories
+        !isIncome && expenseCategories.isNotEmpty() -> expenseCategories
+        else -> categories
+    }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -186,7 +198,12 @@ fun EditTransactionDetail(
                 EditFormCard {
                     EditFieldLabel("CATEGORY")
                     Spacer(Modifier.height(8.dp))
-                    EditCategoryDisplay(category = category, categoryMap = categoryMap, accentColor = accentColor)
+                    EditCategoryDisplay(
+                        category    = category,
+                        categoryMap = categoryMap,
+                        accentColor = accentColor,
+                        onClick     = { showCategoryPicker = true }
+                    )
                 }
 
                 // â”€â”€ Payment method â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -306,6 +323,106 @@ fun EditTransactionDetail(
             onDismiss      = { showDatePicker = false }
         )
     }
+
+    if (showCategoryPicker) {
+        val pickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showCategoryPicker = false },
+            sheetState       = pickerSheetState,
+            containerColor   = Color.White,
+            dragHandle = {
+                Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.width(40.dp).height(4.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFFE0D9F5)))
+                }
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 8.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    "Select Category",
+                    style      = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color      = EditTextPrimary
+                )
+                if (pickerCategories.isEmpty()) {
+                    Box(Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
+                        Text("No categories available", style = MaterialTheme.typography.bodyMedium, color = EditTextMuted)
+                    }
+                } else {
+                    val rows = pickerCategories.chunked(3)
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        rows.forEach { rowItems ->
+                            Row(
+                                modifier              = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                rowItems.forEach { cat ->
+                                    val catColor = runCatching {
+                                        Color(android.graphics.Color.parseColor(cat.color.ifBlank { "#7C4DFF" }))
+                                    }.getOrDefault(Color(0xFF7C4DFF))
+                                    val iconInfo  = CategoryIconResolver.resolve(cat.icon ?: cat.name)
+                                    val isSelected = category == cat.name
+                                    val interactionSource = remember { MutableInteractionSource() }
+                                    val isPressed by interactionSource.collectIsPressedAsState()
+                                    val scale by animateFloatAsState(
+                                        targetValue   = if (isPressed) 0.92f else 1f,
+                                        animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
+                                        label         = "cat_scale_${cat.id}"
+                                    )
+                                    val bgColor by animateColorAsState(
+                                        targetValue   = if (isSelected) catColor.copy(alpha = 0.10f) else Color.White,
+                                        animationSpec = tween(200), label = "cat_bg_${cat.id}"
+                                    )
+                                    val borderColor by animateColorAsState(
+                                        targetValue   = if (isSelected) catColor else Color(0xFFECE7F6),
+                                        animationSpec = tween(200), label = "cat_border_${cat.id}"
+                                    )
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .graphicsLayer { scaleX = scale; scaleY = scale }
+                                            .clip(RoundedCornerShape(14.dp))
+                                            .background(bgColor)
+                                            .border(1.5.dp, borderColor, RoundedCornerShape(14.dp))
+                                            .clickable(interactionSource = interactionSource, indication = null) {
+                                                category = cat.name
+                                                showCategoryPicker = false
+                                            }
+                                            .padding(vertical = 10.dp, horizontal = 6.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.size(34.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                                                .background(catColor.copy(alpha = if (isSelected) 0.18f else 0.10f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(iconInfo.icon, null, tint = catColor, modifier = Modifier.size(17.dp))
+                                        }
+                                        Text(
+                                            text       = cat.name,
+                                            style      = MaterialTheme.typography.labelSmall,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color      = if (isSelected) catColor else EditTextMuted,
+                                            maxLines   = 2,
+                                            textAlign  = TextAlign.Center
+                                        )
+                                    }
+                                }
+                                repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // â”€â”€â”€ Sub-composables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -347,6 +464,41 @@ private fun EditTypeToggle(isIncome: Boolean, onToggle: (Boolean) -> Unit) {
     }
 }
 
+// VisualTransformation that formats raw digits with Indonesian thousand separators (.)
+// while keeping the underlying TextField value as raw digits only.
+private object ThousandSeparatorTransformation : VisualTransformation {
+    override fun filter(text: androidx.compose.ui.text.AnnotatedString): TransformedText {
+        val raw       = text.text
+        val formatted = if (raw.isEmpty()) "" else {
+            val n = raw.toLongOrNull() ?: return TransformedText(text, OffsetMapping.Identity)
+            java.text.NumberFormat.getNumberInstance(java.util.Locale("in", "ID")).apply {
+                maximumFractionDigits = 0; minimumFractionDigits = 0; isGroupingUsed = true
+            }.format(n)
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            // raw index → formatted index: count how many separator chars appear before this raw position
+            override fun originalToTransformed(offset: Int): Int {
+                var rawCount = 0
+                var fmtIdx   = 0
+                while (fmtIdx < formatted.length && rawCount < offset) {
+                    if (formatted[fmtIdx].isDigit()) rawCount++
+                    fmtIdx++
+                }
+                return fmtIdx
+            }
+            // formatted index → raw index: count only digit chars up to this formatted position
+            override fun transformedToOriginal(offset: Int): Int =
+                formatted.take(offset).count { it.isDigit() }
+        }
+
+        return TransformedText(
+            androidx.compose.ui.text.AnnotatedString(formatted),
+            offsetMapping
+        )
+    }
+}
+
 @Composable
 private fun EditAmountCard(
     amountRaw: String,
@@ -357,6 +509,23 @@ private fun EditAmountCard(
     val accentColor = if (isIncome) EditIncomeGreen else EditPurple
     val cardBg      = if (isIncome) Color(0xFFF0FFF4) else Color(0xFFF3EEFF)
     var isFocused   by remember { mutableStateOf(false) }
+
+    // Internal field value — raw digits only, cursor managed here
+    var fieldValue by remember {
+        mutableStateOf(TextFieldValue(
+            text      = amountRaw,
+            selection = androidx.compose.ui.text.TextRange(amountRaw.length)
+        ))
+    }
+    // Sync only when external raw value changes from outside (e.g. initial load)
+    LaunchedEffect(amountRaw) {
+        if (fieldValue.text != amountRaw) {
+            fieldValue = TextFieldValue(
+                text      = amountRaw,
+                selection = androidx.compose.ui.text.TextRange(amountRaw.length)
+            )
+        }
+    }
 
     val formatted   = CurrencyUtils.formatInputThousands(amountRaw)
     val displayText = if (amountRaw.isBlank()) "0" else formatted
@@ -373,25 +542,39 @@ private fun EditAmountCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text("Rp $displayText", style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold, color = accentColor, textAlign = TextAlign.Center)
-        Text(if (isIncome) "Income amount" else "Expense amount",
-            style = MaterialTheme.typography.labelSmall, color = accentColor.copy(alpha = 0.6f))
+        Text(
+            text       = "Rp $displayText",
+            style      = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color      = accentColor,
+            textAlign  = TextAlign.Center
+        )
+        Text(
+            text  = if (isIncome) "Income amount" else "Expense amount",
+            style = MaterialTheme.typography.labelSmall,
+            color = accentColor.copy(alpha = 0.6f)
+        )
         Spacer(Modifier.height(4.dp))
         OutlinedTextField(
-            value         = amountFieldValue,
+            value         = fieldValue,
             onValueChange = { newVal ->
-                val raw    = newVal.text.filter { it.isDigit() }
-                val cursor = raw.length
-                val next   = newVal.copy(text = raw, selection = androidx.compose.ui.text.TextRange(cursor))
+                // Strip non-digits — raw value is always pure digits
+                val raw  = newVal.text.filter { it.isDigit() }
+                // Clamp cursor to end of raw string (safe, no jumping)
+                val next = newVal.copy(
+                    text      = raw,
+                    selection = androidx.compose.ui.text.TextRange(raw.length)
+                )
+                fieldValue = next
                 onAmountChange(raw, next)
             },
-            placeholder   = { Text("0", color = accentColor.copy(alpha = 0.35f)) },
-            label         = { Text("Amount (Rp)", color = accentColor.copy(alpha = 0.7f)) },
-            leadingIcon   = {
+            placeholder         = { Text("0", color = accentColor.copy(alpha = 0.35f)) },
+            label               = { Text("Amount (Rp)", color = accentColor.copy(alpha = 0.7f)) },
+            leadingIcon         = {
                 Text("Rp", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold,
                     color = accentColor, modifier = Modifier.padding(start = 4.dp))
             },
+            visualTransformation = ThousandSeparatorTransformation,
             modifier = Modifier.fillMaxWidth().onFocusChanged { isFocused = it.isFocused },
             singleLine      = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
@@ -414,9 +597,9 @@ private fun EditAmountCard(
 private fun EditCategoryDisplay(
     category: String,
     accentColor: Color,
-    categoryMap: Map<String, com.example.insightku.data.model.Category> = emptyMap()
+    categoryMap: Map<String, com.example.insightku.data.model.Category> = emptyMap(),
+    onClick: () -> Unit = {}
 ) {
-    // Resolve icon: try category.icon field first, fall back to fuzzy name match
     val matchedCat     = categoryMap[category.trim().lowercase()]
     val iconKey        = matchedCat?.icon?.ifBlank { null } ?: category
     val resolvedByIcon = CategoryIconResolver.resolve(iconKey)
@@ -426,10 +609,10 @@ private fun EditCategoryDisplay(
         runCatching { Color(android.graphics.Color.parseColor(matchedCat!!.color)) }.getOrDefault(resolved.color)
     } else resolved.color
     Surface(
-        shape  = RoundedCornerShape(14.dp),
-        color  = catColor.copy(alpha = 0.08f),
-        border = BorderStroke(1.dp, catColor.copy(alpha = 0.2f)),
-        modifier = Modifier.fillMaxWidth()
+        shape    = RoundedCornerShape(14.dp),
+        color    = catColor.copy(alpha = 0.08f),
+        border   = BorderStroke(1.dp, catColor.copy(alpha = 0.2f)),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -442,9 +625,14 @@ private fun EditCategoryDisplay(
             ) {
                 Icon(resolved.icon, null, tint = catColor, modifier = Modifier.size(20.dp))
             }
-            Text(category, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = EditTextPrimary)
-            Spacer(Modifier.weight(1f))
-            Text("(edit in Budgeting)", style = MaterialTheme.typography.labelSmall, color = EditTextMuted)
+            Text(
+                text       = category.ifBlank { "Select category" },
+                style      = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color      = if (category.isBlank()) EditTextMuted else EditTextPrimary,
+                modifier   = Modifier.weight(1f)
+            )
+            Icon(Icons.Default.ChevronRight, null, tint = EditTextMuted, modifier = Modifier.size(18.dp))
         }
     }
 }
