@@ -5,11 +5,15 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -21,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,6 +46,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.data.model.Transaction
 import com.example.insightku.data.model.TransactionType
+import com.example.insightku.ui.dialogs.CategoryIconResolver
+import com.example.insightku.ui.components.common.PremiumDatePicker
 import com.example.insightku.utils.TimeUtils
 import com.example.insightku.viewmodel.TransactionDetailsViewModel
 import java.text.SimpleDateFormat
@@ -59,46 +66,45 @@ private val PurpleTint     = Color(0xFFEDE9FE)
 private val IncomeDeep     = Color(0xFF064E3B)
 private val IncomeMid      = Color(0xFF065F46)
 private val GlassSurface   = Color(0xFFFAF8FF)
-private val CardSurface    = Color(0xFFF3EEFF)
-private val AmountCardExpense = Color(0xFFF0EBFF)
-private val AmountCardIncome  = Color(0xFFECFDF5)
+private val TxBackground   = Color(0xFFFAF9FE)
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
-enum class FilterType { ALL, INCOME, EXPENSE, TODAY, WEEK, MONTH, YEAR }
+enum class FilterType { ALL, INCOME, EXPENSE, RECURRING, INSTALLMENT, TODAY, WEEK, MONTH }
 enum class SortType   { NEWEST, OLDEST, HIGHEST, LOWEST, CATEGORY }
+
+// ─── Transaction group label ──────────────────────────────────────────────────
+private enum class TxGroup { TODAY, YESTERDAY, THIS_WEEK, THIS_MONTH, OLDER }
+
+private fun getTxGroup(dateMillis: Long): TxGroup {
+    val now   = Calendar.getInstance()
+    val txCal = Calendar.getInstance().apply { timeInMillis = dateMillis }
+    val diffDays = ((now.timeInMillis - dateMillis) / 86_400_000L).toInt()
+    return when {
+        now.get(Calendar.YEAR) == txCal.get(Calendar.YEAR) &&
+        now.get(Calendar.DAY_OF_YEAR) == txCal.get(Calendar.DAY_OF_YEAR) -> TxGroup.TODAY
+        diffDays == 1 -> TxGroup.YESTERDAY
+        diffDays <= 7 -> TxGroup.THIS_WEEK
+        now.get(Calendar.YEAR) == txCal.get(Calendar.YEAR) &&
+        now.get(Calendar.MONTH) == txCal.get(Calendar.MONTH) -> TxGroup.THIS_MONTH
+        else -> TxGroup.OLDER
+    }
+}
+
+private fun TxGroup.label(): String = when (this) {
+    TxGroup.TODAY      -> "Today"
+    TxGroup.YESTERDAY  -> "Yesterday"
+    TxGroup.THIS_WEEK  -> "This Week"
+    TxGroup.THIS_MONTH -> "This Month"
+    TxGroup.OLDER      -> "Earlier"
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-private fun getCategoryIcon(category: String): ImageVector = when (category.lowercase()) {
-    "food & dining", "food", "food & drinks"    -> Icons.Default.Fastfood
-    "transportation"                             -> Icons.Default.DirectionsCar
-    "shopping"                                   -> Icons.Default.ShoppingBag
-    "entertainment"                              -> Icons.Default.Movie
-    "healthcare", "health"                       -> Icons.Default.HealthAndSafety
-    "utilities", "bills", "housing"              -> Icons.Default.Home
-    "salary"                                     -> Icons.Default.AccountBalance
-    "freelance", "work"                          -> Icons.Default.Work
-    "investment"                                 -> Icons.AutoMirrored.Filled.TrendingUp
-    "business"                                   -> Icons.Default.BusinessCenter
-    "gift"                                       -> Icons.Default.CardGiftcard
-    "education"                                  -> Icons.Default.School
-    "others"                                     -> Icons.Default.Category
-    else                                         -> Icons.Default.AttachMoney
-}
+private fun getCategoryIcon(category: String): ImageVector =
+    CategoryIconResolver.resolveIcon(category)
 
-private fun getCategoryColor(category: String): Color = when (category.lowercase()) {
-    "food & dining", "food", "food & drinks"    -> Color(0xFFF59E0B)
-    "transportation"                             -> Color(0xFF3B82F6)
-    "shopping"                                   -> Color(0xFFEC4899)
-    "entertainment"                              -> Color(0xFF8B5CF6)
-    "healthcare", "health"                       -> Color(0xFF10B981)
-    "utilities", "bills", "housing"              -> Color(0xFFEF4444)
-    "salary", "freelance", "work", "business"   -> Color(0xFF10B981)
-    "investment"                                 -> Color(0xFF06B6D4)
-    "gift"                                       -> Color(0xFFF59E0B)
-    "education"                                  -> Color(0xFF8B5CF6)
-    else                                         -> Color(0xFF6B7280)
-}
+private fun getCategoryColor(category: String): Color =
+    CategoryIconResolver.resolveColor(category)
 
 private fun formatDateClean(dateMillis: Long): String {
     val date      = Date(dateMillis)
@@ -138,7 +144,13 @@ fun TransactionDetailsScreen(
 ) {
     val dbTransactions by viewModel.transactions.collectAsState()
     val isLoading      by viewModel.isLoading.collectAsState()
+    val categories     by viewModel.categories.collectAsState()
     val allTransactions = dbTransactions.ifEmpty { initialTransactions }
+
+    // Build category icon/color lookup: name.lowercase() → Category
+    val categoryMap = remember(categories) {
+        categories.associateBy { it.name.trim().lowercase() }
+    }
 
     var searchTerm          by remember { mutableStateOf("") }
     var filterType          by remember { mutableStateOf(FilterType.ALL) }
@@ -154,14 +166,15 @@ fun TransactionDetailsScreen(
                 (tx.description ?: "").contains(searchTerm, ignoreCase = true)
             val txCal = Calendar.getInstance().apply { timeInMillis = tx.date }
             val matchFilter = when (filterType) {
-                FilterType.INCOME  -> tx.type == TransactionType.INCOME
-                FilterType.EXPENSE -> tx.type == TransactionType.EXPENSE
-                FilterType.TODAY   -> cal.get(Calendar.DAY_OF_YEAR) == txCal.get(Calendar.DAY_OF_YEAR) &&
-                                      cal.get(Calendar.YEAR) == txCal.get(Calendar.YEAR)
-                FilterType.WEEK    -> tx.date >= Calendar.getInstance().apply { add(Calendar.WEEK_OF_YEAR, -1) }.timeInMillis
-                FilterType.MONTH   -> tx.date >= Calendar.getInstance().apply { add(Calendar.MONTH, -1) }.timeInMillis
-                FilterType.YEAR    -> tx.date >= Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
-                FilterType.ALL     -> true
+                FilterType.INCOME      -> tx.type == TransactionType.INCOME
+                FilterType.EXPENSE     -> tx.type == TransactionType.EXPENSE
+                FilterType.RECURRING   -> tx.description?.contains("recurring", ignoreCase = true) == true
+                FilterType.INSTALLMENT -> tx.description?.contains("installment", ignoreCase = true) == true
+                FilterType.TODAY       -> cal.get(Calendar.DAY_OF_YEAR) == txCal.get(Calendar.DAY_OF_YEAR) &&
+                                          cal.get(Calendar.YEAR) == txCal.get(Calendar.YEAR)
+                FilterType.WEEK        -> tx.date >= Calendar.getInstance().apply { add(Calendar.WEEK_OF_YEAR, -1) }.timeInMillis
+                FilterType.MONTH       -> tx.date >= Calendar.getInstance().apply { add(Calendar.MONTH, -1) }.timeInMillis
+                FilterType.ALL         -> true
             }
             matchSearch && matchFilter
         }
@@ -175,14 +188,16 @@ fun TransactionDetailsScreen(
     }
 
     if (isLoading) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        Box(Modifier.fillMaxSize().background(TxBackground), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = PurpleViolet, strokeWidth = 2.dp, modifier = Modifier.size(32.dp))
         }
         return
     }
 
-    TransactionListView(
+    PremiumTransactionListView(
         transactions          = filtered,
+        allCount              = allTransactions.size,
+        categoryMap           = categoryMap,
         searchTerm            = searchTerm,
         onSearchTermChanged   = { searchTerm = it },
         filterType            = filterType,
@@ -196,6 +211,7 @@ fun TransactionDetailsScreen(
     selectedTransaction?.let { tx ->
         TransactionDetailOverlay(
             transaction = tx,
+            categoryMap = categoryMap,
             onDismiss   = { selectedTransaction = null },
             onEdit      = { transactionToEdit = it },
             onDelete    = { id ->
@@ -207,9 +223,11 @@ fun TransactionDetailsScreen(
 
     transactionToEdit?.let { tx ->
         EditTransactionDetail(
-            transaction = tx,
-            onDismiss   = { transactionToEdit = null },
-            onSave      = { updated ->
+            transaction  = tx,
+            categoryMap  = categoryMap,
+            categories   = categories,
+            onDismiss    = { transactionToEdit = null },
+            onSave       = { updated ->
                 onEditTransaction(updated)
                 transactionToEdit = null
             }
@@ -217,11 +235,13 @@ fun TransactionDetailsScreen(
     }
 }
 
-// ─── List View ────────────────────────────────────────────────────────────────
+// ─── Premium List View ────────────────────────────────────────────────────────
 
 @Composable
-fun TransactionListView(
+fun PremiumTransactionListView(
     transactions: List<Transaction>,
+    allCount: Int,
+    categoryMap: Map<String, com.example.insightku.data.model.Category> = emptyMap(),
     searchTerm: String,
     onSearchTermChanged: (String) -> Unit,
     filterType: FilterType,
@@ -233,291 +253,498 @@ fun TransactionListView(
 ) {
     val totalIncome  = remember(transactions) { transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount } }
     val totalExpense = remember(transactions) { transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { abs(it.amount) } }
-    val netAmount    = totalIncome - totalExpense
 
-    Scaffold(
-        topBar = {
-            TxListHeader(onBack = onBack, income = totalIncome, expense = totalExpense, net = netAmount)
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
+    // Group transactions by time period
+    val grouped = remember(transactions) {
+        transactions
+            .sortedByDescending { it.date }
+            .groupBy { getTxGroup(it.date) }
+            .entries
+            .sortedBy { it.key.ordinal }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(TxBackground)
+    ) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 100.dp)
         ) {
+            // Premium header
             item {
-                Spacer(Modifier.height(12.dp))
-                TxFilterControls(
-                    searchTerm          = searchTerm,
-                    onSearchTermChanged = onSearchTermChanged,
-                    filterType          = filterType,
-                    onFilterTypeChanged = onFilterTypeChanged,
-                    sortBy              = sortBy,
-                    onSortByChanged     = onSortByChanged
+                PremiumTxHeader(
+                    onBack   = onBack,
+                    income   = totalIncome,
+                    expense  = totalExpense,
+                    total    = allCount
                 )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text  = "${transactions.size} transaction${if (transactions.size != 1) "s" else ""}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(4.dp))
             }
-            if (transactions.isEmpty()) {
-                item { TxEmptyState() }
-            } else {
-                items(transactions, key = { it.id }) { tx ->
-                    TransactionListItem(transaction = tx, onClick = { onTransactionSelected(tx) })
+
+            // Search + filters
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    PremiumSearchBar(
+                        value    = searchTerm,
+                        onChange = onSearchTermChanged
+                    )
+                    PremiumFilterRow(
+                        filterType          = filterType,
+                        onFilterTypeChanged = onFilterTypeChanged
+                    )
+                    PremiumSortRow(
+                        sortBy          = sortBy,
+                        onSortByChanged = onSortByChanged,
+                        count           = transactions.size
+                    )
                 }
             }
-            item { Spacer(Modifier.height(24.dp)) }
+
+            if (transactions.isEmpty()) {
+                item {
+                    PremiumEmptyState(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 40.dp)
+                    )
+                }
+            } else {
+                grouped.forEach { (group, txList) ->
+                    // Sticky group header
+                    item(key = "header-${group.name}") {
+                        TxGroupHeader(
+                            label    = group.label(),
+                            count    = txList.size,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                        )
+                    }
+                    items(txList, key = { it.id }) { tx ->
+                        PremiumTransactionCard(
+                            transaction = tx,
+                            categoryMap = categoryMap,
+                            onClick     = { onTransactionSelected(tx) },
+                            modifier    = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
-// ─── Gradient Header ──────────────────────────────────────────────────────────
+// ─── Premium Header ───────────────────────────────────────────────────────────
 
 @Composable
-private fun TxListHeader(onBack: () -> Unit, income: Double, expense: Double, net: Double) {
-    val primary = MaterialTheme.colorScheme.primary
+private fun PremiumTxHeader(
+    onBack: () -> Unit,
+    income: Double,
+    expense: Double,
+    total: Int
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(primary, primary.copy(alpha = 0.85f))))
+            .background(Color.White)
             .statusBarsPadding()
-            .padding(horizontal = 18.dp)
+            .padding(horizontal = 20.dp)
             .padding(top = 8.dp, bottom = 20.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+        // Back + title row
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF5F3FF))
+                    .clickable { onBack() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = PurpleViolet,
+                    modifier = Modifier.size(20.dp)
+                )
             }
             Column {
                 Text(
                     "All Transactions",
                     style      = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color      = Color.White
+                    color      = Color(0xFF1A1A2E)
                 )
                 Text(
-                    "Your complete financial history",
+                    "Track every mindful financial movement",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.75f)
+                    color = Color(0xFF9E9E9E)
                 )
             }
         }
-        Spacer(Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TxStatCard("Income",  income,  Icons.AutoMirrored.Filled.TrendingUp,   Color(0xFF4ADE80), Modifier.weight(1f))
-            TxStatCard("Expense", expense, Icons.AutoMirrored.Filled.TrendingDown, Color(0xFFF87171), Modifier.weight(1f))
-            TxStatCard(
-                label       = "Net",
-                amount      = net,
-                icon        = Icons.Default.AccountBalance,
-                amountColor = if (net >= 0) Color(0xFFC6F6D5) else Color(0xFFFED7D7),
-                modifier    = Modifier.weight(1f)
+
+        Spacer(Modifier.height(20.dp))
+
+        // Summary cards row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            TxSummaryCard(
+                label  = "Income",
+                amount = income,
+                color  = TxIncomeGreen,
+                bg     = Color(0xFFECFDF5),
+                icon   = Icons.AutoMirrored.Filled.TrendingUp,
+                modifier = Modifier.weight(1f)
+            )
+            TxSummaryCard(
+                label  = "Expenses",
+                amount = expense,
+                color  = TxExpenseRed,
+                bg     = Color(0xFFFFF1F2),
+                icon   = Icons.AutoMirrored.Filled.TrendingDown,
+                modifier = Modifier.weight(1f)
+            )
+            TxSummaryCard(
+                label  = "Total",
+                amount = null,
+                count  = total,
+                color  = PurpleViolet,
+                bg     = PurpleTint,
+                icon   = Icons.Outlined.Receipt,
+                modifier = Modifier.weight(1f)
             )
         }
     }
 }
 
 @Composable
-private fun TxStatCard(
+private fun TxSummaryCard(
     label: String,
-    amount: Double,
+    amount: Double?,
+    count: Int? = null,
+    color: Color,
+    bg: Color,
     icon: ImageVector,
-    amountColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
         modifier  = modifier,
         shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.18f)),
-        elevation = CardDefaults.cardElevation(0.dp)
+        color     = bg,
+        tonalElevation = 0.dp
     ) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(color.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(14.dp))
-                Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.75f))
+                Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
             }
-            Spacer(Modifier.height(3.dp))
+            if (amount != null) {
+                Text(
+                    formatCurrencyRp(amount),
+                    style      = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color      = color,
+                    maxLines   = 1,
+                    overflow   = TextOverflow.Ellipsis
+                )
+            } else {
+                Text(
+                    "$count",
+                    style      = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color      = color
+                )
+            }
             Text(
-                formatCurrencyRp(amount),
-                style      = MaterialTheme.typography.labelMedium,
-                color      = amountColor,
-                fontWeight = FontWeight.SemiBold,
-                maxLines   = 1
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = color.copy(alpha = 0.7f)
             )
         }
     }
 }
 
-// ─── Filter Controls ──────────────────────────────────────────────────────────
+// ─── Premium Search Bar ───────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TxFilterControls(
-    searchTerm: String,
-    onSearchTermChanged: (String) -> Unit,
-    filterType: FilterType,
-    onFilterTypeChanged: (FilterType) -> Unit,
-    sortBy: SortType,
-    onSortByChanged: (SortType) -> Unit
-) {
-    var sortExpanded by remember { mutableStateOf(false) }
-    val primary = MaterialTheme.colorScheme.primary
-
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedTextField(
-            value         = searchTerm,
-            onValueChange = onSearchTermChanged,
-            placeholder   = { Text("Search transactions…", style = MaterialTheme.typography.bodyMedium) },
-            leadingIcon   = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-            trailingIcon  = {
-                if (searchTerm.isNotEmpty()) {
-                    IconButton(onClick = { onSearchTermChanged("") }) {
-                        Icon(Icons.Default.Close, null, modifier = Modifier.size(18.dp))
-                    }
-                }
-            },
-            singleLine = true,
-            shape      = RoundedCornerShape(16.dp),
-            modifier   = Modifier.fillMaxWidth(),
-            colors     = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor      = primary,
-                unfocusedBorderColor    = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                focusedContainerColor   = MaterialTheme.colorScheme.surface,
-                cursorColor             = primary
+private fun PremiumSearchBar(value: String, onChange: (String) -> Unit) {
+    OutlinedTextField(
+        value         = value,
+        onValueChange = onChange,
+        placeholder   = {
+            Text(
+                "Search transactions…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFFB0AABF)
             )
-        )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-        ) {
-            listOf(
-                FilterType.ALL     to "All",
-                FilterType.INCOME  to "Income",
-                FilterType.EXPENSE to "Expense",
-                FilterType.TODAY   to "Today",
-                FilterType.WEEK    to "This Week",
-                FilterType.MONTH   to "This Month",
-                FilterType.YEAR    to "This Year"
-            ).forEach { (type, label) ->
-                val selected = filterType == type
-                FilterChip(
-                    selected = selected,
-                    onClick  = { onFilterTypeChanged(type) },
-                    label    = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                    leadingIcon = if (selected) {
-                        { Icon(Icons.Default.Check, null, modifier = Modifier.size(14.dp)) }
-                    } else null,
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor   = primary,
-                        selectedLabelColor       = Color.White,
-                        selectedLeadingIconColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(10.dp)
-                )
-            }
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(Icons.AutoMirrored.Filled.Sort, null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-            Text("Sort:", style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-            Box {
-                Surface(
-                    onClick = { sortExpanded = true },
-                    shape   = RoundedCornerShape(10.dp),
-                    color   = primary.copy(alpha = 0.08f),
-                    border  = androidx.compose.foundation.BorderStroke(1.dp, primary.copy(alpha = 0.2f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = when (sortBy) {
-                                SortType.NEWEST   -> "Newest"
-                                SortType.OLDEST   -> "Oldest"
-                                SortType.HIGHEST  -> "Highest"
-                                SortType.LOWEST   -> "Lowest"
-                                SortType.CATEGORY -> "Category"
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = primary, maxLines = 1
-                        )
-                        Icon(
-                            if (sortExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            null, tint = primary, modifier = Modifier.size(16.dp)
-                        )
-                    }
+        },
+        leadingIcon = {
+            Icon(
+                Icons.Default.Search, null,
+                tint     = Color(0xFFB0AABF),
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                IconButton(onClick = { onChange("") }) {
+                    Icon(Icons.Default.Close, null, modifier = Modifier.size(18.dp), tint = Color(0xFFB0AABF))
                 }
-                DropdownMenu(
-                    expanded = sortExpanded,
-                    onDismissRequest = { sortExpanded = false },
-                    modifier = Modifier.widthIn(min = 180.dp)
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
+            }
+        },
+        singleLine = true,
+        shape      = RoundedCornerShape(16.dp),
+        modifier   = Modifier.fillMaxWidth(),
+        colors     = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor      = PurpleViolet.copy(alpha = 0.5f),
+            unfocusedBorderColor    = Color(0xFFECE7F6),
+            unfocusedContainerColor = Color.White,
+            focusedContainerColor   = Color.White,
+            cursorColor             = PurpleViolet
+        )
+    )
+}
+
+// ─── Premium Filter Row ───────────────────────────────────────────────────────
+
+@Composable
+private fun PremiumFilterRow(
+    filterType: FilterType,
+    onFilterTypeChanged: (FilterType) -> Unit
+) {
+    val filters = listOf(
+        FilterType.ALL         to "All",
+        FilterType.EXPENSE     to "Expense",
+        FilterType.INCOME      to "Income",
+        FilterType.RECURRING   to "Recurring",
+        FilterType.INSTALLMENT to "Installments",
+        FilterType.TODAY       to "Today",
+        FilterType.WEEK        to "This Week",
+        FilterType.MONTH       to "This Month"
+    )
+
+    Row(
+        modifier              = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        filters.forEach { (type, label) ->
+            val selected = filterType == type
+            Surface(
+                modifier = Modifier.clickable { onFilterTypeChanged(type) },
+                shape    = RoundedCornerShape(50.dp),
+                color    = if (selected) PurpleViolet else Color.White,
+                border   = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (selected) PurpleViolet else Color(0xFFECE7F6)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    listOf(
-                        SortType.NEWEST   to "Newest First",
-                        SortType.OLDEST   to "Oldest First",
-                        SortType.HIGHEST  to "Highest Amount",
-                        SortType.LOWEST   to "Lowest Amount",
-                        SortType.CATEGORY to "By Category"
-                    ).forEach { (type, label) ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(label, style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (sortBy == type) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (sortBy == type) primary else MaterialTheme.colorScheme.onSurface)
-                            },
-                            onClick = { onSortByChanged(type); sortExpanded = false },
-                            leadingIcon = {
-                                if (sortBy == type) Icon(Icons.Default.Check, null,
-                                    tint = primary, modifier = Modifier.size(16.dp))
-                            }
+                    if (selected) {
+                        Icon(
+                            Icons.Default.Check, null,
+                            modifier = Modifier.size(12.dp),
+                            tint     = Color.White
                         )
                     }
+                    Text(
+                        label,
+                        style      = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        color      = if (selected) Color.White else Color(0xFF6B6B8A)
+                    )
                 }
             }
         }
     }
 }
 
-// ─── Transaction List Item ────────────────────────────────────────────────────
+// ─── Sort Row ─────────────────────────────────────────────────────────────────
 
 @Composable
-fun TransactionListItem(transaction: Transaction, onClick: () -> Unit) {
-    val catColor    = getCategoryColor(transaction.category)
-    val amountColor = if (transaction.type == TransactionType.INCOME) TxIncomeGreen else TxExpenseRed
-    val prefix      = if (transaction.type == TransactionType.INCOME) "+ " else "- "
+private fun PremiumSortRow(
+    sortBy: SortType,
+    onSortByChanged: (SortType) -> Unit,
+    count: Int
+) {
+    var expanded by remember { mutableStateOf(false) }
 
-    Card(
-        modifier  = Modifier.fillMaxWidth(),
-        shape     = RoundedCornerShape(20.dp),
-        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick   = onClick
+    Row(
+        modifier              = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment     = Alignment.CenterVertically
+    ) {
+        Text(
+            "$count transaction${if (count != 1) "s" else ""}",
+            style = MaterialTheme.typography.labelMedium,
+            color = Color(0xFF9E9E9E)
+        )
+        Box {
+            Surface(
+                onClick = { expanded = true },
+                shape   = RoundedCornerShape(10.dp),
+                color   = PurpleViolet.copy(alpha = 0.06f),
+                border  = androidx.compose.foundation.BorderStroke(1.dp, PurpleViolet.copy(alpha = 0.15f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Sort, null, tint = PurpleViolet, modifier = Modifier.size(14.dp))
+                    Text(
+                        when (sortBy) {
+                            SortType.NEWEST   -> "Newest"
+                            SortType.OLDEST   -> "Oldest"
+                            SortType.HIGHEST  -> "Highest"
+                            SortType.LOWEST   -> "Lowest"
+                            SortType.CATEGORY -> "Category"
+                        },
+                        style      = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = PurpleViolet
+                    )
+                    Icon(
+                        if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        null, tint = PurpleViolet, modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+            DropdownMenu(
+                expanded         = expanded,
+                onDismissRequest = { expanded = false },
+                modifier         = Modifier.background(Color.White, RoundedCornerShape(14.dp))
+            ) {
+                listOf(
+                    SortType.NEWEST   to "Newest First",
+                    SortType.OLDEST   to "Oldest First",
+                    SortType.HIGHEST  to "Highest Amount",
+                    SortType.LOWEST   to "Lowest Amount",
+                    SortType.CATEGORY to "By Category"
+                ).forEach { (type, label) ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                label,
+                                style      = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (sortBy == type) FontWeight.SemiBold else FontWeight.Normal,
+                                color      = if (sortBy == type) PurpleViolet else Color(0xFF1A1A2E)
+                            )
+                        },
+                        onClick      = { onSortByChanged(type); expanded = false },
+                        leadingIcon  = {
+                            if (sortBy == type) Icon(Icons.Default.Check, null, tint = PurpleViolet, modifier = Modifier.size(16.dp))
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─── Group Header ─────────────────────────────────────────────────────────────
+
+@Composable
+fun TxGroupHeader(label: String, count: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier              = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment     = Alignment.CenterVertically
+    ) {
+        Text(
+            label,
+            style      = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color      = Color(0xFF1A1A2E)
+        )
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = PurpleTint
+        ) {
+            Text(
+                "$count",
+                modifier   = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                style      = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color      = PurpleViolet
+            )
+        }
+    }
+}
+
+// ─── Premium Transaction Card ─────────────────────────────────────────────────
+
+@Composable
+fun PremiumTransactionCard(
+    transaction: Transaction,
+    onClick: () -> Unit,
+    categoryMap: Map<String, com.example.insightku.data.model.Category> = emptyMap(),
+    modifier: Modifier = Modifier
+) {
+    // Resolve icon: try category.icon field first (most accurate), fall back to name fuzzy match
+    val matchedCat  = categoryMap[transaction.category.trim().lowercase()]
+    val iconKey     = matchedCat?.icon?.ifBlank { null } ?: transaction.category
+    val resolvedByIcon = CategoryIconResolver.resolve(iconKey)
+    val resolvedByName = CategoryIconResolver.resolve(transaction.category)
+    val resolved    = if (resolvedByIcon.name != "Others") resolvedByIcon else resolvedByName
+    val catColor    = if (!matchedCat?.color.isNullOrBlank()) {
+        runCatching { Color(android.graphics.Color.parseColor(matchedCat!!.color)) }.getOrDefault(resolved.color)
+    } else resolved.color
+    val catIcon     = resolved.icon
+    val isIncome    = transaction.type == TransactionType.INCOME
+    val amountColor = if (isIncome) TxIncomeGreen else TxExpenseRed
+    val prefix      = if (isIncome) "+" else "-"
+
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue   = if (isPressed) 0.98f else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
+        label         = "card_scale"
+    )
+
+    Surface(
+        modifier      = modifier
+            .fillMaxWidth()
+            .graphicsLayer { scaleX = scale; scaleY = scale },
+        shape         = RoundedCornerShape(20.dp),
+        color         = Color.White,
+        tonalElevation = 0.dp,
+        shadowElevation = 2.dp,
+        border        = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECE7F6)),
+        onClick       = onClick
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Category icon
             Box(
                 modifier = Modifier
                     .size(46.dp)
@@ -525,28 +752,30 @@ fun TransactionListItem(transaction: Transaction, onClick: () -> Unit) {
                     .background(catColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    getCategoryIcon(transaction.category),
-                    contentDescription = transaction.category,
-                    tint     = catColor,
-                    modifier = Modifier.size(22.dp)
-                )
+                Icon(catIcon, null, tint = catColor, modifier = Modifier.size(22.dp))
             }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
+
+            // Title + category + time
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
                     transaction.title,
-                    style      = MaterialTheme.typography.bodyLarge,
+                    style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
+                    color      = Color(0xFF1A1A2E),
                     maxLines   = 1,
                     overflow   = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(3.dp))
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    verticalAlignment      = Alignment.CenterVertically,
+                    horizontalArrangement  = Arrangement.spacedBy(6.dp)
                 ) {
-                    Surface(shape = RoundedCornerShape(6.dp), color = catColor.copy(alpha = 0.1f)) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = catColor.copy(alpha = 0.10f)
+                    ) {
                         Text(
                             transaction.category,
                             style    = MaterialTheme.typography.labelSmall,
@@ -555,432 +784,225 @@ fun TransactionListItem(transaction: Transaction, onClick: () -> Unit) {
                             maxLines = 1
                         )
                     }
-                    Text("·", style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "·",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFB0AABF)
+                    )
                     Text(
                         TimeUtils.toShortRelativeTime(transaction.date),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFFB0AABF)
+                    )
+                }
+                if (!transaction.paymentMethod.isNullOrBlank()) {
+                    Text(
+                        transaction.paymentMethod,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFB0AABF)
                     )
                 }
             }
-            Spacer(Modifier.width(8.dp))
-            Column(horizontalAlignment = Alignment.End) {
+
+            // Amount + type indicator
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
-                    text       = prefix + formatCurrencyRp(transaction.amount),
-                    color      = amountColor,
+                    "$prefix ${formatCurrencyRp(transaction.amount)}",
                     style      = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color      = amountColor
                 )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    formatDateClean(transaction.date),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = amountColor.copy(alpha = 0.10f)
+                ) {
+                    Text(
+                        if (isIncome) "IN" else "OUT",
+                        style      = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color      = amountColor,
+                        modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
         }
     }
 }
 
-// ─── Empty State ──────────────────────────────────────────────────────────────
+// ─── Premium Empty State ──────────────────────────────────────────────────────
 
 @Composable
-private fun TxEmptyState() {
+private fun PremiumEmptyState(modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 48.dp, horizontal = 32.dp),
+        modifier            = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(80.dp)
+                .size(88.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
+                .background(PurpleTint),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.SearchOff, null,
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                modifier = Modifier.size(40.dp))
+            Icon(
+                Icons.Outlined.ReceiptLong, null,
+                tint     = PurpleViolet.copy(alpha = 0.5f),
+                modifier = Modifier.size(40.dp)
+            )
         }
-        Text("No Transactions Found", style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold)
-        Text("Try adjusting your search or filter.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center)
+        Text(
+            "No transactions found",
+            style      = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color      = Color(0xFF1A1A2E),
+            textAlign  = TextAlign.Center
+        )
+        Text(
+            "Try adjusting your search or filter\nto find what you're looking for.",
+            style     = MaterialTheme.typography.bodySmall,
+            color     = Color(0xFF9E9E9E),
+            textAlign = TextAlign.Center,
+            lineHeight = 20.sp
+        )
     }
+}
+
+// Keep old TransactionListItem for backward compat (used in previews)
+@Composable
+fun TransactionListItem(transaction: Transaction, onClick: () -> Unit) {
+    PremiumTransactionCard(transaction = transaction, onClick = onClick)
 }
 
 // ─── Premium Transaction Detail Overlay ──────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionDetailOverlay(
     transaction: Transaction,
     onDismiss: () -> Unit,
     onEdit: (Transaction) -> Unit,
-    onDelete: (String) -> Unit
+    onDelete: (String) -> Unit,
+    onDuplicate: ((Transaction) -> Unit)? = null,
+    categoryMap: Map<String, com.example.insightku.data.model.Category> = emptyMap()
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var dragOffsetY      by remember { mutableFloatStateOf(0f) }
-
-    BackHandler { onDismiss() }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val isIncome    = transaction.type == TransactionType.INCOME
-    val catColor    = getCategoryColor(transaction.category)
+    // Resolve icon: try category.icon field first, fall back to fuzzy name match
+    val matchedCat  = categoryMap[transaction.category.trim().lowercase()]
+    val iconKey     = matchedCat?.icon?.ifBlank { null } ?: transaction.category
+    val resolvedByIcon = CategoryIconResolver.resolve(iconKey)
+    val resolvedByName = CategoryIconResolver.resolve(transaction.category)
+    val resolved    = if (resolvedByIcon.name != "Others") resolvedByIcon else resolvedByName
+    val catColor    = if (!matchedCat?.color.isNullOrBlank()) {
+        runCatching { Color(android.graphics.Color.parseColor(matchedCat!!.color)) }.getOrDefault(resolved.color)
+    } else resolved.color
+    val catIcon     = resolved.icon
     val amountColor = if (isIncome) TxIncomeGreen else TxExpenseRed
     val prefix      = if (isIncome) "+" else "-"
 
-    val headerGradient = if (isIncome)
-        Brush.linearGradient(listOf(IncomeDeep, IncomeMid, TxIncomeGreen))
-    else
-        Brush.linearGradient(listOf(PurpleDark, PurpleMid, PurpleViolet))
-
-    // Animate in: scrim fades, card slides up from below
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { visible = true }
-
-    val scrimAlpha by animateFloatAsState(
-        targetValue   = if (visible) 0.6f else 0f,
-        animationSpec = tween(280),
-        label         = "scrim"
-    )
-
-    val cardOffsetY by animateFloatAsState(
-        targetValue   = if (visible) 0f else 300f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
-        label         = "card_y"
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = scrimAlpha))
-            .pointerInput(Unit) { detectTapGestures { onDismiss() } },
-        contentAlignment = Alignment.BottomCenter
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState       = sheetState,
+        containerColor   = Color.White,
+        dragHandle = {
+            Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(Color(0xFFE0D9F5)))
+            }
+        }
     ) {
-        // Floating card — not full width, with horizontal margin
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 16.dp)
-                .graphicsLayer {
-                    translationY = cardOffsetY + dragOffsetY.coerceAtLeast(0f)
-                }
-                .shadow(
-                    elevation    = 32.dp,
-                    shape        = RoundedCornerShape(32.dp),
-                    ambientColor = PurpleViolet.copy(alpha = 0.25f),
-                    spotColor    = PurpleViolet.copy(alpha = 0.35f)
-                )
-                .clip(RoundedCornerShape(32.dp))
-                .background(GlassSurface)
-                .pointerInput(Unit) {
-                    detectTapGestures { /* consume — don't dismiss */ }
-                }
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures(
-                        onDragEnd = {
-                            if (dragOffsetY > 120f) onDismiss()
-                            else dragOffsetY = 0f
-                        },
-                        onDragCancel = { dragOffsetY = 0f },
-                        onVerticalDrag = { _, delta ->
-                            dragOffsetY = (dragOffsetY + delta).coerceAtLeast(0f)
-                        }
-                    )
-                }
+                .navigationBarsPadding()
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-
-                // ── Drag handle ───────────────────────────────────────────
+            // ── Hero section ──────────────────────────────────────────────
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 8.dp, bottom = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp, bottom = 4.dp),
+                    modifier = Modifier.size(68.dp).clip(RoundedCornerShape(20.dp))
+                        .background(catColor.copy(alpha = 0.12f))
+                        .border(1.dp, catColor.copy(alpha = 0.2f), RoundedCornerShape(20.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .width(36.dp)
-                            .height(4.dp)
-                            .clip(CircleShape)
-                            .background(PurpleLavender.copy(alpha = 0.4f))
+                    Icon(catIcon, null, tint = catColor, modifier = Modifier.size(32.dp))
+                }
+                Text(transaction.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A2E), textAlign = TextAlign.Center)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Surface(shape = RoundedCornerShape(50.dp), color = catColor.copy(alpha = 0.10f)) {
+                        Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Box(Modifier.size(5.dp).clip(CircleShape).background(catColor))
+                            Text(transaction.category, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = catColor)
+                        }
+                    }
+                    Surface(shape = RoundedCornerShape(8.dp), color = amountColor.copy(alpha = 0.10f)) {
+                        Text(if (isIncome) "INCOME" else "EXPENSE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = amountColor, letterSpacing = 1.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                    }
+                }
+                Text("$prefix ${formatCurrencyRp(transaction.amount)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = amountColor, letterSpacing = (-0.5).sp)
+            }
+
+            Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFF0EBF8)))
+
+            // ── Info grid ─────────────────────────────────────────────────
+            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PremiumInfoTile(Icons.Default.CalendarMonth, "Date", formatFullDate(transaction.date), PurpleViolet, Modifier.weight(1f))
+                    PremiumInfoTile(Icons.Default.AccessTime, "Time", transaction.time, PurpleViolet, Modifier.weight(1f))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PremiumInfoTile(Icons.Default.CreditCard, "Payment", transaction.paymentMethod ?: "Not specified", Color(0xFF3B82F6), Modifier.weight(1f))
+                    PremiumInfoTile(
+                        if (transaction.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
+                        "Status", if (transaction.isSynced) "Synced" else "Pending",
+                        if (transaction.isSynced) TxIncomeGreen else Color(0xFFF59E0B), Modifier.weight(1f)
                     )
                 }
+                if (!transaction.description.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.Notes, "Notes", transaction.description, Color(0xFF8B5CF6))
+                if (!transaction.location.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.LocationOn, "Location", transaction.location, Color(0xFFEC4899))
+            }
 
-                // ── Gradient hero header ──────────────────────────────────
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 24.dp, bottomEnd = 24.dp))
-                        .background(headerGradient)
-                        .padding(horizontal = 20.dp)
-                        .padding(top = 8.dp, bottom = 24.dp)
-                ) {
-                    // Close button top-right
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.18f))
-                            .pointerInput(Unit) { detectTapGestures { onDismiss() } },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Close, null,
-                            tint = Color.White, modifier = Modifier.size(16.dp))
-                    }
-
-                    Column(
-                        modifier            = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Spacer(Modifier.height(4.dp))
-
-                        // Circular category icon
-                        Box(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .shadow(12.dp, CircleShape, ambientColor = catColor.copy(alpha = 0.4f))
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        listOf(catColor.copy(alpha = 0.9f), catColor.copy(alpha = 0.6f))
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                getCategoryIcon(transaction.category),
-                                contentDescription = null,
-                                tint     = Color.White,
-                                modifier = Modifier.size(34.dp)
-                            )
-                        }
-
-                        Spacer(Modifier.height(14.dp))
-
-                        // Transaction title
-                        Text(
-                            text       = transaction.title,
-                            style      = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color      = Color.White,
-                            textAlign  = TextAlign.Center,
-                            maxLines   = 2,
-                            overflow   = TextOverflow.Ellipsis
-                        )
-
-                        Spacer(Modifier.height(6.dp))
-
-                        // Category pill
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color.White.copy(alpha = 0.18f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(catColor)
-                                )
-                                Text(
-                                    transaction.category,
-                                    style      = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color      = Color.White
-                                )
+            // ── Action buttons ────────────────────────────────────────────
+            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(Modifier.weight(1f).height(50.dp).clickable { onEdit(transaction) }, RoundedCornerShape(16.dp), PurpleTint, border = androidx.compose.foundation.BorderStroke(1.dp, PurpleViolet.copy(alpha = 0.3f))) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Default.Edit, null, tint = PurpleViolet, modifier = Modifier.size(16.dp))
+                                Text("Edit", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = PurpleViolet)
                             }
                         }
-
-                        Spacer(Modifier.height(20.dp))
-
-                        // Amount hero
-                        Text(
-                            text       = "$prefix ${formatCurrencyRp(transaction.amount)}",
-                            style      = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color      = Color.White,
-                            letterSpacing = (-0.5).sp
-                        )
-
-                        Spacer(Modifier.height(4.dp))
-
-                        // Type badge
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = (if (isIncome) TxIncomeGreen else TxExpenseRed).copy(alpha = 0.25f)
-                        ) {
-                            Text(
-                                text     = if (isIncome) "INCOME" else "EXPENSE",
-                                style    = MaterialTheme.typography.labelSmall,
-                                color    = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.5.sp,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
-                            )
+                    }
+                    Surface(Modifier.weight(1f).height(50.dp).clickable { showDeleteDialog = true }, RoundedCornerShape(16.dp), Color(0xFFFFF1F2)) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Default.Delete, null, tint = TxExpenseRed, modifier = Modifier.size(16.dp))
+                                Text("Delete", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxExpenseRed)
+                            }
                         }
                     }
                 }
-
-                // ── Detail info cards ─────────────────────────────────────
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 340.dp)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 16.dp, bottom = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Date & Time row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                if (onDuplicate != null) {
+                    Surface(
+                        Modifier.fillMaxWidth().height(46.dp).clickable {
+                            onDuplicate(transaction.copy(id = java.util.UUID.randomUUID().toString(), date = System.currentTimeMillis()))
+                            onDismiss()
+                        }, RoundedCornerShape(16.dp), Color(0xFFF5F3FF),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECE7F6))
                     ) {
-                        DetailInfoCard(
-                            icon    = Icons.Default.CalendarMonth,
-                            label   = "Date",
-                            value   = formatFullDate(transaction.date),
-                            color   = PurpleViolet,
-                            modifier = Modifier.weight(1f)
-                        )
-                        DetailInfoCard(
-                            icon    = Icons.Default.AccessTime,
-                            label   = "Time",
-                            value   = transaction.time,
-                            color   = PurpleViolet,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    // Payment method & sync status row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        DetailInfoCard(
-                            icon    = Icons.Default.CreditCard,
-                            label   = "Payment",
-                            value   = transaction.paymentMethod ?: "Not specified",
-                            color   = Color(0xFF3B82F6),
-                            modifier = Modifier.weight(1f)
-                        )
-                        DetailInfoCard(
-                            icon    = if (transaction.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
-                            label   = "Status",
-                            value   = if (transaction.isSynced) "Synced" else "Pending",
-                            color   = if (transaction.isSynced) TxIncomeGreen else Color(0xFFF59E0B),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    // Location (if present)
-                    if (!transaction.location.isNullOrBlank()) {
-                        DetailInfoCardWide(
-                            icon  = Icons.Default.LocationOn,
-                            label = "Location",
-                            value = transaction.location,
-                            color = Color(0xFFEC4899)
-                        )
-                    }
-
-                    // Notes (if present)
-                    if (!transaction.description.isNullOrBlank()) {
-                        DetailInfoCardWide(
-                            icon  = Icons.Default.Notes,
-                            label = "Notes",
-                            value = transaction.description,
-                            color = Color(0xFF8B5CF6)
-                        )
-                    }
-                }
-
-                // ── Soft divider ──────────────────────────────────────────
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .height(1.dp)
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(Color.Transparent, GlassBorder, Color.Transparent)
-                            )
-                        )
-                )
-
-                // ── Action buttons ────────────────────────────────────────
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Edit button — outlined purple
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .border(
-                                width = 1.5.dp,
-                                brush = Brush.horizontalGradient(listOf(PurpleMid, PurpleViolet)),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .background(PurpleViolet.copy(alpha = 0.06f))
-                            .pointerInput(Unit) { detectTapGestures { onEdit(transaction) } },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(Icons.Default.Edit, null,
-                                tint = PurpleViolet, modifier = Modifier.size(16.dp))
-                            Text("Edit",
-                                style      = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color      = PurpleViolet)
-                        }
-                    }
-
-                    // Delete button — gradient red
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp)
-                            .shadow(6.dp, RoundedCornerShape(16.dp),
-                                ambientColor = TxExpenseRed.copy(alpha = 0.3f),
-                                spotColor    = TxExpenseRed.copy(alpha = 0.3f))
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFFE53E3E), TxExpenseRed)
-                                )
-                            )
-                            .pointerInput(Unit) { detectTapGestures { showDeleteDialog = true } },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(Icons.Default.Delete, null,
-                                tint = Color.White, modifier = Modifier.size(16.dp))
-                            Text("Delete",
-                                style      = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color      = Color.White)
+                        Box(contentAlignment = Alignment.Center) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Default.ContentCopy, null, tint = Color(0xFF7C4DFF), modifier = Modifier.size(15.dp))
+                                Text("Duplicate Transaction", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF7C4DFF))
+                            }
                         }
                     }
                 }
@@ -988,109 +1010,73 @@ fun TransactionDetailOverlay(
         }
     }
 
-    // ── Delete confirmation dialog ─────────────────────────────────────────────
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            icon  = {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(TxExpenseRed.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.DeleteForever, null,
-                        tint = TxExpenseRed, modifier = Modifier.size(26.dp))
+            icon = {
+                Box(Modifier.size(48.dp).clip(CircleShape).background(TxExpenseRed.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.DeleteForever, null, tint = TxExpenseRed, modifier = Modifier.size(26.dp))
                 }
             },
-            title = {
-                Text("Delete Transaction?",
-                    fontWeight = FontWeight.ExtraBold,
-                    style = MaterialTheme.typography.titleLarge)
-            },
-            text  = {
-                Text(
-                    "\"${transaction.title}\" will be permanently deleted. This cannot be undone.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
+            title = { Text("Delete Transaction?", fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleLarge) },
+            text  = { Text("\"${transaction.title}\" will be permanently deleted.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
             confirmButton = {
                 Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Brush.horizontalGradient(listOf(Color(0xFFE53E3E), TxExpenseRed)))
-                        .pointerInput(Unit) {
-                            detectTapGestures { showDeleteDialog = false; onDelete(transaction.id) }
-                        }
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(TxExpenseRed)
+                        .pointerInput(Unit) { detectTapGestures { showDeleteDialog = false; onDelete(transaction.id) } }
                         .padding(horizontal = 20.dp, vertical = 10.dp)
-                ) {
-                    Text("Delete", fontWeight = FontWeight.Bold, color = Color.White)
-                }
+                ) { Text("Delete", fontWeight = FontWeight.Bold, color = Color.White) }
             },
             dismissButton = {
                 Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
                         .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
                         .pointerInput(Unit) { detectTapGestures { showDeleteDialog = false } }
                         .padding(horizontal = 20.dp, vertical = 10.dp)
-                ) {
-                    Text("Cancel",
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                ) { Text("Cancel", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             },
-            shape = RoundedCornerShape(24.dp),
-            containerColor = GlassSurface
+            shape = RoundedCornerShape(24.dp), containerColor = GlassSurface
         )
     }
 }
 
-// ─── Detail Info Cards ────────────────────────────────────────────────────────
+// ─── Premium Info Tiles ───────────────────────────────────────────────────────
 
 @Composable
-private fun DetailInfoCard(
+private fun PremiumInfoTile(
     icon: ImageVector,
     label: String,
     value: String,
     color: Color,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(color.copy(alpha = 0.07f))
-            .border(1.dp, color.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-            .padding(horizontal = 12.dp, vertical = 12.dp)
+    Surface(
+        modifier  = modifier,
+        shape     = RoundedCornerShape(16.dp),
+        color     = color.copy(alpha = 0.06f),
+        border    = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.12f))
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(color.copy(alpha = 0.14f)),
+                    modifier = Modifier.size(24.dp).clip(RoundedCornerShape(7.dp)).background(color.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
+                    Icon(icon, null, tint = color, modifier = Modifier.size(13.dp))
                 }
-                Text(
-                    label,
-                    style     = MaterialTheme.typography.labelSmall,
-                    color     = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    maxLines  = 1
-                )
+                Text(label, style = MaterialTheme.typography.labelSmall, color = color.copy(alpha = 0.7f))
             }
             Text(
                 value,
                 style      = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
-                color      = MaterialTheme.colorScheme.onSurface,
+                color      = Color(0xFF1A1A2E),
                 maxLines   = 2,
                 overflow   = TextOverflow.Ellipsis
             )
@@ -1099,45 +1085,32 @@ private fun DetailInfoCard(
 }
 
 @Composable
-private fun DetailInfoCardWide(
+private fun PremiumInfoTileWide(
     icon: ImageVector,
     label: String,
     value: String,
     color: Color
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(color.copy(alpha = 0.07f))
-            .border(1.dp, color.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(16.dp),
+        color    = color.copy(alpha = 0.06f),
+        border   = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.12f))
     ) {
         Row(
+            modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(color.copy(alpha = 0.14f)),
+                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(10.dp)).background(color.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
             }
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(
-                    label,
-                    style  = MaterialTheme.typography.labelSmall,
-                    color  = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
-                Text(
-                    value,
-                    style      = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color      = MaterialTheme.colorScheme.onSurface
-                )
+                Text(label, style = MaterialTheme.typography.labelSmall, color = color.copy(alpha = 0.7f))
+                Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF1A1A2E))
             }
         }
     }

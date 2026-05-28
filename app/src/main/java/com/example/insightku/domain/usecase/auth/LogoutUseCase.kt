@@ -41,6 +41,8 @@ class LogoutUseCase @Inject constructor(
             // Langkah 3: Bersihkan semua cache Room
             transactionRepository.deleteAllLocalTransactions()
             transactionRepository.deleteAllLocalCategories()
+            transactionRepository.deleteAllLocalRecurringBudgets()
+            transactionRepository.deleteAllLocalInstallments()
 
             Result.success(Unit)
         } catch (e: Exception) {

@@ -122,6 +122,8 @@ class TransactionRepository @Inject constructor(
     fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategories()
 
     suspend fun hasAnyCategories(): Boolean = categoryDao.countActiveCategories() > 0
+    suspend fun hasAnyRecurringBudgets(): Boolean = recurringBudgetDao.countActiveRecurringBudgets() > 0
+    suspend fun hasAnyInstallments(): Boolean = installmentDao.countActiveInstallments() > 0
 
     fun getExpenseCategories(): Flow<List<Category>> =
         categoryDao.getUserCategoriesByType(CategoryType.EXPENSE.name)
@@ -288,7 +290,41 @@ class TransactionRepository @Inject constructor(
         val snapshot = firestore.collection("users").document(userId)
             .collection("recurring_budgets").get().await()
         val budgets = snapshot.toObjects(RecurringBudget::class.java)
-        recurringBudgetDao.insertRecurringBudgets(budgets)
+
+        android.util.Log.d("InsightKu_Recurring", "=== refreshRecurringBudgets ===")
+        android.util.Log.d("InsightKu_Recurring", "Firestore docs count: ${snapshot.documents.size}")
+        snapshot.documents.forEach { doc ->
+            android.util.Log.d("InsightKu_Recurring", "  doc.id=${doc.id} data=${doc.data}")
+        }
+        android.util.Log.d("InsightKu_Recurring", "Parsed budgets: ${budgets.size}")
+        budgets.forEach { b ->
+            android.util.Log.d("InsightKu_Recurring", "  budget: id=${b.id} name='${b.name}' amount=${b.amount} active=${b.isActive}")
+        }
+
+        // Filter out invalid/test entries: must have a real name and non-zero id
+        val validBudgets = budgets.filter { it.name.isNotBlank() && it.id != 0 }
+        android.util.Log.d("InsightKu_Recurring", "Valid budgets after filter: ${validBudgets.size}")
+
+        // Delete invalid documents from Firestore so they don't come back
+        val invalidDocs = snapshot.documents.filter { doc ->
+            val budget = doc.toObject(RecurringBudget::class.java)
+            budget == null || budget.name.isBlank() || budget.id == 0
+        }
+        android.util.Log.d("InsightKu_Recurring", "Invalid Firestore docs to delete: ${invalidDocs.size}")
+        invalidDocs.forEach { doc ->
+            android.util.Log.d("InsightKu_Recurring", "  Deleting Firestore doc: ${doc.id}")
+            try {
+                firestore.collection("users").document(userId)
+                    .collection("recurring_budgets").document(doc.id).delete().await()
+                android.util.Log.d("InsightKu_Recurring", "  Deleted: ${doc.id}")
+            } catch (e: Exception) {
+                android.util.Log.e("InsightKu_Recurring", "  Failed to delete ${doc.id}: ${e.message}")
+            }
+        }
+
+        if (validBudgets.isNotEmpty()) {
+            recurringBudgetDao.insertRecurringBudgets(validBudgets)
+        }
     }
 
     suspend fun insertRecurringBudget(budget: RecurringBudget, userId: String) {
@@ -307,6 +343,16 @@ class TransactionRepository @Inject constructor(
         recurringBudgetDao.deleteRecurringBudget(budgetId)
         firestore.collection("users").document(userId)
             .collection("recurring_budgets").document(budgetId).delete().await()
+    }
+
+    // Remove invalid recurring budgets from Room (e.g. id=0 test entries, blank names)
+    suspend fun cleanupInvalidRecurringBudgets() {
+        val countBefore = recurringBudgetDao.countActiveRecurringBudgets()
+        android.util.Log.d("InsightKu_Recurring", "=== cleanupInvalidRecurringBudgets ===")
+        android.util.Log.d("InsightKu_Recurring", "Room active recurring count BEFORE cleanup: $countBefore")
+        recurringBudgetDao.deleteInvalidRecurringBudgets()
+        val countAfter = recurringBudgetDao.countActiveRecurringBudgets()
+        android.util.Log.d("InsightKu_Recurring", "Room active recurring count AFTER cleanup: $countAfter")
     }
 
     // ─── Installment ───────────────────────────────────────────────────────────
@@ -352,5 +398,9 @@ class TransactionRepository @Inject constructor(
 
     suspend fun deleteAllLocalInstallments() {
         installmentDao.deleteAllInstallments()
+    }
+
+    suspend fun deleteAllLocalRecurringBudgets() {
+        recurringBudgetDao.deleteAllRecurringBudgets()
     }
 }

@@ -2,6 +2,7 @@ package com.example.insightku.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.data.model.Category
 import com.example.insightku.data.model.Transaction
 import com.example.insightku.data.repository.AuthRepository
 import com.example.insightku.data.repository.TransactionRepository
@@ -25,18 +26,20 @@ class TransactionDetailsViewModel @Inject constructor(
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
 
+    private val _categories = MutableStateFlow<List<Category>>(emptyList())
+    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // BUG5 FIX: Track Job agar tidak ada multiple collectors bersamaan
     private var loadJob: Job? = null
 
     init {
         loadTransactions()
+        loadCategories()
     }
 
     private fun loadTransactions() {
-        // Cancel job lama sebelum launch baru
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _isLoading.value = true
@@ -46,7 +49,6 @@ class TransactionDetailsViewModel @Inject constructor(
                     _isLoading.value = false
                 }
             } catch (e: CancellationException) {
-                // ISSUE 1 FIX: Rethrow — terjadi normal saat navigasi back dari layar ini
                 throw e
             } catch (e: Exception) {
                 _isLoading.value = false
@@ -55,8 +57,20 @@ class TransactionDetailsViewModel @Inject constructor(
         }
     }
 
-    // BUG8 FIX: Expose fungsi update dan delete agar TransactionDetailsScreen bisa
-    // tersambung ke database (sebelumnya hanya lambda kosong dari MainScreen)
+    private fun loadCategories() {
+        viewModelScope.launch {
+            try {
+                transactionRepository.getAllCategories().collect { cats ->
+                    _categories.value = cats
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // silent — categories are optional for icon resolution
+            }
+        }
+    }
+
     fun updateTransaction(transaction: Transaction) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch

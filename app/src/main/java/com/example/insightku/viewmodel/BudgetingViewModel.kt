@@ -53,7 +53,8 @@ class BudgetingViewModel @Inject constructor(
         val budgetCategories: List<BudgetCategory>,
         val incomeCategories: List<BudgetCategory>,
         val recurringBudgets: List<RecurringBudget>,
-        val installments: List<Installment>
+        val installments: List<Installment>,
+        val rawCategories: List<com.example.insightku.data.model.Category>
     )
 
     private val _uiState = MutableStateFlow(BudgetingUiState())
@@ -204,7 +205,7 @@ class BudgetingViewModel @Inject constructor(
                         )
                     }
 
-                    BudgetSnapshot(budgetCategories, incomeCategoryRows, recurringBudgets, installments)
+                    BudgetSnapshot(budgetCategories, incomeCategoryRows, recurringBudgets, installments, categories)
                 }.collect { snapshot ->
                     cachedRecurringBudgets = snapshot.recurringBudgets
 
@@ -227,7 +228,8 @@ class BudgetingViewModel @Inject constructor(
                             budgetCategories = snapshot.budgetCategories,
                             incomeCategories = snapshot.incomeCategories,
                             recurringBudgets = snapshot.recurringBudgets,
-                            installments     = snapshot.installments
+                            installments     = snapshot.installments,
+                            rawCategories    = snapshot.rawCategories
                         )
                     }
                 }
@@ -244,22 +246,26 @@ class BudgetingViewModel @Inject constructor(
     private fun refreshData() {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
+            android.util.Log.d("InsightKu_Recurring", "=== BudgetingViewModel.refreshData() userId=$userId ===")
             try {
-                // Only refresh categories from Firestore on first load (when Room is empty).
-                // After that, Room is the source of truth — refreshing would restore deleted categories.
                 val hasLocalCategories = transactionRepository.hasAnyCategories()
+                android.util.Log.d("InsightKu_Recurring", "hasLocalCategories=$hasLocalCategories")
                 if (!hasLocalCategories) {
                     transactionRepository.refreshCategories(userId)
                 }
                 transactionRepository.refreshTransactions(userId)
+
                 transactionRepository.refreshRecurringBudgets(userId)
                 transactionRepository.refreshInstallments(userId)
+
                 transactionRepository.cleanupUncategorizedTransactions(userId)
                 transactionRepository.cleanupVirtualCategoryDocuments(userId)
+                transactionRepository.cleanupInvalidRecurringBudgets()
+                android.util.Log.d("InsightKu_Recurring", "=== refreshData() complete ===")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // Silent fail — Room cache still usable
+                android.util.Log.e("InsightKu_Recurring", "refreshData error: ${e.message}", e)
             } finally {
                 isRefreshComplete = true
             }
