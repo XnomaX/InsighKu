@@ -145,6 +145,8 @@ fun TransactionDetailsScreen(
     val dbTransactions by viewModel.transactions.collectAsState()
     val isLoading      by viewModel.isLoading.collectAsState()
     val categories     by viewModel.categories.collectAsState()
+    val expenseCategories by viewModel.expenseCategories.collectAsState()
+    val incomeCategories  by viewModel.incomeCategories.collectAsState()
     val allTransactions = dbTransactions.ifEmpty { initialTransactions }
 
     // Build category icon/color lookup: name.lowercase() → Category
@@ -223,12 +225,14 @@ fun TransactionDetailsScreen(
 
     transactionToEdit?.let { tx ->
         EditTransactionDetail(
-            transaction  = tx,
-            categoryMap  = categoryMap,
-            categories   = categories,
-            onDismiss    = { transactionToEdit = null },
-            onSave       = { updated ->
-                onEditTransaction(updated)
+            transaction       = tx,
+            categoryMap       = categoryMap,
+            expenseCategories = expenseCategories,
+            incomeCategories  = incomeCategories,
+            onDismiss         = { transactionToEdit = null },
+            onSave            = { updated ->
+                viewModel.updateTransaction(updated)
+                selectedTransaction = updated
                 transactionToEdit = null
             }
         )

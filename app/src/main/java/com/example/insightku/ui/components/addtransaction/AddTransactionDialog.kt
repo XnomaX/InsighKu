@@ -14,6 +14,9 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -932,6 +935,33 @@ private fun SectionLabel(text: String) {
     )
 }
 
+// VisualTransformation that formats raw digits with Indonesian thousand separators (.)
+private object ThousandSeparatorTransformation : VisualTransformation {
+    override fun filter(text: androidx.compose.ui.text.AnnotatedString): TransformedText {
+        val raw       = text.text
+        val formatted = if (raw.isEmpty()) "" else {
+            val n = raw.toLongOrNull() ?: return TransformedText(text, OffsetMapping.Identity)
+            java.text.NumberFormat.getNumberInstance(java.util.Locale("in", "ID")).apply {
+                maximumFractionDigits = 0; minimumFractionDigits = 0; isGroupingUsed = true
+            }.format(n)
+        }
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                var rawCount = 0
+                var fmtIdx   = 0
+                while (fmtIdx < formatted.length && rawCount < offset) {
+                    if (formatted[fmtIdx].isDigit()) rawCount++
+                    fmtIdx++
+                }
+                return fmtIdx
+            }
+            override fun transformedToOriginal(offset: Int): Int =
+                formatted.take(offset).count { it.isDigit() }
+        }
+        return TransformedText(androidx.compose.ui.text.AnnotatedString(formatted), offsetMapping)
+    }
+}
+
 @Composable
 private fun AmountHeroCard(
     amount: String,
@@ -1029,7 +1059,8 @@ private fun AmountHeroCard(
                     isFocused = it.isFocused
                     onFocusChange(it.isFocused)
                 },
-            singleLine      = true,
+            singleLine           = true,
+            visualTransformation = ThousandSeparatorTransformation,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number,
                 imeAction    = ImeAction.Next
