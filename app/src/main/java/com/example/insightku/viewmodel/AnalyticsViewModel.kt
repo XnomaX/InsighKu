@@ -2,357 +2,171 @@ package com.example.insightku.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.insightku.data.model.Transaction
-import com.example.insightku.data.model.TransactionType
-import com.example.insightku.domain.usecase.transaction.GetTransactionsUseCase
+import com.example.insightku.data.model.Category
+import com.example.insightku.domain.usecase.analytics.AnalyticsInsights
+import com.example.insightku.domain.usecase.analytics.CategorySlice
+import com.example.insightku.domain.usecase.analytics.GetAnalyticsInsightsUseCase
+import com.example.insightku.data.repository.TransactionRepository
+import com.example.insightku.ui.components.analytics.AnalyticsDebugScenarios
 import com.example.insightku.ui.components.analytics.AnalyticsEvent
 import com.example.insightku.ui.components.analytics.AnalyticsUiState
-import com.example.insightku.ui.components.analytics.model.CategoryData
-import com.example.insightku.ui.components.analytics.model.MonthlyData
-import com.example.insightku.ui.components.analytics.model.TimePeriod
-import com.example.insightku.ui.components.analytics.model.BudgetData
-import com.example.insightku.ui.components.analytics.model.IncomeExpenseData
-import com.example.insightku.utils.CategoryUtils
+import com.example.insightku.ui.components.analytics.CategoryBubble
+import com.example.insightku.ui.dialogs.CategoryIconResolver
 import com.example.insightku.utils.ErrorBus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 import javax.inject.Inject
 
 /**
- * AnalyticsViewModel — refactored.
+ * AnalyticsViewModel — thin orchestration over [GetAnalyticsInsightsUseCase].
  *
- * MASALAH SEBELUMNYA:
- * 1. Inject RootViewModel + AuthRepository + TransactionRepository langsung di ViewModel
- *    → 3 dependency yang seharusnya dihandle UseCase
- * 2. Nested launch ganda seperti DashboardViewModel
- * 3. `loadInitialAnalytics()` dipanggil dari onEvent, tapi juga membuat launch sendiri
+ * Collects the reactive insights Flow, maps the pure [AnalyticsInsights] into [AnalyticsUiState]
+ * (attaching bubble color/icon via the app-wide [CategoryIconResolver] + the user's [Category] list,
+ * the same system Home/Budgeting/Edit use). All insight math lives in the pure InsightEngine.
  *
- * SEKARANG:
- * - Inject GetTransactionsUseCase + ErrorBus saja
- * - Tidak ada nested launch
- * - Logic pemrosesan data (groupBy, map, dll.) tetap di ViewModel karena ini
- *   adalah transformasi data untuk UI, bukan business logic
+ * Debug mode: when [debugScenarioIndex] >= 0, the UI shows a synthetic scenario from
+ * [AnalyticsDebugScenarios] instead of live data. Temporary — removed before final polish.
  */
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
-    private val getTransactionsUseCase: GetTransactionsUseCase,
+    private val getAnalyticsInsights: GetAnalyticsInsightsUseCase,
+    transactionRepository: TransactionRepository,
     private val errorBus: ErrorBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())
-    val uiState = _uiState.asStateFlow()
+    val uiState: StateFlow<AnalyticsUiState> = _uiState.asStateFlow()
 
-    private var allTransactions: List<Transaction> = emptyList()
-    private var monthlyDataMap: Map<String, MonthlyData> = emptyMap()
-
-    // BUG5 FIX: Simpan referensi Job untuk mencegah multiple collectors
     private var loadJob: Job? = null
+    private var debugScenarioIndex: Int = -1
+
+    /** Category list for icon/color resolution — name(lowercased) → Category, like the rest of the app. */
+    private val categoryMap: StateFlow<Map<String, Category>> =
+        transactionRepository.getAllCategories()
+            .map { cats -> cats.associateBy { it.name.trim().lowercase() } }
+            .catch { emit(emptyMap()) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     init {
-        loadAnalytics()
-        // ISSUE 2 FIX: Trigger refresh dari Firestore saat VM pertama dibuat
-        // agar data muncul bahkan setelah logout+login (Room sudah dikosongkan)
+        load()
         refreshFromRemote()
     }
 
     fun onEvent(event: AnalyticsEvent) {
-        // PERBAIKAN: onEvent tidak launch, langsung panggil fungsi
         when (event) {
-            AnalyticsEvent.LoadAnalytics -> loadAnalytics()
-            AnalyticsEvent.RefreshData -> refreshAnalytics()
-            is AnalyticsEvent.SelectMonth -> selectMonth(event.month)
-            is AnalyticsEvent.SelectExpenseCategory -> _uiState.update { it.copy(selectedExpenseCategory = event.category) }
-            is AnalyticsEvent.SelectIncomeCategory -> _uiState.update { it.copy(selectedIncomeCategory = event.category) }
-            AnalyticsEvent.NextMonth -> navigateMonth(1)
-            AnalyticsEvent.PreviousMonth -> navigateMonth(-1)
-            is AnalyticsEvent.ChangeTimePeriod -> changeTimePeriod(event.period)
-            is AnalyticsEvent.ChangeBudgetPeriod -> changeBudgetPeriod(event.period)
+            AnalyticsEvent.LoadAnalytics -> load()
+            AnalyticsEvent.RefreshData -> refresh()
+            is AnalyticsEvent.ExpandBubble -> _uiState.update {
+                it.copy(expandedBubble = if (it.expandedBubble == event.categoryName) null else event.categoryName)
+            }
+            is AnalyticsEvent.ExpandDay -> _uiState.update {
+                it.copy(expandedDay = if (it.expandedDay == event.dayOfMonth) null else event.dayOfMonth)
+            }
+            AnalyticsEvent.TogglePatterns -> _uiState.update { it.copy(patternsExpanded = !it.patternsExpanded) }
+            AnalyticsEvent.CycleDebugScenario -> cycleDebug()
+            AnalyticsEvent.ExitDebug -> { debugScenarioIndex = -1; load() }
         }
     }
 
-    private fun loadAnalytics() {
-        // Cancel job lama sebelum launch baru
+    private fun load() {
+        if (debugScenarioIndex >= 0) return // debug overrides live data
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null, debugLabel = null) }
             try {
-                getTransactionsUseCase().collect { transactions ->
-                    allTransactions = transactions
-                    processAndUpdateState()
+                getAnalyticsInsights().collect { result ->
+                    if (debugScenarioIndex >= 0) return@collect
+                    result
+                        .onSuccess { insights -> _uiState.update { it.applyInsights(insights, categoryMap.value) } }
+                        .onFailure { e -> surfaceError(e.message) }
                 }
-            } catch (e: CancellationException) {
-                // ISSUE 1 FIX: Rethrow — ini terjadi normal saat navigasi ke/dari Analytics.
-                // Jangan kirim ke ErrorBus (penyebab error "StandaloneCoroutine was cancelled").
-                throw e
-            } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal memuat data analitik"
-                _uiState.update { it.copy(isLoading = false, error = errorMessage) }
-                errorBus.send(errorMessage)
-            }
-        }
-    }
-
-    private fun refreshFromRemote() {
-        viewModelScope.launch {
-            try {
-                getTransactionsUseCase.refresh()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // Silent fail — Room cache masih bisa dipakai
+                surfaceError(e.message)
             }
         }
     }
 
-    private fun refreshAnalytics() {
-        viewModelScope.launch {
-            try {
-                getTransactionsUseCase.refresh()
-            } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal refresh data analitik"
-                _uiState.update { it.copy(error = errorMessage) }
-                errorBus.send(errorMessage)
-            }
+    private fun cycleDebug() {
+        loadJob?.cancel()
+        val scenarios = AnalyticsDebugScenarios.all
+        debugScenarioIndex = (debugScenarioIndex + 1) % scenarios.size
+        _uiState.value = scenarios[debugScenarioIndex]
+    }
+
+    private fun refresh() = viewModelScope.launch {
+        try {
+            getAnalyticsInsights.refresh()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            surfaceError(e.message)
         }
     }
 
-    private fun processAndUpdateState() {
-        processTransactionsIntoMonthlyData()
-        val availableMonths = monthlyDataMap.keys.sortedDescending()
-        val currentSelected = _uiState.value.selectedMonth
-        val selectedMonth = if (currentSelected in availableMonths) currentSelected
-                            else availableMonths.firstOrNull() ?: ""
-        val currentPeriod = _uiState.value.chartTimePeriod
-        val currentBudgetPeriod = _uiState.value.budgetTimePeriod
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                availableMonths = availableMonths,
-                selectedMonth = selectedMonth,
-                currentMonthData = monthlyDataMap[selectedMonth]
-            )
-        }
-        // Recompute chart data with current period settings
-        recomputeIncomeExpenseData(currentPeriod)
-        recomputeBudgetData(currentBudgetPeriod)
+    private fun refreshFromRemote() = viewModelScope.launch {
+        runCatching { getAnalyticsInsights.refresh() }
     }
 
-    private fun processTransactionsIntoMonthlyData() {
-        val monthFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-        monthlyDataMap = allTransactions
-            .groupBy { monthFormat.format(Date(it.date)) }
-            .mapValues { (month, transactions) -> createMonthlyData(month, transactions) }
+    private fun surfaceError(message: String?) {
+        val msg = message ?: "Gagal memuat insight"
+        _uiState.update { it.copy(isLoading = false, error = msg) }
+        errorBus.send(msg)
     }
+}
 
-    private fun createMonthlyData(month: String, transactions: List<Transaction>): MonthlyData {
-        val income = transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-        val expenses = transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+/** Maps pure insights into UI state, attaching color/icon to each category bubble via the resolver. */
+private fun AnalyticsUiState.applyInsights(
+    i: AnalyticsInsights,
+    categoryMap: Map<String, Category>
+): AnalyticsUiState = copy(
+    isLoading = false,
+    error = null,
+    isEmpty = i.isEmpty,
+    personality = i.personality,
+    patterns = i.patterns,
+    heatmapCells = i.heatmap,
+    rhythm = i.rhythm,
+    categoryBubbles = i.categories.map { it.toBubble(categoryMap) },
+    bigDecisions = i.bigDecisions,
+    streak = i.streak,
+    spotlight = i.spotlight,
+    mood = i.mood,
+    debugLabel = null
+)
 
-        val expenseCategories = transactions
-            .filter { it.type == TransactionType.EXPENSE }
-            .groupBy { it.category }
-            .map { (name, trans) ->
-                CategoryData(
-                    name,
-                    trans.sumOf { it.amount },
-                    CategoryUtils.getColorForCategoryName(name),
-                    CategoryUtils.getIconForCategoryName(name)
-                )
-            }
-
-        val incomeCategories = transactions
-            .filter { it.type == TransactionType.INCOME }
-            .groupBy { it.category }
-            .map { (name, trans) ->
-                CategoryData(
-                    name,
-                    trans.sumOf { it.amount },
-                    CategoryUtils.getColorForCategoryName(name),
-                    CategoryUtils.getIconForCategoryName(name)
-                )
-            }
-
-        return MonthlyData(month, income, expenses, expenseCategories, incomeCategories)
-    }
-
-    private fun selectMonth(month: String) {
-        _uiState.update {
-            it.copy(
-                selectedMonth = month,
-                currentMonthData = monthlyDataMap[month],
-                selectedExpenseCategory = null,
-                selectedIncomeCategory = null
-            )
-        }
-    }
-
-    private fun navigateMonth(offset: Int) {
-        val currentState = _uiState.value
-        val availableMonths = currentState.availableMonths
-        if (availableMonths.isEmpty()) return
-
-        val currentIndex = availableMonths.indexOf(currentState.selectedMonth)
-        val newIndex = (currentIndex - offset).coerceIn(availableMonths.indices)
-        if (currentIndex != newIndex) selectMonth(availableMonths[newIndex])
-    }
-
-    private fun changeTimePeriod(period: TimePeriod) {
-        _uiState.update { it.copy(chartTimePeriod = period) }
-        recomputeIncomeExpenseData(period)
-    }
-
-    private fun changeBudgetPeriod(period: TimePeriod) {
-        _uiState.update { it.copy(budgetTimePeriod = period) }
-        recomputeBudgetData(period)
-    }
-
-    /**
-     * Aggregates allTransactions into IncomeExpenseData buckets based on the selected period.
-     * - WEEKLY  → last 4 weeks (W1..W4)
-     * - MONTHLY → last 6 months (Jan..Jun style)
-     * - YEARLY  → last 3 years
-     */
-    private fun recomputeIncomeExpenseData(period: TimePeriod) {
-        val cal = Calendar.getInstance()
-        val data: List<IncomeExpenseData> = when (period) {
-            TimePeriod.WEEKLY -> {
-                (3 downTo 0).map { weeksAgo ->
-                    val weekStart = (cal.clone() as Calendar).apply {
-                        add(Calendar.WEEK_OF_YEAR, -weeksAgo)
-                        set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
-                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                    }
-                    val weekEnd = (weekStart.clone() as Calendar).apply {
-                        add(Calendar.WEEK_OF_YEAR, 1)
-                        add(Calendar.MILLISECOND, -1)
-                    }
-                    val label = "W${4 - weeksAgo}"
-                    val txInRange = allTransactions.filter { it.date in weekStart.timeInMillis..weekEnd.timeInMillis }
-                    IncomeExpenseData(
-                        period = label,
-                        income = txInRange.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
-                        expenses = txInRange.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-                    )
-                }
-            }
-            TimePeriod.MONTHLY -> {
-                val monthFmt = SimpleDateFormat("MMM", Locale.getDefault())
-                (5 downTo 0).map { monthsAgo ->
-                    val monthCal = (cal.clone() as Calendar).apply {
-                        add(Calendar.MONTH, -monthsAgo)
-                        set(Calendar.DAY_OF_MONTH, 1)
-                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                    }
-                    val monthEnd = (monthCal.clone() as Calendar).apply {
-                        add(Calendar.MONTH, 1); add(Calendar.MILLISECOND, -1)
-                    }
-                    val label = monthFmt.format(monthCal.time)
-                    val txInRange = allTransactions.filter { it.date in monthCal.timeInMillis..monthEnd.timeInMillis }
-                    IncomeExpenseData(
-                        period = label,
-                        income = txInRange.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
-                        expenses = txInRange.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-                    )
-                }
-            }
-            TimePeriod.YEARLY -> {
-                val currentYear = cal.get(Calendar.YEAR)
-                (2 downTo 0).map { yearsAgo ->
-                    val year = currentYear - yearsAgo
-                    val yearStart = Calendar.getInstance().apply {
-                        set(year, Calendar.JANUARY, 1, 0, 0, 0); set(Calendar.MILLISECOND, 0)
-                    }
-                    val yearEnd = Calendar.getInstance().apply {
-                        set(year, Calendar.DECEMBER, 31, 23, 59, 59); set(Calendar.MILLISECOND, 999)
-                    }
-                    val txInRange = allTransactions.filter { it.date in yearStart.timeInMillis..yearEnd.timeInMillis }
-                    IncomeExpenseData(
-                        period = year.toString(),
-                        income = txInRange.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
-                        expenses = txInRange.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-                    )
-                }
-            }
-        }
-        _uiState.update { it.copy(incomeExpenseData = data) }
-    }
-
-    /**
-     * Aggregates allTransactions into BudgetData buckets based on the selected period.
-     * Budget target is derived from the average monthly spend across all data.
-     */
-    private fun recomputeBudgetData(period: TimePeriod) {
-        val cal = Calendar.getInstance()
-        // Use average monthly expense as a simple budget target baseline
-        val avgMonthlyExpense = if (monthlyDataMap.isNotEmpty())
-            monthlyDataMap.values.map { it.totalExpenses }.average()
-        else 0.0
-
-        val data: List<BudgetData> = when (period) {
-            TimePeriod.WEEKLY -> {
-                val weeklyTarget = avgMonthlyExpense / 4.0
-                (3 downTo 0).map { weeksAgo ->
-                    val weekStart = (cal.clone() as Calendar).apply {
-                        add(Calendar.WEEK_OF_YEAR, -weeksAgo)
-                        set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
-                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                    }
-                    val weekEnd = (weekStart.clone() as Calendar).apply {
-                        add(Calendar.WEEK_OF_YEAR, 1); add(Calendar.MILLISECOND, -1)
-                    }
-                    val actual = allTransactions
-                        .filter { it.type == TransactionType.EXPENSE && it.date in weekStart.timeInMillis..weekEnd.timeInMillis }
-                        .sumOf { it.amount }
-                    BudgetData(period = "W${4 - weeksAgo}", budget = weeklyTarget, actual = actual)
-                }
-            }
-            TimePeriod.MONTHLY -> {
-                val monthFmt = SimpleDateFormat("MMM", Locale.getDefault())
-                (5 downTo 0).map { monthsAgo ->
-                    val monthCal = (cal.clone() as Calendar).apply {
-                        add(Calendar.MONTH, -monthsAgo)
-                        set(Calendar.DAY_OF_MONTH, 1)
-                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                    }
-                    val monthEnd = (monthCal.clone() as Calendar).apply {
-                        add(Calendar.MONTH, 1); add(Calendar.MILLISECOND, -1)
-                    }
-                    val label = monthFmt.format(monthCal.time)
-                    val actual = allTransactions
-                        .filter { it.type == TransactionType.EXPENSE && it.date in monthCal.timeInMillis..monthEnd.timeInMillis }
-                        .sumOf { it.amount }
-                    BudgetData(period = label, budget = avgMonthlyExpense, actual = actual)
-                }
-            }
-            TimePeriod.YEARLY -> {
-                val yearlyTarget = avgMonthlyExpense * 12
-                val currentYear = cal.get(Calendar.YEAR)
-                (2 downTo 0).map { yearsAgo ->
-                    val year = currentYear - yearsAgo
-                    val yearStart = Calendar.getInstance().apply {
-                        set(year, Calendar.JANUARY, 1, 0, 0, 0); set(Calendar.MILLISECOND, 0)
-                    }
-                    val yearEnd = Calendar.getInstance().apply {
-                        set(year, Calendar.DECEMBER, 31, 23, 59, 59); set(Calendar.MILLISECOND, 999)
-                    }
-                    val actual = allTransactions
-                        .filter { it.type == TransactionType.EXPENSE && it.date in yearStart.timeInMillis..yearEnd.timeInMillis }
-                        .sumOf { it.amount }
-                    BudgetData(period = year.toString(), budget = yearlyTarget, actual = actual)
-                }
-            }
-        }
-        _uiState.update { it.copy(budgetData = data) }
-    }
+/**
+ * Resolve a slice's icon + color via the app-wide [CategoryIconResolver], mirroring the logic in
+ * Dashboard's PremiumTransactionCard: prefer the stored Category.icon field, fall back to the
+ * category name; prefer the stored hex color, fall back to the resolver's color.
+ */
+private fun CategorySlice.toBubble(categoryMap: Map<String, Category>): CategoryBubble {
+    val matched = categoryMap[name.trim().lowercase()]
+    val iconKey = matched?.icon?.ifBlank { null } ?: name
+    val byIcon = CategoryIconResolver.resolve(iconKey)
+    val byName = CategoryIconResolver.resolve(name)
+    val resolved = if (byIcon.name != "Others") byIcon else byName
+    val color = if (!matched?.color.isNullOrBlank()) {
+        runCatching { androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(matched!!.color)) }
+            .getOrDefault(resolved.color)
+    } else resolved.color
+    return CategoryBubble(
+        name = name,
+        amount = amount,
+        proportion = proportion,
+        color = color,
+        icon = resolved.icon,
+        topTransactions = topTransactions
+    )
 }
