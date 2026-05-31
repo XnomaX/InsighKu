@@ -145,8 +145,6 @@ fun TransactionDetailsScreen(
     val dbTransactions by viewModel.transactions.collectAsState()
     val isLoading      by viewModel.isLoading.collectAsState()
     val categories     by viewModel.categories.collectAsState()
-    val expenseCategories by viewModel.expenseCategories.collectAsState()
-    val incomeCategories  by viewModel.incomeCategories.collectAsState()
     val allTransactions = dbTransactions.ifEmpty { initialTransactions }
 
     // Build category icon/color lookup: name.lowercase() → Category
@@ -157,8 +155,16 @@ fun TransactionDetailsScreen(
     var searchTerm          by remember { mutableStateOf("") }
     var filterType          by remember { mutableStateOf(FilterType.ALL) }
     var sortBy              by remember { mutableStateOf(SortType.NEWEST) }
-    var selectedTransaction by remember { mutableStateOf<Transaction?>(null) }
-    var transactionToEdit   by remember { mutableStateOf<Transaction?>(null) }
+    // Hold only IDs; resolve the live Transaction from the Room-backed list each recomposition so an
+    // open detail/edit sheet reflects saved changes instantly (no need to close and reopen).
+    var selectedTransactionId by remember { mutableStateOf<String?>(null) }
+    var transactionToEditId   by remember { mutableStateOf<String?>(null) }
+    val selectedTransaction = remember(selectedTransactionId, allTransactions) {
+        allTransactions.firstOrNull { it.id == selectedTransactionId }
+    }
+    val transactionToEdit = remember(transactionToEditId, allTransactions) {
+        allTransactions.firstOrNull { it.id == transactionToEditId }
+    }
 
     val filtered = remember(allTransactions, searchTerm, filterType, sortBy) {
         val cal = Calendar.getInstance()
@@ -206,7 +212,7 @@ fun TransactionDetailsScreen(
         onFilterTypeChanged   = { filterType = it },
         sortBy                = sortBy,
         onSortByChanged       = { sortBy = it },
-        onTransactionSelected = { selectedTransaction = it },
+        onTransactionSelected = { selectedTransactionId = it.id },
         onBack                = onBack
     )
 
@@ -214,26 +220,25 @@ fun TransactionDetailsScreen(
         TransactionDetailOverlay(
             transaction = tx,
             categoryMap = categoryMap,
-            onDismiss   = { selectedTransaction = null },
-            onEdit      = { transactionToEdit = it },
+            onDismiss   = { selectedTransactionId = null },
+            onEdit      = { transactionToEditId = it.id },
             onDelete    = { id ->
                 onDeleteTransaction(id)
-                selectedTransaction = null
+                selectedTransactionId = null
             }
         )
     }
 
     transactionToEdit?.let { tx ->
         EditTransactionDetail(
-            transaction       = tx,
-            categoryMap       = categoryMap,
-            expenseCategories = expenseCategories,
-            incomeCategories  = incomeCategories,
-            onDismiss         = { transactionToEdit = null },
-            onSave            = { updated ->
-                viewModel.updateTransaction(updated)
-                selectedTransaction = updated
-                transactionToEdit = null
+            transaction  = tx,
+            categoryMap  = categoryMap,
+            categories   = categories,
+            onDismiss    = { transactionToEditId = null },
+            onSave       = { updated ->
+                // Persist immediately; Room re-emits → list AND any still-open sheet update live.
+                onEditTransaction(updated)
+                transactionToEditId = null
             }
         )
     }

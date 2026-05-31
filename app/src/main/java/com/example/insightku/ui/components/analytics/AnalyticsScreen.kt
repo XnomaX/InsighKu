@@ -1,421 +1,221 @@
 package com.example.insightku.ui.components.analytics
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingDown
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.insightku.ui.components.analytics.model.AnalyticsUtils
-import com.example.insightku.ui.components.analytics.model.CategoryData
-import com.example.insightku.ui.components.analytics.model.TimePeriod
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.ui.theme.Dimens
+import com.example.insightku.ui.theme.LocalCurrencyCode
 import com.example.insightku.ui.theme.LocalResponsiveDimens
+import com.example.insightku.utils.CurrencyUtils
 import com.example.insightku.viewmodel.AnalyticsViewModel
 
 @Composable
 fun AnalyticsScreen(
     viewModel: AnalyticsViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.onEvent(AnalyticsEvent.LoadAnalytics)
-    }
-
-    AnalyticsScreenContent(uiState = uiState, onEvent = viewModel::onEvent)
-}
-
-@Composable
-fun AnalyticsScreenContent(
-    uiState: AnalyticsUiState,
-    onEvent: (AnalyticsEvent) -> Unit
-) {
-    val dimens = LocalResponsiveDimens.current
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(AnalyticsPalette.background)
     ) {
-        if (uiState.isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        // TEMPORARY debug banner — shows which synthetic scenario is active.
+        if (uiState.debugLabel != null) {
+            DebugBanner(
+                label = uiState.debugLabel!!,
+                onCycle = { viewModel.onEvent(AnalyticsEvent.CycleDebugScenario) },
+                onExit = { viewModel.onEvent(AnalyticsEvent.ExitDebug) }
+            )
         }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = Dimens.PaddingLarge)
-        ) {
-            item {
-                HeaderSection(uiState.selectedMonth)
-            }
-
-            item {
-                Column(
-                    modifier = Modifier
-                        .offset(y = Dimens.HeaderVerticalOffset)
-                        .padding(horizontal = dimens.screenHorizontalPadding),
-                    verticalArrangement = Arrangement.spacedBy(dimens.itemSpacing)
-                ) {
-                    MonthSelector(
-                        selectedMonth = AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth),
-                        onPreviousMonth = { onEvent(AnalyticsEvent.PreviousMonth) },
-                        onNextMonth = { onEvent(AnalyticsEvent.NextMonth) }
-                    )
-
-                    StatisticsSection(
-                        totalIncome = uiState.totalIncome,
-                        totalExpenses = uiState.totalExpenses,
-                        savings = uiState.savings
-                    )
-
-                    SavingsRateSection(
-                        savingsRate = uiState.savingsRate,
-                        selectedMonth = AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth)
-                    )
-
-                    BudgetPerformanceCard(
-                        budgetPeriod = uiState.budgetTimePeriod,
-                        onPeriodChange = { period -> onEvent(AnalyticsEvent.ChangeBudgetPeriod(period)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    IncomeExpensesChart(
-                        timePeriod = uiState.chartTimePeriod,
-                        onPeriodChange = { period -> onEvent(AnalyticsEvent.ChangeTimePeriod(period)) }
-                    )
-
-                    uiState.currentMonthData?.let {
-                        DonutChartsSection(
-                            monthlyData = it,
-                            selectedExpenseCategory = uiState.selectedExpenseCategory,
-                            selectedIncomeCategory = uiState.selectedIncomeCategory,
-                            onEvent = onEvent,
-                            selectedMonth = AnalyticsUtils.getMonthDisplayName(uiState.selectedMonth)
-                        )
-                    }
-                }
-            }
+        when {
+            uiState.isLoading -> AnalyticsLoading(Modifier.fillMaxSize())
+            uiState.error != null -> AnalyticsErrorState(
+                message = uiState.error!!,
+                onRetry = { viewModel.onEvent(AnalyticsEvent.RefreshData) },
+                modifier = Modifier.fillMaxSize()
+            )
+            uiState.isEmpty -> AnalyticsEmpty(Modifier.fillMaxSize())
+            else -> AnalyticsContent(uiState = uiState, onEvent = viewModel::onEvent)
         }
     }
 }
 
+/**
+ * Stateless behavioral content. Sections are ordered by emotional payoff first, detail later:
+ * personality → rhythm heatmap → consistency → where it goes → biggest moves → spotlight → mood.
+ * Each section fades+rises in with a staggered delay as the screen settles.
+ */
 @Composable
-private fun HeaderSection(selectedMonth: String) {
-    Box(
+fun AnalyticsContent(
+    uiState: AnalyticsUiState,
+    onEvent: (AnalyticsEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dimens = LocalResponsiveDimens.current
+    val currencyCode = LocalCurrencyCode.current
+    val formatAmount: (Double) -> String = { CurrencyUtils.formatAmount(it, currencyCode) }
+
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .background(AnalyticsPalette.background),
+        contentPadding = PaddingValues(
+            start = dimens.screenHorizontalPadding,
+            end = dimens.screenHorizontalPadding,
+            top = Dimens.PaddingExtraLarge,
+            bottom = Dimens.ContentBottomPadding
+        ),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SectionSpacing)
+    ) {
+        // Header — long-press reveals the temporary debug mode.
+        item {
+            Column(
+                Modifier.pointerInput(Unit) {
+                    detectTapGestures(onLongPress = { onEvent(AnalyticsEvent.CycleDebugScenario) })
+                }
+            ) {
+                Text(
+                    "Here's how your month felt",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AnalyticsPalette.textPrimary
+                )
+                Spacer(Modifier.height(Dimens.PaddingSmall))
+                Text(
+                    "A calm look at your habits 💜",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AnalyticsPalette.textMuted
+                )
+            }
+        }
+
+        var order = 0
+        staggered(order++) {
+            SpendingPersonalityCard(
+                personality = uiState.personality,
+                patterns = uiState.patterns,
+                expanded = uiState.patternsExpanded,
+                onToggle = { onEvent(AnalyticsEvent.TogglePatterns) }
+            )
+        }
+
+        if (uiState.heatmapCells.isNotEmpty()) {
+            staggered(order++) {
+                HabitHeatmapSection(
+                    cells = uiState.heatmapCells,
+                    rhythm = uiState.rhythm,
+                    expandedDay = uiState.expandedDay,
+                    onDayTap = { onEvent(AnalyticsEvent.ExpandDay(it)) },
+                    formatAmount = formatAmount
+                )
+            }
+        }
+
+        staggered(order++) { ConsistencySection(uiState.streak) }
+
+        if (uiState.categoryBubbles.isNotEmpty()) {
+            staggered(order++) {
+                CategoryBubblesSection(
+                    bubbles = uiState.categoryBubbles,
+                    expanded = uiState.expandedBubble,
+                    onExpand = { onEvent(AnalyticsEvent.ExpandBubble(it)) },
+                    formatAmount = formatAmount
+                )
+            }
+        }
+
+        if (uiState.bigDecisions.isNotEmpty()) {
+            staggered(order++) { BigDecisionsSection(uiState.bigDecisions, formatAmount = formatAmount) }
+        }
+
+        staggered(order++) { SpotlightSection(uiState.spotlight, formatAmount = formatAmount) }
+
+        uiState.mood?.let { mood -> staggered(order++) { SpendingMoodSection(mood) } }
+    }
+}
+
+/** LazyListScope helper: wraps a section item in a staggered fade-in + slight rise on first compose. */
+private fun androidx.compose.foundation.lazy.LazyListScope.staggered(
+    index: Int,
+    content: @Composable () -> Unit
+) {
+    item {
+        var visible by remember { mutableStateOf(false) }
+        val alpha by animateFloatAsState(
+            targetValue = if (visible) 1f else 0f,
+            animationSpec = tween(durationMillis = 320, delayMillis = index * 60),
+            label = "stagger_alpha_$index"
+        )
+        val translate by animateFloatAsState(
+            targetValue = if (visible) 0f else 24f,
+            animationSpec = tween(durationMillis = 320, delayMillis = index * 60),
+            label = "stagger_y_$index"
+        )
+        androidx.compose.runtime.LaunchedEffect(Unit) { visible = true }
+        Box(
+            Modifier
+                .alpha(alpha)
+                .graphicsLayer { translationY = translate }
+        ) { content() }
+    }
+}
+
+@Composable
+private fun DebugBanner(label: String, onCycle: () -> Unit, onExit: () -> Unit) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(Dimens.HeaderHeight)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.tertiary
-                    )
-                )
-            )
+            .background(AnalyticsPalette.Purple)
+            .padding(horizontal = Dimens.PaddingLarge, vertical = Dimens.PaddingMedium),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = Dimens.PaddingExtraLarge),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "Financial Analytics", // R.string.financial_analytics
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
-            Text(
-                text = "Insights for ${AnalyticsUtils.getMonthDisplayName(selectedMonth)}", // R.string.insights_for_month
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
-            )
+        Text("DEBUG · $label", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
+            DebugChip("Next", onCycle)
+            DebugChip("Exit", onExit)
         }
     }
 }
 
 @Composable
-fun MonthSelector(
-    selectedMonth: String,
-    onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationMedium),
-        shape = RoundedCornerShape(Dimens.CornerRadiusSmall)
+private fun DebugChip(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f), RoundedCornerShape(50))
+            .pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) }
+            .padding(horizontal = Dimens.PaddingMedium, vertical = 4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Dimens.MonthSelectorPadding),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onPreviousMonth,
-                modifier = Modifier
-                    .size(Dimens.MonthSelectorButtonSize)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
-            ) {
-                Icon(
-                    Icons.Default.ChevronLeft,
-                    contentDescription = "Previous month", // R.string.previous_month
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(Dimens.IconSizeMedium)
-                )
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
-            ) {
-                Icon(
-                    Icons.Default.CalendarToday,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(Dimens.IconSizeSmall)
-                )
-                Text(
-                    text = selectedMonth,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            IconButton(
-                onClick = onNextMonth,
-                modifier = Modifier
-                    .size(Dimens.MonthSelectorButtonSize)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
-            ) {
-                Icon(
-                    Icons.Default.ChevronRight,
-                    contentDescription = "Next month", // R.string.next_month
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(Dimens.IconSizeMedium)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun StatisticsSection(
-    totalIncome: Double,
-    totalExpenses: Double,
-    savings: Double
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
-    ) {
-        StatCard(
-            modifier = Modifier.weight(1f),
-            title = "Income", // R.string.income
-            amount = totalIncome,
-            icon = Icons.AutoMirrored.Filled.TrendingUp,
-            color = MaterialTheme.colorScheme.secondary, // Custom color
-            backgroundColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
-        )
-        StatCard(
-            modifier = Modifier.weight(1f),
-            title = "Expenses", // R.string.expenses
-            amount = totalExpenses,
-            icon = Icons.AutoMirrored.Filled.TrendingDown,
-            color = MaterialTheme.colorScheme.error, // Custom color
-            backgroundColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
-        )
-        StatCard(
-            modifier = Modifier.weight(1f),
-            title = "Savings", // R.string.savings
-            amount = savings,
-            icon = Icons.Default.Savings,
-            color = if (savings >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-            backgroundColor = (if (savings >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error).copy(alpha = 0.1f)
-        )
-    }
-}
-
-@Composable
-private fun StatCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    amount: Double,
-    icon: ImageVector,
-    color: Color,
-    backgroundColor: Color
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(Dimens.CornerRadiusMedium)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = Dimens.StatCardPaddingHorizontal, vertical = Dimens.StatCardPaddingVertical)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(Dimens.StatCardIconBoxSize)
-                    .background(backgroundColor, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(Dimens.StatCardIconSize)
-                )
-            }
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
-            Text(
-                text = AnalyticsUtils.formatCurrencyShort(amount),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = color,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-fun SavingsRateSection(
-    savingsRate: Double,
-    selectedMonth: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationSmall),
-        shape = RoundedCornerShape(Dimens.CornerRadiusMedium)
-    ) {
-        Column(
-            modifier = Modifier.padding(Dimens.PaddingLarge)
-        ) {
-            Text(
-                text = "Savings Rate", // R.string.savings_rate
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
-            Text(
-                text = "Monthly savings performance for $selectedMonth", // R.string.savings_performance_for_month
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Target: 20%", // R.string.savings_target
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "${"%.1f".format(savingsRate)}%",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-
-            LinearProgressIndicator(
-                progress = { (savingsRate / 100.0).coerceIn(0.0, 1.0).toFloat() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(Dimens.LinearProgressHeight),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
-            )
-
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-
-            val (text, color) = when {
-                savingsRate >= 20 -> "🎉 Congratulations! Target achieved" to MaterialTheme.colorScheme.secondary // R.string.savings_target_achieved
-                savingsRate >= 0 -> "💪 Keep saving to reach your target" to MaterialTheme.colorScheme.onSurface // R.string.savings_keep_going
-                else -> "⚠️ Expenses exceeded income this month" to MaterialTheme.colorScheme.error // R.string.savings_negative
-            }
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodySmall,
-                color = color
-            )
-        }
-    }
-}
-
-@Composable
-private fun DonutChartsSection(
-    monthlyData: com.example.insightku.ui.components.analytics.model.MonthlyData,
-    selectedExpenseCategory: String?,
-    selectedIncomeCategory: String?,
-    onEvent: (AnalyticsEvent) -> Unit,
-    selectedMonth: String
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)) {
-        InteractiveDonutChart(
-            title = "Expense Categories", // R.string.expense_categories
-            titleIcon = "💸",
-            subtitle = "Monthly expenses by category", // R.string.expense_categories_subtitle
-            categories = monthlyData.expenseCategories,
-            selectedCategory = selectedExpenseCategory,
-            onCategoryClick = { category -> onEvent(AnalyticsEvent.SelectExpenseCategory(category)) },
-            centerColor = MaterialTheme.colorScheme.error,
-            monthName = selectedMonth
-        )
-
-        if (monthlyData.incomeCategories.isNotEmpty()) {
-            InteractiveDonutChart(
-                title = "Income Sources", // R.string.income_sources
-                titleIcon = "💰",
-                subtitle = "Monthly income breakdown", // R.string.income_sources_subtitle
-                categories = monthlyData.incomeCategories,
-                selectedCategory = selectedIncomeCategory,
-                onCategoryClick = { category -> onEvent(AnalyticsEvent.SelectIncomeCategory(category)) },
-                centerColor = MaterialTheme.colorScheme.secondary,
-                monthName = selectedMonth
-            )
-        }
+        Text(label, color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.labelMedium)
     }
 }

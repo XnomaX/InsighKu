@@ -161,7 +161,7 @@ fun MainScreen(
             snackbarHost        = { SnackbarHost(snackbarHostState) },
             containerColor      = Color.Transparent,
             bottomBar           = {}
-        ) { _ ->
+        ) { innerPadding ->
             MainNavHost(
                 navController                 = navController,
                 rootNavController             = rootNavController,
@@ -174,8 +174,8 @@ fun MainScreen(
                 },
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(innerPadding)
                     .background(Color(0xFFFAF9FE))
-                    .padding(bottom = 88.dp)
             )
         }
 
