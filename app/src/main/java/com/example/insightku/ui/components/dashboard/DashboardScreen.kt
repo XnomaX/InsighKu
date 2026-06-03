@@ -39,7 +39,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.BorderStroke
 import com.example.insightku.data.model.Installment
 import com.example.insightku.data.model.RecurringBudget
+import com.example.insightku.ui.theme.AppPalette
 import com.example.insightku.ui.theme.Dimens
+import com.example.insightku.ui.theme.LocalAccent
+import com.example.insightku.ui.theme.LocalHideAmounts
 import com.example.insightku.ui.theme.GradientEnd
 import com.example.insightku.ui.theme.GradientStart
 import com.example.insightku.ui.theme.IncomeGreen
@@ -72,8 +75,11 @@ private fun getContextualSubtitle(savings: Double, streak: Int): String = when {
     else          -> "Small mindful steps create strong finances."
 }
 
-// NavPurple — matches bottom nav primary action color exactly
-private val NavPurple = Color(0xFF7C4DFF)
+// NavPurple — matches bottom nav primary action color exactly. Now driven by the global accent
+// (LocalAccent) so the accent picker recolors the dashboard live. Composable getter — used only in
+// composable scope (modifiers/tints), never inside a Canvas DrawScope.
+private val NavPurple: Color
+    @Composable get() = LocalAccent.current
 
 // ─── Root Screen ─────────────────────────────────────────────────────────────
 
@@ -179,7 +185,7 @@ fun DashboardScreenContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFAF9FE))
+            .background(AppPalette.background)
     ) {
         LazyColumn(
             modifier = Modifier
@@ -193,7 +199,7 @@ fun DashboardScreenContent(
                     userName           = uiState.userName,
                     monthlySavings     = uiState.monthlySavings,
                     currentStreak      = uiState.currentStreak,
-                    isBalanceVisible   = uiState.isBalanceVisible,
+                    isBalanceVisible   = !LocalHideAmounts.current,
                     isLoading          = uiState.isLoading,
                     onToggleVisibility = { onEvent(DashboardEvent.ToggleBalanceVisibility) }
                 )
@@ -205,7 +211,7 @@ fun DashboardScreenContent(
                     monthlyIncome    = uiState.monthlyIncome,
                     monthlyExpenses  = uiState.monthlyExpenses,
                     monthlySavings   = uiState.monthlySavings,
-                    isBalanceVisible = uiState.isBalanceVisible,
+                    isBalanceVisible = !LocalHideAmounts.current,
                     modifier         = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical   = 4.dp
@@ -323,7 +329,7 @@ fun DashboardHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFFAF9FE))
+            .background(AppPalette.background)
             .statusBarsPadding()
             .padding(horizontal = Dimens.ScreenHorizontalPadding)
             .padding(top = 20.dp, bottom = 8.dp),
@@ -332,7 +338,7 @@ fun DashboardHeader(
         Text(
             text = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date()),
             style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFF9E9E9E),
+            color = AppPalette.textMuted,
             letterSpacing = 0.5.sp
         )
         Row(
@@ -345,12 +351,12 @@ fun DashboardHeader(
                     text = "${getTimeGreeting()}, ${userName.firstName()}",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A2E)
+                    color = AppPalette.textPrimary
                 )
                 Text(
                     text = getContextualSubtitle(monthlySavings, currentStreak),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
+                    color = AppPalette.textMuted
                 )
             }
             Row(
@@ -378,14 +384,14 @@ fun DashboardHeader(
                         .clip(CircleShape)
                         .clickable { onToggleVisibility() },
                     shape = CircleShape,
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFECE7F6))
+                    color = AppPalette.card,
+                    border = BorderStroke(1.dp, AppPalette.cardBorder)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = if (isBalanceVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
                             contentDescription = "Toggle Balance",
-                            tint = Color(0xFF9E9E9E),
+                            tint = AppPalette.textMuted,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -394,14 +400,14 @@ fun DashboardHeader(
                 Surface(
                     modifier = Modifier.size(38.dp).clip(CircleShape),
                     shape = CircleShape,
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFECE7F6))
+                    color = AppPalette.card,
+                    border = BorderStroke(1.dp, AppPalette.cardBorder)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Notifications",
-                            tint = Color(0xFF9E9E9E),
+                            tint = AppPalette.textMuted,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -440,10 +446,10 @@ fun HeroBalanceCard(
     Surface(
         modifier        = modifier.fillMaxWidth(),
         shape           = RoundedCornerShape(Dimens.CardRadiusLarge),
-        color           = Color.White,
+        color           = AppPalette.card,
         tonalElevation  = 0.dp,
         shadowElevation = 4.dp,
-        border          = BorderStroke(1.dp, Color(0xFFECE7F6))
+        border          = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
             modifier = Modifier.padding(Dimens.CardInnerPaddingLarge),
@@ -454,7 +460,7 @@ fun HeroBalanceCard(
                 Text(
                     "Total Balance",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF9E9E9E),
+                    color = AppPalette.textMuted,
                     letterSpacing = 0.5.sp
                 )
                 AnimatedContent(
@@ -466,7 +472,7 @@ fun HeroBalanceCard(
                         text = if (visible) formatCurrency(totalBalance) else "••••••••",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1A2E)
+                        color = AppPalette.textPrimary
                     )
                 }
             }
@@ -476,7 +482,7 @@ fun HeroBalanceCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(Color(0xFFECE7F6))
+                    .background(AppPalette.cardBorder)
             )
 
             // 3-stat row
@@ -495,7 +501,7 @@ fun HeroBalanceCard(
                     modifier = Modifier
                         .width(1.dp)
                         .height(36.dp)
-                        .background(Color(0xFFECE7F6))
+                        .background(AppPalette.cardBorder)
                         .align(Alignment.CenterVertically)
                 )
                 HeroStatItem(
@@ -509,7 +515,7 @@ fun HeroBalanceCard(
                     modifier = Modifier
                         .width(1.dp)
                         .height(36.dp)
-                        .background(Color(0xFFECE7F6))
+                        .background(AppPalette.cardBorder)
                         .align(Alignment.CenterVertically)
                 )
                 HeroStatItem(
@@ -545,7 +551,7 @@ private fun HeroStatItem(
             Text(
                 label,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF9E9E9E),
+                color = AppPalette.textMuted,
                 fontSize = 10.sp
             )
         }
@@ -553,7 +559,7 @@ private fun HeroStatItem(
             value,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1A1A2E),
+            color = AppPalette.textPrimary,
             maxLines = 1
         )
     }
@@ -583,9 +589,9 @@ fun StickyFinanceStatusBar(
 
     Surface(
         modifier        = Modifier.fillMaxWidth(),
-        color           = Color.White.copy(alpha = 0.96f),
+        color           = AppPalette.card,
         shadowElevation = 4.dp,
-        border          = BorderStroke(1.dp, Color(0xFFECE7F6))
+        border          = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Row(
             modifier              = Modifier
@@ -596,9 +602,9 @@ fun StickyFinanceStatusBar(
             verticalAlignment     = Alignment.CenterVertically
         ) {
             StickyStatItem(Icons.Default.ArrowUpward, IncomeGreen, formatCurrencyShort(monthlyIncome))
-            Box(Modifier.size(4.dp).clip(CircleShape).background(Color(0xFFECE7F6)))
+            Box(Modifier.size(4.dp).clip(CircleShape).background(AppPalette.cardBorder))
             StickyStatItem(Icons.Default.ArrowDownward, ExpenseRed, formatCurrencyShort(monthlyExpenses))
-            Box(Modifier.size(4.dp).clip(CircleShape).background(Color(0xFFECE7F6)))
+            Box(Modifier.size(4.dp).clip(CircleShape).background(AppPalette.cardBorder))
             Row(
                 verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -624,7 +630,7 @@ fun StickyFinanceStatusBar(
                         text       = if (streak > 0) "$streak days" else "—",
                         style      = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color      = if (hasTrackedToday) Color(0xFF7C3AED) else Color(0xFF9E9E9E)
+                        color      = if (hasTrackedToday) NavPurple else AppPalette.textMuted
                     )
                 }
             }
@@ -647,7 +653,7 @@ private fun StickyStatItem(
             value,
             style      = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = Color(0xFF1A1A2E)
+            color      = AppPalette.textPrimary
         )
     }
 }
@@ -659,7 +665,7 @@ private fun SegmentedControl(options: List<String>, selectedIndex: Int, onSelect
     Surface(
         shape = RoundedCornerShape(50.dp),
         color = Color(0xFFF3EEFF),
-        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Row(Modifier.padding(3.dp)) {
             options.forEachIndexed { index, label ->
@@ -676,7 +682,7 @@ private fun SegmentedControl(options: List<String>, selectedIndex: Int, onSelect
                         label,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                        color = if (sel) Color.White else Color(0xFF9E9E9E)
+                        color = if (sel) Color.White else AppPalette.textMuted
                     )
                 }
             }
@@ -700,15 +706,15 @@ fun AiForecastCard(
     val labels = if (isWeekly) listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
     else listOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
     val barColor = NavPurple
-    val barBg = Color(0xFFECE7F6)
+    val barBg = AppPalette.cardBorder
 
     Surface(
         modifier        = modifier.fillMaxWidth().animateContentSize(),
         shape           = RoundedCornerShape(Dimens.CardRadiusLarge),
-        color           = Color.White,
+        color           = AppPalette.card,
         tonalElevation  = 0.dp,
         shadowElevation = 4.dp,
-        border          = BorderStroke(1.dp, Color(0xFFECE7F6))
+        border          = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(Modifier.padding(Dimens.CardInnerPaddingLarge)) {
             Row(
@@ -717,8 +723,8 @@ fun AiForecastCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Spending Forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A2E))
-                    Text("AI-powered analysis", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9E9E9E))
+                    Text("Spending Forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                    Text("AI-powered analysis", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                 }
                 SegmentedControl(listOf("Weekly","Monthly"), if (isWeekly) 0 else 1) {
                     onPeriodChange(if (it == 0) "week" else "month")
@@ -729,8 +735,8 @@ fun AiForecastCard(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(Dimens.CardRadius),
-                    color = Color(0xFFFAF9FE),
-                    border = BorderStroke(1.dp, Color(0xFFECE7F6))
+                    color = AppPalette.background,
+                    border = BorderStroke(1.dp, AppPalette.cardBorder)
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 28.dp, horizontal = 16.dp),
@@ -743,9 +749,9 @@ fun AiForecastCard(
                         ) {
                             Icon(Icons.Default.BarChart, null, tint = NavPurple.copy(alpha = 0.45f), modifier = Modifier.size(26.dp))
                         }
-                        Text("No data yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A2E))
+                        Text("No data yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
                         Text("Start adding transactions to see insights.", style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF9E9E9E), textAlign = TextAlign.Center)
+                            color = AppPalette.textMuted, textAlign = TextAlign.Center)
                     }
                 }
             } else {
@@ -772,7 +778,7 @@ fun AiForecastCard(
                                 labels.getOrNull(i) ?: "",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 8.sp,
-                                color = Color(0xFF9E9E9E),
+                                color = AppPalette.textMuted,
                                 textAlign = TextAlign.Center,
                                 maxLines = 1
                             )
@@ -802,7 +808,7 @@ fun AiForecastCard(
                         Text(
                             aiInsight,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF1A1A2E),
+                            color = AppPalette.textPrimary,
                             modifier = Modifier.weight(1f),
                             lineHeight = 18.sp
                         )
@@ -822,10 +828,12 @@ fun InsightsSection(
 ) {
     if (insightMessages.isEmpty()) return
 
+    // Each insight = its accent (tint) + icon. The card itself is a dark/neutral surface; the accent
+    // shows only as a soft glow (icon container + hairline border), never a full bright fill.
     val insightConfigs = listOf(
-        Triple(Color(0xFFF0FFF4), IncomeGreen,   Icons.AutoMirrored.Filled.TrendingUp),
-        Triple(Color(0xFFFFF8F0), WarningYellow,  Icons.AutoMirrored.Filled.TrendingDown),
-        Triple(Color(0xFFF3EEFF), PurpleViolet,   Icons.Default.CheckCircle)
+        Pair(IncomeGreen,   Icons.AutoMirrored.Filled.TrendingUp),
+        Pair(WarningYellow, Icons.AutoMirrored.Filled.TrendingDown),
+        Pair(PurpleViolet,  Icons.Default.CheckCircle)
     )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)) {
@@ -839,22 +847,22 @@ fun InsightsSection(
                     "Insights",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
+                    color = AppPalette.textPrimary
                 )
                 Text(
                     "Your financial pulse this month",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
+                    color = AppPalette.textMuted
                 )
             }
         }
         insightMessages.forEachIndexed { i, msg ->
-            val (bg, tint, icon) = insightConfigs.getOrElse(i) { insightConfigs.last() }
+            val (tint, icon) = insightConfigs.getOrElse(i) { insightConfigs.last() }
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape    = RoundedCornerShape(Dimens.CardRadius),
-                color    = bg,
-                border   = BorderStroke(1.dp, tint.copy(alpha = 0.15f))
+                color    = AppPalette.card,
+                border   = BorderStroke(1.dp, tint.copy(alpha = 0.25f))
             ) {
                 Row(
                     modifier = Modifier
@@ -875,7 +883,7 @@ fun InsightsSection(
                     Text(
                         text     = msg,
                         style    = MaterialTheme.typography.bodySmall,
-                        color    = Color(0xFF1A1A2E),
+                        color    = AppPalette.textPrimary,
                         modifier = Modifier.weight(1f),
                         lineHeight = 18.sp
                     )
@@ -913,13 +921,13 @@ fun UpcomingPaymentsSection(
                     "Upcoming",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
+                    color = AppPalette.textPrimary
                 )
                 Text(
                     if (isEmpty) "No payments due soon"
                     else "${upcomingRecurring.size + upcomingInstallments.size} payments due soon",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
+                    color = AppPalette.textMuted
                 )
             }
         }
@@ -928,8 +936,8 @@ fun UpcomingPaymentsSection(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape    = RoundedCornerShape(Dimens.CardRadiusLarge),
-                color    = Color.White,
-                border   = BorderStroke(1.dp, Color(0xFFECE7F6))
+                color    = AppPalette.card,
+                border   = BorderStroke(1.dp, AppPalette.cardBorder)
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 28.dp, horizontal = 16.dp),
@@ -942,8 +950,8 @@ fun UpcomingPaymentsSection(
                     ) {
                         Icon(Icons.Default.CheckCircle, null, tint = NavPurple.copy(alpha = 0.45f), modifier = Modifier.size(26.dp))
                     }
-                    Text("You're all caught up.", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A2E))
-                    Text("No recurring or installment payments due in the next 14 days.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9E9E9E), textAlign = TextAlign.Center)
+                    Text("You're all caught up.", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+                    Text("No recurring or installment payments due in the next 14 days.", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, textAlign = TextAlign.Center)
                 }
             }
         } else {
@@ -972,10 +980,10 @@ private fun UpcomingRecurringRow(
     Surface(
         modifier        = Modifier.fillMaxWidth(),
         shape           = RoundedCornerShape(Dimens.CardRadius),
-        color           = Color.White,
+        color           = AppPalette.card,
         tonalElevation  = 0.dp,
         shadowElevation = Dimens.ElevationSmall,
-        border          = BorderStroke(1.dp, Color(0xFFECE7F6))
+        border          = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = Dimens.CardInnerPadding, vertical = 12.dp),
@@ -986,17 +994,17 @@ private fun UpcomingRecurringRow(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF7C4DFF).copy(alpha = 0.08f)),
+                    .background(NavPurple.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Repeat, null, tint = Color(0xFF7C4DFF), modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Repeat, null, tint = NavPurple, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     budget.name,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E),
+                    color = AppPalette.textPrimary,
                     maxLines = 1
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1009,12 +1017,12 @@ private fun UpcomingRecurringRow(
                             color = dueBadgeColor
                         )
                     }
-                    Surface(shape = RoundedCornerShape(50.dp), color = Color(0xFF7C4DFF).copy(alpha = 0.08f)) {
+                    Surface(shape = RoundedCornerShape(50.dp), color = NavPurple.copy(alpha = 0.08f)) {
                         Text(
                             "Recurring",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF7C4DFF)
+                            color = NavPurple
                         )
                     }
                 }
@@ -1024,11 +1032,11 @@ private fun UpcomingRecurringRow(
                     formatCurrencyShort(budget.amount),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
+                    color = AppPalette.textPrimary
                 )
                 Surface(
                     shape    = RoundedCornerShape(50.dp),
-                    color    = Color.White,
+                    color    = AppPalette.card,
                     border   = BorderStroke(1.dp, IncomeGreen),
                     modifier = Modifier.clickable { onMarkPaid() }
                 ) {
@@ -1060,10 +1068,10 @@ private fun UpcomingInstallmentRow(
     Surface(
         modifier        = Modifier.fillMaxWidth(),
         shape           = RoundedCornerShape(Dimens.CardRadius),
-        color           = Color.White,
+        color           = AppPalette.card,
         tonalElevation  = 0.dp,
         shadowElevation = Dimens.ElevationSmall,
-        border          = BorderStroke(1.dp, Color(0xFFECE7F6))
+        border          = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = Dimens.CardInnerPadding, vertical = 12.dp),
@@ -1084,7 +1092,7 @@ private fun UpcomingInstallmentRow(
                     installment.name,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E),
+                    color = AppPalette.textPrimary,
                     maxLines = 1
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1112,11 +1120,11 @@ private fun UpcomingInstallmentRow(
                     formatCurrencyShort(installment.monthlyPayment),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
+                    color = AppPalette.textPrimary
                 )
                 Surface(
                     shape    = RoundedCornerShape(50.dp),
-                    color    = Color.White,
+                    color    = AppPalette.card,
                     border   = BorderStroke(1.dp, IncomeGreen),
                     modifier = Modifier.clickable { onMarkPaid() }
                 ) {
@@ -1152,26 +1160,26 @@ fun RecentTransactionsPreview(
                     "Recent",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
+                    color = AppPalette.textPrimary
                 )
                 Text(
                     "Latest financial activity",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
+                    color = AppPalette.textMuted
                 )
             }
             Surface(
                 modifier = Modifier.clickable(onClick = onViewAllClick),
                 shape    = RoundedCornerShape(50.dp),
-                color    = Color.White,
-                border   = BorderStroke(1.dp, Color(0xFF7C4DFF))
+                color    = AppPalette.card,
+                border   = BorderStroke(1.dp, NavPurple)
             ) {
                 Text(
                     "View All",
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF7C4DFF)
+                    color = NavPurple
                 )
             }
         }
@@ -1179,8 +1187,8 @@ fun RecentTransactionsPreview(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape    = RoundedCornerShape(Dimens.CardRadius),
-                color    = Color.White,
-                border   = BorderStroke(1.dp, Color(0xFFECE7F6))
+                color    = AppPalette.card,
+                border   = BorderStroke(1.dp, AppPalette.cardBorder)
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 28.dp),
@@ -1189,7 +1197,7 @@ fun RecentTransactionsPreview(
                     Text(
                         "No recent transactions",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF9E9E9E)
+                        color = AppPalette.textMuted
                     )
                 }
             }
@@ -1197,10 +1205,10 @@ fun RecentTransactionsPreview(
             Surface(
                 modifier        = Modifier.fillMaxWidth(),
                 shape           = RoundedCornerShape(Dimens.CardRadiusLarge),
-                color           = Color.White,
+                color           = AppPalette.card,
                 tonalElevation  = 0.dp,
                 shadowElevation = Dimens.ElevationSmall,
-                border          = BorderStroke(1.dp, Color(0xFFECE7F6))
+                border          = BorderStroke(1.dp, AppPalette.cardBorder)
             ) {
                 Column(modifier = Modifier.padding(vertical = 4.dp)) {
                     transactions.take(5).forEachIndexed { index, tx ->
@@ -1211,7 +1219,7 @@ fun RecentTransactionsPreview(
                                     .fillMaxWidth()
                                     .padding(horizontal = Dimens.CardInnerPadding)
                                     .height(1.dp)
-                                    .background(Color(0xFFECE7F6))
+                                    .background(AppPalette.cardBorder)
                             )
                         }
                     }
@@ -1254,13 +1262,13 @@ private fun TransactionItemRow(transaction: TransactionItem, onClick: () -> Unit
                 text = transaction.title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A2E),
+                color = AppPalette.textPrimary,
                 maxLines = 1
             )
             Text(
                 text = transaction.category,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF9E9E9E)
+                color = AppPalette.textMuted
             )
         }
         Column(horizontalAlignment = Alignment.End) {
@@ -1268,12 +1276,12 @@ private fun TransactionItemRow(transaction: TransactionItem, onClick: () -> Unit
                 text = (if (transaction.isIncome) "+" else "") + formatCurrencyShort(abs(transaction.amount)),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = if (transaction.isIncome) IncomeGreen else Color(0xFF1A1A2E)
+                color = if (transaction.isIncome) IncomeGreen else AppPalette.textPrimary
             )
             Text(
                 text = transaction.time,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF9E9E9E)
+                color = AppPalette.textMuted
             )
         }
     }
@@ -1317,10 +1325,10 @@ fun DailyStreakCard(
     Surface(
         modifier        = modifier.fillMaxWidth().clickable { onCardClick() },
         shape           = RoundedCornerShape(Dimens.CardRadiusLarge),
-        color           = Color.White,
+        color           = AppPalette.card,
         tonalElevation  = 0.dp,
         shadowElevation = 4.dp,
-        border          = BorderStroke(1.dp, Color(0xFFECE7F6))
+        border          = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
             modifier = Modifier
@@ -1377,21 +1385,21 @@ fun DailyStreakCard(
                                 lineHeight = 58.sp,
                                 color = when {
                                     hasTrackedToday && currentStreak > 0 -> config.flamePrimary
-                                    !hasTrackedToday && currentStreak > 0 -> Color(0xFF9E9E9E)
-                                    else -> Color(0xFF9E9E9E)
+                                    !hasTrackedToday && currentStreak > 0 -> AppPalette.textMuted
+                                    else -> AppPalette.textMuted
                                 }
                             )
                         }
                         Column(modifier = Modifier.padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Text("day", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF9E9E9E))
-                            Text("streak", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9E9E9E))
+                            Text("day", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                            Text("streak", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                         }
                     }
 
                     Text(
                         text = motivationalText,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF9E9E9E),
+                        color = AppPalette.textMuted,
                         lineHeight = 19.sp
                     )
                 }
@@ -1406,7 +1414,7 @@ fun DailyStreakCard(
                     "This week",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF9E9E9E),
+                    color = AppPalette.textMuted,
                     letterSpacing = 0.5.sp
                 )
                 Row(
@@ -1424,19 +1432,19 @@ fun DailyStreakCard(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(if (active) NavPurple else Color(0xFFECE7F6)),
+                                    .background(if (active) NavPurple else AppPalette.cardBorder),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (active)
                                     Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(14.dp))
                                 else
-                                    Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFF9E9E9E), fontSize = 10.sp)
+                                    Text(label, style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, fontSize = 10.sp)
                             }
                             Text(
                                 label,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 9.sp,
-                                color = if (active) NavPurple else Color(0xFF9E9E9E)
+                                color = if (active) NavPurple else AppPalette.textMuted
                             )
                         }
                     }
@@ -1515,10 +1523,10 @@ fun StreakCelebrationDialog(streak: Int, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape           = RoundedCornerShape(Dimens.BottomSheetRadius),
-            color           = Color.White,
+            color           = AppPalette.card,
             tonalElevation  = 0.dp,
             shadowElevation = 8.dp,
-            border          = BorderStroke(1.dp, Color(0xFFECE7F6))
+            border          = BorderStroke(1.dp, AppPalette.cardBorder)
         ) {
             Column(
                 modifier = Modifier.padding(28.dp),
@@ -1535,7 +1543,7 @@ fun StreakCelebrationDialog(streak: Int, onDismiss: () -> Unit) {
                         text = headline,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF1A1A2E),
+                        color = AppPalette.textPrimary,
                         textAlign = TextAlign.Center
                     )
                     Surface(
@@ -1553,7 +1561,7 @@ fun StreakCelebrationDialog(streak: Int, onDismiss: () -> Unit) {
                     Text(
                         text = subtext,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF9E9E9E),
+                        color = AppPalette.textMuted,
                         textAlign = TextAlign.Center,
                         lineHeight = 22.sp
                     )
@@ -1587,10 +1595,10 @@ fun StreakDetailSheet(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape           = RoundedCornerShape(Dimens.BottomSheetRadius),
-            color           = Color.White,
+            color           = AppPalette.card,
             tonalElevation  = 0.dp,
             shadowElevation = 8.dp,
-            border          = BorderStroke(1.dp, Color(0xFFECE7F6)),
+            border          = BorderStroke(1.dp, AppPalette.cardBorder),
             modifier        = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -1604,18 +1612,18 @@ fun StreakDetailSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("Habit Journey", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A2E))
-                        Text("Your momentum over time", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9E9E9E))
+                        Text("Habit Journey", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                        Text("Your momentum over time", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                     }
                     Box(
                         modifier = Modifier
                             .size(34.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFECE7F6))
+                            .background(AppPalette.cardBorder)
                             .clickable { onDismiss() },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Close, null, modifier = Modifier.size(15.dp), tint = Color(0xFF9E9E9E))
+                        Icon(Icons.Default.Close, null, modifier = Modifier.size(15.dp), tint = AppPalette.textMuted)
                     }
                 }
 
@@ -1631,23 +1639,23 @@ fun StreakDetailSheet(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(Dimens.CardRadius),
                             color = NavPurple.copy(alpha = 0.06f),
-                            border = BorderStroke(1.dp, Color(0xFFECE7F6))
+                            border = BorderStroke(1.dp, AppPalette.cardBorder)
                         ) {
                             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text("$currentStreak", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 30.sp,
-                                    color = if (currentStreak > 0) config.flamePrimary else Color(0xFF9E9E9E))
-                                Text(config.statusCopy, style = MaterialTheme.typography.labelSmall, color = Color(0xFF9E9E9E), lineHeight = 14.sp)
+                                    color = if (currentStreak > 0) config.flamePrimary else AppPalette.textMuted)
+                                Text(config.statusCopy, style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, lineHeight = 14.sp)
                             }
                         }
                         Surface(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(Dimens.CardRadius),
-                            color = Color(0xFFFAF9FE),
-                            border = BorderStroke(1.dp, Color(0xFFECE7F6))
+                            color = AppPalette.background,
+                            border = BorderStroke(1.dp, AppPalette.cardBorder)
                         ) {
                             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text("$bestStreak", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 30.sp, color = NavPurple.copy(alpha = 0.75f))
-                                Text("Personal Best", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9E9E9E), lineHeight = 14.sp)
+                                Text("Personal Best", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, lineHeight = 14.sp)
                             }
                         }
                     }
@@ -1684,13 +1692,13 @@ fun StreakDetailSheet(
                 // ── Momentum calendar ─────────────────────────────────────────
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Streak history", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF9E9E9E), letterSpacing = 0.5.sp)
+                        color = AppPalette.textMuted, letterSpacing = 0.5.sp)
 
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(Dimens.CardRadius),
-                        color = Color(0xFFFAF9FE),
-                        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+                        color = AppPalette.background,
+                        border = BorderStroke(1.dp, AppPalette.cardBorder)
                     ) {
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             // Day-of-week header — sticky
@@ -1698,7 +1706,7 @@ fun StreakDetailSheet(
                                 listOf("M","T","W","T","F","S","S").forEach { day ->
                                     Text(day, modifier = Modifier.weight(1f), textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
-                                        fontSize = 9.sp, color = Color(0xFF9E9E9E))
+                                        fontSize = 9.sp, color = AppPalette.textMuted)
                                 }
                             }
 
@@ -1744,7 +1752,7 @@ fun StreakDetailSheet(
                                                         when {
                                                             tracked  -> NavPurple.copy(alpha = 0.85f)
                                                             isFuture -> Color.Transparent
-                                                            else     -> Color(0xFFECE7F6)
+                                                            else     -> AppPalette.cardBorder
                                                         }
                                                     )
                                                     .then(
@@ -1764,7 +1772,7 @@ fun StreakDetailSheet(
                                                             tracked         -> Color.White
                                                             isToday         -> NavPurple
                                                             isFirstOfMonth  -> NavPurple.copy(alpha = 0.6f)
-                                                            else            -> Color(0xFF9E9E9E)
+                                                            else            -> AppPalette.textMuted
                                                         }
                                                     )
                                                 }
@@ -1778,7 +1786,7 @@ fun StreakDetailSheet(
 
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         LegendDot(NavPurple, "Tracked")
-                        LegendDot(Color(0xFFECE7F6), "Missed")
+                        LegendDot(AppPalette.cardBorder, "Missed")
                     }
                 }
 
@@ -1800,7 +1808,7 @@ fun StreakDetailSheet(
 private fun LegendDot(color: Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(color))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFF9E9E9E))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
     }
 }
 

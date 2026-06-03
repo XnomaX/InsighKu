@@ -41,6 +41,8 @@ import com.example.insightku.ui.components.dashboard.DashboardScreen
 import com.example.insightku.ui.components.settings.SettingsScreen
 import com.example.insightku.ui.components.addtransaction.AddTransactionDialog
 import com.example.insightku.ui.components.budgeting.DialogState
+import com.example.insightku.ui.theme.AppPalette
+import com.example.insightku.ui.theme.LocalAccent
 import com.example.insightku.viewmodel.AddTransactionViewModel
 import com.example.insightku.viewmodel.BudgetingViewModel
 import com.example.insightku.viewmodel.DashboardViewModel
@@ -50,8 +52,8 @@ import kotlinx.coroutines.delay
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 private val NavPurple   = Color(0xFF7C4DFF)
-private val NavBorder   = Color(0xFFE8E0F0).copy(alpha = 0.6f)
-private val NavBg       = Color(0xFFFFFFFF)
+private val NavBorder: Color  @Composable get() = AppPalette.cardBorder
+private val NavBg: Color      @Composable get() = AppPalette.card
 private val NavInactive = Color(0xFFB0AABF)
 
 // ─── Nav item data ────────────────────────────────────────────────────────────
@@ -175,7 +177,7 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .background(Color(0xFFFAF9FE))
+                    .background(AppPalette.background)
             )
         }
 
@@ -301,6 +303,7 @@ private fun BottomNavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val NavPurple = LocalAccent.current // global accent — recolors the nav live
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed         by interactionSource.collectIsPressedAsState()
 
@@ -369,6 +372,7 @@ private fun BottomNavItem(
 
 @Composable
 fun CenterAddButton(onClick: () -> Unit) {
+    val NavPurple = LocalAccent.current // global accent — recolors the add button live
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed         by interactionSource.collectIsPressedAsState()
 

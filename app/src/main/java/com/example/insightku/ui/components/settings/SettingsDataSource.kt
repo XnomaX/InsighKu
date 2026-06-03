@@ -14,10 +14,7 @@ object SettingsDataSource {
             userName = "Andi",
             isDarkMode = false,
             defaultInputMode = InputMode.MANUAL,
-            whatsappEnabled = true,
-            pushNotificationsEnabled = true,
-            budgetAlertsEnabled = true,
-            biometricEnabled = false
+            pushNotificationsEnabled = true
         )
     }
 }

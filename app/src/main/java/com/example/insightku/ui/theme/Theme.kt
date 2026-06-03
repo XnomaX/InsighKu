@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -80,6 +81,12 @@ fun InsightKuTheme(
     dynamicColor: Boolean = false,
     /** Kode mata uang aktif — diambil dari DataStore via SettingsViewModel di level atas */
     currencyCode: String = "IDR",
+    /** Personalization — propagated app-wide so comfort/tone are real, not settings-screen-only. */
+    comfortMode: Boolean = false,
+    insightTone: InsightTone = InsightTone.WARM,
+    accent: Color = Color(0xFF7C4DFF),
+    visualDensity: VisualDensity = VisualDensity.COMFORTABLE,
+    hideAmounts: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -112,8 +119,17 @@ fun InsightKuTheme(
     ) {
         // ProvideCurrency membuat LocalCurrencyCode tersedia di seluruh composable tree.
         // ProvideResponsiveDimens membuat LocalResponsiveDimens tersedia.
+        // ProvidePersonalization membuat comfort mode + insight tone tersedia app-wide.
         ProvideCurrency(currencyCode) {
-            ProvideResponsiveDimens(content = content)
+            ProvidePersonalization(
+                comfortMode = comfortMode,
+                insightTone = insightTone,
+                accent = accent,
+                visualDensity = visualDensity,
+                hideAmounts = hideAmounts
+            ) {
+                ProvideResponsiveDimens(content = content)
+            }
         }
     }
 }

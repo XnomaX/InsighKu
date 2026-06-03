@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -33,7 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.ui.theme.Dimens
+import com.example.insightku.ui.theme.LocalComfortMode
+import com.example.insightku.ui.theme.LocalHideAmounts
 import com.example.insightku.ui.theme.LocalCurrencyCode
+import com.example.insightku.ui.theme.LocalInsightTone
 import com.example.insightku.ui.theme.LocalResponsiveDimens
 import com.example.insightku.utils.CurrencyUtils
 import com.example.insightku.viewmodel.AnalyticsViewModel
@@ -83,7 +87,15 @@ fun AnalyticsContent(
 ) {
     val dimens = LocalResponsiveDimens.current
     val currencyCode = LocalCurrencyCode.current
-    val formatAmount: (Double) -> String = { CurrencyUtils.formatAmount(it, currencyCode) }
+    val hideAmounts = LocalHideAmounts.current
+    // Respect global privacy: mask every Analytics figure when hide-amounts is on.
+    val formatAmount: (Double) -> String = {
+        if (hideAmounts) com.example.insightku.ui.theme.MASKED_AMOUNT
+        else CurrencyUtils.formatAmount(it, currencyCode)
+    }
+    // A covered section is "revealed" once the user uncovers it; in debug mode everything is shown
+    // so all states are inspectable.
+    val isRevealed: (String) -> Boolean = { id -> uiState.debugLabel != null || id in uiState.uncoveredSections }
 
     LazyColumn(
         modifier = modifier
@@ -111,23 +123,50 @@ fun AnalyticsContent(
                     color = AnalyticsPalette.textPrimary
                 )
                 Spacer(Modifier.height(Dimens.PaddingSmall))
+                val toneSubtitle = when (LocalInsightTone.current) {
+                    com.example.insightku.ui.theme.InsightTone.GENTLE -> "A soft, no-pressure look at your habits 💜"
+                    com.example.insightku.ui.theme.InsightTone.DIRECT -> "Your habits, straight up"
+                    com.example.insightku.ui.theme.InsightTone.WARM -> "A calm look at your habits 💜"
+                }
                 Text(
-                    "A calm look at your habits 💜",
+                    toneSubtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = AnalyticsPalette.textMuted
                 )
+                // TEMPORARY — visible button to enter the preview/debug scenarios on a real device.
+                // Remove this (and the debug system) before final polish.
+                Spacer(Modifier.height(Dimens.PaddingMedium))
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(AnalyticsPalette.Purple.copy(alpha = 0.12f))
+                        .pointerInput(Unit) {
+                            detectTapGestures(onTap = { onEvent(AnalyticsEvent.CycleDebugScenario) })
+                        }
+                        .padding(horizontal = Dimens.PaddingLarge, vertical = Dimens.PaddingSmall)
+                ) {
+                    Text(
+                        "🐞 Preview Two Yous",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AnalyticsPalette.Purple
+                    )
+                }
             }
         }
 
         var order = 0
         staggered(order++) {
-            SpendingPersonalityCard(
+            TwoYousCard(
+                twoYous = uiState.twoYous,
                 personality = uiState.personality,
                 patterns = uiState.patterns,
-                expanded = uiState.patternsExpanded,
-                onToggle = { onEvent(AnalyticsEvent.TogglePatterns) }
+                patternsExpanded = uiState.patternsExpanded,
+                onTogglePatterns = { onEvent(AnalyticsEvent.TogglePatterns) }
             )
         }
+
+        uiState.noticing?.let { n -> staggered(order++) { DidYouNoticeCard(n) } }
 
         if (uiState.heatmapCells.isNotEmpty()) {
             staggered(order++) {
@@ -141,7 +180,14 @@ fun AnalyticsContent(
             }
         }
 
-        staggered(order++) { ConsistencySection(uiState.streak) }
+        staggered(order++) {
+            Uncoverable(
+                revealed = isRevealed("consistency"),
+                emoji = "🌱",
+                invitation = "Are you more consistent than last month?",
+                onReveal = { onEvent(AnalyticsEvent.Uncover("consistency")) }
+            ) { ConsistencySection(uiState.streak) }
+        }
 
         if (uiState.categoryBubbles.isNotEmpty()) {
             staggered(order++) {
@@ -155,12 +201,35 @@ fun AnalyticsContent(
         }
 
         if (uiState.bigDecisions.isNotEmpty()) {
-            staggered(order++) { BigDecisionsSection(uiState.bigDecisions, formatAmount = formatAmount) }
+            staggered(order++) {
+                Uncoverable(
+                    revealed = isRevealed("bigDecisions"),
+                    emoji = "💸",
+                    invitation = "Ready to see the few choices that shaped your month?",
+                    onReveal = { onEvent(AnalyticsEvent.Uncover("bigDecisions")) }
+                ) { BigDecisionsSection(uiState.bigDecisions, formatAmount = formatAmount) }
+            }
         }
 
-        staggered(order++) { SpotlightSection(uiState.spotlight, formatAmount = formatAmount) }
+        staggered(order++) {
+            Uncoverable(
+                revealed = isRevealed("spotlight"),
+                emoji = "🔦",
+                invitation = "Who got the most of your money this month?",
+                onReveal = { onEvent(AnalyticsEvent.Uncover("spotlight")) }
+            ) { SpotlightSection(uiState.spotlight, formatAmount = formatAmount) }
+        }
 
-        uiState.mood?.let { mood -> staggered(order++) { SpendingMoodSection(mood) } }
+        uiState.mood?.let { mood ->
+            staggered(order++) {
+                Uncoverable(
+                    revealed = isRevealed("mood"),
+                    emoji = "🌤️",
+                    invitation = "What's your spending mood been lately?",
+                    onReveal = { onEvent(AnalyticsEvent.Uncover("mood")) }
+                ) { SpendingMoodSection(mood) }
+            }
+        }
     }
 }
 
@@ -170,15 +239,19 @@ private fun androidx.compose.foundation.lazy.LazyListScope.staggered(
     content: @Composable () -> Unit
 ) {
     item {
+        // Comfort mode softens motion app-wide: gentler fade, no rise, no stagger delay.
+        val comfort = LocalComfortMode.current
         var visible by remember { mutableStateOf(false) }
+        val duration = if (comfort) 220 else 320
+        val delay = if (comfort) 0 else index * 60
         val alpha by animateFloatAsState(
             targetValue = if (visible) 1f else 0f,
-            animationSpec = tween(durationMillis = 320, delayMillis = index * 60),
+            animationSpec = tween(durationMillis = duration, delayMillis = delay),
             label = "stagger_alpha_$index"
         )
         val translate by animateFloatAsState(
-            targetValue = if (visible) 0f else 24f,
-            animationSpec = tween(durationMillis = 320, delayMillis = index * 60),
+            targetValue = if (visible) 0f else if (comfort) 0f else 24f,
+            animationSpec = tween(durationMillis = duration, delayMillis = delay),
             label = "stagger_y_$index"
         )
         androidx.compose.runtime.LaunchedEffect(Unit) { visible = true }

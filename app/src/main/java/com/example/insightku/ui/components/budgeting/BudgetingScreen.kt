@@ -82,9 +82,14 @@ import com.example.insightku.ui.dialogs.AddCategoryDialog
 import com.example.insightku.ui.dialogs.CategoryIconResolver
 import com.example.insightku.ui.dialogs.EditCategoryDialog
 import com.example.insightku.ui.theme.Dimens
+import com.example.insightku.ui.theme.AppPalette
 import com.example.insightku.ui.theme.ExpenseRed
 import com.example.insightku.ui.theme.IncomeGreen
 import com.example.insightku.ui.theme.IncomeMid
+import com.example.insightku.ui.theme.InsightTone
+import com.example.insightku.ui.theme.LocalAccent
+import com.example.insightku.ui.theme.LocalComfortMode
+import com.example.insightku.ui.theme.LocalInsightTone
 import com.example.insightku.ui.theme.PurpleTint
 import com.example.insightku.ui.theme.PurpleViolet
 import com.example.insightku.ui.theme.WarningYellow
@@ -120,7 +125,7 @@ fun BudgetingScreenContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFAF9FE))
+            .background(AppPalette.background)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -286,7 +291,7 @@ fun BudgetingScreenContent(
         if (uiState.isLoading && uiState.budgetCategories.isEmpty()) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
-                color = Color(0xFF7C4DFF)
+                color = LocalAccent.current
             )
         }
     }
@@ -396,7 +401,7 @@ private fun DeleteCategoryDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         shape            = RoundedCornerShape(28.dp),
-        containerColor   = Color.White,
+        containerColor   = AppPalette.card,
         icon             = {
             Box(
                 modifier         = Modifier.size(52.dp).clip(CircleShape).background(Color(0xFFFFF5F5)),
@@ -410,22 +415,22 @@ private fun DeleteCategoryDialog(
                 text       = "Delete Category?",
                 style      = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color      = Color(0xFF1A1A2E)
+                color      = AppPalette.textPrimary
             )
         },
         text = {
             Text(
                 text  = "\"$categoryName\" will be removed. Its transactions will be unlinked.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF9E9E9E)
+                color = AppPalette.textMuted
             )
         },
         dismissButton = {
             Surface(
                 modifier = Modifier.height(42.dp).clickable(onClick = onDismiss),
                 shape    = RoundedCornerShape(50.dp),
-                color    = Color.White,
-                border   = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECE7F6))
+                color    = AppPalette.card,
+                border   = androidx.compose.foundation.BorderStroke(1.dp, AppPalette.cardBorder)
             ) {
                 Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
                     Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
@@ -454,7 +459,7 @@ private fun BudgetGradientHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFFAF9FE))
+            .background(AppPalette.background)
             .statusBarsPadding()
             .padding(horizontal = Dimens.ScreenHorizontalPadding)
             .padding(top = 20.dp, bottom = 8.dp),
@@ -515,10 +520,15 @@ fun BudgetHealthCard(
     safeCount: Int,
     modifier: Modifier = Modifier
 ) {
+    // Comfort/gentle softens alert intensity (lower saturation) so red reads as "over", not "danger".
+    val tone = LocalInsightTone.current
+    val soften = LocalComfortMode.current || tone == InsightTone.GENTLE
+    val overColor = if (soften) Color(0xFFE57373) else ExpenseRed
+    val warnColor = if (soften) Color(0xFFFFD699) else WarningYellow
     val progressColor by animateColorAsState(
         targetValue = when {
-            percentage >= 100.0 -> ExpenseRed
-            percentage >= 70.0  -> WarningYellow
+            percentage >= 100.0 -> overColor
+            percentage >= 70.0  -> warnColor
             else                -> IncomeGreen
         },
         animationSpec = tween(400),
@@ -533,17 +543,30 @@ fun BudgetHealthCard(
         label = "circularProgress"
     )
 
+    // Tone-aware, emotionally-safe budget language. Gentle/comfort never shames an overspend;
+    // direct stays concise. Reuses the tone/soften signals read above.
     val healthLabel = when {
         totalBudget <= 0.0  -> "No limits set"
-        percentage >= 100.0 -> "Over budget"
-        percentage >= 70.0  -> "Watch spending"
-        else                -> "On track"
+        percentage >= 100.0 -> if (soften) "A little past plan" else "Over budget"
+        percentage >= 70.0  -> if (soften) "Getting close" else "Watch spending"
+        else                -> if (tone == InsightTone.DIRECT) "Within budget" else "On track"
     }
     val healthSubtitle = when {
         totalBudget <= 0.0  -> "Set category limits to start tracking"
-        remaining < 0.0     -> "You've exceeded your monthly budget"
-        percentage >= 70.0  -> "You're approaching your monthly limit"
-        else                -> "You're spending within healthy limits"
+        remaining < 0.0 -> when {
+            soften          -> "You've gone a little past your plan — that's okay, here's where things stand."
+            tone == InsightTone.DIRECT -> "Over your monthly budget."
+            else            -> "You've passed your monthly budget."
+        }
+        percentage >= 70.0 -> when {
+            soften          -> "You're getting close to your plan — no rush, just a heads-up."
+            tone == InsightTone.DIRECT -> "Near your monthly limit."
+            else            -> "You're approaching your monthly limit."
+        }
+        else -> when {
+            tone == InsightTone.DIRECT -> "Spending within budget."
+            else            -> "You're spending within healthy limits."
+        }
     }
 
     Surface(
@@ -778,19 +801,19 @@ private fun IncomeSectionLabel(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
+                    color = AppPalette.textPrimary
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
+                    color = AppPalette.textMuted
                 )
             }
             if (onAddCategory != null) {
                 Surface(
                     modifier = Modifier.clickable(onClick = onAddCategory),
                     shape = RoundedCornerShape(50.dp),
-                    color = Color.White,
+                    color = AppPalette.card,
                     border = BorderStroke(1.dp, Color(0xFF10B981))
                 ) {
                     Row(
@@ -825,8 +848,8 @@ private fun EmptyIncomeState(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
             modifier = Modifier
@@ -853,19 +876,19 @@ private fun EmptyIncomeState(
                 text = "No income sources yet",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1A1A2E),
+                color = AppPalette.textPrimary,
                 textAlign = TextAlign.Center
             )
             Text(
                 text = "Track where your money comes from.",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF9E9E9E),
+                color = AppPalette.textMuted,
                 textAlign = TextAlign.Center
             )
             Surface(
                 modifier = Modifier.clickable(onClick = onAddCategory),
                 shape = RoundedCornerShape(50.dp),
-                color = Color.White,
+                color = AppPalette.card,
                 border = BorderStroke(1.dp, Color(0xFF10B981))
             ) {
                 Row(
@@ -904,8 +927,8 @@ private fun IncomeCategoryCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Row(
             modifier = Modifier
@@ -933,7 +956,7 @@ private fun IncomeCategoryCard(
                     text = category.name,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E),
+                    color = AppPalette.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -942,7 +965,7 @@ private fun IncomeCategoryCard(
                         "${formatCurrency(category.spentAmount)} this month"
                     else "No income recorded",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
+                    color = AppPalette.textMuted
                 )
             }
             if (category.spentAmount > 0) {
@@ -993,20 +1016,20 @@ private fun BudgetSectionLabel(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A2E)
+                    color = AppPalette.textPrimary
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
+                    color = AppPalette.textMuted
                 )
             }
             if (onAddCategory != null) {
                 Surface(
                     modifier = Modifier.clickable(onClick = onAddCategory),
                     shape = RoundedCornerShape(50.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7C4DFF))
+                    color = AppPalette.card,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, LocalAccent.current)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
@@ -1017,13 +1040,13 @@ private fun BudgetSectionLabel(
                             Icons.Default.Add,
                             contentDescription = "Add category",
                             modifier = Modifier.size(14.dp),
-                            tint = Color(0xFF7C4DFF)
+                            tint = LocalAccent.current
                         )
                         Text(
                             text = "Add Category",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF7C4DFF)
+                            color = LocalAccent.current
                         )
                     }
                 }
@@ -1068,8 +1091,8 @@ fun BudgetCategoryCard(
             .scale(cardScale),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -1102,14 +1125,14 @@ fun BudgetCategoryCard(
                         text = category.name,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1A2E),
+                        color = AppPalette.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = budgetSpentText(category),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF9E9E9E),
+                        color = AppPalette.textMuted,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1120,13 +1143,13 @@ fun BudgetCategoryCard(
                     Text(
                         text = if (category.hasLimit) "Remaining" else "Tracked",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF9E9E9E)
+                        color = AppPalette.textMuted
                     )
                     Text(
                         text = if (category.hasLimit) formatCurrency(category.remainingAmount) else "No limit",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (category.hasLimit) statusColor else Color(0xFF7C4DFF),
+                        color = if (category.hasLimit) statusColor else LocalAccent.current,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1168,19 +1191,19 @@ fun BudgetCategoryCard(
                         .height(6.dp)
                         .clip(RoundedCornerShape(50.dp)),
                     color = statusColor,
-                    trackColor = Color(0xFFECE7F6)
+                    trackColor = AppPalette.cardBorder
                 )
                 if (!category.recurringPeriod.isNullOrBlank()) {
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = Color(0xFF7C4DFF).copy(alpha = 0.08f)
+                        color = LocalAccent.current.copy(alpha = 0.08f)
                     ) {
                         Text(
                             text = category.recurringPeriod,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF7C4DFF)
+                            color = LocalAccent.current
                         )
                     }
                 }
@@ -1221,8 +1244,8 @@ private fun EmptyBudgetState(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
             modifier = Modifier
@@ -1235,34 +1258,34 @@ private fun EmptyBudgetState(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF7C4DFF).copy(alpha = 0.08f)),
+                    .background(LocalAccent.current.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Category,
                     contentDescription = null,
                     modifier = Modifier.size(34.dp),
-                    tint = Color(0xFF7C4DFF).copy(alpha = 0.5f)
+                    tint = LocalAccent.current.copy(alpha = 0.5f)
                 )
             }
             Text(
                 text = "No budget categories yet",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1A1A2E),
+                color = AppPalette.textPrimary,
                 textAlign = TextAlign.Center
             )
             Text(
                 text = "Start with a few monthly limits. Categories without limits still track spending.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF9E9E9E),
+                color = AppPalette.textMuted,
                 textAlign = TextAlign.Center
             )
             Surface(
                 modifier = Modifier.clickable(onClick = onAddCategory),
                 shape = RoundedCornerShape(50.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFF7C4DFF))
+                color = AppPalette.card,
+                border = BorderStroke(1.dp, LocalAccent.current)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
@@ -1273,13 +1296,13 @@ private fun EmptyBudgetState(
                         Icons.Default.Add,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = Color(0xFF7C4DFF)
+                        tint = LocalAccent.current
                     )
                     Text(
                         "Add Category",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF7C4DFF)
+                        color = LocalAccent.current
                     )
                 }
             }
@@ -1302,12 +1325,11 @@ private fun BudgetInsightsSection(
             text = "Budget Insights",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1A1A2E)
+            color = AppPalette.textPrimary
         )
         insights.forEach { insight ->
             InsightCard(
                 text = insight.text,
-                bgColor = insight.bgColor,
                 iconTint = insight.iconTint,
                 icon = insight.icon
             )
@@ -1358,14 +1380,13 @@ private fun buildInsights(categories: List<BudgetCategory>): List<InsightData> {
 @Composable
 private fun InsightCard(
     text: String,
-    bgColor: Color,
     iconTint: Color,
     icon: ImageVector
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = bgColor,
-        border = BorderStroke(1.dp, iconTint.copy(alpha = 0.15f))
+        color = AppPalette.card,
+        border = BorderStroke(1.dp, iconTint.copy(alpha = 0.30f))
     ) {
         Row(
             modifier = Modifier
@@ -1391,7 +1412,7 @@ private fun InsightCard(
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF1A1A2E),
+                color = AppPalette.textPrimary,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -1400,7 +1421,7 @@ private fun InsightCard(
 
 @Composable
 private fun budgetStatusColor(health: BudgetHealth): Color = when (health) {
-    BudgetHealth.Unlimited -> Color(0xFF7C4DFF)
+    BudgetHealth.Unlimited -> LocalAccent.current
     BudgetHealth.Good -> Color(0xFF81C784)
     BudgetHealth.Warning -> Color(0xFFFFB74D)
     BudgetHealth.Over -> Color(0xFFE57373)

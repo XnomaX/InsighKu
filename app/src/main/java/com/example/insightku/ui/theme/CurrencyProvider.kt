@@ -5,6 +5,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import com.example.insightku.utils.CurrencyUtils
 
+/** The mask shown in place of any amount when global privacy (hide amounts) is on. */
+const val MASKED_AMOUNT = "••••••"
+
 /**
  * CompositionLocal yang menyimpan kode mata uang aktif (mis. "IDR", "USD").
  *
@@ -40,6 +43,9 @@ fun ProvideCurrency(currencyCode: String, content: @Composable () -> Unit) {
  */
 @Composable
 fun formatCurrency(amount: Double): String {
+    // Global privacy: when hide-amounts is on, every figure routed through this helper masks
+    // automatically — one chokepoint, consistent across the whole app.
+    if (LocalHideAmounts.current) return MASKED_AMOUNT
     val code = LocalCurrencyCode.current
     return CurrencyUtils.formatAmount(amount, code)
 }

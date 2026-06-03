@@ -46,18 +46,20 @@ import com.example.insightku.data.model.Transaction
 import com.example.insightku.data.model.TransactionType
 import com.example.insightku.ui.components.common.PremiumDatePicker
 import com.example.insightku.ui.dialogs.CategoryIconResolver
+import com.example.insightku.ui.theme.AppPalette
+import com.example.insightku.ui.theme.LocalAccent
 import com.example.insightku.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
 
 // â”€â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-private val EditPurple     = Color(0xFF7C4DFF)
+private val EditPurple: Color      @Composable get() = LocalAccent.current
 private val EditPurpleTint = Color(0xFFEDE9FE)
-private val EditBorder     = Color(0xFFECE7F6)
-private val EditSurface    = Color(0xFFFAF9FE)
-private val EditTextPrimary = Color(0xFF1A1A2E)
-private val EditTextMuted   = Color(0xFF9E9E9E)
+private val EditBorder: Color      @Composable get() = AppPalette.cardBorder
+private val EditSurface: Color     @Composable get() = AppPalette.card
+private val EditTextPrimary: Color @Composable get() = AppPalette.textPrimary
+private val EditTextMuted: Color   @Composable get() = AppPalette.textMuted
 private val EditIncomeGreen = Color(0xFF10B981)
 private val EditExpenseRed  = Color(0xFFEF4444)
 
@@ -113,7 +115,7 @@ fun EditTransactionDetail(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState       = sheetState,
-        containerColor   = Color.White,
+        containerColor   = EditSurface,
         dragHandle = {
             Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(Color(0xFFE0D9F5)))
@@ -257,7 +259,7 @@ fun EditTransactionDetail(
                         colors   = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor      = accentColor,
                             unfocusedBorderColor    = EditBorder,
-                            focusedContainerColor   = Color.White,
+                            focusedContainerColor   = EditSurface,
                             unfocusedContainerColor = EditSurface
                         )
                     )
@@ -405,8 +407,8 @@ private fun EditAmountCard(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor      = accentColor,
                 unfocusedBorderColor    = accentColor.copy(alpha = 0.3f),
-                focusedContainerColor   = Color.White.copy(alpha = 0.6f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.4f),
+                focusedContainerColor   = EditSurface,
+                unfocusedContainerColor = EditSurface,
                 cursorColor             = accentColor,
                 focusedTextColor        = accentColor,
                 unfocusedTextColor      = accentColor
@@ -498,7 +500,7 @@ private fun EditCategoryPicker(
                         Row(
                             modifier = Modifier.weight(1f)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSel) c.copy(alpha = 0.12f) else Color.White)
+                                .background(if (isSel) c.copy(alpha = 0.12f) else EditSurface)
                                 .border(1.5.dp, if (isSel) c else EditBorder, RoundedCornerShape(12.dp))
                                 .clickable { onSelect(name); expanded = false }
                                 .padding(horizontal = 10.dp, vertical = 10.dp),
@@ -544,7 +546,7 @@ private fun EditPaymentChips(selected: String, onSelect: (String) -> Unit) {
                         label         = "pay_scale_$label"
                     )
                     val bgColor by animateColorAsState(
-                        targetValue   = if (isSelected) EditPurple.copy(alpha = 0.10f) else Color.White,
+                        targetValue   = if (isSelected) EditPurple.copy(alpha = 0.10f) else EditSurface,
                         animationSpec = tween(180), label = "pay_bg_$label"
                     )
                     val borderColor by animateColorAsState(
@@ -596,7 +598,7 @@ private fun EditFormCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(20.dp),
-        color    = Color.White,
+        color    = EditSurface,
         border   = BorderStroke(1.dp, EditBorder),
         shadowElevation = 1.dp
     ) {
@@ -653,7 +655,7 @@ private fun EditTextField(
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor      = borderColor,
             unfocusedBorderColor    = borderColor,
-            focusedContainerColor   = Color.White,
+            focusedContainerColor   = EditSurface,
             unfocusedContainerColor = EditSurface
         )
     )

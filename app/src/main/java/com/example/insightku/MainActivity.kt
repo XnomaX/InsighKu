@@ -44,7 +44,12 @@ private fun InsightKuMainApp() {
 
     InsightKuTheme(
         darkTheme = settingsState.isDarkMode,
-        currencyCode = settingsState.currencyCode
+        currencyCode = settingsState.currencyCode,
+        comfortMode = settingsState.comfortMode,
+        insightTone = settingsState.insightTone,
+        accent = settingsState.accentColor,
+        visualDensity = settingsState.visualDensity,
+        hideAmounts = settingsState.hideAmounts
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),

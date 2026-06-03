@@ -67,8 +67,11 @@ class DashboardViewModel @Inject constructor(
             DashboardEvent.LoadDashboardData -> loadDashboardData()
             DashboardEvent.RefreshData       -> refreshData()
             DashboardEvent.ClearError        -> _uiState.update { it.copy(error = null) }
-            DashboardEvent.ToggleBalanceVisibility ->
-                _uiState.update { it.copy(isBalanceVisible = !it.isBalanceVisible) }
+            DashboardEvent.ToggleBalanceVisibility -> viewModelScope.launch {
+                // Privacy is global + persisted: flip the app-wide hideAmounts setting. The hero reads
+                // LocalHideAmounts, so Home and Budgeting stay in sync and the choice survives restart.
+                prefs.setHideAmounts(!prefs.hideAmounts.first())
+            }
             is DashboardEvent.ToggleForecastPeriod -> _uiState.update {
                 it.copy(forecastPeriod = if (event.period == "week") ForecastPeriod.WEEKLY else ForecastPeriod.MONTHLY)
             }

@@ -1,31 +1,77 @@
-
 package com.example.insightku.ui.components.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.automirrored.filled.Message
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.insightku.R
+import com.example.insightku.domain.usecase.learning.MerchantMemory
 import com.example.insightku.ui.theme.Dimens
+import com.example.insightku.ui.theme.InsightTone
 import com.example.insightku.ui.theme.LocalResponsiveDimens
+import com.example.insightku.ui.theme.VisualDensity
 import com.example.insightku.utils.CurrencyUtils
 import com.example.insightku.viewmodel.SettingsViewModel
 
@@ -37,9 +83,7 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState.userEmail) {
-        if (!uiState.isLoading && uiState.userEmail.isEmpty()) {
-            onLogout()
-        }
+        if (!uiState.isLoading && uiState.userEmail.isEmpty()) onLogout()
     }
 
     if (uiState.showLogoutDialog) {
@@ -50,354 +94,495 @@ fun SettingsScreen(
     }
 
     val dimens = LocalResponsiveDimens.current
+    val onEvent = viewModel::onEvent
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
+            .background(SettingsPalette.background),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = dimens.screenHorizontalPadding,
+            end = dimens.screenHorizontalPadding,
+            top = Dimens.PaddingExtraLarge,
+            bottom = Dimens.ContentBottomPadding
+        ),
+        verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)
     ) {
-        SettingsHeader()
+        item { IdentityHeader(uiState) }
+        item { AppearanceSection(uiState, onEvent) }
+        item { AccentSection(uiState, onEvent) }
+        item { ComfortSection(uiState, onEvent) }
+        item { VisualDensitySection(uiState, onEvent) }
+        item { InsightToneSection(uiState, onEvent) }
+        item { HabitGoalSection(uiState, onEvent) }
+        item { CurrencySection(uiState, onEvent) }
+        item { SmartCaptureSection(uiState, onEvent) }
+        item { AccountSection(uiState, onEvent) }
+        item { AppInfoFooter() }
+    }
+}
 
-        Column(
-            modifier = Modifier
-                .padding(horizontal = dimens.screenHorizontalPadding)
-                .offset(y = (-32).dp),
-            verticalArrangement = Arrangement.spacedBy(dimens.itemSpacing)
-        ) {
-            AppearanceSection(uiState, viewModel::onEvent)
-            CurrencySection(uiState, viewModel::onEvent)
-            TransactionInputSection(uiState, viewModel::onEvent)
-            WhatsAppIntegrationSection(uiState, viewModel::onEvent)
-            NotificationsSection(uiState, viewModel::onEvent)
-            SecuritySection(uiState, viewModel::onEvent)
-            AccountSection(uiState, viewModel::onEvent)
-            AppInfoSection()
+// ── Shared shells ───────────────────────────────────────────────────────────────
+
+@Composable
+private fun SettingsSurface(
+    modifier: Modifier = Modifier,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.CardRadius),
+        color = SettingsPalette.card,
+        border = BorderStroke(1.dp, SettingsPalette.cardBorder),
+        tonalElevation = 0.dp,
+        shadowElevation = Dimens.ElevationSmall
+    ) {
+        Column(Modifier.padding(Dimens.CardInnerPaddingLarge), content = content)
+    }
+}
+
+@Composable
+private fun SectionLabel(icon: ImageVector, title: String, subtitle: String? = null) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(36.dp).clip(RoundedCornerShape(12.dp))
+                .background(SettingsPalette.tint(SettingsPalette.Purple)),
+            contentAlignment = Alignment.Center
+        ) { Icon(icon, null, tint = SettingsPalette.Purple, modifier = Modifier.size(18.dp)) }
+        Spacer(Modifier.width(Dimens.PaddingMedium))
+        Column {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.textPrimary)
+            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
         }
     }
 }
 
 @Composable
-private fun SettingsHeader() {
-    val purpleGradient = Brush.verticalGradient(
-        colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+private fun ToneSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        colors = SwitchDefaults.colors(
+            checkedThumbColor = Color.White,
+            checkedTrackColor = SettingsPalette.Purple,
+            uncheckedThumbColor = Color.White,
+            uncheckedTrackColor = SettingsPalette.textMuted.copy(alpha = 0.4f)
+        )
     )
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(brush = purpleGradient)
-            .padding(Dimens.PaddingExtraLarge)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Settings,
-                    contentDescription = stringResource(R.string.settings_title),
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
-            Text(
-                text = stringResource(R.string.settings_subtitle),
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = Color.White.copy(alpha = 0.8f)
-                )
-            )
-        }
+}
+
+// ── 1. Identity header ────────────────────────────────────────────────────────
+
+@Composable
+private fun IdentityHeader(uiState: SettingsUiState) {
+    Column {
+        Text(
+            if (uiState.userName.isNotBlank()) "Hey, ${uiState.userName.substringBefore(' ')}" else "Your space",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = SettingsPalette.textPrimary
+        )
+        Spacer(Modifier.height(Dimens.PaddingSmall))
+        Text(
+            "Shape how InsightKu feels and how it gets to know you 💜",
+            style = MaterialTheme.typography.bodyMedium,
+            color = SettingsPalette.textMuted
+        )
     }
 }
+
+// ── 2. Appearance + live preview ──────────────────────────────────────────────
 
 @Composable
 private fun AppearanceSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsCard(
-        title = stringResource(R.string.appearance),
-        icon = if (uiState.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode
-    ) {
-        SettingSwitchItem(
-            label = stringResource(R.string.dark_mode),
-            description = stringResource(R.string.dark_mode_desc),
-            checked = uiState.isDarkMode,
-            onCheckedChange = { onEvent(SettingsEvent.OnThemeChange(it)) }
+    SettingsSurface {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            SectionLabel(
+                if (uiState.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                "Appearance",
+                if (uiState.isDarkMode) "Dark and easy on the eyes" else "Light and airy"
+            )
+            Spacer(Modifier.weight(1f))
+            ToneSwitch(uiState.isDarkMode) { onEvent(SettingsEvent.OnThemeChange(it)) }
+        }
+        Spacer(Modifier.height(Dimens.PaddingLarge))
+        // Live mini-preview — a tiny mock card that recolors with the toggle.
+        val previewBg by animateColorAsState(if (uiState.isDarkMode) Color(0xFF1A1030) else Color.White, label = "previewBg")
+        val previewText by animateColorAsState(if (uiState.isDarkMode) Color(0xFFEDE9FE) else Color(0xFF1A1A2E), label = "previewText")
+        Surface(
+            Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
+            color = previewBg,
+            border = BorderStroke(1.dp, SettingsPalette.cardBorder)
+        ) {
+            Row(Modifier.padding(Dimens.CardInnerPadding), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(28.dp).clip(CircleShape).background(SettingsPalette.Purple))
+                Spacer(Modifier.width(Dimens.PaddingMedium))
+                Column {
+                    Text("Preview", style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
+                    Text("This is how cards will look", style = MaterialTheme.typography.bodyMedium, color = previewText)
+                }
+            }
+        }
+    }
+}
+
+// ── 3. Comfort mode ────────────────────────────────────────────────────────────
+
+@Composable
+private fun ComfortSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsSurface {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            SectionLabel(Icons.Default.Spa, "Comfort mode", "Softer motion, calmer pace")
+            Spacer(Modifier.weight(1f))
+            ToneSwitch(uiState.comfortMode) { onEvent(SettingsEvent.OnComfortModeToggle(it)) }
+        }
+        AnimatedVisibility(uiState.comfortMode, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+            Text(
+                "Animations across the app are gentled — things settle softly instead of sliding in.",
+                style = MaterialTheme.typography.bodySmall,
+                color = SettingsPalette.Purple,
+                modifier = Modifier.padding(top = Dimens.PaddingMedium)
+            )
+        }
+    }
+}
+
+// ── 4. How insights talk to you + live preview ─────────────────────────────────
+
+@Composable
+private fun InsightToneSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsSurface {
+        SectionLabel(Icons.Default.AutoAwesome, "How insights talk to you", "Pick the voice that feels right")
+        Spacer(Modifier.height(Dimens.PaddingLarge))
+        // Segmented pills — not a tab bar, an in-place voice picker.
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)) {
+            InsightTone.entries.forEach { tone ->
+                val selected = uiState.insightTone == tone
+                val bg by animateColorAsState(if (selected) SettingsPalette.Purple else SettingsPalette.tint(SettingsPalette.Purple), label = "tonebg")
+                Surface(
+                    Modifier.weight(1f).clickable { onEvent(SettingsEvent.OnInsightToneChange(tone)) },
+                    shape = RoundedCornerShape(50),
+                    color = bg
+                ) {
+                    Text(
+                        tone.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (selected) Color.White else SettingsPalette.Purple,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.PaddingMedium)
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(Dimens.PaddingLarge))
+        // Live preview — the SAME insight rendered in the chosen tone.
+        Surface(
+            Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
+            color = SettingsPalette.cardElevated
+        ) {
+            Row(Modifier.padding(Dimens.CardInnerPadding), verticalAlignment = Alignment.Top) {
+                Text("🔮", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.width(Dimens.PaddingMedium))
+                Column {
+                    Text("Sounds like", style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
+                    Spacer(Modifier.height(2.dp))
+                    Text(uiState.insightTone.previewSentence, style = MaterialTheme.typography.bodyMedium, color = SettingsPalette.textPrimary)
+                }
+            }
+        }
+    }
+}
+
+private val InsightTone.label: String
+    get() = when (this) {
+        InsightTone.GENTLE -> "Gentle"
+        InsightTone.WARM -> "Warm"
+        InsightTone.DIRECT -> "Direct"
+    }
+
+/** A single insight shown three ways, so the preview teaches the difference instantly. */
+private val InsightTone.previewSentence: String
+    get() = when (this) {
+        InsightTone.GENTLE -> "You've leaned into weekends a little more lately — and that's perfectly okay."
+        InsightTone.WARM -> "Weekends are where your money likes to go loud."
+        InsightTone.DIRECT -> "Most of your spending happens on weekends."
+    }
+
+// ── Reusable pill selector ───────────────────────────────────────────────────────
+
+/** A generic 3-way segmented pill selector matching the insight-tone pattern. */
+@Composable
+private fun <T> PillSelector(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)) {
+        options.forEach { (value, label) ->
+            val isSelected = value == selected
+            val bg by animateColorAsState(
+                if (isSelected) SettingsPalette.Purple else SettingsPalette.tint(SettingsPalette.Purple),
+                label = "pillbg"
+            )
+            Surface(
+                Modifier.weight(1f).clickable { onSelect(value) },
+                shape = RoundedCornerShape(50),
+                color = bg
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) Color.White else SettingsPalette.Purple,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.PaddingMedium)
+                )
+            }
+        }
+    }
+}
+
+// ── Accent picker ────────────────────────────────────────────────────────────────
+
+private val ACCENT_PRESETS = listOf(
+    "#7C4DFF" to "Purple",
+    "#7C3AED" to "Violet",
+    "#4A90E2" to "Blue",
+    "#10B981" to "Green",
+    "#F59E0B" to "Amber",
+    "#EF4444" to "Coral"
+)
+
+@Composable
+private fun AccentSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsSurface {
+        SectionLabel(Icons.Default.Palette, "Accent color", "Recolors the whole app instantly")
+        Spacer(Modifier.height(Dimens.PaddingLarge))
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
+            ACCENT_PRESETS.forEach { (hex, _) ->
+                val color = Color(android.graphics.Color.parseColor(hex))
+                val isSelected = uiState.accentColor.value == color.value
+                Box(
+                    Modifier.size(40.dp).clip(CircleShape).background(color)
+                        .clickable { onEvent(SettingsEvent.OnAccentChange(hex)) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                }
+            }
+        }
+    }
+}
+
+// ── Visual density ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun VisualDensitySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsSurface {
+        SectionLabel(Icons.Default.Dashboard, "Visual density", "How tightly content is packed")
+        Spacer(Modifier.height(Dimens.PaddingLarge))
+        PillSelector(
+            options = listOf(
+                VisualDensity.COMFORTABLE to "Comfortable",
+                VisualDensity.COZY to "Cozy",
+                VisualDensity.COMPACT to "Compact"
+            ),
+            selected = uiState.visualDensity,
+            onSelect = { onEvent(SettingsEvent.OnVisualDensityChange(it)) }
         )
     }
 }
 
+// ── 5. Habit goal stepper ───────────────────────────────────────────────────────
 @Composable
-private fun TransactionInputSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsCard(title = stringResource(R.string.transaction_input), icon = Icons.Default.Edit) {
-        SettingSelectItem(
-            label = stringResource(R.string.default_input_mode),
-            description = stringResource(R.string.default_input_mode_desc),
-            selectedValue = uiState.defaultInputMode,
-            options = mapOf(
-                InputMode.OCR to stringResource(R.string.input_mode_ocr),
-                InputMode.MANUAL to stringResource(R.string.input_mode_manual)
-            ),
-            onSelectionChange = { onEvent(SettingsEvent.OnDefaultInputChange(it)) }
-        )
+private fun HabitGoalSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsSurface {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            SectionLabel(Icons.Default.LocalFireDepartment, "Your habit goal", "Days a week you want to check in")
+            Spacer(Modifier.weight(1f))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StepperButton(Icons.Default.Remove, enabled = uiState.habitGoal > 1) {
+                    onEvent(SettingsEvent.OnHabitGoalChange((uiState.habitGoal - 1).coerceAtLeast(1)))
+                }
+                Text(
+                    "${uiState.habitGoal}",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = SettingsPalette.textPrimary,
+                    modifier = Modifier.width(40.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                StepperButton(Icons.Default.Add, enabled = uiState.habitGoal < 7) {
+                    onEvent(SettingsEvent.OnHabitGoalChange((uiState.habitGoal + 1).coerceAtMost(7)))
+                }
+            }
+        }
     }
 }
+
+@Composable
+private fun StepperButton(icon: ImageVector, enabled: Boolean, onClick: () -> Unit) {
+    val alpha = if (enabled) 1f else 0.3f
+    Box(
+        Modifier.size(36.dp).clip(CircleShape)
+            .background(SettingsPalette.tint(SettingsPalette.Purple).copy(alpha = 0.12f * alpha))
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) { Icon(icon, null, tint = SettingsPalette.Purple.copy(alpha = alpha), modifier = Modifier.size(18.dp)) }
+}
+
+// ── 6. Currency ──────────────────────────────────────────────────────────────────
 
 @Composable
 private fun CurrencySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    val currencyOptions = CurrencyUtils.SUPPORTED_CURRENCIES.associate { it.code to it.displayName }
-    SettingsCard(title = "Currency", icon = Icons.Default.AttachMoney) {
-        SettingSelectItem(
-            label = "Default Currency",
-            description = "Pilih mata uang yang digunakan di seluruh aplikasi",
-            selectedValue = uiState.currencyCode,
-            options = currencyOptions,
-            onSelectionChange = { onEvent(SettingsEvent.OnCurrencyChange(it)) }
-        )
-    }
-}
-
-@Composable
-private fun WhatsAppIntegrationSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsCard(title = stringResource(R.string.whatsapp_integration), icon = Icons.AutoMirrored.Filled.Message) {
-        SettingSwitchItem(
-            label = stringResource(R.string.whatsapp_bot),
-            description = if (uiState.whatsappEnabled) stringResource(R.string.whatsapp_bot_desc_enabled) else stringResource(R.string.whatsapp_bot_desc_disabled),
-            checked = uiState.whatsappEnabled,
-            onCheckedChange = { onEvent(SettingsEvent.OnWhatsAppToggle(it)) }
-        )
-    }
-}
-
-@Composable
-private fun NotificationsSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsCard(title = stringResource(R.string.notifications), icon = Icons.Default.Notifications) {
-        SettingSwitchItem(
-            label = stringResource(R.string.push_notifications),
-            description = stringResource(R.string.push_notifications_desc),
-            checked = uiState.pushNotificationsEnabled,
-            onCheckedChange = { onEvent(SettingsEvent.OnPushNotificationsToggle(it)) }
-        )
-        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.PaddingMedium))
-        SettingSwitchItem(
-            label = stringResource(R.string.budget_alerts),
-            description = stringResource(R.string.budget_alerts_desc),
-            checked = uiState.budgetAlertsEnabled,
-            onCheckedChange = { onEvent(SettingsEvent.OnBudgetAlertsToggle(it)) }
-        )
-    }
-}
-
-@Composable
-private fun SecuritySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsCard(title = stringResource(R.string.security), icon = Icons.Default.Shield) {
-        SettingSwitchItem(
-            label = stringResource(R.string.biometric_auth),
-            description = stringResource(R.string.biometric_auth_desc),
-            checked = uiState.biometricEnabled,
-            onCheckedChange = { onEvent(SettingsEvent.OnBiometricToggle(it)) }
-        )
-    }
-}
-
-@Composable
-private fun AccountSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsCard(title = stringResource(R.string.account), icon = Icons.Default.Person) {
-        SettingItem(
-            label = stringResource(R.string.current_user),
-            description = uiState.userEmail
-        )
-        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.PaddingMedium))
-        Button(
-            onClick = { onEvent(SettingsEvent.ShowLogoutDialog) },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Transparent,
-                contentColor = MaterialTheme.colorScheme.error
-            ),
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(0.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = stringResource(R.string.logout_button))
-                Spacer(modifier = Modifier.width(Dimens.PaddingMedium))
-                Text(stringResource(R.string.logout_button))
-            }
-        }
-    }
-}
-
-@Composable
-private fun AppInfoSection() {
-    Card(
-        shape = RoundedCornerShape(Dimens.CornerRadiusLarge),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Dimens.PaddingExtraLarge),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.app_info_version), style = MaterialTheme.typography.bodySmall)
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-            Text(
-                text = stringResource(R.string.app_info_made_with_love),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-// Reusable Components
-@Composable
-fun SettingsCard(title: String, icon: ImageVector, content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        shape = RoundedCornerShape(Dimens.CornerRadiusLarge),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.padding(Dimens.PaddingLarge)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = title,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(Dimens.PaddingMedium))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
-            content()
-        }
-    }
-}
-
-@Composable
-fun SettingSwitchItem(
-    label: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.primary
-            )
+    val options = CurrencyUtils.SUPPORTED_CURRENCIES.associate { it.code to it.displayName }
+    SettingsSurface {
+        SectionLabel(Icons.Default.Payments, "Currency", "Used everywhere amounts appear")
+        Spacer(Modifier.height(Dimens.PaddingLarge))
+        ToneDropdown(
+            selectedLabel = options[uiState.currencyCode] ?: uiState.currencyCode,
+            options = options,
+            onSelect = { onEvent(SettingsEvent.OnCurrencyChange(it)) }
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun <T> SettingSelectItem(
-    label: String,
-    description: String,
-    selectedValue: T,
-    options: Map<T, String>,
-    onSelectionChange: (T) -> Unit
-) {
+private fun ToneDropdown(selectedLabel: String, options: Map<String, String>, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-
-    Column {
-        Text(label, style = MaterialTheme.typography.bodyLarge)
-        Text(
-            description,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+        OutlinedTextField(
+            value = selectedLabel,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor()
         )
-        Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { (code, label) ->
+                DropdownMenuItem(text = { Text(label) }, onClick = { onSelect(code); expanded = false })
+            }
+        }
+    }
+}
+
+// ── 7. Smart capture (honest consent + REAL category learning) ───────────────────
+
+@Composable
+private fun SmartCaptureSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsSurface {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            SectionLabel(Icons.Default.AutoAwesome, "Smart capture", "Let the app learn your habits")
+            Spacer(Modifier.weight(1f))
+            ToneSwitch(uiState.smartCaptureEnabled) { onEvent(SettingsEvent.OnSmartCaptureToggle(it)) }
+        }
+        Text(
+            "When on, InsightKu quietly learns from how you log things to make tracking faster. It only ever uses your own transactions, and you can pause it anytime.",
+            style = MaterialTheme.typography.bodySmall,
+            color = SettingsPalette.textMuted,
+            modifier = Modifier.padding(top = Dimens.PaddingMedium)
+        )
+
+        Spacer(Modifier.height(Dimens.PaddingLarge))
+        androidx.compose.material3.HorizontalDivider(color = SettingsPalette.cardBorder)
+        Spacer(Modifier.height(Dimens.PaddingLarge))
+
+        // The genuinely-real control: category learning + transparency.
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Learn my categories", style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
+                Text("Suggests a category when you log a place you've logged before", style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
+            }
+            ToneSwitch(uiState.categoryLearningEnabled) { onEvent(SettingsEvent.OnCategoryLearningToggle(it)) }
+        }
+
+        AnimatedVisibility(
+            visible = uiState.categoryLearningEnabled && uiState.learnedMemories.isNotEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
         ) {
-            OutlinedTextField(
-                value = options[selectedValue] ?: "",
-                onValueChange = {},
-                readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                options.forEach { (value, text) ->
-                    DropdownMenuItem(
-                        text = { Text(text) },
-                        onClick = {
-                            onSelectionChange(value)
-                            expanded = false
-                        }
-                    )
+            Column(Modifier.padding(top = Dimens.PaddingLarge)) {
+                Text("What I've picked up so far", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.Purple)
+                Spacer(Modifier.height(Dimens.PaddingMedium))
+                uiState.learnedMemories.forEach { memory ->
+                    MemoryRow(memory) { onEvent(SettingsEvent.OnForgetMemory(memory.merchant)) }
                 }
+            }
+        }
+
+        if (uiState.categoryLearningEnabled && uiState.learnedMemories.isEmpty()) {
+            Text(
+                "Nothing learned yet — once you log a place a couple of times, it'll show up here.",
+                style = MaterialTheme.typography.bodySmall,
+                color = SettingsPalette.textMuted,
+                modifier = Modifier.padding(top = Dimens.PaddingMedium)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MemoryRow(memory: MerchantMemory, onForget: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = Dimens.PaddingSmall),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(memory.merchant, style = MaterialTheme.typography.bodyMedium, color = SettingsPalette.textPrimary)
+            Text(
+                "usually ${memory.category} · ${memory.timesSeen}/${memory.totalForMerchant} times",
+                style = MaterialTheme.typography.bodySmall,
+                color = SettingsPalette.textMuted
+            )
+        }
+        Box(
+            Modifier.size(28.dp).clip(CircleShape)
+                .background(SettingsPalette.tint(SettingsPalette.textMuted))
+                .clickable(onClick = onForget),
+            contentAlignment = Alignment.Center
+        ) { Icon(Icons.Default.Close, "Forget ${memory.merchant}", tint = SettingsPalette.textMuted, modifier = Modifier.size(14.dp)) }
+    }
+}
+
+// ── 8. Account ───────────────────────────────────────────────────────────────────
+
+@Composable
+private fun AccountSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsSurface {
+        Text(uiState.userName.ifBlank { "Signed in" }, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = SettingsPalette.textPrimary)
+        Text(uiState.userEmail, style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
+        Spacer(Modifier.height(Dimens.PaddingLarge))
+        Surface(
+            Modifier.fillMaxWidth().clickable { onEvent(SettingsEvent.ShowLogoutDialog) },
+            shape = RoundedCornerShape(50),
+            color = Color.Transparent,
+            border = BorderStroke(1.dp, SettingsPalette.ExpenseRed.copy(alpha = 0.5f))
+        ) {
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = Dimens.PaddingMedium),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = SettingsPalette.ExpenseRed, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(Dimens.PaddingMedium))
+                Text("Log out", color = SettingsPalette.ExpenseRed, fontWeight = FontWeight.Medium)
             }
         }
     }
 }
 
 @Composable
-fun SettingItem(label: String, description: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+private fun AppInfoFooter() {
+    Column(
+        Modifier.fillMaxWidth().padding(top = Dimens.PaddingMedium),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column {
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Text("InsightKu", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.textMuted)
+        Text("Made with care 💜", style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
     }
 }
 
@@ -407,20 +592,15 @@ fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = stringResource(R.string.logout_dialog_title))
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, null)
                 Spacer(Modifier.width(Dimens.PaddingMedium))
-                Text(stringResource(R.string.logout_dialog_title))
+                Text("Log out?")
             }
         },
-        text = { Text(stringResource(R.string.logout_dialog_message)) },
+        text = { Text("You'll need to sign in again to see your money story.") },
         confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) { Text(stringResource(R.string.logout_dialog_confirm)) }
+            Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = SettingsPalette.ExpenseRed)) { Text("Log out") }
         },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.logout_dialog_cancel)) }
-        }
+        dismissButton = { OutlinedButton(onClick = onDismiss) { Text("Stay") } }
     )
 }
