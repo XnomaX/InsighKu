@@ -9,25 +9,33 @@ import java.util.*
  * @param code    Kode ISO 4217 (mis. "IDR")
  * @param symbol  Simbol tampilan (mis. "Rp")
  * @param displayName Nama lengkap untuk UI dropdown (mis. "IDR – Rupiah (Rp)")
- * @param locale  Locale Java yang dipakai NumberFormat
+ * @param locale  Locale Java yang dipakai NumberFormat (mengatur separator + posisi simbol)
+ * @param fractionDigits Jumlah angka desimal untuk currency ini. Locale mengatur SEPARATOR &
+ *   POSISI SIMBOL; presisi desimal dikonfigurasi di sini (IDR/JPY = 0, lainnya = 2) karena
+ *   kebiasaan lokal sering berbeda dari default ISO 4217.
+ * @param flag    Emoji bendera negara/region untuk UI picker
+ * @param region  Nama negara/region untuk UI picker (mis. "Indonesia")
  */
 data class CurrencyOption(
     val code: String,
     val symbol: String,
     val displayName: String,
-    val locale: Locale
+    val locale: Locale,
+    val fractionDigits: Int = 2,
+    val flag: String = "",
+    val region: String = ""
 )
 
 object CurrencyUtils {
 
     // ─── Daftar mata uang yang didukung ───────────────────────────────────────
     val SUPPORTED_CURRENCIES: List<CurrencyOption> = listOf(
-        CurrencyOption("IDR", "Rp",  "IDR – Rupiah (Rp)",         Locale("in", "ID")),
-        CurrencyOption("USD", "$",   "USD – Dollar ($)",           Locale.US),
-        CurrencyOption("EUR", "€",   "EUR – Euro (€)",             Locale.GERMANY),
-        CurrencyOption("SGD", "S\$", "SGD – Singapore Dollar (S\$)", Locale("en", "SG")),
-        CurrencyOption("MYR", "RM",  "MYR – Ringgit (RM)",        Locale("ms", "MY")),
-        CurrencyOption("JPY", "¥",   "JPY – Yen (¥)",             Locale.JAPAN),
+        CurrencyOption("IDR", "Rp",  "IDR – Rupiah (Rp)",            Locale("in", "ID"), fractionDigits = 0, flag = "🇮🇩", region = "Indonesian Rupiah"),
+        CurrencyOption("USD", "$",   "USD – Dollar ($)",             Locale.US,          fractionDigits = 2, flag = "🇺🇸", region = "US Dollar"),
+        CurrencyOption("EUR", "€",   "EUR – Euro (€)",               Locale.GERMANY,     fractionDigits = 2, flag = "🇪🇺", region = "Euro"),
+        CurrencyOption("SGD", "S\$", "SGD – Singapore Dollar (S\$)", Locale("en", "SG"), fractionDigits = 2, flag = "🇸🇬", region = "Singapore Dollar"),
+        CurrencyOption("MYR", "RM",  "MYR – Ringgit (RM)",           Locale("ms", "MY"), fractionDigits = 2, flag = "🇲🇾", region = "Malaysian Ringgit"),
+        CurrencyOption("JPY", "¥",   "JPY – Yen (¥)",                Locale.JAPAN,       fractionDigits = 0, flag = "🇯🇵", region = "Japanese Yen"),
     )
 
     /** Cari CurrencyOption berdasarkan kode. Fallback ke IDR. */
@@ -38,34 +46,26 @@ object CurrencyUtils {
     // ─── Formatter ───────────────────────────────────────────────────────────
 
     /**
-     * Format [amount] menggunakan kode mata uang [currencyCode].
-     * Otomatis memilih locale yang tepat sehingga separator ribuan/desimal sesuai.
+     * Format [amount] menggunakan kode mata uang [currencyCode]. SATU jalur untuk semua currency:
+     * `NumberFormat.getCurrencyInstance(locale)` membuat separator ribuan/desimal + posisi simbol
+     * mengikuti locale secara otomatis (mis. EUR → "1.500.000,00 €", USD → "$1,500,000.00"). Presisi
+     * desimal di-override dari [CurrencyOption.fractionDigits] (IDR/JPY = 0). TIDAK ada simbol atau
+     * separator yang di-hardcode di sini.
      */
     fun formatAmount(amount: Double, currencyCode: String = "IDR"): String {
         val option = getOption(currencyCode)
         return try {
-            when (currencyCode) {
-                "IDR" -> {
-                    // Format: Rp. 1.000.000 (titik ribuan, tanpa desimal)
-                    val fmt = NumberFormat.getNumberInstance(option.locale)
-                    fmt.maximumFractionDigits = 0
-                    fmt.minimumFractionDigits = 0
-                    "Rp. ${fmt.format(amount)}"
-                }
-                "JPY" -> {
-                    // Yen tanpa desimal
-                    val fmt = NumberFormat.getNumberInstance(option.locale)
-                    fmt.maximumFractionDigits = 0
-                    "¥${fmt.format(amount)}"
-                }
-                else -> {
-                    val fmt = NumberFormat.getCurrencyInstance(option.locale)
-                    fmt.currency = Currency.getInstance(option.code)
-                    fmt.format(amount)
-                }
-            }
+            val fmt = NumberFormat.getCurrencyInstance(option.locale)
+            fmt.currency = Currency.getInstance(option.code)
+            fmt.maximumFractionDigits = option.fractionDigits
+            fmt.minimumFractionDigits = option.fractionDigits
+            fmt.format(amount)
         } catch (e: Exception) {
-            "${option.symbol} ${String.format("%.2f", amount)}"
+            // Fallback masih locale-aware untuk separator; simbol dari konfigurasi option.
+            val fmt = NumberFormat.getNumberInstance(option.locale)
+            fmt.maximumFractionDigits = option.fractionDigits
+            fmt.minimumFractionDigits = option.fractionDigits
+            "${option.symbol} ${fmt.format(amount)}"
         }
     }
 

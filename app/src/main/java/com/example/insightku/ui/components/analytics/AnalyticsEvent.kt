@@ -19,6 +19,9 @@ sealed class AnalyticsEvent {
     /** Toggle progressive disclosure of deeper behavioral patterns on the personality card. */
     object TogglePatterns : AnalyticsEvent()
 
+    /** Uncover a "covered until curious" section (Quiet Reveal). One-way: invitation → revealed. */
+    data class Uncover(val sectionId: String) : AnalyticsEvent()
+
     /** Temporary: cycle the debug/preview scenario (removed before final polish). */
     object CycleDebugScenario : AnalyticsEvent()
 

@@ -52,6 +52,8 @@ import com.example.insightku.data.model.Transaction
 import com.example.insightku.data.model.TransactionType
 import com.example.insightku.ui.dialogs.CategoryIconResolver
 import com.example.insightku.ui.components.common.PremiumDatePicker
+import com.example.insightku.ui.theme.AppPalette
+import com.example.insightku.ui.theme.LocalAccent
 import com.example.insightku.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -61,8 +63,8 @@ import java.util.Locale
 // ─── Design tokens ────────────────────────────────────────────────────────────
 private val IncomeGreen  = Color(0xFF10B981)
 private val ExpenseRed   = Color(0xFFE57373)
-private val GlassSurface = Color(0xFFFAF8FF)
-private val GlassBorder  = Color(0xFFE8DDFF)
+private val GlassSurface: Color  @Composable get() = AppPalette.card
+private val GlassBorder: Color   @Composable get() = AppPalette.cardBorder
 
 // ─── Payment method data ──────────────────────────────────────────────────────
 
@@ -322,7 +324,7 @@ private fun DialogGradientHeader(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(AppPalette.card)
             .padding(
                 start = 8.dp,
                 end = 8.dp,
@@ -338,14 +340,14 @@ private fun DialogGradientHeader(
                     .padding(start = 4.dp)
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFECE7F6))
+                    .background(AppPalette.cardBorder)
                     .clickable { onBack() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color(0xFF6B6B8A),
+                    tint = AppPalette.textMuted,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -364,7 +366,7 @@ private fun DialogGradientHeader(
                 },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A2E)
+                color = AppPalette.textPrimary
             )
             Text(
                 text = when {
@@ -373,7 +375,7 @@ private fun DialogGradientHeader(
                     else      -> "Record your spending"
                 },
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF9E9E9E)
+                color = AppPalette.textMuted
             )
         }
 
@@ -384,14 +386,14 @@ private fun DialogGradientHeader(
                 .padding(end = 4.dp)
                 .size(36.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFECE7F6))
+                .background(AppPalette.cardBorder)
                 .clickable { onClose() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 Icons.Default.Close,
                 contentDescription = "Close",
-                tint = Color(0xFF6B6B8A),
+                tint = AppPalette.textMuted,
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -402,7 +404,7 @@ private fun DialogGradientHeader(
         modifier = Modifier
             .fillMaxWidth()
             .height(1.dp)
-            .background(Color(0xFFECE7F6))
+            .background(AppPalette.cardBorder)
     )
 }
 
@@ -550,7 +552,7 @@ fun ColumnScope.ManualFormContent(
             .weight(1f)
             .verticalScroll(rememberScrollState())
             .imePadding()
-            .background(Color(0xFFFAF9FE))
+            .background(AppPalette.background)
             .padding(horizontal = 18.dp)
             .padding(top = 20.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -620,8 +622,8 @@ fun ColumnScope.ManualFormContent(
                         .fillMaxWidth()
                         .clickable { onShowDatePicker() },
                     shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFFFAF9FE),
-                    border = BorderStroke(1.dp, Color(0xFFECE7F6))
+                    color = AppPalette.background,
+                    border = BorderStroke(1.dp, AppPalette.cardBorder)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
@@ -646,7 +648,7 @@ fun ColumnScope.ManualFormContent(
                             text      = formData.dateMillis.toDisplayDate(),
                             style     = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color     = Color(0xFF1A1A2E),
+                            color     = AppPalette.textPrimary,
                             modifier  = Modifier.weight(1f)
                         )
                         Icon(
@@ -692,14 +694,14 @@ fun ColumnScope.ManualFormContent(
                     imageVector        = if (formData.isIncome) Icons.AutoMirrored.Filled.TrendingUp
                                          else Icons.AutoMirrored.Filled.TrendingDown,
                     contentDescription = null,
-                    tint               = if (isFormValid) Color.White else Color(0xFF9E9E9E),
+                    tint               = if (isFormValid) Color.White else AppPalette.textMuted,
                     modifier           = Modifier.size(18.dp)
                 )
                 Text(
                     text          = if (formData.isIncome) "Save Income" else "Save Expense",
                     style         = MaterialTheme.typography.bodyLarge,
                     fontWeight    = FontWeight.Bold,
-                    color         = if (isFormValid) Color.White else Color(0xFF9E9E9E),
+                    color         = if (isFormValid) Color.White else AppPalette.textMuted,
                     letterSpacing = 0.5.sp
                 )
             }
@@ -711,7 +713,7 @@ fun ColumnScope.ManualFormContent(
                 .fillMaxWidth()
                 .height(44.dp)
                 .clip(RoundedCornerShape(50.dp))
-                .border(1.dp, Color(0xFFECE7F6), RoundedCornerShape(50.dp))
+                .border(1.dp, AppPalette.cardBorder, RoundedCornerShape(50.dp))
                 .clickable { onBack() },
             contentAlignment = Alignment.Center
         ) {
@@ -722,14 +724,14 @@ fun ColumnScope.ManualFormContent(
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = null,
-                    tint     = Color(0xFF6B6B8A),
+                    tint     = AppPalette.textMuted,
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
                     "Back",
                     style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color      = Color(0xFF6B6B8A)
+                    color      = AppPalette.textMuted
                 )
             }
         }
@@ -751,8 +753,8 @@ private fun CategoryChipSelector(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape    = RoundedCornerShape(16.dp),
-            color    = Color(0xFFFAF9FE),
-            border   = BorderStroke(1.dp, Color(0xFFECE7F6))
+            color    = AppPalette.background,
+            border   = BorderStroke(1.dp, AppPalette.cardBorder)
         ) {
             Column(
                 modifier            = Modifier.fillMaxWidth().padding(24.dp),
@@ -765,12 +767,12 @@ private fun CategoryChipSelector(
                 ) {
                     Icon(Icons.Default.Category, contentDescription = null, tint = primary.copy(alpha = 0.5f), modifier = Modifier.size(22.dp))
                 }
-                Text("No categories yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A2E))
-                Text("Create a category to get started.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9E9E9E))
+                Text("No categories yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                Text("Create a category to get started.", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                 Surface(
                     modifier = Modifier.clickable(onClick = onCreateCategory),
                     shape    = RoundedCornerShape(50.dp),
-                    color    = Color.White,
+                    color    = AppPalette.card,
                     border   = BorderStroke(1.dp, primary)
                 ) {
                     Row(
@@ -844,12 +846,12 @@ private fun CategoryItemCard(
         label         = "cat_scale_${category.id}"
     )
     val bgColor by animateColorAsState(
-        targetValue   = if (isSelected) catColor.copy(alpha = 0.10f) else Color.White,
+        targetValue   = if (isSelected) catColor.copy(alpha = 0.10f) else AppPalette.card,
         animationSpec = tween(200),
         label         = "cat_bg_${category.id}"
     )
     val borderColor by animateColorAsState(
-        targetValue   = if (isSelected) catColor else Color(0xFFECE7F6),
+        targetValue   = if (isSelected) catColor else AppPalette.cardBorder,
         animationSpec = tween(200),
         label         = "cat_border_${category.id}"
     )
@@ -878,7 +880,7 @@ private fun CategoryItemCard(
             text       = category.name,
             style      = MaterialTheme.typography.labelSmall,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color      = if (isSelected) catColor else Color(0xFF9E9E9E),
+            color      = if (isSelected) catColor else AppPalette.textMuted,
             maxLines   = 2,
             textAlign  = androidx.compose.ui.text.style.TextAlign.Center
         )
@@ -896,8 +898,8 @@ private fun FormSectionCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFECE7F6))
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
             modifier = Modifier
@@ -914,7 +916,7 @@ private fun FormSectionTitle(text: String) {
         text       = text,
         style      = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.Bold,
-        color      = Color(0xFF1A1A2E)
+        color      = AppPalette.textPrimary
     )
 }
 
@@ -940,8 +942,9 @@ private fun AmountHeroCard(
     onImeAction: () -> Unit,
     onFocusChange: (Boolean) -> Unit = {}
 ) {
-    val accentColor = if (isIncome) Color(0xFF10B981) else Color(0xFF7C4DFF)
-    val cardBg      = if (isIncome) Color(0xFFF0FFF4) else Color(0xFFF3EEFF)
+    val accentColor = if (isIncome) IncomeGreen else LocalAccent.current
+    // Dark focal card: the accent shows as a soft glow over the themed surface, not a bright pastel fill.
+    val cardBg      = androidx.compose.ui.graphics.lerp(AppPalette.card, accentColor, 0.06f)
     var isFocused   by remember { mutableStateOf(false) }
 
     // TextFieldValue preserves cursor position — prevents jumping cursor bug.
@@ -966,7 +969,7 @@ private fun AmountHeroCard(
     val displayText = if (amount.isBlank()) "0" else formatted
 
     val borderColor by animateColorAsState(
-        targetValue   = if (isFocused) accentColor else Color(0xFFECE7F6),
+        targetValue   = if (isFocused) accentColor else AppPalette.cardBorder,
         animationSpec = tween(180),
         label         = "amount_border"
     )
@@ -1039,8 +1042,8 @@ private fun AmountHeroCard(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor      = accentColor,
                 unfocusedBorderColor    = accentColor.copy(alpha = 0.3f),
-                focusedContainerColor   = Color.White.copy(alpha = 0.6f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.4f),
+                focusedContainerColor   = AppPalette.card,
+                unfocusedContainerColor = AppPalette.card,
                 cursorColor             = accentColor,
                 focusedLabelColor       = accentColor,
                 focusedTextColor        = accentColor,
@@ -1226,12 +1229,12 @@ private fun PaymentMethodCard(
         label         = "pay_scale_${chip.label}"
     )
     val bgColor by animateColorAsState(
-        targetValue   = if (isSelected) chip.color.copy(alpha = 0.10f) else Color.White,
+        targetValue   = if (isSelected) chip.color.copy(alpha = 0.10f) else AppPalette.card,
         animationSpec = tween(200),
         label         = "pay_bg_${chip.label}"
     )
     val borderColor by animateColorAsState(
-        targetValue   = if (isSelected) chip.color else Color(0xFFECE7F6),
+        targetValue   = if (isSelected) chip.color else AppPalette.cardBorder,
         animationSpec = tween(200),
         label         = "pay_border_${chip.label}"
     )
@@ -1263,7 +1266,7 @@ private fun PaymentMethodCard(
             text       = chip.label,
             style      = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color      = if (isSelected) chip.color else Color(0xFF9E9E9E),
+            color      = if (isSelected) chip.color else AppPalette.textMuted,
             maxLines   = 2,
             overflow   = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             textAlign  = androidx.compose.ui.text.style.TextAlign.Center
