@@ -3,7 +3,7 @@ package com.example.insightku
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.*
-import com.example.insightku.worker.SyncTransactionWorker
+import com.example.insightku.core.worker.SyncTransactionWorker
 import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
 import java.util.concurrent.TimeUnit
@@ -61,4 +61,5 @@ class InsightKuApplication : Application(), Configuration.Provider {
         )
     }
 }
+
 
