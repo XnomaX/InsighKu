@@ -13,9 +13,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.insightku.ui.InsightKuApp
-import com.example.insightku.ui.theme.InsightKuTheme
-import com.example.insightku.viewmodel.SettingsViewModel
+import com.example.insightku.core.ui.components.InsightKuApp
+import com.example.insightku.core.ui.theme.InsightKuTheme
+import com.example.insightku.feature.settings.presentation.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -59,3 +59,5 @@ private fun InsightKuMainApp() {
         }
     }
 }
+
+
