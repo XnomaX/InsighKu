@@ -20,6 +20,9 @@
     
     <!-- Notification permission for budget alerts -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     
     <!-- Biometric permission for authentication -->
     <!-- <uses-permission android:name="android.permission.USE_FINGERPRINT" /> -->
@@ -49,6 +52,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Deep link from bank notification → AddTransaction pre-filled -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="insightku" android:host="add-transaction" />
+            </intent-filter>
         </activity>
         
         <!-- File Provider for camera/gallery access -->
@@ -61,6 +71,44 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Receiver for deleting auto-created transactions from notification -->
+        <receiver
+            android:name=".core.worker.DeleteTransactionReceiver"
+            android:exported="false" />
+
+        <!-- Receiver for dismissing bank notification without action -->
+        <receiver
+            android:name=".core.notification.DismissNotificationReceiver"
+            android:exported="false" />
+
+        <!-- Restart NotificationListenerService after device reboot -->
+        <receiver
+            android:name=".core.notification.NotificationListenerRestartReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Keepalive foreground service — keeps process alive so NotificationListenerService survives swipe -->
+        <service
+            android:name=".core.notification.NotificationListenerKeepaliveService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
+        <!-- NotificationListenerService for bank/e-wallet transaction detection -->
+        <service
+            android:name=".core.notification.BankNotificationListenerService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:directBootAware="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
