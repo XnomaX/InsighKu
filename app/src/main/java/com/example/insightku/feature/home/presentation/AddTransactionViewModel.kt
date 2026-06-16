@@ -47,17 +47,13 @@ class AddTransactionViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // Expense categories only — shown when transaction type = EXPENSE.
-    // Filter isProtected (prefix id "system-") sebagai pertahanan: data Room lama bisa
-    // punya kategori sistem dengan isSystemCategory=false akibat bug penamaan Firestore.
     val expenseCategories: StateFlow<List<Category>> = transactionRepository
         .getExpenseCategories()
-        .map { list -> list.filterNot { it.isProtected } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // Income categories only — shown when transaction type = INCOME
     val incomeCategories: StateFlow<List<Category>> = transactionRepository
         .getIncomeCategories()
-        .map { list -> list.filterNot { it.isProtected } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _uiState = MutableStateFlow(AddTransactionUiState())

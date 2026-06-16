@@ -134,7 +134,7 @@ class BudgetingViewModel @Inject constructor(
                     transactionRepository.getRecurringBudgets(),
                     transactionRepository.getAllInstallments()
                 ) { categories, transactions, recurringBudgets, installments ->
-                    val activeCategories = categories.filter { it.isActive && it.id !in pendingDeleteIds && !it.isSystemCategory && !it.isProtected }
+                    val activeCategories = categories.filter { it.isActive && it.id !in pendingDeleteIds && !it.isSystemCategory }
                     val monthlyExpenses = transactions
                         .filter { it.type == TransactionType.EXPENSE && it.date in currentMonthRange() }
                     val monthlyIncome = transactions
@@ -312,7 +312,8 @@ class BudgetingViewModel @Inject constructor(
     }
 
     private fun deleteCategory(categoryId: String, categoryName: String) {
-        if (categoryId.startsWith("system-")) {
+        val category = _uiState.value.rawCategories.find { it.id == categoryId }
+        if (category?.isSystemCategory == true) {
             android.util.Log.w("InsightKu_Delete", "Blocked attempt to delete protected category: id=$categoryId")
             _uiState.update { it.copy(dialogState = DialogState.None) }
             return
