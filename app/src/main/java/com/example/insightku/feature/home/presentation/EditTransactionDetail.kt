@@ -429,11 +429,11 @@ private fun EditCategoryPicker(
     var expanded by remember { mutableStateOf(false) }
 
     // Mirror AddTransaction's picker, which uses getUserCategoriesByType():
-    // isActive = 1 AND categoryType = type AND isSystemCategory = 0. System/protected categories
+    // isActive = 1 AND categoryType = type AND isSystemCategory = 0. System categories
     // (e.g. "Uncategorized") stay hidden. Compare by name (CategoryType vs TransactionType).
     val options = remember(categories, type) {
         categories
-            .filter { it.isActive && it.type.name == type.name && !it.isSystemCategory && !it.isProtected }
+            .filter { it.isActive && it.type.name == type.name && !it.isSystemCategory }
             .map { it.name }
             .distinct()
             .ifEmpty { listOf(selected).filter { it.isNotBlank() } }
@@ -458,7 +458,7 @@ private fun EditCategoryPicker(
 
     val currentColor = colorFor(selected)
 
-    // Selected-category chip — tap to expand the picker
+    // Selected-category chip ï¿½ tap to expand the picker
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = currentColor.copy(alpha = 0.08f),

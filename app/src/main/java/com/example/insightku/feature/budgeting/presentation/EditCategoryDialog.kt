@@ -252,7 +252,7 @@ fun EditCategoryDialog(
                 }
 
                 // Delete — hidden for protected categories
-                if (!category.isProtected) {
+                if (!category.isSystemCategory) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()

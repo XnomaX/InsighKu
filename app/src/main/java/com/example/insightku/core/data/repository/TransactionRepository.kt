@@ -10,6 +10,7 @@ import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.Transaction
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
@@ -134,15 +135,49 @@ class TransactionRepository @Inject constructor(
     fun getIncomeCategories(): Flow<List<Category>> =
         categoryDao.getUserCategoriesByType(CategoryType.INCOME.name)
 
+    /**
+     * One-time migration: renames Firestore field "systemCategory" → "isSystemCategory"
+     * for all category documents where the old field exists.
+     * Idempotent — safe to call repeatedly.
+     */
+    suspend fun migrateCategoryFieldNames(userId: String) {
+        try {
+            val colRef = firestore.collection("users").document(userId).collection("categories")
+            val snapshot = colRef.get().await()
+            val batch = firestore.batch()
+            var count = 0
+
+            for (doc in snapshot.documents) {
+                val data = doc.data ?: continue
+                if (data.containsKey("systemCategory") && !data.containsKey("isSystemCategory")) {
+                    val value = data["systemCategory"]
+                    batch.update(doc.reference, mapOf(
+                        "isSystemCategory" to value,
+                        "systemCategory" to FieldValue.delete()
+                    ))
+                    count++
+                }
+            }
+
+            if (count > 0) {
+                batch.commit().await()
+                Log.d("InsightKu", "migrateCategoryFieldNames: migrated $count docs")
+            }
+        } catch (e: Exception) {
+            Log.w("InsightKu", "migrateCategoryFieldNames: failed (will retry next refresh)", e)
+        }
+    }
+
     suspend fun refreshCategories(userId: String) {
+        migrateCategoryFieldNames(userId)
+
         val snapshot = firestore.collection("users").document(userId)
             .collection("categories").get().await()
         val categories = snapshot.toObjects(Category::class.java)
-            // Firestore menyimpan boolean tanpa prefix "is" (systemCategory, bukan
-            // isSystemCategory), sehingga toObjects() mengembalikan isSystemCategory=false
-            // untuk kategori sistem → bocor ke picker & budgeting. Pulihkan flag dari
-            // prefix id ("system-") yang stabil terhadap masalah penamaan Firestore ini.
-            .map { if (it.id.startsWith("system-")) it.copy(isSystemCategory = true) else it }
+            // SAFETY NET (removable after migration soak): if migration failed
+            // (offline, timeout) and docs still have old "systemCategory" field,
+            // toObjects() returns isSystemCategory=false. Patch from ID prefix.
+            .map { if (it.id.startsWith("system-") && !it.isSystemCategory) it.copy(isSystemCategory = true) else it }
         // IGNORE strategy — never restore a category deleted locally.
         // If a category was deleted from Room, Firestore still has it until
         // the delete syncs. Using REPLACE here would resurrect deleted categories
@@ -172,40 +207,6 @@ class TransactionRepository @Inject constructor(
         firestore.collection("users").document(userId)
             .collection("categories").document(categoryId).delete().await()
         Log.d("InsightKu", "deleteCategory: Firestore delete SUCCESS id=$categoryId")
-    }
-
-    suspend fun repairSystemCategories(userId: String) {
-        val systemExpense = Category(
-            id = "system-uncategorized-expense",
-            name = "Uncategorized",
-            color = "#79747E",
-            icon = "Others",
-            isActive = true,
-            alertThreshold = 80,
-            categoryType = "EXPENSE",
-            isSystemCategory = true
-        )
-        val systemIncome = Category(
-            id = "system-uncategorized-income",
-            name = "Uncategorized Income",
-            color = "#79747E",
-            icon = "Others",
-            isActive = true,
-            alertThreshold = 80,
-            categoryType = "INCOME",
-            isSystemCategory = true
-        )
-        // Always overwrite system categories with correct values
-        categoryDao.insertCategory(systemExpense)
-        categoryDao.insertCategory(systemIncome)
-        try {
-            firestore.collection("users").document(userId)
-                .collection("categories").document(systemExpense.id).set(systemExpense).await()
-            firestore.collection("users").document(userId)
-                .collection("categories").document(systemIncome.id).set(systemIncome).await()
-        } catch (e: Exception) {
-            // Offline — Room already repaired
-        }
     }
 
     suspend fun cleanupUncategorizedTransactions(userId: String) {
@@ -255,7 +256,8 @@ class TransactionRepository @Inject constructor(
         categoryName: String,
         userId: String
     ) {
-        if (categoryId.startsWith("system-")) {
+        val category = categoryDao.getCategoryById(categoryId)
+        if (category?.isSystemCategory == true) {
             Log.w("InsightKu", "deleteCategoryAndMigrate: blocked protected category id=$categoryId")
             return
         }

@@ -26,7 +26,7 @@ data class BudgetingUiState(
     val budgetUtilizationPercentage: Double get() = if (totalBudget > 0) (limitedSpent / totalBudget) * 100 else 0.0
     val overBudgetCategories: List<BudgetCategory> get() = budgetCategories.filter { it.isOverBudget }
     // All non-system categories for use in pickers
-    val allCategoriesForPicker: List<Category> get() = rawCategories.filter { !it.isSystemCategory && !it.isProtected }
+    val allCategoriesForPicker: List<Category> get() = rawCategories.filter { !it.isSystemCategory }
 }
 
 sealed class DialogState {
