@@ -64,7 +64,7 @@ val SUPPORTED_BANK_PACKAGES = mapOf(
     "id.dana"                            to "DANA",
     "ovo.id"                             to "OVO",
     "com.gojek.gopay"                    to "GoPay",
-    "com.shopee.id"                      to "ShopeePay",
+    "com.shopeepay.id"                   to "ShopeePay",
     "com.telkom.mwallet"                 to "LinkAja",
     "com.ada.astrapay"                   to "AstraPay",
     "com.isaku.app"                      to "i.saku"
@@ -136,7 +136,7 @@ object BankNotificationParser {
             // GoPay
             "com.gojek.gopay"                    -> parseGoPay(title, content, combined, bankName)
             // ShopeePay
-            "com.shopee.id"                      -> parseShopeePay(title, content, combined, bankName)
+            "com.shopeepay.id"                   -> parseShopeePay(title, content, combined, bankName)
             // Other banks — generic income/expense parser
             "com.msmile.bankmega",
             "com.cimbniaga.go.mobile.android",
