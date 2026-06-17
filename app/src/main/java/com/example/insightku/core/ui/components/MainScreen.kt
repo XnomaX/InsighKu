@@ -21,7 +21,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -141,6 +143,8 @@ fun MainScreen(
 
     var backPressedOnce      by remember { mutableStateOf(false) }
     val snackbarHostState    = remember { SnackbarHostState() }
+    val density              = LocalDensity.current
+    var navBarHeightDp       by remember { mutableStateOf(0.dp) }
     val context              = LocalContext.current
     val scope                = rememberCoroutineScope()
 
@@ -190,7 +194,12 @@ fun MainScreen(
         Scaffold(
             modifier            = Modifier.fillMaxSize(),
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            snackbarHost        = { SnackbarHost(snackbarHostState) },
+            snackbarHost        = {
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier  = Modifier.padding(bottom = navBarHeightDp)
+                )
+            },
             containerColor      = Color.Transparent,
             bottomBar           = {}
         ) { innerPadding ->
@@ -244,6 +253,10 @@ fun MainScreen(
                 navController = navController,
                 onAddClick    = { showAddTransactionDialog = true },
                 modifier      = Modifier
+                    .onSizeChanged { size ->
+                        navBarHeightDp = with(density) { size.height.toDp() }
+                    }
+                    .navigationBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             )
         }
