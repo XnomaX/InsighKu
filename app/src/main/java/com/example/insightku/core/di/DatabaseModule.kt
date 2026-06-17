@@ -16,6 +16,7 @@ import com.example.insightku.core.data.local.database.MIGRATION_4_5
 import com.example.insightku.core.data.local.database.MIGRATION_5_6
 import com.example.insightku.core.data.local.database.MIGRATION_6_7
 import com.example.insightku.core.data.local.database.MIGRATION_7_8
+import com.example.insightku.core.data.local.database.MIGRATION_8_9
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,7 +36,7 @@ object DatabaseModule {
             InsightKuDatabase::class.java,
             "insightku_database"
         )
-            .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+            .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
             .fallbackToDestructiveMigration()
             .build()
     }

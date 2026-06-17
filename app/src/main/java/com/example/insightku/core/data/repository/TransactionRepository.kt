@@ -1,6 +1,13 @@
 package com.example.insightku.core.data.repository
 
+import android.content.Context
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.insightku.core.data.local.dao.CategoryDao
 import com.example.insightku.core.data.local.dao.InstallmentDao
 import com.example.insightku.core.data.local.dao.RecurringBudgetDao
@@ -10,6 +17,7 @@ import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.Transaction
+import com.example.insightku.core.worker.SyncTransactionWorker
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
@@ -35,11 +43,15 @@ class TransactionRepository @Inject constructor(
     private val categoryDao: CategoryDao,
     private val recurringBudgetDao: RecurringBudgetDao,
     private val installmentDao: InstallmentDao,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    @ApplicationContext private val context: Context
 ) {
     // ─── Transaction ───────────────────────────────────────────────────────────
 
     fun getAllTransactions(): Flow<List<Transaction>> = transactionDao.getAllTransactions()
+
+    fun getTransactionsByDateRange(startDate: Long, endDate: Long): Flow<List<Transaction>> =
+        transactionDao.getTransactionsByDateRange(startDate, endDate)
 
     fun getTransactionsByCategory(category: String): Flow<List<Transaction>> =
         transactionDao.getTransactionsByCategory(category)
@@ -76,9 +88,25 @@ class TransactionRepository @Inject constructor(
             transactionDao.markAsSynced(transaction.id)
         } catch (e: Exception) {
             // Offline atau Firestore error — data sudah aman di Room.
-            // SyncTransactionWorker akan retry saat network tersedia.
-            // Tidak rethrow agar user tidak mendapat error saat input transaksi offline.
+            // Jadwalkan one-shot recovery worker agar sync segera terjadi saat
+            // network kembali, tanpa menunggu periodic worker berikutnya.
+            scheduleSyncRecovery()
         }
+    }
+
+    private fun scheduleSyncRecovery() {
+        val request = OneTimeWorkRequestBuilder<SyncTransactionWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "SyncRecovery",
+            ExistingWorkPolicy.KEEP,
+            request
+        )
     }
 
     // BUG11 FIX: insertTransaction() dihapus — duplikat dari addTransaction().
