@@ -43,13 +43,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -465,34 +463,134 @@ private fun StepperButton(icon: ImageVector, enabled: Boolean, onClick: () -> Un
 
 // ── 6. Currency ──────────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CurrencySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    val options = CurrencyUtils.SUPPORTED_CURRENCIES.associate { it.code to it.displayName }
+    var showSheet by remember { mutableStateOf(false) }
+    val selected = CurrencyUtils.getOption(uiState.currencyCode)
+
     SettingsSurface {
-        SectionLabel(Icons.Default.Payments, "Currency", "Used everywhere amounts appear")
-        Spacer(Modifier.height(Dimens.PaddingLarge))
-        ToneDropdown(
-            selectedLabel = options[uiState.currencyCode] ?: uiState.currencyCode,
-            options = options,
-            onSelect = { onEvent(SettingsEvent.OnCurrencyChange(it)) }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showSheet = true },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionLabel(Icons.Default.Payments, "Currency", "Used everywhere amounts appear")
+            Spacer(Modifier.weight(1f))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)
+            ) {
+                Text(
+                    text = "${selected.flag} ${selected.code}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SettingsPalette.Purple
+                )
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = SettingsPalette.textMuted,
+                    modifier = Modifier.size(Dimens.IconSizeMedium)
+                )
+            }
+        }
+    }
+
+    if (showSheet) {
+        CurrencyBottomSheet(
+            currentCode = uiState.currencyCode,
+            onSelect = { code ->
+                onEvent(SettingsEvent.OnCurrencyChange(code))
+                showSheet = false
+            },
+            onDismiss = { showSheet = false }
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ToneDropdown(selectedLabel: String, options: Map<String, String>, onSelect: (String) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-        OutlinedTextField(
-            value = selectedLabel,
-            onValueChange = {},
-            readOnly = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { (code, label) ->
-                DropdownMenuItem(text = { Text(label) }, onClick = { onSelect(code); expanded = false })
+private fun CurrencyBottomSheet(
+    currentCode: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val Purple = SettingsPalette.Purple
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = Dimens.BottomSheetRadius, topEnd = Dimens.BottomSheetRadius),
+        containerColor = SettingsPalette.card,
+        tonalElevation = 0.dp,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = Dimens.PaddingMedium, bottom = Dimens.PaddingSmall)
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(SettingsPalette.cardBorder)
+            )
+        }
+    ) {
+        Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
+            Text(
+                text = "Choose currency",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = SettingsPalette.textPrimary,
+                modifier = Modifier.padding(
+                    horizontal = Dimens.CardInnerPaddingLarge,
+                    vertical = Dimens.PaddingLarge
+                )
+            )
+
+            CurrencyUtils.SUPPORTED_CURRENCIES.forEach { option ->
+                val isSelected = option.code == currentCode
+                val rowBg = if (isSelected) SettingsPalette.tint(Purple) else Color.Transparent
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(rowBg)
+                        .clickable { onSelect(option.code) }
+                        .padding(
+                            horizontal = Dimens.CardInnerPaddingLarge,
+                            vertical = Dimens.PaddingLarge
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
+                ) {
+                    Text(
+                        text = option.flag,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = option.region,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isSelected) Purple else SettingsPalette.textPrimary
+                        )
+                        Text(
+                            text = "${option.code} · ${option.symbol}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SettingsPalette.textMuted
+                        )
+                    }
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Purple,
+                            modifier = Modifier.size(Dimens.IconSizeMedium)
+                        )
+                    }
+                }
             }
         }
     }
