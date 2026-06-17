@@ -2,6 +2,7 @@ package com.example.insightku.core.data.model
 
 import androidx.annotation.Keep
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.PropertyName
@@ -36,7 +37,10 @@ import java.util.*
  */
 @Keep
 @IgnoreExtraProperties
-@Entity(tableName = "transactions")
+@Entity(
+    tableName = "transactions",
+    indices = [Index(value = ["date"])]
+)
 data class Transaction(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val title: String = "",

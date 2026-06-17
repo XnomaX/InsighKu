@@ -32,14 +32,10 @@ class NotificationListenerKeepaliveService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "onDestroy — restarting")
-        // Restart diri sendiri jika dibunuh sistem
-        val restart = Intent(applicationContext, NotificationListenerKeepaliveService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(restart)
-        } else {
-            startService(restart)
-        }
+        // START_STICKY (returned from onStartCommand) handles OS-level restart automatically.
+        // Manual self-restart was removed: it caused rapid kill/restart cycles on OEMs with
+        // aggressive power management, and is redundant with START_STICKY on stock Android.
+        Log.d(TAG, "onDestroy")
     }
 
     private fun buildNotification(): Notification {

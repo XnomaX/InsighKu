@@ -49,9 +49,12 @@ class InsightKuApplication : Application(), Configuration.Provider {
     }
 
     /**
-     * Schedule SyncTransactionWorker sebagai PeriodicWork (setiap 15 menit minimum).
-     * Hanya berjalan saat network CONNECTED — WorkManager mengurus constraint ini.
-     * KEEP_EXISTING: jika sudah terjadwal sebelumnya, tidak di-reset (idempotent).
+     * Schedule SyncTransactionWorker sebagai PeriodicWork (setiap 4 jam).
+     * Ini adalah safety-net saja — recovery utama kini dilakukan oleh one-shot
+     * worker yang dijadwalkan langsung saat Firestore sync gagal di addTransaction().
+     *
+     * UPDATE (bukan KEEP): memaksa pembaruan interval untuk existing users yang
+     * masih memiliki jadwal lama 15 menit. WorkManager 2.8+ mendukung UPDATE.
      */
     private fun scheduleSyncWorker() {
         val constraints = Constraints.Builder()
@@ -59,15 +62,15 @@ class InsightKuApplication : Application(), Configuration.Provider {
             .build()
 
         val syncRequest = PeriodicWorkRequestBuilder<SyncTransactionWorker>(
-            repeatInterval = 15,
-            repeatIntervalTimeUnit = TimeUnit.MINUTES
+            repeatInterval = 4,
+            repeatIntervalTimeUnit = TimeUnit.HOURS
         )
             .setConstraints(constraints)
             .build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             SyncTransactionWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE,
             syncRequest
         )
     }

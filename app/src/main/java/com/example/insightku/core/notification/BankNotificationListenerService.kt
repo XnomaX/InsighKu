@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -84,6 +85,7 @@ class BankNotificationListenerService : NotificationListenerService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        scope.cancel()
         Log.e(TAG, "$prefix onDestroy | ts=${ts()} thread=${thread()}", Throwable("Destroy stacktrace"))
         NotificationDebugLog.recordServiceEvent("$prefix DESTROYED | ${ts()}")
     }

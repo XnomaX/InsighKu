@@ -80,6 +80,14 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_transactions_date ON transactions (date)"
+        )
+    }
+}
+
 @Database(
     entities = [
         Transaction::class,
@@ -90,7 +98,7 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
         Installment::class,
         DraftTransaction::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

@@ -128,17 +128,18 @@ class BudgetingViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
+                val monthRange = currentMonthRange()
                 combine(
                     transactionRepository.getAllCategories(),
-                    transactionRepository.getAllTransactions(),
+                    transactionRepository.getTransactionsByDateRange(monthRange.first, monthRange.last),
                     transactionRepository.getRecurringBudgets(),
                     transactionRepository.getAllInstallments()
                 ) { categories, transactions, recurringBudgets, installments ->
                     val activeCategories = categories.filter { it.isActive && it.id !in pendingDeleteIds && !it.isSystemCategory }
                     val monthlyExpenses = transactions
-                        .filter { it.type == TransactionType.EXPENSE && it.date in currentMonthRange() }
+                        .filter { it.type == TransactionType.EXPENSE }
                     val monthlyIncome = transactions
-                        .filter { it.type == TransactionType.INCOME && it.date in currentMonthRange() }
+                        .filter { it.type == TransactionType.INCOME }
 
                     val expenseCategories = activeCategories.filter { it.type == CategoryType.EXPENSE }
                     val incomeCategories = activeCategories.filter { it.type == CategoryType.INCOME }
