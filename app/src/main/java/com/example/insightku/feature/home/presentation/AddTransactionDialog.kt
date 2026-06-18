@@ -314,7 +314,7 @@ fun AddTransactionDialog(
     }
     } // end AnimatedVisibility
 
-    // PremiumDatePicker hoisted to top-level so it renders above the dialog overlay
+    // PremiumDatePicker uses a Dialog window internally — renders above any ModalBottomSheet
     if (showDatePicker) {
         PremiumDatePicker(
             initialMillis  = formData.dateMillis,
@@ -648,17 +648,18 @@ fun ColumnScope.ManualFormContent(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val accentAdd = LocalAccent.current
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFF7C4DFF).copy(alpha = 0.08f)),
+                                .background(accentAdd.copy(alpha = 0.08f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.CalendarMonth,
                                 contentDescription = null,
-                                tint     = Color(0xFF7C4DFF),
+                                tint     = accentAdd,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -672,7 +673,7 @@ fun ColumnScope.ManualFormContent(
                         Icon(
                             Icons.Default.EditCalendar,
                             contentDescription = "Change date",
-                            tint     = Color(0xFFB39DDB),
+                            tint     = AppPalette.textMuted,
                             modifier = Modifier.size(16.dp)
                         )
                     }

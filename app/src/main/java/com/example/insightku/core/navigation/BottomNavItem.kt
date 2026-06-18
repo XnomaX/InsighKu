@@ -33,11 +33,11 @@ sealed class BottomNavItem(
         unselectedIcon = Icons.Outlined.AccountBalance
     )
 
-    object Settings : BottomNavItem(
-        route = Route.SETTINGS,
-        title = "Settings",
-        selectedIcon = Icons.Filled.Settings,
-        unselectedIcon = Icons.Outlined.Settings
+    object Accounts : BottomNavItem(
+        route = Route.ACCOUNTS,
+        title = "Accounts",
+        selectedIcon = Icons.Filled.Wallet,
+        unselectedIcon = Icons.Outlined.Wallet
     )
 }
 
@@ -46,5 +46,5 @@ val bottomNavItems = listOf(
     BottomNavItem.Home,
     BottomNavItem.Analysis,
     BottomNavItem.Budgeting,
-    BottomNavItem.Settings
+    BottomNavItem.Accounts
 )
