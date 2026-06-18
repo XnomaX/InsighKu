@@ -92,7 +92,8 @@ fun DashboardScreen(
     onAddTransaction: () -> Unit,
     onAddTransactionForStreak: () -> Unit = onAddTransaction,
     onOpenDraft: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
-    onDraftDismissed: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {}
+    onDraftDismissed: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -146,7 +147,8 @@ fun DashboardScreen(
                 onAddTransaction = onAddTransaction,
                 onAddTransactionForStreak = onAddTransactionForStreak,
                 onOpenDraft = onOpenDraft,
-                onDraftDismissed = onDraftDismissed
+                onDraftDismissed = onDraftDismissed,
+                onNavigateToSettings = onNavigateToSettings
             )
         }
     }
@@ -163,7 +165,8 @@ fun DashboardScreenContent(
     onAddTransaction: () -> Unit,
     onAddTransactionForStreak: () -> Unit = onAddTransaction,
     onOpenDraft: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
-    onDraftDismissed: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {}
+    onDraftDismissed: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val density = LocalDensity.current
     var showStreakPopup by remember { mutableStateOf(false) }
@@ -209,7 +212,8 @@ fun DashboardScreenContent(
                     currentStreak      = uiState.currentStreak,
                     isBalanceVisible   = !LocalHideAmounts.current,
                     isLoading          = uiState.isLoading,
-                    onToggleVisibility = { onEvent(DashboardEvent.ToggleBalanceVisibility) }
+                    onToggleVisibility = { onEvent(DashboardEvent.ToggleBalanceVisibility) },
+                    onNavigateToSettings = onNavigateToSettings
                 )
             }
             // 2. Hero balance card
@@ -345,7 +349,8 @@ fun DashboardHeader(
     currentStreak: Int,
     isBalanceVisible: Boolean,
     isLoading: Boolean,
-    onToggleVisibility: () -> Unit
+    onToggleVisibility: () -> Unit,
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val initial = userName.firstOrNull()?.uppercaseChar() ?: 'U'
 
@@ -430,6 +435,25 @@ fun DashboardHeader(
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Notifications",
+                            tint = AppPalette.textMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                // Settings
+                Surface(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .clickable { onNavigateToSettings() },
+                    shape = CircleShape,
+                    color = AppPalette.card,
+                    border = BorderStroke(1.dp, AppPalette.cardBorder)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
                             tint = AppPalette.textMuted,
                             modifier = Modifier.size(16.dp)
                         )

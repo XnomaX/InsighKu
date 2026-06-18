@@ -37,6 +37,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.insightku.core.navigation.Route
 import com.example.insightku.feature.analytics.presentation.AnalyticsScreen
+import com.example.insightku.feature.accounts.presentation.AccountsScreen
 import com.example.insightku.feature.budgeting.presentation.BudgetingEvent
 import com.example.insightku.feature.budgeting.presentation.BudgetingScreen
 import com.example.insightku.feature.home.presentation.DashboardScreen
@@ -88,7 +89,7 @@ private val navItems = listOf(
     NavItem(Route.HOME,      "Home",      Icons.Filled.Home),
     NavItem(Route.ANALYSIS,  "Analytics", Icons.Filled.BarChart),
     NavItem(Route.BUDGETING, "Budget",    Icons.Filled.AccountBalanceWallet),
-    NavItem(Route.SETTINGS,  "Settings",  Icons.Filled.Settings)
+    NavItem(Route.ACCOUNTS,  "Accounts",  Icons.Filled.Wallet)
 )
 
 // ─── MainScreen ───────────────────────────────────────────────────────────────
@@ -521,7 +522,13 @@ private fun MainNavHost(
                 onAddTransaction               = onShowAddTransaction,
                 onAddTransactionForStreak      = onShowAddTransactionForStreak,
                 onOpenDraft                    = onOpenDraft,
-                onDraftDismissed               = onDraftDismissed
+                onDraftDismissed               = onDraftDismissed,
+                onNavigateToSettings           = {
+                    navController.navigate(Route.SETTINGS) {
+                        // Keep HOME in back stack so Back returns to it
+                        launchSingleTop = true
+                    }
+                }
             )
         }
         composable(Route.TRANSACTION_DETAILS) {
@@ -538,6 +545,7 @@ private fun MainNavHost(
         }
         composable(Route.ANALYSIS) { AnalyticsScreen() }
         composable(Route.BUDGETING) { BudgetingScreen(viewModel = budgetingViewModel) }
+        composable(Route.ACCOUNTS) { AccountsScreen() }
         composable(Route.SETTINGS) {
             SettingsScreen(
                 onLogout = {

@@ -3,6 +3,16 @@ package com.example.insightku.feature.analytics.domain
 import java.util.Calendar
 
 /**
+ * Represents the selectable period type for analytics view.
+ * These are user-selectable time scopes for viewing analytics.
+ */
+enum class AnalyticsPeriodType(val displayName: String) {
+    WEEKLY("Weekly"),
+    MONTHLY("Monthly"),
+    ANNUAL("Annual")
+}
+
+/**
  * Half-open time window `[startMs, endMs)` used to scope analytics derivations.
  *
  * Uses `java.util.Calendar` (not `java.time`) so it runs on `minSdk 24` without core-library

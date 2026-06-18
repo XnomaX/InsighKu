@@ -18,6 +18,7 @@ object Route {
     const val ADD_TRANSACTION = "add_transaction"
     const val BUDGETING = "budgeting"
     const val SETTINGS = "settings"
+    const val ACCOUNTS = "accounts"
     const val TRANSACTION_DETAILS = "transaction_details"
     const val BANK_WHITELIST = "bank_whitelist"
     const val AUTO_DETECTION_ONBOARDING = "auto_detection_onboarding"

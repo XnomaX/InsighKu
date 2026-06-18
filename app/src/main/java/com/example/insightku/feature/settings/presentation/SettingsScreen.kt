@@ -39,7 +39,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Spa
-import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -862,21 +862,97 @@ private fun AppInfoFooter() {
 
 @Composable
 fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, null)
-                Spacer(Modifier.width(Dimens.PaddingMedium))
-                Text("Log out?")
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape           = RoundedCornerShape(Dimens.BottomSheetRadius),
+            color           = MaterialTheme.colorScheme.surface,
+            tonalElevation  = 6.dp,
+            shadowElevation = 0.dp,
+            modifier        = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier            = Modifier.padding(Dimens.CardInnerPaddingLarge),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
+            ) {
+                // ── Icon ─────────────────────────────────────────────────────
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.errorContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector        = Icons.AutoMirrored.Filled.ExitToApp,
+                        contentDescription = null,
+                        tint               = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier           = Modifier.size(28.dp)
+                    )
+                }
+
+                // ── Copy ──────────────────────────────────────────────────────
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)
+                ) {
+                    Text(
+                        text       = "Log out of InsightKu?",
+                        style      = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color      = MaterialTheme.colorScheme.onSurface,
+                        textAlign  = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Text(
+                        text      = "You'll need to sign in again to access your financial story.",
+                        style     = MaterialTheme.typography.bodyMedium,
+                        color     = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+
+                // ── Actions ───────────────────────────────────────────────────
+                Column(
+                    modifier            = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
+                ) {
+                    Button(
+                        onClick  = onConfirm,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(Dimens.ButtonHeightPrimary),
+                        shape  = RoundedCornerShape(Dimens.ButtonRadius),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor   = MaterialTheme.colorScheme.onError
+                        )
+                    ) {
+                        Icon(
+                            imageVector        = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = null,
+                            modifier           = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(Dimens.PaddingMedium))
+                        Text("Log Out", fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
+                        onClick  = onDismiss,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(Dimens.ButtonHeightSecondary),
+                        shape  = RoundedCornerShape(Dimens.ButtonRadius),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Text(
+                            "Stay Logged In",
+                            fontWeight = FontWeight.Medium,
+                            color      = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             }
-        },
-        text = { Text("You'll need to sign in again to see your money story.") },
-        confirmButton = {
-            Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = SettingsPalette.ExpenseRed)) { Text("Log out") }
-        },
-        dismissButton = { OutlinedButton(onClick = onDismiss) { Text("Stay") } }
-    )
+        }
+    }
 }
 
 
