@@ -52,6 +52,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.PremiumDatePicker
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.TimeUtils
 import com.example.insightku.feature.home.presentation.TransactionDetailsViewModel
 import java.text.SimpleDateFormat
@@ -59,18 +61,19 @@ import java.util.*
 import kotlin.math.abs
 
 // --- Design tokens ------------------------------------------------------------
-private val TxIncomeGreen  = Color(0xFF10B981)
-private val TxExpenseRed   = Color(0xFFEF4444)
-private val GlassBorder    = Color(0xFFE8DDFF)
-private val PurpleDark     = Color(0xFF2D0A5E)
-private val PurpleMid      = Color(0xFF5A2A82)
-private val PurpleViolet   = Color(0xFF7C3AED)
-private val PurpleLavender = Color(0xFFAB8FD4)
-private val PurpleTint     = Color(0xFFEDE9FE)
-private val IncomeDeep     = Color(0xFF064E3B)
-private val IncomeMid      = Color(0xFF065F46)
-private val GlassSurface   = Color(0xFFFAF8FF)
-private val TxBackground   = Color(0xFFFAF9FE)
+// Semantic colors — theme-invariant, used for financial polarity only.
+private val TxIncomeGreen = Color(0xFF10B981)
+private val TxExpenseRed  = Color(0xFFEF4444)
+
+// All surface/text/border tokens are resolved at runtime from AppPalette or
+// LocalAccent so they adapt to dark mode and the user's chosen accent.
+private val TxAccent:      Color @Composable get() = LocalAccent.current
+private val TxBackground:  Color @Composable get() = AppPalette.background
+private val TxCard:        Color @Composable get() = AppPalette.card
+private val TxCardBorder:  Color @Composable get() = AppPalette.cardBorder
+private val TxTextPrimary: Color @Composable get() = AppPalette.textPrimary
+private val TxTextMuted:   Color @Composable get() = AppPalette.textMuted
+private val TxTint:        Color @Composable get() = AppPalette.cardElevated
 
 // --- Enums --------------------------------------------------------------------
 enum class FilterType { ALL, INCOME, EXPENSE, RECURRING, INSTALLMENT, TODAY, WEEK, MONTH }
@@ -199,9 +202,10 @@ fun TransactionDetailsScreen(
         }
     }
 
+    val accent = TxAccent
     if (isLoading) {
         Box(Modifier.fillMaxSize().background(TxBackground), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = PurpleViolet, strokeWidth = 2.dp, modifier = Modifier.size(32.dp))
+            CircularProgressIndicator(color = accent, strokeWidth = 2.dp, modifier = Modifier.size(32.dp))
         }
         return
     }
@@ -279,7 +283,7 @@ fun PremiumTransactionListView(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TxBackground)
+            .background(TxBackground)   // AppPalette.background — adapts to dark mode
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -362,10 +366,11 @@ private fun PremiumTxHeader(
     expense: Double,
     total: Int
 ) {
+    val accent = TxAccent
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(TxCard)
             .statusBarsPadding()
             .padding(horizontal = 20.dp)
             .padding(top = 8.dp, bottom = 20.dp)
@@ -379,14 +384,14 @@ private fun PremiumTxHeader(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFF5F3FF))
+                    .background(accent.copy(alpha = 0.10f))
                     .clickable { onBack() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = PurpleViolet,
+                    tint = accent,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -395,12 +400,12 @@ private fun PremiumTxHeader(
                     "All Transactions",
                     style      = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color      = Color(0xFF1A1A2E)
+                    color      = TxTextPrimary
                 )
                 Text(
                     "Track every mindful financial movement",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
+                    color = TxTextMuted
                 )
             }
         }
@@ -416,7 +421,7 @@ private fun PremiumTxHeader(
                 label  = "Income",
                 amount = income,
                 color  = TxIncomeGreen,
-                bg     = Color(0xFFECFDF5),
+                bg     = TxIncomeGreen.copy(alpha = 0.10f),
                 icon   = Icons.AutoMirrored.Filled.TrendingUp,
                 modifier = Modifier.weight(1f)
             )
@@ -424,7 +429,7 @@ private fun PremiumTxHeader(
                 label  = "Expenses",
                 amount = expense,
                 color  = TxExpenseRed,
-                bg     = Color(0xFFFFF1F2),
+                bg     = TxExpenseRed.copy(alpha = 0.10f),
                 icon   = Icons.AutoMirrored.Filled.TrendingDown,
                 modifier = Modifier.weight(1f)
             )
@@ -432,8 +437,8 @@ private fun PremiumTxHeader(
                 label  = "Total",
                 amount = null,
                 count  = total,
-                color  = PurpleViolet,
-                bg     = PurpleTint,
+                color  = accent,
+                bg     = TxTint,
                 icon   = Icons.Outlined.Receipt,
                 modifier = Modifier.weight(1f)
             )
@@ -501,27 +506,28 @@ private fun TxSummaryCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PremiumSearchBar(value: String, onChange: (String) -> Unit) {
+    val accent = TxAccent
     OutlinedTextField(
         value         = value,
         onValueChange = onChange,
         placeholder   = {
             Text(
-                "Search transactions�",
+                "Search transactions…",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFFB0AABF)
+                color = TxTextMuted
             )
         },
         leadingIcon = {
             Icon(
                 Icons.Default.Search, null,
-                tint     = Color(0xFFB0AABF),
+                tint     = TxTextMuted,
                 modifier = Modifier.size(20.dp)
             )
         },
         trailingIcon = {
             if (value.isNotEmpty()) {
                 IconButton(onClick = { onChange("") }) {
-                    Icon(Icons.Default.Close, null, modifier = Modifier.size(18.dp), tint = Color(0xFFB0AABF))
+                    Icon(Icons.Default.Close, null, modifier = Modifier.size(18.dp), tint = TxTextMuted)
                 }
             }
         },
@@ -529,11 +535,13 @@ private fun PremiumSearchBar(value: String, onChange: (String) -> Unit) {
         shape      = RoundedCornerShape(16.dp),
         modifier   = Modifier.fillMaxWidth(),
         colors     = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor      = PurpleViolet.copy(alpha = 0.5f),
-            unfocusedBorderColor    = Color(0xFFECE7F6),
-            unfocusedContainerColor = Color.White,
-            focusedContainerColor   = Color.White,
-            cursorColor             = PurpleViolet
+            focusedBorderColor      = accent.copy(alpha = 0.5f),
+            unfocusedBorderColor    = TxCardBorder,
+            unfocusedContainerColor = TxCard,
+            focusedContainerColor   = TxCard,
+            cursorColor             = accent,
+            focusedTextColor        = TxTextPrimary,
+            unfocusedTextColor      = TxTextPrimary
         )
     )
 }
@@ -556,6 +564,7 @@ private fun PremiumFilterRow(
         FilterType.MONTH       to "This Month"
     )
 
+    val accent = TxAccent
     Row(
         modifier              = Modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -565,10 +574,10 @@ private fun PremiumFilterRow(
             Surface(
                 modifier = Modifier.clickable { onFilterTypeChanged(type) },
                 shape    = RoundedCornerShape(50.dp),
-                color    = if (selected) PurpleViolet else Color.White,
+                color    = if (selected) accent else TxCard,
                 border   = androidx.compose.foundation.BorderStroke(
                     1.dp,
-                    if (selected) PurpleViolet else Color(0xFFECE7F6)
+                    if (selected) accent else TxCardBorder
                 )
             ) {
                 Row(
@@ -587,7 +596,7 @@ private fun PremiumFilterRow(
                         label,
                         style      = MaterialTheme.typography.labelMedium,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                        color      = if (selected) Color.White else Color(0xFF6B6B8A)
+                        color      = if (selected) Color.White else TxTextMuted
                     )
                 }
             }
@@ -604,6 +613,7 @@ private fun PremiumSortRow(
     count: Int
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val accent = TxAccent
 
     Row(
         modifier              = Modifier.fillMaxWidth(),
@@ -613,21 +623,21 @@ private fun PremiumSortRow(
         Text(
             "$count transaction${if (count != 1) "s" else ""}",
             style = MaterialTheme.typography.labelMedium,
-            color = Color(0xFF9E9E9E)
+            color = TxTextMuted
         )
         Box {
             Surface(
                 onClick = { expanded = true },
                 shape   = RoundedCornerShape(10.dp),
-                color   = PurpleViolet.copy(alpha = 0.06f),
-                border  = androidx.compose.foundation.BorderStroke(1.dp, PurpleViolet.copy(alpha = 0.15f))
+                color   = accent.copy(alpha = 0.06f),
+                border  = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.15f))
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Sort, null, tint = PurpleViolet, modifier = Modifier.size(14.dp))
+                    Icon(Icons.AutoMirrored.Filled.Sort, null, tint = accent, modifier = Modifier.size(14.dp))
                     Text(
                         when (sortBy) {
                             SortType.NEWEST   -> "Newest"
@@ -638,18 +648,18 @@ private fun PremiumSortRow(
                         },
                         style      = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color      = PurpleViolet
+                        color      = accent
                     )
                     Icon(
                         if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        null, tint = PurpleViolet, modifier = Modifier.size(14.dp)
+                        null, tint = accent, modifier = Modifier.size(14.dp)
                     )
                 }
             }
             DropdownMenu(
                 expanded         = expanded,
                 onDismissRequest = { expanded = false },
-                modifier         = Modifier.background(Color.White, RoundedCornerShape(14.dp))
+                modifier         = Modifier.background(TxCard, RoundedCornerShape(14.dp))
             ) {
                 listOf(
                     SortType.NEWEST   to "Newest First",
@@ -664,12 +674,12 @@ private fun PremiumSortRow(
                                 label,
                                 style      = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (sortBy == type) FontWeight.SemiBold else FontWeight.Normal,
-                                color      = if (sortBy == type) PurpleViolet else Color(0xFF1A1A2E)
+                                color      = if (sortBy == type) accent else TxTextPrimary
                             )
                         },
                         onClick      = { onSortByChanged(type); expanded = false },
                         leadingIcon  = {
-                            if (sortBy == type) Icon(Icons.Default.Check, null, tint = PurpleViolet, modifier = Modifier.size(16.dp))
+                            if (sortBy == type) Icon(Icons.Default.Check, null, tint = accent, modifier = Modifier.size(16.dp))
                         }
                     )
                 }
@@ -682,6 +692,7 @@ private fun PremiumSortRow(
 
 @Composable
 fun TxGroupHeader(label: String, count: Int, modifier: Modifier = Modifier) {
+    val accent = TxAccent
     Row(
         modifier              = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -691,18 +702,18 @@ fun TxGroupHeader(label: String, count: Int, modifier: Modifier = Modifier) {
             label,
             style      = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color      = Color(0xFF1A1A2E)
+            color      = TxTextPrimary
         )
         Surface(
             shape = RoundedCornerShape(50),
-            color = PurpleTint
+            color = TxTint
         ) {
             Text(
                 "$count",
                 modifier   = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                 style      = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color      = PurpleViolet
+                color      = accent
             )
         }
     }
@@ -744,10 +755,10 @@ fun PremiumTransactionCard(
             .fillMaxWidth()
             .graphicsLayer { scaleX = scale; scaleY = scale },
         shape         = RoundedCornerShape(20.dp),
-        color         = Color.White,
+        color         = TxCard,
         tonalElevation = 0.dp,
         shadowElevation = 2.dp,
-        border        = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECE7F6)),
+        border        = androidx.compose.foundation.BorderStroke(1.dp, TxCardBorder),
         onClick       = onClick
     ) {
         Row(
@@ -777,7 +788,7 @@ fun PremiumTransactionCard(
                     transaction.title,
                     style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color      = Color(0xFF1A1A2E),
+                    color      = TxTextPrimary,
                     maxLines   = 1,
                     overflow   = TextOverflow.Ellipsis
                 )
@@ -798,21 +809,21 @@ fun PremiumTransactionCard(
                         )
                     }
                     Text(
-                        "�",
+                        "·",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFB0AABF)
+                        color = TxTextMuted
                     )
                     Text(
                         TimeUtils.toShortRelativeTime(transaction.date),
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFB0AABF)
+                        color = TxTextMuted
                     )
                 }
                 if (!transaction.paymentMethod.isNullOrBlank()) {
                     Text(
                         transaction.paymentMethod,
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFB0AABF)
+                        color = TxTextMuted
                     )
                 }
             }
@@ -854,16 +865,17 @@ private fun PremiumEmptyState(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        val accent = TxAccent
         Box(
             modifier = Modifier
                 .size(88.dp)
                 .clip(CircleShape)
-                .background(PurpleTint),
+                .background(TxTint),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 Icons.Outlined.ReceiptLong, null,
-                tint     = PurpleViolet.copy(alpha = 0.5f),
+                tint     = accent.copy(alpha = 0.5f),
                 modifier = Modifier.size(40.dp)
             )
         }
@@ -871,13 +883,13 @@ private fun PremiumEmptyState(modifier: Modifier = Modifier) {
             "No transactions found",
             style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = Color(0xFF1A1A2E),
+            color      = TxTextPrimary,
             textAlign  = TextAlign.Center
         )
         Text(
             "Try adjusting your search or filter\nto find what you're looking for.",
             style     = MaterialTheme.typography.bodySmall,
-            color     = Color(0xFF9E9E9E),
+            color     = TxTextMuted,
             textAlign = TextAlign.Center,
             lineHeight = 20.sp
         )
@@ -919,13 +931,14 @@ fun TransactionDetailOverlay(
     val amountColor = if (isIncome) TxIncomeGreen else TxExpenseRed
     val prefix      = if (isIncome) "+" else "-"
 
+    val accent = TxAccent
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState       = sheetState,
-        containerColor   = Color.White,
+        containerColor   = TxCard,
         dragHandle = {
             Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(Color(0xFFE0D9F5)))
+                Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(TxCardBorder))
             }
         }
     ) {
@@ -948,7 +961,7 @@ fun TransactionDetailOverlay(
                 ) {
                     Icon(catIcon, null, tint = catColor, modifier = Modifier.size(32.dp))
                 }
-                Text(transaction.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A2E), textAlign = TextAlign.Center)
+                Text(transaction.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TxTextPrimary, textAlign = TextAlign.Center)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Surface(shape = RoundedCornerShape(50.dp), color = catColor.copy(alpha = 0.10f)) {
                         Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -963,13 +976,13 @@ fun TransactionDetailOverlay(
                 Text("$prefix ${formatCurrencyRp(transaction.amount)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = amountColor, letterSpacing = (-0.5).sp)
             }
 
-            Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFF0EBF8)))
+            Box(Modifier.fillMaxWidth().height(1.dp).background(TxCardBorder))
 
             // -- Info grid -------------------------------------------------
             Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PremiumInfoTile(Icons.Default.CalendarMonth, "Date", formatFullDate(transaction.date), PurpleViolet, Modifier.weight(1f))
-                    PremiumInfoTile(Icons.Default.AccessTime, "Time", transaction.time, PurpleViolet, Modifier.weight(1f))
+                    PremiumInfoTile(Icons.Default.CalendarMonth, "Date", formatFullDate(transaction.date), accent, Modifier.weight(1f))
+                    PremiumInfoTile(Icons.Default.AccessTime, "Time", transaction.time, accent, Modifier.weight(1f))
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PremiumInfoTile(Icons.Default.CreditCard, "Payment", transaction.paymentMethod ?: "Not specified", Color(0xFF3B82F6), Modifier.weight(1f))
@@ -986,15 +999,15 @@ fun TransactionDetailOverlay(
             // -- Action buttons --------------------------------------------
             Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Surface(Modifier.weight(1f).height(50.dp).clickable { onEdit(transaction) }, RoundedCornerShape(16.dp), PurpleTint, border = androidx.compose.foundation.BorderStroke(1.dp, PurpleViolet.copy(alpha = 0.3f))) {
+                    Surface(Modifier.weight(1f).height(50.dp).clickable { onEdit(transaction) }, RoundedCornerShape(16.dp), TxTint, border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.3f))) {
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Icon(Icons.Default.Edit, null, tint = PurpleViolet, modifier = Modifier.size(16.dp))
-                                Text("Edit", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = PurpleViolet)
+                                Icon(Icons.Default.Edit, null, tint = accent, modifier = Modifier.size(16.dp))
+                                Text("Edit", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = accent)
                             }
                         }
                     }
-                    Surface(Modifier.weight(1f).height(50.dp).clickable { showDeleteDialog = true }, RoundedCornerShape(16.dp), Color(0xFFFFF1F2)) {
+                    Surface(Modifier.weight(1f).height(50.dp).clickable { showDeleteDialog = true }, RoundedCornerShape(16.dp), TxExpenseRed.copy(alpha = 0.10f)) {
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.Delete, null, tint = TxExpenseRed, modifier = Modifier.size(16.dp))
@@ -1008,13 +1021,13 @@ fun TransactionDetailOverlay(
                         Modifier.fillMaxWidth().height(46.dp).clickable {
                             onDuplicate(transaction.copy(id = java.util.UUID.randomUUID().toString(), date = System.currentTimeMillis()))
                             onDismiss()
-                        }, RoundedCornerShape(16.dp), Color(0xFFF5F3FF),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECE7F6))
+                        }, RoundedCornerShape(16.dp), TxTint,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, TxCardBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Icon(Icons.Default.ContentCopy, null, tint = Color(0xFF7C4DFF), modifier = Modifier.size(15.dp))
-                                Text("Duplicate Transaction", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF7C4DFF))
+                                Icon(Icons.Default.ContentCopy, null, tint = accent, modifier = Modifier.size(15.dp))
+                                Text("Duplicate Transaction", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = accent)
                             }
                         }
                     }
@@ -1043,12 +1056,12 @@ fun TransactionDetailOverlay(
             dismissButton = {
                 Box(
                     modifier = Modifier.clip(RoundedCornerShape(12.dp))
-                        .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
+                        .border(1.dp, TxCardBorder, RoundedCornerShape(12.dp))
                         .pointerInput(Unit) { detectTapGestures { showDeleteDialog = false } }
                         .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) { Text("Cancel", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             },
-            shape = RoundedCornerShape(24.dp), containerColor = GlassSurface
+            shape = RoundedCornerShape(24.dp), containerColor = TxCard
         )
     }
 }
@@ -1089,7 +1102,7 @@ private fun PremiumInfoTile(
                 value,
                 style      = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
-                color      = Color(0xFF1A1A2E),
+                color      = TxTextPrimary,
                 maxLines   = 2,
                 overflow   = TextOverflow.Ellipsis
             )
@@ -1123,7 +1136,7 @@ private fun PremiumInfoTileWide(
             }
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(label, style = MaterialTheme.typography.labelSmall, color = color.copy(alpha = 0.7f))
-                Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF1A1A2E))
+                Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = TxTextPrimary)
             }
         }
     }

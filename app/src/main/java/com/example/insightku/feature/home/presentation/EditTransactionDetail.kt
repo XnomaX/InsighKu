@@ -55,7 +55,7 @@ import kotlin.math.abs
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 private val EditPurple: Color      @Composable get() = LocalAccent.current
-private val EditPurpleTint = Color(0xFFEDE9FE)
+private val EditPurpleTint: Color @Composable get() = AppPalette.cardElevated
 private val EditBorder: Color      @Composable get() = AppPalette.cardBorder
 private val EditSurface: Color     @Composable get() = AppPalette.card
 private val EditTextPrimary: Color @Composable get() = AppPalette.textPrimary
@@ -118,7 +118,7 @@ fun EditTransactionDetail(
         containerColor   = EditSurface,
         dragHandle = {
             Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(Color(0xFFE0D9F5)))
+                Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(EditBorder))
             }
         }
     ) {
@@ -232,7 +232,7 @@ fun EditTransactionDetail(
                                 color      = EditTextPrimary,
                                 modifier   = Modifier.weight(1f)
                             )
-                            Icon(Icons.Default.EditCalendar, null, tint = Color(0xFFB39DDB), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.EditCalendar, null, tint = EditTextMuted, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -320,17 +320,18 @@ fun EditTransactionDetail(
 
 @Composable
 private fun EditTypeToggle(isIncome: Boolean, onToggle: (Boolean) -> Unit) {
+    val inactiveColor = MaterialTheme.colorScheme.surfaceVariant
     val expenseColor by animateColorAsState(
-        targetValue   = if (!isIncome) EditExpenseRed else Color(0xFFEEEEEE),
+        targetValue   = if (!isIncome) EditExpenseRed else inactiveColor,
         animationSpec = tween(200), label = "exp_color"
     )
     val incomeColor by animateColorAsState(
-        targetValue   = if (isIncome) EditIncomeGreen else Color(0xFFEEEEEE),
+        targetValue   = if (isIncome) EditIncomeGreen else inactiveColor,
         animationSpec = tween(200), label = "inc_color"
     )
     Surface(
         shape  = RoundedCornerShape(14.dp),
-        color  = Color(0xFFF5F3FF),
+        color  = AppPalette.cardElevated,
         border = BorderStroke(1.dp, EditBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -363,7 +364,7 @@ private fun EditAmountCard(
     onAmountChange: (String, TextFieldValue) -> Unit
 ) {
     val accentColor = if (isIncome) EditIncomeGreen else EditPurple
-    val cardBg      = if (isIncome) Color(0xFFF0FFF4) else Color(0xFFF3EEFF)
+    val cardBg      = accentColor.copy(alpha = 0.08f)
     var isFocused   by remember { mutableStateOf(false) }
 
     val formatted   = com.example.insightku.core.utils.CurrencyUtils.formatInputThousands(amountRaw)
@@ -569,7 +570,7 @@ private fun EditPaymentChips(selected: String, onSelect: (String) -> Unit) {
                     ) {
                         Box(
                             modifier = Modifier.size(28.dp).clip(CircleShape)
-                                .background(if (isSelected) EditPurple.copy(alpha = 0.15f) else Color(0xFFF5F3FF)),
+                                .background(if (isSelected) EditPurple.copy(alpha = 0.15f) else AppPalette.cardElevated),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(icon, null, tint = if (isSelected) EditPurple else EditTextMuted, modifier = Modifier.size(14.dp))
