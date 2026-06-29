@@ -3,6 +3,7 @@ package com.example.insightku.core.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.BudgetDao
 import com.example.insightku.core.data.local.dao.CategoryDao
 import com.example.insightku.core.data.local.dao.DraftTransactionDao
@@ -17,6 +18,7 @@ import com.example.insightku.core.data.local.database.MIGRATION_5_6
 import com.example.insightku.core.data.local.database.MIGRATION_6_7
 import com.example.insightku.core.data.local.database.MIGRATION_7_8
 import com.example.insightku.core.data.local.database.MIGRATION_8_9
+import com.example.insightku.core.data.local.database.MIGRATION_9_10
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -74,5 +76,10 @@ object DatabaseModule {
     @Provides
     fun provideDraftTransactionDao(database: InsightKuDatabase): DraftTransactionDao {
         return database.draftTransactionDao()
+    }
+
+    @Provides
+    fun provideAccountDao(database: InsightKuDatabase): AccountDao {
+        return database.accountDao()
     }
 }
