@@ -38,6 +38,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.insightku.core.navigation.Route
 import com.example.insightku.feature.analytics.presentation.AnalyticsScreen
 import com.example.insightku.feature.accounts.presentation.AccountsScreen
+import com.example.insightku.feature.accounts.presentation.AccountsViewModel
 import com.example.insightku.feature.budgeting.presentation.BudgetingEvent
 import com.example.insightku.feature.budgeting.presentation.BudgetingScreen
 import com.example.insightku.feature.home.presentation.DashboardScreen
@@ -545,7 +546,12 @@ private fun MainNavHost(
         }
         composable(Route.ANALYSIS) { AnalyticsScreen() }
         composable(Route.BUDGETING) { BudgetingScreen(viewModel = budgetingViewModel) }
-        composable(Route.ACCOUNTS) { AccountsScreen() }
+        composable(Route.ACCOUNTS) {
+            val accountsViewModel: AccountsViewModel = hiltViewModel()
+            AccountsScreen(
+                viewModel = accountsViewModel
+            )
+        }
         composable(Route.SETTINGS) {
             SettingsScreen(
                 onLogout = {

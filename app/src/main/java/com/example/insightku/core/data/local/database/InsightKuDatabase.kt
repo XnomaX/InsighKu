@@ -88,6 +88,25 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
     }
 }
 
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("""
+            CREATE TABLE accounts (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                accountType TEXT NOT NULL,
+                balance REAL NOT NULL DEFAULT 0.0,
+                color TEXT NOT NULL DEFAULT '#7C4DFF',
+                notes TEXT NOT NULL,
+                isActive INTEGER NOT NULL DEFAULT 1,
+                createdAt INTEGER NOT NULL DEFAULT 0,
+                updatedAt INTEGER NOT NULL DEFAULT 0,
+                isDefault INTEGER NOT NULL DEFAULT 0
+            )
+        """.trimIndent())
+    }
+}
+
 @Database(
     entities = [
         Transaction::class,
@@ -96,9 +115,10 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
         Budget::class,
         User::class,
         Installment::class,
-        DraftTransaction::class
+        DraftTransaction::class,
+        Account::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -110,6 +130,7 @@ abstract class InsightKuDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun installmentDao(): InstallmentDao
     abstract fun draftTransactionDao(): DraftTransactionDao
+    abstract fun accountDao(): AccountDao
 }
 
 
