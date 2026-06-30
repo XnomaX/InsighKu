@@ -6,18 +6,24 @@ import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.feature.auth.data.AuthRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
 class AccountsViewModel @Inject constructor(
     private val accountDao: AccountDao,
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val authRepository: AuthRepository,
+    private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AccountsUiState())
@@ -69,9 +75,40 @@ class AccountsViewModel @Inject constructor(
     private fun deleteAccount(accountId: String) {
         viewModelScope.launch {
             try {
-                // Step 1: Delete all transactions in this account (cascade delete)
+                val userId = authRepository.getCurrentUserId()
+
+                // Step 1: Restore account balances for all transactions in this account
+                // before deleting them. Each transaction's balance effect must be reversed.
+                val transactions = transactionDao.getTransactionsByAccountId(accountId)
+                for (tx in transactions) {
+                    if (tx.accountId.isNotBlank()) {
+                        val delta = if (tx.type == TransactionType.INCOME) {
+                            -tx.amount  // Reverse income: subtract
+                        } else {
+                            tx.amount   // Reverse expense: add back
+                        }
+                        accountDao.updateBalance(tx.accountId, delta)
+                    }
+                }
+
+                // Step 2: Delete all transactions in this account from Room
                 transactionDao.deleteTransactionsByAccountId(accountId)
-                // Step 2: Deactivate the account
+
+                // Step 3: Also delete from Firestore (best effort — if offline, orphaned docs remain
+                // until next refresh which will remove them since Room is source of truth)
+                if (userId != null) {
+                    try {
+                        for (tx in transactions) {
+                            firestore.collection("users").document(userId)
+                                .collection("transactions").document(tx.id).delete().await()
+                        }
+                    } catch (e: Exception) {
+                        // Firestore offline — Room already deleted, orphaned Firestore docs
+                        // will be cleaned up on next refreshTransactions()
+                    }
+                }
+
+                // Step 4: Deactivate the account
                 accountDao.deactivateAccount(accountId)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
