@@ -169,12 +169,14 @@ class TransactionRepository @Inject constructor(
             accountDao.updateBalance(transaction.accountId, newDelta)
         }
 
-        transactionDao.updateTransaction(transaction)
+        // Mark unsynced so SyncTransactionWorker picks it up if Firestore fails
+        val unsyncedTransaction = transaction.copy(isSynced = false)
+        transactionDao.updateTransaction(unsyncedTransaction)
         try {
             firestore.collection("users").document(userId)
-                .collection("transactions").document(transaction.id).set(transaction).await()
+                .collection("transactions").document(transaction.id).set(unsyncedTransaction).await()
         } catch (e: Exception) {
-            // Offline — update sudah ada di Room, akan sync saat network kembali
+            // Offline — update sudah ada di Room (isSynced=false), akan sync saat network kembali
         }
     }
 
