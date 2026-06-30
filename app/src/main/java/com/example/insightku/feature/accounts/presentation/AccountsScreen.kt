@@ -120,7 +120,7 @@ fun AccountsScreen(
                         accounts = uiState.accounts,
                         onAccountClick = { account -> accountToView = account },
                         onEditAccount = { account -> accountToEdit = account },
-                        onDeleteAccount = { viewModel.onEvent(AccountsEvent.DeleteAccount(it)) },
+                        onDeleteAccount = { viewModel.onEvent(AccountsEvent.DeleteAccount(it.id, it.name)) },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -155,7 +155,7 @@ fun AccountsScreen(
                     accountToEdit = account
                 },
                 onDelete = {
-                    viewModel.onEvent(AccountsEvent.DeleteAccount(account.id))
+                    viewModel.onEvent(AccountsEvent.DeleteAccount(account.id, account.name))
                     accountToView = null
                 }
             )
@@ -243,7 +243,7 @@ private fun AccountsList(
     accounts: List<Account>,
     onAccountClick: (Account) -> Unit,
     onEditAccount: (Account) -> Unit,
-    onDeleteAccount: (String) -> Unit,
+    onDeleteAccount: (Account) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val groupedAccounts = accounts.groupBy { it.type }
@@ -272,7 +272,7 @@ private fun AccountsList(
                         account = account,
                         onClick = { onAccountClick(account) },
                         onEdit = { onEditAccount(account) },
-                        onDelete = { onDeleteAccount(account.id) }
+                        onDelete = { onDeleteAccount(account) }
                     )
                 }
             }

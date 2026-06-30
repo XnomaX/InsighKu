@@ -7,7 +7,7 @@ import com.example.insightku.core.data.model.AccountType
  */
 sealed class AccountsEvent {
     object LoadAccounts : AccountsEvent()
-    data class DeleteAccount(val accountId: String) : AccountsEvent()
+    data class DeleteAccount(val accountId: String, val accountName: String) : AccountsEvent()
     data class SetAsDefault(val accountId: String) : AccountsEvent()
 }
 

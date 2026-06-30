@@ -12,6 +12,8 @@ import com.example.insightku.core.data.local.dao.RecurringBudgetDao
 import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.local.dao.UserDao
 import com.example.insightku.core.data.local.database.InsightKuDatabase
+import com.example.insightku.core.data.local.database.MIGRATION_10_11
+import com.example.insightku.core.data.local.database.MIGRATION_11_12
 import com.example.insightku.core.data.local.database.MIGRATION_3_4
 import com.example.insightku.core.data.local.database.MIGRATION_4_5
 import com.example.insightku.core.data.local.database.MIGRATION_5_6
@@ -38,7 +40,7 @@ object DatabaseModule {
             InsightKuDatabase::class.java,
             "insightku_database"
         )
-            .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+            .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
             .fallbackToDestructiveMigration()
             .build()
     }

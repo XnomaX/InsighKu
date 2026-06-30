@@ -2,6 +2,7 @@ package com.example.insightku.feature.budgeting.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.model.Installment
@@ -9,6 +10,7 @@ import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.data.repository.TransactionRepository
+import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.feature.budgeting.presentation.BudgetCategory
 import com.example.insightku.feature.budgeting.presentation.BudgetingEvent
 import com.example.insightku.feature.budgeting.presentation.BudgetingUiState
@@ -46,7 +48,8 @@ class BudgetingViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val authRepository: AuthRepository,
     private val errorBus: ErrorBus,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val accountDao: AccountDao
 ) : ViewModel() {
 
     private data class BudgetSnapshot(
@@ -54,7 +57,8 @@ class BudgetingViewModel @Inject constructor(
         val incomeCategories: List<BudgetCategory>,
         val recurringBudgets: List<RecurringBudget>,
         val installments: List<Installment>,
-        val rawCategories: List<com.example.insightku.core.data.model.Category>
+        val rawCategories: List<Category>,
+        val accounts: List<Account>
     )
 
     private val _uiState = MutableStateFlow(BudgetingUiState())
@@ -127,14 +131,15 @@ class BudgetingViewModel @Inject constructor(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            try {
+	            try {
                 val monthRange = currentMonthRange()
                 combine(
                     transactionRepository.getAllCategories(),
                     transactionRepository.getTransactionsByDateRange(monthRange.first, monthRange.last),
                     transactionRepository.getRecurringBudgets(),
-                    transactionRepository.getAllInstallments()
-                ) { categories, transactions, recurringBudgets, installments ->
+                    transactionRepository.getAllInstallments(),
+                    accountDao.getAllAccounts()
+                ) { categories, transactions, recurringBudgets, installments, accounts ->
                     val activeCategories = categories.filter { it.isActive && it.id !in pendingDeleteIds && !it.isSystemCategory }
                     val monthlyExpenses = transactions
                         .filter { it.type == TransactionType.EXPENSE }
@@ -206,7 +211,7 @@ class BudgetingViewModel @Inject constructor(
                         )
                     }
 
-                    BudgetSnapshot(budgetCategories, incomeCategoryRows, recurringBudgets, installments, categories)
+                    BudgetSnapshot(budgetCategories, incomeCategoryRows, recurringBudgets, installments, categories, accounts)
                 }.collect { snapshot ->
                     cachedRecurringBudgets = snapshot.recurringBudgets
 
@@ -230,7 +235,8 @@ class BudgetingViewModel @Inject constructor(
                             incomeCategories = snapshot.incomeCategories,
                             recurringBudgets = snapshot.recurringBudgets,
                             installments     = snapshot.installments,
-                            rawCategories    = snapshot.rawCategories
+                            rawCategories    = snapshot.rawCategories,
+                            accounts        = snapshot.accounts
                         )
                     }
                 }

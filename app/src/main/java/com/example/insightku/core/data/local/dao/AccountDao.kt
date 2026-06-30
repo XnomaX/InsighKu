@@ -51,4 +51,42 @@ interface AccountDao {
 
     @Query("DELETE FROM accounts")
     suspend fun deleteAllAccounts()
+
+    @Query("UPDATE accounts SET isDefault = 0")
+    suspend fun clearAllDefaults()
+
+    // ── Balance Update Methods ─────────────────────────────────────────────────
+
+    /**
+     * Update account balance by adding a delta amount.
+     * Positive delta for income, negative for expenses.
+     */
+    @Query("UPDATE accounts SET balance = balance + :delta, updatedAt = :timestamp WHERE id = :accountId")
+    suspend fun updateBalance(accountId: String, delta: Double, timestamp: Long = System.currentTimeMillis())
+
+    /**
+     * Get all unique account IDs from transactions.
+     * Used for recalculating account balances.
+     */
+    @Query("SELECT DISTINCT accountId FROM transactions WHERE accountId IS NOT NULL AND accountId != ''")
+    suspend fun getAllAccountIdsWithTransactions(): List<String>
+
+    /**
+     * Get the total balance delta for an account based on its transactions.
+     * INCOME adds to balance, EXPENSE subtracts from balance.
+     */
+    @Query("""
+        SELECT COALESCE(
+            SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END),
+            0.0
+        ) FROM transactions WHERE accountId = :accountId
+    """)
+    suspend fun calculateBalanceFromTransactions(accountId: String): Double
+
+    /**
+     * Recalculate and update an account's balance based on all its transactions.
+     * This ensures balance stays in sync with the transaction history.
+     */
+    @Query("UPDATE accounts SET balance = :newBalance, updatedAt = :timestamp WHERE id = :accountId")
+    suspend fun setBalance(accountId: String, newBalance: Double, timestamp: Long = System.currentTimeMillis())
 }

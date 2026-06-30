@@ -53,7 +53,7 @@ fun DeleteAccountConfirmDialog(
                 )
 
                 Text(
-                    text = "Are you sure you want to delete \"$accountName\"? This action cannot be undone and all transactions associated with this account will also be permanently deleted.",
+                    text = "Are you sure you want to delete \"$accountName\"? This action cannot be undone and all transactions in this account will also be permanently deleted.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppPalette.textMuted,
                     lineHeight = 22.sp

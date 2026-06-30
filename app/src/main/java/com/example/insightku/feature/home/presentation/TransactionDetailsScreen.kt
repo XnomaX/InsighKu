@@ -49,6 +49,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.PremiumDatePicker
@@ -145,6 +147,7 @@ private fun formatCurrencyRp(amount: Double): String =
 fun TransactionDetailsScreen(
     viewModel: TransactionDetailsViewModel = hiltViewModel(),
     initialTransactions: List<Transaction> = emptyList(),
+    accounts: List<Account> = emptyList(),
     onBack: () -> Unit,
     onEditTransaction: (Transaction) -> Unit = {},
     onDeleteTransaction: (String) -> Unit = {}
@@ -157,6 +160,11 @@ fun TransactionDetailsScreen(
     // Build category icon/color lookup: name.lowercase() ? Category
     val categoryMap = remember(categories) {
         categories.associateBy { it.name.trim().lowercase() }
+    }
+
+    // Build account lookup by ID
+    val accountMap = remember(accounts) {
+        accounts.associateBy { it.id }
     }
 
     var searchTerm          by remember { mutableStateOf("") }
@@ -214,6 +222,7 @@ fun TransactionDetailsScreen(
         transactions          = filtered,
         allCount              = allTransactions.size,
         categoryMap           = categoryMap,
+        accountMap            = accountMap,
         searchTerm            = searchTerm,
         onSearchTermChanged   = { searchTerm = it },
         filterType            = filterType,
@@ -228,6 +237,7 @@ fun TransactionDetailsScreen(
         TransactionDetailOverlay(
             transaction = tx,
             categoryMap = categoryMap,
+            accountMap = accountMap,
             onDismiss   = { selectedTransactionId = null },
             onEdit      = { transactionToEditId = it.id },
             onDelete    = { id ->
@@ -242,6 +252,7 @@ fun TransactionDetailsScreen(
             transaction  = tx,
             categoryMap  = categoryMap,
             categories   = categories,
+            accounts     = accounts,
             onDismiss    = { transactionToEditId = null },
             onSave       = { updated ->
                 // Persist immediately; Room re-emits ? list AND any still-open sheet update live.
@@ -259,6 +270,7 @@ fun PremiumTransactionListView(
     transactions: List<Transaction>,
     allCount: Int,
     categoryMap: Map<String, com.example.insightku.core.data.model.Category> = emptyMap(),
+    accountMap: Map<String, com.example.insightku.core.data.model.Account> = emptyMap(),
     searchTerm: String,
     onSearchTermChanged: (String) -> Unit,
     filterType: FilterType,
@@ -347,6 +359,7 @@ fun PremiumTransactionListView(
                         PremiumTransactionCard(
                             transaction = tx,
                             categoryMap = categoryMap,
+                            accountMap = accountMap,
                             onClick     = { onTransactionSelected(tx) },
                             modifier    = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                         )
@@ -726,6 +739,7 @@ fun PremiumTransactionCard(
     transaction: Transaction,
     onClick: () -> Unit,
     categoryMap: Map<String, com.example.insightku.core.data.model.Category> = emptyMap(),
+    accountMap: Map<String, com.example.insightku.core.data.model.Account> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
     // Resolve icon: try category.icon field first (most accurate), fall back to name fuzzy match
@@ -819,9 +833,11 @@ fun PremiumTransactionCard(
                         color = TxTextMuted
                     )
                 }
-                if (!transaction.paymentMethod.isNullOrBlank()) {
+                // Show account name if available
+                val account = accountMap[transaction.accountId]
+                if (account != null) {
                     Text(
-                        transaction.paymentMethod,
+                        account.name,
                         style = MaterialTheme.typography.labelSmall,
                         color = TxTextMuted
                     )
@@ -912,7 +928,8 @@ fun TransactionDetailOverlay(
     onEdit: (Transaction) -> Unit,
     onDelete: (String) -> Unit,
     onDuplicate: ((Transaction) -> Unit)? = null,
-    categoryMap: Map<String, com.example.insightku.core.data.model.Category> = emptyMap()
+    categoryMap: Map<String, com.example.insightku.core.data.model.Category> = emptyMap(),
+    accountMap: Map<String, com.example.insightku.core.data.model.Account> = emptyMap()
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -985,7 +1002,16 @@ fun TransactionDetailOverlay(
                     PremiumInfoTile(Icons.Default.AccessTime, "Time", transaction.time, accent, Modifier.weight(1f))
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PremiumInfoTile(Icons.Default.CreditCard, "Payment", transaction.paymentMethod ?: "Not specified", Color(0xFF3B82F6), Modifier.weight(1f))
+                    val account = accountMap[transaction.accountId]
+                    val accountIcon = when (account?.type) {
+                        AccountType.CASH -> Icons.Default.Payments
+                        AccountType.BANK_ACCOUNT -> Icons.Default.AccountBalance
+                        AccountType.E_WALLET -> Icons.Default.AccountBalanceWallet
+                        AccountType.CREDIT_CARD -> Icons.Default.CreditCard
+                        null -> Icons.Default.AccountBalance
+                    }
+                    val accountColor = account?.let { runCatching { Color(android.graphics.Color.parseColor(it.color)) }.getOrDefault(Color(0xFF3B82F6)) } ?: Color(0xFF3B82F6)
+                    PremiumInfoTile(accountIcon, "Account", account?.name ?: "No account", accountColor, Modifier.weight(1f))
                     PremiumInfoTile(
                         if (transaction.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
                         "Status", if (transaction.isSynced) "Synced" else "Pending",
@@ -1147,34 +1173,43 @@ private fun PremiumInfoTileWide(
 private val SAMPLE_TRANSACTIONS = listOf(
     Transaction(id = "1", title = "Monthly Salary", amount = 8500000.0, category = "Salary",
         type = TransactionType.INCOME, date = System.currentTimeMillis() - 3_600_000L,
-        description = "April salary", paymentMethod = "Bank Transfer"),
+        description = "April salary", accountId = "sample-bank"),
     Transaction(id = "2", title = "Starbucks Coffee", amount = 65000.0, category = "Food & Drinks",
         type = TransactionType.EXPENSE, date = System.currentTimeMillis() - 7_200_000L,
-        description = "Iced latte", location = "Starbucks Sudirman", paymentMethod = "GoPay"),
+        description = "Iced latte", location = "Starbucks Sudirman", accountId = "sample-eWallet"),
     Transaction(id = "3", title = "Freelance Project", amount = 2500000.0, category = "Freelance",
-        type = TransactionType.INCOME, date = System.currentTimeMillis() - 86_400_000L * 2),
+        type = TransactionType.INCOME, date = System.currentTimeMillis() - 86_400_000L * 2, accountId = "sample-cash"),
     Transaction(id = "4", title = "Netflix", amount = 54000.0, category = "Entertainment",
         type = TransactionType.EXPENSE, date = System.currentTimeMillis() - 86_400_000L * 5,
-        paymentMethod = "Credit Card"),
+        accountId = "sample-credit"),
     Transaction(id = "5", title = "Grab Ride", amount = 32000.0, category = "Transportation",
-        type = TransactionType.EXPENSE, date = System.currentTimeMillis() - 86_400_000L * 10)
+        type = TransactionType.EXPENSE, date = System.currentTimeMillis() - 86_400_000L * 10, accountId = "sample-eWallet")
+)
+
+private val SAMPLE_ACCOUNTS = listOf(
+    Account(id = "sample-bank", name = "Bank BCA", accountType = AccountType.BANK_ACCOUNT.name, balance = 5000000.0, color = "#3B82F6"),
+    Account(id = "sample-eWallet", name = "GoPay", accountType = AccountType.E_WALLET.name, balance = 500000.0, color = "#00AED6"),
+    Account(id = "sample-cash", name = "Cash", accountType = AccountType.CASH.name, balance = 1000000.0, color = "#10B981"),
+    Account(id = "sample-credit", name = "Visa Card", accountType = AccountType.CREDIT_CARD.name, balance = 500000.0, color = "#EF4444")
 )
 
 @Preview(showBackground = true, name = "Transaction List")
 @Composable
 fun TransactionDetailsScreenListPreview() {
     MaterialTheme {
-        TransactionDetailsScreen(initialTransactions = SAMPLE_TRANSACTIONS, onBack = {})
+        TransactionDetailsScreen(initialTransactions = SAMPLE_TRANSACTIONS, accounts = SAMPLE_ACCOUNTS, onBack = {})
     }
 }
 
 @Preview(showBackground = true, name = "Detail Overlay - Expense", widthDp = 400, heightDp = 800)
 @Composable
 private fun PreviewDetailOverlayExpense() {
+    val accountMap = SAMPLE_ACCOUNTS.associateBy { it.id }
     MaterialTheme {
         Box(Modifier.fillMaxSize()) {
             TransactionDetailOverlay(
                 transaction = SAMPLE_TRANSACTIONS[1],
+                accountMap = accountMap,
                 onDismiss   = {},
                 onEdit      = {},
                 onDelete    = {}
@@ -1186,10 +1221,12 @@ private fun PreviewDetailOverlayExpense() {
 @Preview(showBackground = true, name = "Detail Overlay - Income", widthDp = 400, heightDp = 800)
 @Composable
 private fun PreviewDetailOverlayIncome() {
+    val accountMap = SAMPLE_ACCOUNTS.associateBy { it.id }
     MaterialTheme {
         Box(Modifier.fillMaxSize()) {
             TransactionDetailOverlay(
                 transaction = SAMPLE_TRANSACTIONS[0],
+                accountMap = accountMap,
                 onDismiss   = {},
                 onEdit      = {},
                 onDelete    = {}

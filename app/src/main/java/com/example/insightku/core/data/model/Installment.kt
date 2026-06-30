@@ -13,6 +13,10 @@ data class Installment(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val name: String = "",
     val categoryId: String? = null,
+    /**
+     * ID of the Account to use for transactions generated from this installment.
+     */
+    val accountId: String? = null,
     val totalAmount: Double = 0.0,
     val monthlyPayment: Double = 0.0,
     val totalMonths: Int = 0,

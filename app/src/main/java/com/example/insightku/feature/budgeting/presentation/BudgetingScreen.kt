@@ -350,7 +350,8 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
                 isOpen              = true,
                 onDismiss           = { onEvent(BudgetingEvent.HideRecurringDialog) },
                 onSave              = { onEvent(BudgetingEvent.AddRecurringBudget(it)) },
-                availableCategories = uiState.allCategoriesForPicker
+                availableCategories = uiState.allCategoriesForPicker,
+                accounts           = uiState.accounts
             )
         }
 
@@ -359,7 +360,8 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
                 isOpen              = true,
                 onDismiss           = { onEvent(BudgetingEvent.HideRecurringDialog) },
                 onSave              = { onEvent(BudgetingEvent.AddRecurringBudget(it)) },
-                availableCategories = uiState.allCategoriesForPicker
+                availableCategories = uiState.allCategoriesForPicker,
+                accounts           = uiState.accounts
             )
         }
 
@@ -369,7 +371,8 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
                 onDismiss           = { onEvent(BudgetingEvent.HideRecurringDialog) },
                 onSave              = { onEvent(BudgetingEvent.UpdateRecurringBudget(it)) },
                 editing             = dialogState.budget,
-                availableCategories = uiState.allCategoriesForPicker
+                availableCategories = uiState.allCategoriesForPicker,
+                accounts           = uiState.accounts
             )
         }
 
@@ -378,7 +381,8 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
                 isOpen              = true,
                 onDismiss           = { onEvent(BudgetingEvent.HideInstallmentDialog) },
                 onSave              = { onEvent(BudgetingEvent.AddInstallment(it)) },
-                availableCategories = uiState.allCategoriesForPicker
+                availableCategories = uiState.allCategoriesForPicker,
+                accounts           = uiState.accounts
             )
         }
 
@@ -388,7 +392,8 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
                 onDismiss           = { onEvent(BudgetingEvent.HideInstallmentDialog) },
                 onSave              = { onEvent(BudgetingEvent.UpdateInstallment(it)) },
                 editing             = dialogState.installment,
-                availableCategories = uiState.allCategoriesForPicker
+                availableCategories = uiState.allCategoriesForPicker,
+                accounts           = uiState.accounts
             )
         }
 

@@ -52,6 +52,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
@@ -69,29 +71,6 @@ private val IncomeGreen  = Color(0xFF10B981)
 private val ExpenseRed   = Color(0xFFE57373)
 private val GlassSurface: Color  @Composable get() = AppPalette.card
 private val GlassBorder: Color   @Composable get() = AppPalette.cardBorder
-
-// ─── Payment method data ──────────────────────────────────────────────────────
-
-private data class PaymentChip(val label: String, val icon: ImageVector, val color: Color)
-
-private val paymentChips = listOf(
-    PaymentChip("Cash",            Icons.Default.Payments,              Color(0xFF10B981)),
-    PaymentChip("QRIS",            Icons.Default.QrCode,                Color(0xFF7C4DFF)),
-    PaymentChip("Debit Card",      Icons.Default.CreditCard,            Color(0xFF3B82F6)),
-    PaymentChip("Credit Card",     Icons.Default.CreditScore,           Color(0xFFEF4444)),
-    PaymentChip("Bank Transfer",   Icons.Default.AccountBalance,        Color(0xFF6366F1)),
-    PaymentChip("E-Wallet",        Icons.Default.AccountBalanceWallet,  Color(0xFF8B5CF6)),
-    PaymentChip("GoPay",           Icons.Default.AccountBalanceWallet,  Color(0xFF00AED6)),
-    PaymentChip("OVO",             Icons.Default.AccountBalanceWallet,  Color(0xFF4C3494)),
-    PaymentChip("DANA",            Icons.Default.AccountBalanceWallet,  Color(0xFF118EEA)),
-    PaymentChip("ShopeePay",       Icons.Default.AccountBalanceWallet,  Color(0xFFEE4D2D)),
-    PaymentChip("Google Pay",      Icons.Default.Payment,               Color(0xFF4285F4)),
-    PaymentChip("PayPal",          Icons.Default.Payment,               Color(0xFF003087)),
-    PaymentChip("PayLater",        Icons.Default.AccessTime,            Color(0xFFFF9800)),
-    PaymentChip("Virtual Account", Icons.Default.AccountBalance,        Color(0xFF059669)),
-    PaymentChip("Crypto",          Icons.Default.CurrencyBitcoin,       Color(0xFFF59E0B)),
-    PaymentChip("Other",           Icons.Default.MoreHoriz,             Color(0xFF79747E))
-)
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -116,7 +95,11 @@ data class TransactionFormData(
     /** Epoch ms dari tanggal yang dipilih user (bukan System.currentTimeMillis()) */
     val dateMillis: Long = todayMillis(),
     val isIncome: Boolean = false,
-    val paymentMethod: String = ""
+    /**
+     * ID of the selected Account.
+     * Every transaction must belong to exactly one Account.
+     */
+    val accountId: String = ""
 )
 
 sealed class AddTransactionStep {
@@ -135,6 +118,9 @@ fun AddTransactionDialog(
     categories: List<Category> = emptyList(),
     expenseCategories: List<Category> = emptyList(),
     incomeCategories: List<Category> = emptyList(),
+    accounts: List<Account> = emptyList(),
+    /** Default account ID to preselect (e.g., from auto-detection or last used) */
+    defaultAccountId: String? = null,
     notificationData: com.example.insightku.core.notification.NotificationTransactionData? = null,
     onCreateCategory: () -> Unit = {}
 ) {
@@ -147,6 +133,11 @@ fun AddTransactionDialog(
 
     var isAnyFieldFocused by remember { mutableStateOf(false) }
 
+    // Get default account - prefer defaultAccountId param, then first active account
+    val effectiveDefaultAccountId = remember(accounts, defaultAccountId) {
+        defaultAccountId ?: accounts.firstOrNull { it.isDefault }?.id ?: accounts.firstOrNull()?.id ?: ""
+    }
+
     LaunchedEffect(isOpen) {
         if (isOpen) {
             isAnyFieldFocused = false
@@ -158,13 +149,13 @@ fun AddTransactionDialog(
                     isIncome      = notificationData.typeHint.uppercase() == "INCOME",
                     dateMillis    = notificationData.timestamp,
                     description   = notificationData.description,
-                    paymentMethod = notificationData.bankName,
+                    accountId     = effectiveDefaultAccountId,
                     category      = "" // user picks manually
                 )
                 currentStep = AddTransactionStep.ManualForm
             } else {
                 currentStep = AddTransactionStep.ModeSelection
-                formData    = TransactionFormData()
+                formData    = TransactionFormData(accountId = effectiveDefaultAccountId)
             }
         }
     }
@@ -283,6 +274,7 @@ fun AddTransactionDialog(
                             onFocusChanged = { isAnyFieldFocused = it },
                             categories = if (formData.isIncome) incomeCategories
                                          else expenseCategories,
+                            accounts = accounts,
                             onCreateCategory = onCreateCategory,
                             onShowDatePicker = { showDatePicker = true },
                             onSubmit = {
@@ -294,7 +286,7 @@ fun AddTransactionDialog(
                                         category      = formData.category,
                                         description   = formData.description,
                                         date          = formData.dateMillis,
-                                        paymentMethod = formData.paymentMethod.ifBlank { null },
+                                        accountId     = formData.accountId,
                                         type          = if (formData.isIncome) TransactionType.INCOME
                                                         else TransactionType.EXPENSE
                                     )
@@ -546,6 +538,7 @@ fun ColumnScope.ManualFormContent(
     onFormDataChanged: (TransactionFormData) -> Unit,
     onFocusChanged: (Boolean) -> Unit = {},
     categories: List<Category> = emptyList(),
+    accounts: List<Account> = emptyList(),
     onCreateCategory: () -> Unit = {},
     onShowDatePicker: () -> Unit = {},
     onSubmit: () -> Unit,
@@ -554,9 +547,11 @@ fun ColumnScope.ManualFormContent(
     val focusManager = LocalFocusManager.current
     val primary      = MaterialTheme.colorScheme.primary
 
+    // Form is valid only when all required fields are filled including account selection
     val isFormValid = formData.merchant.isNotBlank()
             && (formData.amount.toDoubleOrNull() ?: -1.0) > 0
             && formData.category.isNotBlank()
+            && formData.accountId.isNotBlank()
 
     val saveBgColor = when {
         !isFormValid -> Color(0xFFE0E0E0)
@@ -619,13 +614,14 @@ fun ColumnScope.ManualFormContent(
             )
         }
 
-        // ── 5. Payment method card ────────────────────────────────────────
+        // ── 5. Account card ─────────────────────────────────────────────
         FormSectionCard {
-            FormSectionTitle("Payment Method")
+            FormSectionTitle("Account")
             Spacer(Modifier.height(12.dp))
-            PaymentMethodChips(
-                selected = formData.paymentMethod,
-                onSelect = { onFormDataChanged(formData.copy(paymentMethod = it)) }
+            AccountChipSelector(
+                accounts = accounts,
+                selectedAccountId = formData.accountId,
+                onAccountSelected = { onFormDataChanged(formData.copy(accountId = it)) }
             )
         }
 
@@ -1195,20 +1191,98 @@ private fun BasicFinanceTextField(
     )
 }
 
-// ─── Payment Method Chips ─────────────────────────────────────────────────────
+// ─── Account Chip Selector ─────────────────────────────────────────────────────
+
+/**
+ * Account selector chip grid.
+ * Shows all active accounts in a scrollable grid.
+ * Users must select an account before saving a transaction.
+ */
+@Composable
+private fun AccountChipSelector(
+    accounts: List<Account>,
+    selectedAccountId: String,
+    onAccountSelected: (String) -> Unit
+) {
+    val accent = LocalAccent.current
+
+    if (accounts.isEmpty()) {
+        // Show message when no accounts exist
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = AppPalette.background,
+            border = BorderStroke(1.dp, AppPalette.cardBorder)
+        ) {
+            Column(
+                modifier            = Modifier.fillMaxWidth().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier         = Modifier.size(48.dp).clip(CircleShape).background(accent.copy(alpha = 0.08f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.AccountBalance, contentDescription = null, tint = accent.copy(alpha = 0.5f), modifier = Modifier.size(22.dp))
+                }
+                Text("No accounts yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                Text("Create an account in Settings to start tracking transactions.", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+            }
+        }
+        return
+    }
+
+    // Group accounts by type for better organization
+    val cashAndBank = accounts.filter { it.type in listOf(AccountType.CASH, AccountType.BANK_ACCOUNT) }
+    val eWallets = accounts.filter { it.type == AccountType.E_WALLET }
+    val creditCards = accounts.filter { it.type == AccountType.CREDIT_CARD }
+
+    Column(
+        modifier            = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Cash & Bank accounts
+        if (cashAndBank.isNotEmpty()) {
+            AccountChipGrid(
+                accounts = cashAndBank,
+                selectedAccountId = selectedAccountId,
+                onAccountSelected = onAccountSelected,
+                accent = accent
+            )
+        }
+
+        // E-Wallets
+        if (eWallets.isNotEmpty()) {
+            AccountChipGrid(
+                accounts = eWallets,
+                selectedAccountId = selectedAccountId,
+                onAccountSelected = onAccountSelected,
+                accent = accent
+            )
+        }
+
+        // Credit Cards
+        if (creditCards.isNotEmpty()) {
+            AccountChipGrid(
+                accounts = creditCards,
+                selectedAccountId = selectedAccountId,
+                onAccountSelected = onAccountSelected,
+                accent = accent
+            )
+        }
+    }
+}
 
 @Composable
-private fun PaymentMethodChips(
-    selected: String,
-    onSelect: (String) -> Unit
+private fun AccountChipGrid(
+    accounts: List<Account>,
+    selectedAccountId: String,
+    onAccountSelected: (String) -> Unit,
+    accent: Color
 ) {
-    // Scrollable vertical grid — 4 fixed-width columns, consistent card sizes
-    val rows = paymentChips.chunked(3)
+    val rows = accounts.chunked(3)
     Column(
-        modifier            = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 320.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier            = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         rows.forEach { rowItems ->
@@ -1216,12 +1290,12 @@ private fun PaymentMethodChips(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                rowItems.forEach { chip ->
-                    PaymentMethodCard(
-                        chip       = chip,
-                        isSelected = selected == chip.label,
-                        onSelect   = { onSelect(if (selected == chip.label) "" else chip.label) },
-                        modifier   = Modifier.weight(1f)
+                rowItems.forEach { account ->
+                    AccountChipCard(
+                        account = account,
+                        isSelected = selectedAccountId == account.id,
+                        onSelect = { onAccountSelected(account.id) },
+                        modifier = Modifier.weight(1f)
                     )
                 }
                 repeat(3 - rowItems.size) {
@@ -1233,8 +1307,8 @@ private fun PaymentMethodChips(
 }
 
 @Composable
-private fun PaymentMethodCard(
-    chip: PaymentChip,
+private fun AccountChipCard(
+    account: Account,
     isSelected: Boolean,
     onSelect: () -> Unit,
     modifier: Modifier = Modifier
@@ -1245,23 +1319,34 @@ private fun PaymentMethodCard(
     val scale by animateFloatAsState(
         targetValue   = if (isPressed) 0.92f else 1f,
         animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
-        label         = "pay_scale_${chip.label}"
+        label         = "account_scale_${account.id}"
     )
+
+    val accountColor = runCatching {
+        Color(android.graphics.Color.parseColor(account.color))
+    }.getOrDefault(Color(0xFF7C4DFF))
+
     val bgColor by animateColorAsState(
-        targetValue   = if (isSelected) chip.color.copy(alpha = 0.10f) else AppPalette.card,
+        targetValue   = if (isSelected) accountColor.copy(alpha = 0.10f) else AppPalette.card,
         animationSpec = tween(200),
-        label         = "pay_bg_${chip.label}"
+        label         = "account_bg_${account.id}"
     )
     val borderColor by animateColorAsState(
-        targetValue   = if (isSelected) chip.color else AppPalette.cardBorder,
+        targetValue   = if (isSelected) accountColor else AppPalette.cardBorder,
         animationSpec = tween(200),
-        label         = "pay_border_${chip.label}"
+        label         = "account_border_${account.id}"
     )
+
+    val accountIcon: ImageVector = when (account.type) {
+        AccountType.CASH -> Icons.Default.Payments
+        AccountType.BANK_ACCOUNT -> Icons.Default.AccountBalance
+        AccountType.E_WALLET -> Icons.Default.AccountBalanceWallet
+        AccountType.CREDIT_CARD -> Icons.Default.CreditCard
+    }
 
     Column(
         modifier = modifier
             .scale(scale)
-            // Fixed height so all cards are identical regardless of label length
             .height(76.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(bgColor)
@@ -1275,17 +1360,17 @@ private fun PaymentMethodCard(
             modifier         = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(chip.color.copy(alpha = if (isSelected) 0.18f else 0.10f)),
+                .background(accountColor.copy(alpha = if (isSelected) 0.18f else 0.10f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(chip.icon, contentDescription = chip.label, tint = chip.color, modifier = Modifier.size(16.dp))
+            Icon(accountIcon, contentDescription = account.name, tint = accountColor, modifier = Modifier.size(16.dp))
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            text       = chip.label,
+            text       = account.name,
             style      = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color      = if (isSelected) chip.color else AppPalette.textMuted,
+            color      = if (isSelected) accountColor else AppPalette.textMuted,
             maxLines   = 2,
             overflow   = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             textAlign  = androidx.compose.ui.text.style.TextAlign.Center

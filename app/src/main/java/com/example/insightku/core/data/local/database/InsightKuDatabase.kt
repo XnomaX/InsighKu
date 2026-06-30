@@ -107,6 +107,62 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
     }
 }
 
+/**
+ * Migration 10 → 11: Replace paymentMethod with accountId in transactions table.
+ * SQLite doesn't support DROP COLUMN, so we recreate the table.
+ */
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Step 1: Create new transactions table without paymentMethod, with accountId
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS transactions_new (
+                id TEXT NOT NULL PRIMARY KEY,
+                title TEXT NOT NULL,
+                amount REAL NOT NULL,
+                category TEXT NOT NULL,
+                date INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                description TEXT,
+                receiptPath TEXT,
+                time TEXT NOT NULL,
+                location TEXT,
+                accountId TEXT NOT NULL DEFAULT '',
+                isSynced INTEGER NOT NULL DEFAULT 0,
+                isDraft INTEGER NOT NULL DEFAULT 0,
+                createdAt INTEGER NOT NULL
+            )
+        """.trimIndent())
+
+        // Step 2: Copy data from old table to new table
+        db.execSQL("""
+            INSERT INTO transactions_new (id, title, amount, category, date, type, description, receiptPath, time, location, accountId, isSynced, isDraft, createdAt)
+            SELECT id, title, amount, category, date, type, description, receiptPath, time, location, '', isSynced, isDraft, createdAt FROM transactions
+        """.trimIndent())
+
+        // Step 3: Drop the old table
+        db.execSQL("DROP TABLE transactions")
+
+        // Step 4: Rename new table to original name
+        db.execSQL("ALTER TABLE transactions_new RENAME TO transactions")
+
+        // Step 5: Recreate the index on date
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_date ON transactions (date)")
+    }
+}
+
+/**
+ * Migration 11 → 12: Add accountId to recurring_budgets and installments tables.
+ */
+val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Add accountId to recurring_budgets
+        db.execSQL("ALTER TABLE recurring_budgets ADD COLUMN accountId TEXT")
+
+        // Add accountId to installments
+        db.execSQL("ALTER TABLE installments ADD COLUMN accountId TEXT")
+    }
+}
+
 @Database(
     entities = [
         Transaction::class,
@@ -118,7 +174,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
         DraftTransaction::class,
         Account::class
     ],
-    version = 10,
+    version = 12,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

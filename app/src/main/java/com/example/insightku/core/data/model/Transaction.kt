@@ -52,7 +52,12 @@ data class Transaction(
     val receiptPath: String? = null,
     val time: String = SimpleDateFormat("h:mm a", Locale.ENGLISH).format(Date()),
     val location: String? = null,
-    val paymentMethod: String? = null,
+    /**
+     * ID of the Account this transaction belongs to.
+     * Every transaction MUST belong to exactly one Account.
+     * This replaces the old paymentMethod field which stored free-form strings.
+     */
+    val accountId: String = "",
 
     // ── Offline-First Sync Fields ───────────────────────────────────────────
     /** true = sudah ada di Firestore, false = hanya di Room (belum sync) */
