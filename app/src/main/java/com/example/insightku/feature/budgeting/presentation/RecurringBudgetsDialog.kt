@@ -1,10 +1,14 @@
 package com.example.insightku.feature.budgeting.presentation
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -15,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,14 +29,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.RecurringBudget
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.LocalAccent
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-val PurpleMain = Color(0xFF5A2A82)
+val PurpleMain = Color(0xFF5A82A)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +51,7 @@ fun RecurringBudgetsDialog(
     onBudgetAdded: (RecurringBudget) -> Unit,
     onBudgetEdited: (RecurringBudget) -> Unit,
     onBudgetDeleted: (RecurringBudget) -> Unit,
+    accounts: List<Account> = emptyList(),
     showAddFormInitially: Boolean = false,
     editingBudgetInitially: RecurringBudget? = null
 ) {
@@ -114,7 +124,8 @@ fun RecurringBudgetsDialog(
                                 handleBackToList()
                             },
                             onCancel = ::handleBackToList,
-                            categories = categories
+                            categories = categories,
+                            accounts = accounts
                         )
                     } else {
                         BudgetList(
@@ -318,12 +329,14 @@ fun ColumnScope.AddEditBudgetForm(
     editingBudget: RecurringBudget?,
     onSave: (RecurringBudget) -> Unit,
     onCancel: () -> Unit,
-    categories: Map<String, String>
+    categories: Map<String, String>,
+    accounts: List<Account> = emptyList()
 ) {
     var name by remember { mutableStateOf(editingBudget?.name ?: "") }
     var amount by remember { mutableStateOf(editingBudget?.amount?.toString() ?: "") }
     var frequency by remember { mutableStateOf(editingBudget?.frequency ?: BudgetFrequency.MONTHLY) }
     var categoryId by remember { mutableStateOf(editingBudget?.categoryId) }
+    var accountId by remember { mutableStateOf(editingBudget?.accountId) }
     var nextDueDate by remember { mutableLongStateOf(editingBudget?.nextDue ?: System.currentTimeMillis()) }
     var notifications by remember { mutableStateOf(editingBudget?.isActive ?: true) }
     var reminderDaysBefore by remember { mutableIntStateOf(editingBudget?.reminderDaysBefore ?: 3) }
@@ -360,6 +373,22 @@ fun ColumnScope.AddEditBudgetForm(
             options = BudgetFrequency.entries.associateBy({ it }, { it.name.lowercase().replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() } }),
             onValueSelected = { frequency = it },
             displayValue = { frequency.name.lowercase().replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() } }
+        )
+        Spacer(Modifier.height(16.dp))
+
+        // Account Selector
+        Text(
+            "ACCOUNT",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted,
+            letterSpacing = 1.2.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        RecurringBudgetAccountSelector(
+            accounts = accounts,
+            selectedAccountId = accountId,
+            onSelect = { accountId = it }
         )
         Spacer(Modifier.height(16.dp))
 
@@ -436,6 +465,7 @@ fun ColumnScope.AddEditBudgetForm(
                     amount = amount.toDoubleOrNull() ?: 0.0,
                     frequency = frequency,
                     categoryId = categoryId,
+                    accountId = accountId ?: editingBudget?.accountId,
                     nextDue = nextDueDate,
                     isActive = notifications,
                     reminderDaysBefore = reminderDaysBefore
@@ -493,6 +523,66 @@ fun <T> DropdownField(
     }
 }
 
+@Composable
+private fun RecurringBudgetAccountSelector(
+    accounts: List<Account>,
+    selectedAccountId: String?,
+    onSelect: (String?) -> Unit
+) {
+    if (accounts.isEmpty()) {
+        Text(
+            "No accounts available. Create an account first.",
+            style = MaterialTheme.typography.bodySmall,
+            color = AppPalette.textMuted
+        )
+        return
+    }
+    val rows = accounts.chunked(3)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        rows.forEach { rowItems ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                rowItems.forEach { account ->
+                    val isSelected = selectedAccountId == account.id
+                    val accountColor = runCatching {
+                        Color(android.graphics.Color.parseColor(account.color))
+                    }.getOrDefault(PurpleMain)
+                    val accountIcon = when (account.type) {
+                        AccountType.CASH -> Icons.Default.Payments
+                        AccountType.BANK_ACCOUNT -> Icons.Default.AccountBalance
+                        AccountType.E_WALLET -> Icons.Default.AccountBalanceWallet
+                        AccountType.CREDIT_CARD -> Icons.Default.CreditCard
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isSelected) accountColor.copy(alpha = 0.10f) else AppPalette.card)
+                            .border(1.5.dp, if (isSelected) accountColor else AppPalette.cardBorder, RoundedCornerShape(12.dp))
+                            .clickable { onSelect(if (isSelected) null else account.id) }
+                            .padding(vertical = 10.dp, horizontal = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.size(32.dp).clip(CircleShape)
+                                .background(accountColor.copy(alpha = if (isSelected) 0.18f else 0.10f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(accountIcon, null, tint = accountColor, modifier = Modifier.size(16.dp))
+                        }
+                        Text(account.name,
+                            style      = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color      = if (isSelected) accountColor else AppPalette.textMuted,
+                            maxLines   = 2,
+                            textAlign  = TextAlign.Center)
+                    }
+                }
+                repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
 
 @Composable
 fun DeleteConfirmationDialog(
@@ -543,8 +633,8 @@ private fun formatNextDue(dateMillis: Long): String {
 fun RecurringBudgetsDialogPreview() {
     val budgets = remember {
         mutableStateListOf(
-            RecurringBudget(1, "Netflix", 186000.0, BudgetFrequency.MONTHLY, "cat_1", true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(5), 3),
-            RecurringBudget(2, "Spotify", 54000.0, BudgetFrequency.MONTHLY, "cat_1", true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(12), 7)
+            RecurringBudget(1, "Netflix", 186000.0, BudgetFrequency.MONTHLY, "cat_1", null, true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(5), 3),
+            RecurringBudget(2, "Spotify", 54000.0, BudgetFrequency.MONTHLY, "cat_1", null, true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(12), 7)
         )
     }
 
@@ -588,7 +678,7 @@ fun AddBudgetFormPreview() {
 @Preview(name = "Edit Form", showBackground = true)
 @Composable
 fun EditBudgetFormPreview() {
-    val editingBudget = RecurringBudget(1, "Netflix", 186000.0, BudgetFrequency.MONTHLY, "cat_1", true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(5), 3)
+    val editingBudget = RecurringBudget(1, "Netflix", 186000.0, BudgetFrequency.MONTHLY, "cat_1", null, true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(5), 3)
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             RecurringBudgetsDialog(

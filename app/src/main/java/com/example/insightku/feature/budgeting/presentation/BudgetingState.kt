@@ -1,6 +1,7 @@
 package com.example.insightku.feature.budgeting.presentation
 
 import androidx.compose.runtime.Immutable
+import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.model.Installment
@@ -18,7 +19,8 @@ data class BudgetingUiState(
     val installments: List<Installment> = emptyList(),
     val selectedPeriod: BudgetPeriod = BudgetPeriod.MONTHLY,
     val dialogState: DialogState = DialogState.None,
-    val rawCategories: List<Category> = emptyList()
+    val rawCategories: List<Category> = emptyList(),
+    val accounts: List<Account> = emptyList()
 ) {
     val remainingBudget: Double get() = totalBudget - limitedSpent
     val limitedSpent: Double get() = budgetCategories.filter { it.hasLimit }.sumOf { it.spentAmount }

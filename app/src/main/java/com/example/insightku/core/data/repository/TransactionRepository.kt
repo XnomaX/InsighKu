@@ -8,6 +8,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.CategoryDao
 import com.example.insightku.core.data.local.dao.InstallmentDao
 import com.example.insightku.core.data.local.dao.RecurringBudgetDao
@@ -17,6 +18,7 @@ import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.Transaction
+import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.worker.SyncTransactionWorker
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -33,6 +35,11 @@ import javax.inject.Singleton
  * Kenapa ini penting? Silent failure = user tidak tahu operasi gagal.
  * Dengan throw, error naik ke UseCase → ViewModel → ditampilkan ke user.
  *
+ * Balance Synchronization:
+ * Setiap transaksi CRUD operation juga mengupdate account balance:
+ * - INCOME: balance += amount
+ * - EXPENSE: balance -= amount
+ *
  * Pattern: Local-First
  * Write: simpan ke Room dulu (immediate UI update via Flow), lalu sync ke Firestore.
  * Read: selalu dari Room (reaktif via Flow), refresh Firestore saat diminta.
@@ -43,6 +50,7 @@ class TransactionRepository @Inject constructor(
     private val categoryDao: CategoryDao,
     private val recurringBudgetDao: RecurringBudgetDao,
     private val installmentDao: InstallmentDao,
+    private val accountDao: AccountDao,
     private val firestore: FirebaseFirestore,
     @ApplicationContext private val context: Context
 ) {
@@ -76,15 +84,26 @@ class TransactionRepository @Inject constructor(
     }
 
     suspend fun addTransaction(transaction: Transaction, userId: String) {
-        // Step 1: Simpan ke Room dengan isSynced=false (immediate, tidak butuh network)
+        // Step 1: Update account balance FIRST (before saving transaction)
+        // This ensures balance is consistent even if transaction save fails
+        if (transaction.accountId.isNotBlank()) {
+            val delta = if (transaction.type == TransactionType.INCOME) {
+                transaction.amount
+            } else {
+                -transaction.amount
+            }
+            accountDao.updateBalance(transaction.accountId, delta)
+        }
+
+        // Step 2: Simpan ke Room dengan isSynced=false (immediate, tidak butuh network)
         val localTransaction = transaction.copy(isSynced = false)
         transactionDao.insertTransaction(localTransaction)
 
-        // Step 2: Coba sync ke Firestore
+        // Step 3: Coba sync ke Firestore
         try {
             firestore.collection("users").document(userId)
                 .collection("transactions").document(transaction.id).set(transaction).await()
-            // Step 3: Tandai sudah disync
+            // Step 4: Tandai sudah disync
             transactionDao.markAsSynced(transaction.id)
         } catch (e: Exception) {
             // Offline atau Firestore error — data sudah aman di Room.
@@ -115,6 +134,41 @@ class TransactionRepository @Inject constructor(
         transactionDao.getTransactionById(id)
 
     suspend fun updateTransaction(transaction: Transaction, userId: String) {
+        // Get original transaction to calculate balance changes
+        val original = transactionDao.getTransactionByIdWithAccount(transaction.id)
+
+        if (original != null) {
+            // Calculate balance impact for original transaction
+            val originalDelta = if (original.type == TransactionType.INCOME) {
+                -original.amount  // Reverse the original income effect
+            } else {
+                original.amount   // Reverse the original expense effect
+            }
+
+            // Calculate balance impact for new transaction
+            val newDelta = if (transaction.type == TransactionType.INCOME) {
+                transaction.amount
+            } else {
+                -transaction.amount
+            }
+
+            if (original.accountId.isNotBlank()) {
+                // Same account - apply net difference
+                accountDao.updateBalance(original.accountId, originalDelta + newDelta)
+            } else if (transaction.accountId.isNotBlank()) {
+                // Moved to a new account
+                accountDao.updateBalance(transaction.accountId, newDelta)
+            }
+        } else if (transaction.accountId.isNotBlank()) {
+            // Original not found but new has account - apply balance change
+            val newDelta = if (transaction.type == TransactionType.INCOME) {
+                transaction.amount
+            } else {
+                -transaction.amount
+            }
+            accountDao.updateBalance(transaction.accountId, newDelta)
+        }
+
         transactionDao.updateTransaction(transaction)
         try {
             firestore.collection("users").document(userId)
@@ -125,6 +179,19 @@ class TransactionRepository @Inject constructor(
     }
 
     suspend fun deleteTransaction(transactionId: String, userId: String) {
+        // Get transaction first to restore its account balance
+        val transaction = transactionDao.getTransactionByIdWithAccount(transactionId)
+
+        if (transaction != null && transaction.accountId.isNotBlank()) {
+            // Restore account balance: opposite of what the transaction did
+            val delta = if (transaction.type == TransactionType.INCOME) {
+                -transaction.amount  // Reverse income: subtract the amount
+            } else {
+                transaction.amount   // Reverse expense: add the amount back
+            }
+            accountDao.updateBalance(transaction.accountId, delta)
+        }
+
         transactionDao.deleteTransaction(transactionId)
         try {
             firestore.collection("users").document(userId)
@@ -440,6 +507,28 @@ class TransactionRepository @Inject constructor(
 
     suspend fun deleteAllLocalRecurringBudgets() {
         recurringBudgetDao.deleteAllRecurringBudgets()
+    }
+
+    // ─── Account Balance Recalculation ─────────────────────────────────────────
+
+    /**
+     * Recalculate and update a specific account's balance based on all its transactions.
+     * Use this to fix balance discrepancies or after bulk data operations.
+     */
+    suspend fun recalculateAccountBalance(accountId: String) {
+        val calculatedBalance = accountDao.calculateBalanceFromTransactions(accountId)
+        accountDao.setBalance(accountId, calculatedBalance)
+    }
+
+    /**
+     * Recalculate all account balances based on their transactions.
+     * Use this during initial setup or after data migration.
+     */
+    suspend fun recalculateAllAccountBalances() {
+        val accountIds = accountDao.getAllAccountIdsWithTransactions()
+        for (accountId in accountIds) {
+            recalculateAccountBalance(accountId)
+        }
     }
 }
 

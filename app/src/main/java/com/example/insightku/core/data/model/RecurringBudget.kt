@@ -17,6 +17,10 @@ data class RecurringBudget(
     val amount: Double = 0.0,
     val frequency: BudgetFrequency = BudgetFrequency.MONTHLY,
     val categoryId: String? = null,
+    /**
+     * ID of the Account to use for transactions generated from this recurring budget.
+     */
+    val accountId: String? = null,
     val isActive: Boolean = true,
     val lastProcessed: Long? = null,
     val nextDue: Long = System.currentTimeMillis(),

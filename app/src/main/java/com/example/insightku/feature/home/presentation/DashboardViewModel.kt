@@ -192,7 +192,7 @@ class DashboardViewModel @Inject constructor(
                     type          = TransactionType.EXPENSE,
                     date          = System.currentTimeMillis(),
                     description   = "Recurring payment: ${budget.name}",
-                    paymentMethod = null
+                    accountId     = budget.accountId ?: ""
                 )
                 transactionRepository.addTransaction(tx, userId)
 
@@ -234,7 +234,7 @@ class DashboardViewModel @Inject constructor(
                     type          = TransactionType.EXPENSE,
                     date          = System.currentTimeMillis(),
                     description   = "Installment payment: ${installment.name} (${installment.paidMonths + 1}/${installment.totalMonths})",
-                    paymentMethod = null
+                    accountId     = installment.accountId ?: ""
                 )
                 transactionRepository.addTransaction(tx, userId)
 

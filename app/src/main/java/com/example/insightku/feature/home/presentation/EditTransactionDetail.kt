@@ -42,6 +42,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
@@ -63,21 +65,6 @@ private val EditTextMuted: Color   @Composable get() = AppPalette.textMuted
 private val EditIncomeGreen = Color(0xFF10B981)
 private val EditExpenseRed  = Color(0xFFEF4444)
 
-private val paymentOptions = listOf(
-    "Cash" to Icons.Default.Payments,
-    "QRIS" to Icons.Default.QrCode,
-    "Debit Card" to Icons.Default.CreditCard,
-    "Credit Card" to Icons.Default.CreditScore,
-    "Bank Transfer" to Icons.Default.AccountBalance,
-    "E-Wallet" to Icons.Default.AccountBalanceWallet,
-    "GoPay" to Icons.Default.AccountBalanceWallet,
-    "OVO" to Icons.Default.AccountBalanceWallet,
-    "DANA" to Icons.Default.AccountBalanceWallet,
-    "ShopeePay" to Icons.Default.AccountBalanceWallet,
-    "PayLater" to Icons.Default.AccessTime,
-    "Other" to Icons.Default.MoreHoriz
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTransactionDetail(
@@ -85,7 +72,8 @@ fun EditTransactionDetail(
     onDismiss: () -> Unit,
     onSave: (Transaction) -> Unit,
     categoryMap: Map<String, com.example.insightku.core.data.model.Category> = emptyMap(),
-    categories: List<com.example.insightku.core.data.model.Category> = emptyList()
+    categories: List<com.example.insightku.core.data.model.Category> = emptyList(),
+    accounts: List<Account> = emptyList()
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -101,7 +89,7 @@ fun EditTransactionDetail(
     var category      by remember { mutableStateOf(transaction.category) }
     var dateMillis    by remember { mutableStateOf(transaction.date) }
     var notes         by remember { mutableStateOf(transaction.description ?: "") }
-    var paymentMethod by remember { mutableStateOf(transaction.paymentMethod ?: "Cash") }
+    var accountId     by remember { mutableStateOf(transaction.accountId) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     val isIncome    = type == TransactionType.INCOME
@@ -197,11 +185,15 @@ fun EditTransactionDetail(
                     )
                 }
 
-                // ── Payment method ────────────────────────────────────────
+                // ── Account ────────────────────────────────────────────────
                 EditFormCard {
-                    EditFieldLabel("PAYMENT METHOD")
+                    EditFieldLabel("ACCOUNT")
                     Spacer(Modifier.height(10.dp))
-                    EditPaymentChips(selected = paymentMethod, onSelect = { paymentMethod = it })
+                    EditAccountSelector(
+                        accounts = accounts,
+                        selectedAccountId = accountId,
+                        onSelect = { accountId = it }
+                    )
                 }
 
                 // ── Date ──────────────────────────────────────────────────
@@ -291,7 +283,7 @@ fun EditTransactionDetail(
                                 category      = category,
                                 date          = dateMillis,
                                 description   = notes.trim().ifBlank { null },
-                                paymentMethod = paymentMethod.ifBlank { null }
+                                accountId     = accountId
                             )
                         )
                     },
@@ -532,28 +524,88 @@ private fun EditCategoryPicker(
 }
 
 @Composable
-private fun EditPaymentChips(selected: String, onSelect: (String) -> Unit) {
-    val rows = paymentOptions.chunked(3)
+private fun EditAccountSelector(
+    accounts: List<Account>,
+    selectedAccountId: String,
+    onSelect: (String) -> Unit
+) {
+    if (accounts.isEmpty()) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            color = AppPalette.background,
+            border = BorderStroke(1.dp, EditBorder)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(Icons.Default.Warning, null, tint = EditTextMuted, modifier = Modifier.size(20.dp))
+                Text("No accounts available", style = MaterialTheme.typography.bodyMedium, color = EditTextMuted)
+            }
+        }
+        return
+    }
+
+    // Group accounts by type
+    val cashAndBank = accounts.filter { it.type in listOf(AccountType.CASH, AccountType.BANK_ACCOUNT) }
+    val eWallets = accounts.filter { it.type == AccountType.E_WALLET }
+    val creditCards = accounts.filter { it.type == AccountType.CREDIT_CARD }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (cashAndBank.isNotEmpty()) {
+            EditAccountChipRow(accounts = cashAndBank, selectedAccountId = selectedAccountId, onSelect = onSelect)
+        }
+        if (eWallets.isNotEmpty()) {
+            EditAccountChipRow(accounts = eWallets, selectedAccountId = selectedAccountId, onSelect = onSelect)
+        }
+        if (creditCards.isNotEmpty()) {
+            EditAccountChipRow(accounts = creditCards, selectedAccountId = selectedAccountId, onSelect = onSelect)
+        }
+    }
+}
+
+@Composable
+private fun EditAccountChipRow(
+    accounts: List<Account>,
+    selectedAccountId: String,
+    onSelect: (String) -> Unit
+) {
+    val rows = accounts.chunked(3)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        rows.forEach { row ->
+        rows.forEach { rowItems ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { (label, icon) ->
-                    val isSelected = selected == label
+                rowItems.forEach { account ->
+                    val isSelected = selectedAccountId == account.id
                     val interactionSource = remember { MutableInteractionSource() }
                     val isPressed by interactionSource.collectIsPressedAsState()
                     val scale by animateFloatAsState(
                         targetValue   = if (isPressed) 0.93f else 1f,
                         animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
-                        label         = "pay_scale_$label"
+                        label         = "account_scale_\${account.id}"
                     )
+
+                    val accountColor = runCatching {
+                        Color(android.graphics.Color.parseColor(account.color))
+                    }.getOrDefault(Color(0xFF7C4DFF))
+
                     val bgColor by animateColorAsState(
-                        targetValue   = if (isSelected) EditPurple.copy(alpha = 0.10f) else EditSurface,
-                        animationSpec = tween(180), label = "pay_bg_$label"
+                        targetValue   = if (isSelected) accountColor.copy(alpha = 0.10f) else EditSurface,
+                        animationSpec = tween(180), label = "account_bg_\${account.id}"
                     )
                     val borderColor by animateColorAsState(
-                        targetValue   = if (isSelected) EditPurple else EditBorder,
-                        animationSpec = tween(180), label = "pay_border_$label"
+                        targetValue   = if (isSelected) accountColor else EditBorder,
+                        animationSpec = tween(180), label = "account_border_\${account.id}"
                     )
+
+                    val accountIcon: ImageVector = when (account.type) {
+                        AccountType.CASH -> Icons.Default.Payments
+                        AccountType.BANK_ACCOUNT -> Icons.Default.AccountBalance
+                        AccountType.E_WALLET -> Icons.Default.AccountBalanceWallet
+                        AccountType.CREDIT_CARD -> Icons.Default.CreditCard
+                    }
+
                     Column(
                         modifier = Modifier.weight(1f)
                             .graphicsLayer { scaleX = scale; scaleY = scale }
@@ -562,7 +614,7 @@ private fun EditPaymentChips(selected: String, onSelect: (String) -> Unit) {
                             .background(bgColor)
                             .border(1.5.dp, borderColor, RoundedCornerShape(12.dp))
                             .clickable(interactionSource = interactionSource, indication = null) {
-                                onSelect(if (selected == label) "" else label)
+                                onSelect(account.id)
                             }
                             .padding(vertical = 8.dp, horizontal = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -570,30 +622,28 @@ private fun EditPaymentChips(selected: String, onSelect: (String) -> Unit) {
                     ) {
                         Box(
                             modifier = Modifier.size(28.dp).clip(CircleShape)
-                                .background(if (isSelected) EditPurple.copy(alpha = 0.15f) else AppPalette.cardElevated),
+                                .background(if (isSelected) accountColor.copy(alpha = 0.15f) else AppPalette.cardElevated),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(icon, null, tint = if (isSelected) EditPurple else EditTextMuted, modifier = Modifier.size(14.dp))
+                            Icon(accountIcon, null, tint = if (isSelected) accountColor else EditTextMuted, modifier = Modifier.size(14.dp))
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            label,
-                            style      = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            account.name,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color      = if (isSelected) EditPurple else EditTextMuted,
-                            maxLines   = 2,
-                            overflow   = TextOverflow.Ellipsis,
-                            textAlign  = TextAlign.Center
+                            color = if (isSelected) accountColor else EditTextMuted,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
-                // Fill empty slots
-                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
 }
-
 @Composable
 private fun EditFormCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(

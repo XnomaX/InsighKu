@@ -72,7 +72,7 @@ class AutoTransactionWorker @AssistedInject constructor(
                     type          = TransactionType.EXPENSE,
                     date          = nextDue,
                     description   = "Auto: ${budget.name}",
-                    paymentMethod = null,
+                    accountId     = budget.accountId ?: "",
                     isSynced      = false
                 )
                 try {
@@ -130,7 +130,7 @@ class AutoTransactionWorker @AssistedInject constructor(
                     type          = TransactionType.EXPENSE,
                     date          = nextDue,
                     description   = "Auto cicilan: ${installment.name} (${paidMonths + 1}/${installment.totalMonths})",
-                    paymentMethod = null,
+                    accountId     = installment.accountId ?: "",
                     isSynced      = false
                 )
                 try {

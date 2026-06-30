@@ -58,6 +58,7 @@ import com.example.insightku.core.notification.NotificationTransactionData
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.home.presentation.DashboardEvent
+import com.example.insightku.core.data.local.dao.AccountDao
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -110,6 +111,9 @@ fun MainScreen(
     val incomeCategories           by addTransactionViewModel.incomeCategories.collectAsState()
     val addTxUiState               by addTransactionViewModel.uiState.collectAsState()
     val budgetingUiState           by budgetingViewModel.uiState.collectAsState()
+    val accountsViewModel: AccountsViewModel = hiltViewModel()
+    val accountsUiState by accountsViewModel.uiState.collectAsState()
+    val accounts = accountsUiState.accounts
     var showAddTransactionDialog   by remember { mutableStateOf(false) }
     var pendingStreakPopup          by remember { mutableStateOf(false) }
     // Prefill source for AddTransaction: either the launch deep link, or a tapped draft.
@@ -277,6 +281,7 @@ fun MainScreen(
             onOpenScanner      = {},
             expenseCategories  = expenseCategories,
             incomeCategories   = incomeCategories,
+            accounts          = accounts,
             notificationData   = activeDraftData,
             onCreateCategory   = {
                 navController.navigate(Route.BUDGETING) {
@@ -534,9 +539,12 @@ private fun MainNavHost(
         }
         composable(Route.TRANSACTION_DETAILS) {
             val txDetailsViewModel: TransactionDetailsViewModel = hiltViewModel()
+            val txAccountsViewModel: AccountsViewModel = hiltViewModel()
+            val txAccounts by txAccountsViewModel.uiState.collectAsState()
             TransactionDetailsScreen(
                 viewModel           = txDetailsViewModel,
                 initialTransactions = emptyList(),
+                accounts           = txAccounts.accounts,
                 onBack              = { navController.popBackStack() },
                 onEditTransaction   = { txDetailsViewModel.updateTransaction(it) },
                 onDeleteTransaction = { id ->

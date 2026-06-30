@@ -71,6 +71,29 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE category = :category")
     suspend fun getTransactionsByCategoryOnce(category: String): List<Transaction>
 
+    // ── Account Balance Sync Queries ─────────────────────────────────────────
+
+    /**
+     * Get all transactions for a specific account.
+     * Used for recalculating account balances.
+     */
+    @Query("SELECT * FROM transactions WHERE accountId = :accountId ORDER BY date DESC")
+    suspend fun getTransactionsByAccountId(accountId: String): List<Transaction>
+
+    /**
+     * Get transaction by ID along with its account ID.
+     * Used for balance sync before updates.
+     */
+    @Query("SELECT * FROM transactions WHERE id = :id")
+    suspend fun getTransactionByIdWithAccount(id: String): Transaction?
+
+    /**
+     * Delete all transactions for a specific account.
+     * Used when deleting an account — cascades the delete to all its transactions.
+     */
+    @Query("DELETE FROM transactions WHERE accountId = :accountId")
+    suspend fun deleteTransactionsByAccountId(accountId: String)
+
     /**
      * Insert data dari Firestore (remote refresh) tanpa menimpa transaksi lokal
      * yang belum tersinkron (isSynced=0). Penting untuk menghindari data loss

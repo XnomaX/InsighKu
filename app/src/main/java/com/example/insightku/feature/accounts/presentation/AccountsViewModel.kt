@@ -3,6 +3,7 @@ package com.example.insightku.feature.accounts.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.local.dao.AccountDao
+import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AccountsViewModel @Inject constructor(
-    private val accountDao: AccountDao
+    private val accountDao: AccountDao,
+    private val transactionDao: TransactionDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AccountsUiState())
@@ -67,6 +69,9 @@ class AccountsViewModel @Inject constructor(
     private fun deleteAccount(accountId: String) {
         viewModelScope.launch {
             try {
+                // Step 1: Delete all transactions in this account (cascade delete)
+                transactionDao.deleteTransactionsByAccountId(accountId)
+                // Step 2: Deactivate the account
                 accountDao.deactivateAccount(accountId)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -79,6 +84,8 @@ class AccountsViewModel @Inject constructor(
     private fun setAsDefault(accountId: String) {
         viewModelScope.launch {
             try {
+                // Clear all defaults first, then set the new one
+                accountDao.clearAllDefaults()
                 val account = accountDao.getAccountById(accountId)
                 if (account != null) {
                     accountDao.updateAccount(account.copy(isDefault = true))

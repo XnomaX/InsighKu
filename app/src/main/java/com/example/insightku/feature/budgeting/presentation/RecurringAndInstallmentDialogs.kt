@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Installment
@@ -51,7 +53,8 @@ fun AddRecurringPaymentDialog(
     onDismiss: () -> Unit,
     onSave: (RecurringBudget) -> Unit,
     editing: RecurringBudget? = null,
-    availableCategories: List<Category> = emptyList()
+    availableCategories: List<Category> = emptyList(),
+    accounts: List<Account> = emptyList()
 ) {
     if (!isOpen) return
 
@@ -64,6 +67,7 @@ fun AddRecurringPaymentDialog(
     var frequency   by remember(editing) { mutableStateOf(editing?.frequency ?: BudgetFrequency.MONTHLY) }
     var nextDue     by remember(editing) { mutableLongStateOf(editing?.nextDue ?: System.currentTimeMillis()) }
     var selectedCategoryId by remember(editing) { mutableStateOf(editing?.categoryId) }
+    var selectedAccountId by remember(editing) { mutableStateOf(editing?.accountId) }
     var nameError   by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -139,6 +143,19 @@ fun AddRecurringPaymentDialog(
                     }
                 }
 
+                // Account selector
+                if (accounts.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("ACCOUNT", style = MaterialTheme.typography.labelSmall,
+                            letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        SheetAccountSelector(
+                            accounts = accounts,
+                            selectedAccountId = selectedAccountId,
+                            onSelect = { selectedAccountId = if (selectedAccountId == it) null else it }
+                        )
+                    }
+                }
+
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("FREQUENCY", style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
@@ -186,7 +203,8 @@ fun AddRecurringPaymentDialog(
                                     frequency  = frequency,
                                     nextDue    = nextDue,
                                     isActive   = true,
-                                    categoryId = selectedCategoryId
+                                    categoryId = selectedCategoryId,
+                                    accountId  = selectedAccountId ?: editing?.accountId
                                 ))
                             },
                         contentAlignment = Alignment.Center
@@ -209,7 +227,8 @@ fun AddInstallmentDialog(
     onDismiss: () -> Unit,
     onSave: (Installment) -> Unit,
     editing: Installment? = null,
-    availableCategories: List<Category> = emptyList()
+    availableCategories: List<Category> = emptyList(),
+    accounts: List<Account> = emptyList()
 ) {
     if (!isOpen) return
 
@@ -224,6 +243,7 @@ fun AddInstallmentDialog(
     var paidMonthsText  by remember(editing) { mutableStateOf(editing?.paidMonths?.toString() ?: "") }
     var nextDue         by remember(editing) { mutableLongStateOf(editing?.nextDueDate ?: System.currentTimeMillis()) }
     var selectedCategoryId by remember(editing) { mutableStateOf(editing?.categoryId) }
+    var selectedAccountId by remember(editing) { mutableStateOf(editing?.accountId) }
     var nameError       by remember { mutableStateOf<String?>(null) }
     var showDatePicker  by remember { mutableStateOf(false) }
 
@@ -318,6 +338,19 @@ fun AddInstallmentDialog(
                     }
                 }
 
+                // Account selector
+                if (accounts.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("ACCOUNT", style = MaterialTheme.typography.labelSmall,
+                            letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        SheetAccountSelector(
+                            accounts = accounts,
+                            selectedAccountId = selectedAccountId,
+                            onSelect = { selectedAccountId = it }
+                        )
+                    }
+                }
+
                 // Auto-calculated summary
                 if (totalMonths > 0 && monthly > 0) {
                     Surface(
@@ -383,7 +416,8 @@ fun AddInstallmentDialog(
                                     paidMonths  = paidMonths,
                                     nextDueDate = nextDue,
                                     isActive    = true,
-                                    categoryId  = selectedCategoryId
+                                    categoryId  = selectedCategoryId,
+                                    accountId   = selectedAccountId ?: editing?.accountId
                                 ))
                             },
                         contentAlignment = Alignment.Center
@@ -443,6 +477,61 @@ private fun SheetCategorySelector(
                     }
                 }
                 repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+// ─── Account Selector for Sheet Dialogs ────────────────────────────────────────
+
+@Composable
+private fun SheetAccountSelector(
+    accounts: List<Account>,
+    selectedAccountId: String?,
+    onSelect: (String?) -> Unit
+) {
+    val rows = accounts.chunked(3)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        rows.forEach { rowItems ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                rowItems.forEach { account ->
+                    val isSelected = selectedAccountId == account.id
+                    val accountColor = runCatching {
+                        Color(android.graphics.Color.parseColor(account.color))
+                    }.getOrDefault(SheetPurple)
+                    val accountIcon = when (account.type) {
+                        AccountType.CASH -> Icons.Default.Payments
+                        AccountType.BANK_ACCOUNT -> Icons.Default.AccountBalance
+                        AccountType.E_WALLET -> Icons.Default.AccountBalanceWallet
+                        AccountType.CREDIT_CARD -> Icons.Default.CreditCard
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isSelected) accountColor.copy(alpha = 0.10f) else AppPalette.card)
+                            .border(1.5.dp, if (isSelected) accountColor else SheetBorder, RoundedCornerShape(12.dp))
+                            .clickable { onSelect(if (isSelected) null else account.id) }
+                            .padding(vertical = 10.dp, horizontal = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.size(32.dp).clip(CircleShape)
+                                .background(accountColor.copy(alpha = if (isSelected) 0.18f else 0.10f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(accountIcon, null, tint = accountColor, modifier = Modifier.size(16.dp))
+                        }
+                        Text(account.name,
+                            style      = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color      = if (isSelected) accountColor else AppPalette.textMuted,
+                            maxLines   = 2,
+                            textAlign  = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
+                }
+                repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
