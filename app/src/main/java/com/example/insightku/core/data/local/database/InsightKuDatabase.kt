@@ -163,6 +163,114 @@ val MIGRATION_11_12 = object : Migration(11, 12) {
     }
 }
 
+/**
+ * Migration 12 → 13: Add Goals feature tables.
+ */
+val MIGRATION_12_13 = object : Migration(12, 13) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Create goals table
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS goals (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                targetAmount REAL NOT NULL,
+                deadline INTEGER,
+                status TEXT NOT NULL DEFAULT 'active',
+                autoAllocate INTEGER NOT NULL DEFAULT 0,
+                allocationPriority INTEGER NOT NULL DEFAULT 0,
+                iconName TEXT NOT NULL DEFAULT 'savings',
+                color TEXT NOT NULL DEFAULT '#7C4DFF',
+                notes TEXT NOT NULL DEFAULT '''' ,
+                isActive INTEGER NOT NULL DEFAULT 1,
+                createdAt INTEGER NOT NULL DEFAULT '0',
+                updatedAt INTEGER NOT NULL DEFAULT '0'
+            )
+        """.trimIndent())
+
+        // Create contributions table
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS contributions (
+                id TEXT NOT NULL PRIMARY KEY,
+                goalId TEXT NOT NULL,
+                accountId TEXT NOT NULL,
+                amount REAL NOT NULL,
+                type TEXT NOT NULL DEFAULT 'manual',
+                transactionId TEXT,
+                notes TEXT NOT NULL DEFAULT '''' ,
+                createdAt INTEGER NOT NULL DEFAULT '0',
+                FOREIGN KEY (goalId) REFERENCES goals(id) ON DELETE CASCADE
+            )
+        """.trimIndent())
+
+        // Create goal_accounts table
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS goal_accounts (
+                goalId TEXT NOT NULL,
+                accountId TEXT NOT NULL,
+                allocationPercent REAL NOT NULL DEFAULT 100.0,
+                isPrimary INTEGER NOT NULL DEFAULT 1,
+                PRIMARY KEY (goalId, accountId),
+                FOREIGN KEY (goalId) REFERENCES goals(id) ON DELETE CASCADE
+            )
+        """.trimIndent())
+
+        // Create reserved_balances table
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS reserved_balances (
+                accountId TEXT NOT NULL PRIMARY KEY,
+                amount REAL NOT NULL DEFAULT 0.0,
+                goalId TEXT,
+                updatedAt INTEGER NOT NULL DEFAULT '0',
+                FOREIGN KEY (goalId) REFERENCES goals(id) ON DELETE CASCADE
+            )
+        """.trimIndent())
+
+        // Create auto_allocation_rules table
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS auto_allocation_rules (
+                id TEXT NOT NULL PRIMARY KEY,
+                goalId TEXT NOT NULL,
+                triggerType TEXT NOT NULL DEFAULT 'income_received',
+                triggerParams TEXT,
+                allocationType TEXT NOT NULL DEFAULT 'percent',
+                allocationValue REAL NOT NULL DEFAULT 10.0,
+                isEnabled INTEGER NOT NULL DEFAULT 1,
+                createdAt INTEGER NOT NULL DEFAULT '0',
+                updatedAt INTEGER NOT NULL DEFAULT '0',
+                FOREIGN KEY (goalId) REFERENCES goals(id) ON DELETE CASCADE
+            )
+        """.trimIndent())
+
+        // Create daily_targets table
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS daily_targets (
+                id TEXT NOT NULL PRIMARY KEY DEFAULT 'global_daily_target',
+                targetAmount REAL NOT NULL DEFAULT 0.0,
+                date INTEGER NOT NULL DEFAULT '0',
+                createdAt INTEGER NOT NULL DEFAULT '0',
+                updatedAt INTEGER NOT NULL DEFAULT '0'
+            )
+        """.trimIndent())
+
+        // Create indexes for contributions
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_contributions_goalId ON contributions (goalId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_contributions_accountId ON contributions (accountId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_contributions_createdAt ON contributions (createdAt)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_contributions_transactionId ON contributions (transactionId)")
+
+        // Create indexes for goal_accounts
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_goal_accounts_goalId ON goal_accounts (goalId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_goal_accounts_accountId ON goal_accounts (accountId)")
+
+        // Create indexes for auto_allocation_rules
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_auto_allocation_rules_goalId ON auto_allocation_rules (goalId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_auto_allocation_rules_isEnabled ON auto_allocation_rules (isEnabled)")
+
+        // Create indexes for reserved_balances
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_reserved_balances_goalId ON reserved_balances (goalId)")
+    }
+}
+
 @Database(
     entities = [
         Transaction::class,
@@ -172,9 +280,15 @@ val MIGRATION_11_12 = object : Migration(11, 12) {
         User::class,
         Installment::class,
         DraftTransaction::class,
-        Account::class
+        Account::class,
+        com.example.insightku.feature.budgeting.data.model.GoalEntity::class,
+        com.example.insightku.feature.budgeting.data.model.ContributionEntity::class,
+        com.example.insightku.feature.budgeting.data.model.GoalAccountEntity::class,
+        com.example.insightku.feature.budgeting.data.model.ReservedBalanceEntity::class,
+        com.example.insightku.feature.budgeting.data.model.AutoAllocationRuleEntity::class,
+        com.example.insightku.feature.budgeting.data.model.DailyTargetEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -187,6 +301,14 @@ abstract class InsightKuDatabase : RoomDatabase() {
     abstract fun installmentDao(): InstallmentDao
     abstract fun draftTransactionDao(): DraftTransactionDao
     abstract fun accountDao(): AccountDao
+
+    // Goals feature DAOs
+    abstract fun goalDao(): com.example.insightku.feature.budgeting.data.local.dao.GoalDao
+    abstract fun contributionDao(): com.example.insightku.feature.budgeting.data.local.dao.ContributionDao
+    abstract fun goalAccountDao(): com.example.insightku.feature.budgeting.data.local.dao.GoalAccountDao
+    abstract fun reservedBalanceDao(): com.example.insightku.feature.budgeting.data.local.dao.ReservedBalanceDao
+    abstract fun autoAllocationRuleDao(): com.example.insightku.feature.budgeting.data.local.dao.AutoAllocationRuleDao
+    abstract fun dailyTargetDao(): com.example.insightku.feature.budgeting.data.local.dao.DailyTargetDao
 }
 
 

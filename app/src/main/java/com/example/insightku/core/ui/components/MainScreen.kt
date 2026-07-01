@@ -90,7 +90,7 @@ private data class NavItem(
 private val navItems = listOf(
     NavItem(Route.HOME,      "Home",      Icons.Filled.Home),
     NavItem(Route.ANALYSIS,  "Analytics", Icons.Filled.BarChart),
-    NavItem(Route.BUDGETING, "Budget",    Icons.Filled.AccountBalanceWallet),
+    NavItem(Route.BUDGETING, "Planning",  Icons.Filled.Assignment),
     NavItem(Route.ACCOUNTS,  "Accounts",  Icons.Filled.Wallet)
 )
 
