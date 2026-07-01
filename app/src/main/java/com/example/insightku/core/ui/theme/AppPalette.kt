@@ -33,4 +33,20 @@ object AppPalette {
 
     val textMuted: Color @Composable @ReadOnlyComposable get() =
         if (isDark) Color(0xFFAB8FD4) else Color(0xFF9E9E9E)
+
+    // Goal feature colors
+    val GoalColors = listOf(
+        "#7C3AED", // Purple
+        "#EC4899", // Pink
+        "#EF4444", // Red
+        "#F59E0B", // Orange
+        "#10B981", // Green
+        "#06B6D4", // Cyan
+        "#3B82F6", // Blue
+        "#8B5CF6", // Violet
+        "#6366F1", // Indigo
+        "#14B8A6", // Teal
+        "#F97316", // Deep Orange
+        "#84CC16"  // Lime
+    )
 }

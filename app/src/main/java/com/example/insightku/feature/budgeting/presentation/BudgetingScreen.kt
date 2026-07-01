@@ -1,17 +1,17 @@
 package com.example.insightku.feature.budgeting.presentation
 import com.example.insightku.core.ui.components.dialogs.IconOption
 import com.example.insightku.core.ui.components.dialogs.BudgetLimitInput
-import com.example.insightku.core.ui.components.dialogs.RecurringPeriodSelector
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 import com.example.insightku.core.ui.components.dialogs.CategoryIconInfo
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,13 +42,13 @@ import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.PieChart
+import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
@@ -58,13 +60,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,15 +90,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
-import com.example.insightku.core.data.model.Installment
-import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.feature.budgeting.presentation.AddCategoryDialog
 import com.example.insightku.feature.budgeting.presentation.EditCategoryDialog
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.IncomeGreen
-import com.example.insightku.core.ui.theme.IncomeMid
 import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.ui.theme.LocalComfortMode
@@ -99,25 +105,214 @@ import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.core.ui.theme.WarningYellow
 import com.example.insightku.core.ui.theme.formatCurrency
 import com.example.insightku.feature.budgeting.presentation.BudgetingViewModel
+import com.example.insightku.feature.budgeting.presentation.event.GoalsEvent
+import com.example.insightku.feature.budgeting.presentation.screen.GoalsScreen
+import com.example.insightku.feature.budgeting.presentation.viewmodel.GoalsViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
 
+// Tab items - renamed to Planning
+private enum class PlanningTab(val title: String, val icon: ImageVector) {
+    PLANNING("Planning", Icons.Outlined.PieChart),
+    GOALS("Goals", Icons.Outlined.Savings)
+}
+
 @Composable
 fun BudgetingScreen(
     viewModel: BudgetingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val tabs = PlanningTab.entries
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    val coroutineScope = rememberCoroutineScope()
+    val goalsViewModel: GoalsViewModel = hiltViewModel()
+    val goalsUiState by goalsViewModel.uiState.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        BudgetingScreenContent(
-            uiState = uiState,
-            onEvent = viewModel::onEvent
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppPalette.background)
+            .statusBarsPadding()
+    ) {
+        // Header above tabs
+        AnimatedContent(
+            targetState = pagerState.currentPage,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(200)) togetherWith
+                        fadeOut(animationSpec = tween(200))
+            },
+            label = "header_animation"
+        ) { pageIndex ->
+            when (tabs.getOrNull(pageIndex)) {
+                PlanningTab.PLANNING -> PlanningHeader()
+                PlanningTab.GOALS -> GoalsHeader(onAddClick = { goalsViewModel.onEvent(GoalsEvent.ShowAddGoalDialog()) })
+                null -> Box(modifier = Modifier.fillMaxWidth())
+            }
+        }
+
+        // Tab Row Navigation
+        TabRow(
+            selectedTabIndex = pagerState.currentPage,
+            containerColor = AppPalette.background,
+            contentColor = MaterialTheme.colorScheme.onBackground,
+            divider = {},
+            indicator = { tabPositions ->
+                if (pagerState.currentPage < tabPositions.size) {
+                    TabRowDefaults.SecondaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                        color = LocalAccent.current
+                    )
+                }
+            }
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                val selected = pagerState.currentPage == index
+                Tab(
+                    selected = selected,
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    },
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = if (selected) LocalAccent.current else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = tab.title,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (selected) LocalAccent.current else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    selectedContentColor = LocalAccent.current,
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // Pager content - starts directly below TabRow
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { pageIndex ->
+            when (tabs.getOrNull(pageIndex)) {
+                PlanningTab.PLANNING -> {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        BudgetingScreenContent(
+                            uiState = uiState,
+                            onEvent = viewModel::onEvent
+                        )
+                        HandleDialogs(uiState = uiState, onEvent = viewModel::onEvent)
+                    }
+                }
+                PlanningTab.GOALS -> {
+                    GoalsScreen(viewModel = goalsViewModel)
+                }
+                null -> {}
+            }
+        }
+    }
+}
+
+/**
+ * Planning page header - compact, no month/date label.
+ */
+@Composable
+private fun PlanningHeader() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppPalette.background)
+            .padding(horizontal = Dimens.ScreenHorizontalPadding)
+            .padding(top = 16.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = "Planning",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
+        Text(
+            text = "Spending control center",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
-        HandleDialogs(uiState = uiState, onEvent = viewModel::onEvent)
+/**
+ * Goals page header with Add button on the right.
+ */
+@Composable
+private fun GoalsHeader(
+    onAddClick: () -> Unit
+) {
+    val accent = LocalAccent.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppPalette.background)
+            .padding(horizontal = Dimens.ScreenHorizontalPadding)
+            .padding(top = 16.dp, bottom = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = "Goals",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppPalette.textPrimary
+            )
+            Text(
+                text = "Track your savings goals",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppPalette.textMuted
+            )
+        }
+
+        // Add button like Accounts screen
+        Surface(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .clickable { onAddClick() },
+            shape = RoundedCornerShape(50),
+            color = accent.copy(alpha = 0.10f)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(17.dp)
+                )
+                Text(
+                    text = "Add",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = accent
+                )
+            }
+        }
     }
 }
 
@@ -126,81 +321,70 @@ fun BudgetingScreenContent(
     uiState: BudgetingUiState,
     onEvent: (BudgetingEvent) -> Unit
 ) {
-    Box(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppPalette.background)
+            .background(AppPalette.background),
+        contentPadding = PaddingValues(bottom = Dimens.ContentBottomPadding),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = Dimens.ContentBottomPadding),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
-            // Premium header
+        // Error card
+        if (uiState.error != null) {
             item {
-                BudgetGradientHeader(
-                    month = currentMonthLabel(),
-                    isLoading = uiState.isLoading
-                )
-            }
-
-            // Error card
-            if (uiState.error != null) {
-                item {
-                    BudgetErrorCard(
-                        message = uiState.error,
-                        onDismiss = { onEvent(BudgetingEvent.ClearError) },
-                        modifier = Modifier.padding(
-                            horizontal = Dimens.ScreenHorizontalPadding,
-                            vertical = 8.dp
-                        )
-                    )
-                }
-            }
-
-            // Overview card
-            item {
-                BudgetHealthCard(
-                    percentage      = uiState.budgetUtilizationPercentage,
-                    totalBudget     = uiState.totalBudget,
-                    limitedSpent    = uiState.limitedSpent,
-                    remaining       = uiState.remainingBudget,
-                    riskyCount      = uiState.budgetCategories.count { it.health == BudgetHealth.Warning },
-                    overBudgetCount = uiState.overBudgetCategories.size,
-                    safeCount       = uiState.budgetCategories.count { it.health == BudgetHealth.Good },
-                    modifier        = Modifier.padding(
-                        horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical   = 12.dp
-                    )
-                )
-            }
-
-            // ── EXPENSE BUDGETS SECTION ──────────────────────────────────────
-            item {
-                BudgetSectionLabel(
-                    title = "Expense Budgets",
-                    subtitle = categoryListSubtitle(uiState),
-                    onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
+                BudgetErrorCard(
+                    message = uiState.error,
+                    onDismiss = { onEvent(BudgetingEvent.ClearError) },
                     modifier = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical = 8.dp
                     )
                 )
             }
+        }
 
-            if (!uiState.isLoading && uiState.budgetCategories.isEmpty()) {
-                item {
-                    EmptyBudgetState(
-                        onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
-                        modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
-                    )
-                }
-            } else {
-                items(
-                    items = uiState.budgetCategories,
-                    key = { it.id }
-                ) { category ->
-                    BudgetCategoryCard(
+        // Overview card
+        item {
+            BudgetHealthCard(
+                percentage      = uiState.budgetUtilizationPercentage,
+                totalBudget     = uiState.totalBudget,
+                limitedSpent    = uiState.limitedSpent,
+                remaining       = uiState.remainingBudget,
+                riskyCount      = uiState.budgetCategories.count { it.health == BudgetHealth.Warning },
+                overBudgetCount = uiState.overBudgetCategories.size,
+                safeCount       = uiState.budgetCategories.count { it.health == BudgetHealth.Good },
+                modifier        = Modifier.padding(
+                    horizontal = Dimens.ScreenHorizontalPadding,
+                    vertical   = 12.dp
+                )
+            )
+        }
+
+        // ── EXPENSE BUDGETS SECTION ──────────────────────────────────────
+        item {
+            BudgetSectionLabel(
+                title = "Expense Budgets",
+                subtitle = categoryListSubtitle(uiState),
+                onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
+                modifier = Modifier.padding(
+                    horizontal = Dimens.ScreenHorizontalPadding,
+                    vertical = 8.dp
+                )
+            )
+        }
+
+        if (!uiState.isLoading && uiState.budgetCategories.isEmpty()) {
+            item {
+                EmptyBudgetState(
+                    onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
+                    modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
+                )
+            }
+        } else {
+            items(
+                items = uiState.budgetCategories,
+                key = { it.id }
+            ) { category ->
+                BudgetCategoryCard(
                         category = category,
                         onEdit = { onEvent(BudgetingEvent.ShowEditBudgetDialog(category)) },
                         onDelete = { onEvent(BudgetingEvent.ShowDeleteConfirmDialog(category)) },
@@ -290,16 +474,24 @@ fun BudgetingScreenContent(
                     )
                 )
             }
-        }
 
-        if (uiState.isLoading && uiState.budgetCategories.isEmpty()) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = LocalAccent.current
-            )
+            // Loading indicator
+            item {
+                if (uiState.isLoading && uiState.budgetCategories.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = LocalAccent.current
+                        )
+                    }
+                }
+            }
         }
     }
-}
+
+
 
 @Composable
 private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -> Unit) {
@@ -345,16 +537,7 @@ private fun HandleDialogs(uiState: BudgetingUiState, onEvent: (BudgetingEvent) -
             )
         }
 
-        is DialogState.ManageRecurring -> {
-            AddRecurringPaymentDialog(
-                isOpen              = true,
-                onDismiss           = { onEvent(BudgetingEvent.HideRecurringDialog) },
-                onSave              = { onEvent(BudgetingEvent.AddRecurringBudget(it)) },
-                availableCategories = uiState.allCategoriesForPicker,
-                accounts           = uiState.accounts
-            )
-        }
-
+        is DialogState.ManageRecurring,
         is DialogState.AddRecurringPayment -> {
             AddRecurringPaymentDialog(
                 isOpen              = true,
@@ -458,62 +641,6 @@ private fun DeleteCategoryDialog(
             }
         }
     )
-}
-
-@Composable
-private fun BudgetGradientHeader(
-    month: String,
-    isLoading: Boolean
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(AppPalette.background)
-            .statusBarsPadding()
-            .padding(horizontal = Dimens.ScreenHorizontalPadding)
-            .padding(top = 20.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        Text(
-            text = month,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = 0.5.sp
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "Budget",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "Spending control center",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (isLoading) {
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = PurpleViolet.copy(alpha = 0.10f),
-                    contentColor = PurpleViolet
-                ) {
-                    Text(
-                        text = "Syncing",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        }
-    }
 }
 
 // ─── Budget Health Card (new hero) ───────────────────────────────────────────
