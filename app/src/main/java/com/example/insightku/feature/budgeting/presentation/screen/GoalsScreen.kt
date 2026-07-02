@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +31,8 @@ import com.example.insightku.feature.budgeting.presentation.components.*
 import com.example.insightku.feature.budgeting.presentation.event.GoalsEvent
 import com.example.insightku.feature.budgeting.presentation.state.GoalsDialogState
 import com.example.insightku.feature.budgeting.presentation.viewmodel.GoalsViewModel
+import java.text.NumberFormat
+import java.util.Locale
 
 /**
  * Main Goals screen with Add button in content.
@@ -42,22 +43,6 @@ fun GoalsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // Handle snackbar messages
-    LaunchedEffect(uiState.snackbarMessage) {
-        uiState.snackbarMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            viewModel.onEvent(GoalsEvent.ClearSnackbar)
-        }
-    }
-
-    // Handle errors
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let { error ->
-            snackbarHostState.showSnackbar(error)
-            viewModel.onEvent(GoalsEvent.ClearError)
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -86,6 +71,28 @@ fun GoalsScreen(
                 )
             }
         }
+
+        // Snackbar Host
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+
+    // Handle snackbar messages
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.onEvent(GoalsEvent.ClearSnackbar)
+        }
+    }
+
+    // Handle errors
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.onEvent(GoalsEvent.ClearError)
+        }
     }
 
     // Dialogs
@@ -103,7 +110,12 @@ private fun GoalsContent(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 12.dp,
+            bottom = 100.dp // Extra space for Bottom Navigation + FAB
+        ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Suggestions Banner (if any pending)
@@ -116,21 +128,11 @@ private fun GoalsContent(
             }
         }
 
-        // Daily Target - Only show when goals exist
-        if (uiState.hasGoals) {
-            item {
-                DailyTargetCard(
-                    dailyTarget = uiState.dailyTarget,
-                    onSetTarget = { onEvent(GoalsEvent.ShowSetDailyTargetDialog) },
-                    onEdit = { onEvent(GoalsEvent.ShowSetDailyTargetDialog) }
-                )
-            }
-        }
 
-        // Summary Section (if goals exist)
+        // Summary Strip - compact 3-metric overview
         if (uiState.hasGoals && uiState.goalSummary != null) {
             item {
-                GoalsSummaryCard(summary = uiState.goalSummary!!)
+                GoalsSummaryStrip(summary = uiState.goalSummary!!)
             }
         }
 
@@ -212,78 +214,88 @@ private fun GoalsContent(
 }
 
 /**
- * Summary card showing overall goals stats.
+ * Compact summary strip showing 3 key metrics.
  */
 @Composable
-fun GoalsSummaryCard(
+fun GoalsSummaryStrip(
     summary: com.example.insightku.feature.budgeting.domain.model.GoalSummary,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationSmall),
         border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.CardInnerPaddingLarge),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Overall Progress",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = AppPalette.textPrimary
+            // Total Saved
+            SummaryMetric(
+                value = formatCompact(summary.totalSaved),
+                label = "Saved",
+                icon = Icons.Outlined.Savings,
+                valueColor = SuccessColor
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Divider
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(40.dp)
+                    .background(AppPalette.cardBorder)
+            )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                SummaryItem(
-                    value = "${summary.totalSaved.toInt()}",
-                    label = "Saved",
-                    icon = Icons.Outlined.Savings
-                )
-                SummaryItem(
-                    value = "${summary.totalTarget.toInt()}",
-                    label = "Target",
-                    icon = Icons.Outlined.Flag
-                )
-                SummaryItem(
-                    value = "${summary.overallProgress.toInt()}%",
-                    label = "Progress",
-                    icon = Icons.Outlined.TrendingUp,
-                    valueColor = SuccessColor
-                )
-            }
+            // Overall Progress
+            SummaryMetric(
+                value = "${summary.overallProgress.toInt()}%",
+                label = "Progress",
+                icon = Icons.Outlined.TrendingUp,
+                valueColor = LocalAccent.current
+            )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Divider
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(40.dp)
+                    .background(AppPalette.cardBorder)
+            )
 
-            GoalProgressBar(
-                progress = summary.overallProgress.toFloat(),
-                showPercentage = false
+            // Active Goals
+            SummaryMetric(
+                value = "${summary.activeGoals}",
+                label = "Active",
+                icon = Icons.Outlined.Flag,
+                valueColor = AppPalette.textPrimary
             )
         }
     }
 }
 
 @Composable
-private fun SummaryItem(
+private fun SummaryMetric(
     value: String,
     label: String,
     icon: ImageVector,
     valueColor: Color = AppPalette.textPrimary
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = 8.dp)
+    ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = LocalAccent.current,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(18.dp)
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
@@ -295,6 +307,20 @@ private fun SummaryItem(
             style = MaterialTheme.typography.labelSmall,
             color = AppPalette.textMuted
         )
+    }
+}
+
+private fun formatCompact(amount: Double): String {
+    return when {
+        amount >= 1_000_000 -> {
+            val formatted = NumberFormat.getNumberInstance(java.util.Locale("id", "ID")).format(amount / 1_000_000)
+            "${formatted}M"
+        }
+        amount >= 1_000 -> {
+            val formatted = NumberFormat.getNumberInstance(java.util.Locale("id", "ID")).format(amount / 1_000)
+            "${formatted}K"
+        }
+        else -> NumberFormat.getNumberInstance(java.util.Locale("id", "ID")).format(amount.toLong())
     }
 }
 
@@ -509,7 +535,7 @@ private fun DialogHost(
                     goal = goal,
                     accounts = uiState.accounts,
                     onDismiss = { onEvent(GoalsEvent.DismissDialog) },
-                    onWithdraw = { accountId, amount ->
+                    onWithdraw = { accountId: String, amount: Double ->
                         onEvent(GoalsEvent.Withdraw(dialogState.goalId, accountId, amount))
                     }
                 )
@@ -555,10 +581,26 @@ private fun DialogHost(
             )
         }
 
-        is GoalsDialogState.GoalDetail,
+        is GoalsDialogState.GoalDetail -> {
+            val goal = uiState.goals.find { it.id == dialogState.goalId }
+            if (goal != null) {
+                GoalDetailScreen(
+                    goal = goal,
+                    dailyTarget = uiState.dailyTarget,
+                    contributions = uiState.selectedGoalContributions,
+                    onBack = { onEvent(GoalsEvent.DismissDialog) },
+                    onEdit = { onEvent(GoalsEvent.ShowEditGoalDialog(goal.id)) },
+                    onSetDailyTarget = { onEvent(GoalsEvent.ShowSetDailyTargetDialog) },
+                    onSave = { onEvent(GoalsEvent.ShowContributeDialog(goal.id)) },
+                    onWithdraw = { onEvent(GoalsEvent.ShowWithdrawDialog(goal.id)) }
+                )
+            }
+        }
+
         is GoalsDialogState.LinkAccount,
         is GoalsDialogState.SelectAccount -> {
-            // TODO: Implement detail screen and other dialogs
+            // TODO: Implement account linking dialogs
+            // For now, dismiss these dialogs
         }
     }
 }
