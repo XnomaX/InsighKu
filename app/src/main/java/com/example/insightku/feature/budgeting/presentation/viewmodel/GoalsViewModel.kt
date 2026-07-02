@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -151,7 +152,7 @@ class GoalsViewModel @Inject constructor(
     private fun createGoal(event: GoalsEvent.CreateGoal) {
         viewModelScope.launch {
             val goal = Goal(
-                id = "",
+                id = UUID.randomUUID().toString(),
                 name = event.name,
                 targetAmount = event.targetAmount,
                 deadline = event.deadline,
@@ -553,12 +554,17 @@ class GoalsViewModel @Inject constructor(
     }
 
     private fun showGoalDetail(goalId: String) {
-        _uiState.update {
-            val goal = it.goals.find { g -> g.id == goalId }
-            it.copy(
-                selectedGoal = goal,
-                dialogState = GoalsDialogState.GoalDetail(goalId)
-            )
+        viewModelScope.launch {
+            _uiState.update {
+                val goal = it.goals.find { g -> g.id == goalId }
+                // Load contributions for this goal
+                val contributions = goalRepository.getContributionsByGoal(goalId).first()
+                it.copy(
+                    selectedGoal = goal,
+                    selectedGoalContributions = contributions,
+                    dialogState = GoalsDialogState.GoalDetail(goalId)
+                )
+            }
         }
     }
 

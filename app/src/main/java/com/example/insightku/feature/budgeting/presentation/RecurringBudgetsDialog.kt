@@ -35,6 +35,7 @@ import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
+import com.example.insightku.core.ui.components.PremiumDatePicker
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -434,19 +435,14 @@ fun ColumnScope.AddEditBudgetForm(
     }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = nextDueDate)
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                Button(onClick = {
-                    datePickerState.selectedDateMillis?.let { nextDueDate = it }
-                    showDatePicker = false
-                }) { Text("OK") }
+        PremiumDatePicker(
+            initialMillis = nextDueDate,
+            onDateSelected = { millis ->
+                nextDueDate = millis
+                showDatePicker = false
             },
-            dismissButton = {
-                OutlinedButton(onClick = { showDatePicker = false }) { Text("Batal") }
-            }
-        ) { DatePicker(state = datePickerState) }
+            onDismiss = { showDatePicker = false }
+        )
     }
 
     // Action Buttons

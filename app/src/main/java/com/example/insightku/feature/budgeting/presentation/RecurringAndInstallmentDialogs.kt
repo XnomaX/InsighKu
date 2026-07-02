@@ -36,6 +36,7 @@ import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
+import com.example.insightku.core.ui.components.PremiumDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -72,19 +73,14 @@ fun AddRecurringPaymentDialog(
     var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = nextDue)
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { nextDue = it }
-                    showDatePicker = false
-                }) { Text("OK", fontWeight = FontWeight.Bold, color = SheetPurple) }
+        PremiumDatePicker(
+            initialMillis = nextDue,
+            onDateSelected = { millis ->
+                nextDue = millis
+                showDatePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
-            }
-        ) { DatePicker(state = state) }
+            onDismiss = { showDatePicker = false }
+        )
     }
 
     ModalBottomSheet(

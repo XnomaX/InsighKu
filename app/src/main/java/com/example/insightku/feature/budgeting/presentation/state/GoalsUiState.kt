@@ -13,6 +13,7 @@ import java.time.LocalDate
 data class GoalsUiState(
     val goals: List<Goal> = emptyList(),
     val selectedGoal: Goal? = null,
+    val selectedGoalContributions: List<Contribution> = emptyList(),
     val goalProgress: Map<String, GoalProgress> = emptyMap(),
     val dailyTarget: DailyTarget = DailyTarget.empty(),
     val autoAllocationRules: List<AutoAllocationRule> = emptyList(),

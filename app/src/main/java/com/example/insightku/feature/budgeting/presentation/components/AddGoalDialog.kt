@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
+import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -152,27 +153,18 @@ fun AddGoalDialog(
     val isValid = name.isNotBlank() && targetAmountText.toDoubleOrNull()?.let { it > 0 } == true
 
     if (showDatePicker) {
-        val state = rememberDatePickerState(
-            initialSelectedDateMillis = deadline?.atStartOfDay()?.toInstant(ZoneId.systemDefault().rules.getOffset(Instant.now()))?.toEpochMilli()
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { millis ->
-                        deadline = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                    }
-                    showDatePicker = false
-                }) {
-                    Text("OK", fontWeight = FontWeight.Bold, color = GoalPurple)
-                }
+        val initialMillis = deadline?.atStartOfDay()?.toInstant(ZoneId.systemDefault().rules.getOffset(Instant.now()))?.toEpochMilli()
+            ?: System.currentTimeMillis()
+        PremiumDatePicker(
+            initialMillis = initialMillis,
+            onDateSelected = { millis ->
+                deadline = Instant.ofEpochMilli(millis)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                showDatePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
-            }
-        ) { DatePicker(state = state) }
+            onDismiss = { showDatePicker = false }
+        )
     }
 
     ModalBottomSheet(

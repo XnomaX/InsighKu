@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.PieChart
@@ -115,9 +116,8 @@ import java.util.Locale
 import kotlin.math.abs
 
 
-// Tab items - renamed to Planning
 private enum class PlanningTab(val title: String, val icon: ImageVector) {
-    PLANNING("Planning", Icons.Outlined.PieChart),
+    BUDGETING("Budgeting", Icons.Outlined.AccountBalanceWallet),
     GOALS("Goals", Icons.Outlined.Savings)
 }
 
@@ -148,7 +148,7 @@ fun BudgetingScreen(
             label = "header_animation"
         ) { pageIndex ->
             when (tabs.getOrNull(pageIndex)) {
-                PlanningTab.PLANNING -> PlanningHeader()
+                PlanningTab.BUDGETING -> BudgetingHeader()
                 PlanningTab.GOALS -> GoalsHeader(onAddClick = { goalsViewModel.onEvent(GoalsEvent.ShowAddGoalDialog()) })
                 null -> Box(modifier = Modifier.fillMaxWidth())
             }
@@ -209,7 +209,7 @@ fun BudgetingScreen(
             modifier = Modifier.weight(1f)
         ) { pageIndex ->
             when (tabs.getOrNull(pageIndex)) {
-                PlanningTab.PLANNING -> {
+                PlanningTab.BUDGETING -> {
                     Box(modifier = Modifier.fillMaxSize()) {
                         BudgetingScreenContent(
                             uiState = uiState,
@@ -227,11 +227,8 @@ fun BudgetingScreen(
     }
 }
 
-/**
- * Planning page header - compact, no month/date label.
- */
 @Composable
-private fun PlanningHeader() {
+private fun BudgetingHeader() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -241,7 +238,7 @@ private fun PlanningHeader() {
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
-            text = "Planning",
+            text = "Budgeting",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
