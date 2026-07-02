@@ -113,4 +113,68 @@ interface ContributionDao {
 
     @Query("DELETE FROM contributions WHERE goalId = :goalId")
     suspend fun deleteContributionsByGoal(goalId: String)
+
+    // ── Allocation Queries ────────────────────────────────────────────────────
+
+    /**
+     * Get total amount allocated from a specific account to a specific goal.
+     * This is the net contribution (including withdrawals).
+     */
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0.0)
+        FROM contributions
+        WHERE accountId = :accountId AND goalId = :goalId
+    """)
+    suspend fun getAllocatedFromAccountToGoal(accountId: String, goalId: String): Double
+
+    /**
+     * Get total allocated from an account to all goals.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0.0)
+        FROM contributions
+        WHERE accountId = :accountId AND amount > 0
+    """)
+    suspend fun getTotalAllocatedFromAccount(accountId: String): Double
+
+    /**
+     * Get total allocated from an account to all goals as Flow.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0.0)
+        FROM contributions
+        WHERE accountId = :accountId AND amount > 0
+    """)
+    fun getTotalAllocatedFromAccountFlow(accountId: String): Flow<Double>
+
+    /**
+     * Get allocation summary per goal for a specific account.
+     * Returns (goalId, totalAllocated) pairs.
+     */
+    @Query("""
+        SELECT goalId, COALESCE(SUM(amount), 0.0) as total
+        FROM contributions
+        WHERE accountId = :accountId AND amount > 0
+        GROUP BY goalId
+    """)
+    suspend fun getGoalAllocationsFromAccount(accountId: String): List<GoalAllocation>
+
+    /**
+     * Get all contributions from an account as Flow.
+     */
+    @Query("""
+        SELECT c.* FROM contributions c
+        INNER JOIN goals g ON c.goalId = g.id
+        WHERE c.accountId = :accountId
+        ORDER BY c.createdAt DESC
+    """)
+    fun getContributionsFromAccount(accountId: String): Flow<List<ContributionEntity>>
 }
+
+/**
+ * Data class for goal allocation summary from DAO query.
+ */
+data class GoalAllocation(
+    val goalId: String,
+    val total: Double
+)

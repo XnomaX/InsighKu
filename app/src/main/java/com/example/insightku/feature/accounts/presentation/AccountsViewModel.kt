@@ -7,6 +7,7 @@ import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.data.repository.AccountAllocationRepository
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +24,8 @@ class AccountsViewModel @Inject constructor(
     private val accountDao: AccountDao,
     private val transactionDao: TransactionDao,
     private val authRepository: AuthRepository,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val accountAllocationRepository: AccountAllocationRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AccountsUiState())
@@ -49,14 +51,19 @@ class AccountsViewModel @Inject constructor(
                 accountDao.getAllAccounts(),
                 accountDao.getTotalNetWorth(),
                 accountDao.getTotalAssets(),
-                accountDao.getTotalLiabilities()
-            ) { accounts, netWorth, assets, liabilities ->
+                accountDao.getTotalLiabilities(),
+                accountAllocationRepository.getAllAccountAllocations()
+            ) { accounts, netWorth, assets, liabilities, allocations ->
+                // Create allocation map by account ID
+                val allocationMap = allocations.associateBy { it.account.id }
+
                 AccountsUiState(
                     isLoading = false,
                     accounts = accounts,
                     totalNetWorth = netWorth ?: 0.0,
                     totalAssets = assets ?: 0.0,
                     totalLiabilities = liabilities ?: 0.0,
+                    accountAllocations = allocationMap,
                     error = null
                 )
             }
