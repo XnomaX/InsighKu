@@ -1,5 +1,6 @@
 package com.example.insightku.feature.budgeting.presentation.state
 
+import com.example.insightku.core.domain.model.AccountAllocation
 import com.example.insightku.feature.budgeting.data.model.AllocationTriggerType
 import com.example.insightku.feature.budgeting.data.model.AllocationValueType
 import com.example.insightku.feature.budgeting.data.model.GoalAccountEntity
@@ -20,6 +21,8 @@ data class GoalsUiState(
     val pendingSuggestions: List<AllocationSuggestion> = emptyList(),
     val linkedAccounts: Map<String, List<GoalAccountEntity>> = emptyMap(),
     val accounts: List<com.example.insightku.core.data.model.Account> = emptyList(),
+    // Account allocation information - shows how each account's balance is distributed
+    val accountAllocations: Map<String, AccountAllocation> = emptyMap(),
     val goalSummary: GoalSummary? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -30,6 +33,12 @@ data class GoalsUiState(
     val pendingSuggestionsCount: Int get() = pendingSuggestions.size
     val hasGoals: Boolean get() = goals.isNotEmpty()
     val hasError: Boolean get() = error != null
+
+    // Convenience getters for common allocation queries
+    fun getAccountAllocation(accountId: String): AccountAllocation? = accountAllocations[accountId]
+
+    fun getAvailableCash(accountId: String): Double =
+        accountAllocations[accountId]?.availableCash ?: accounts.find { it.id == accountId }?.balance ?: 0.0
 
     companion object {
         fun initial() = GoalsUiState(isLoading = true)

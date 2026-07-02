@@ -519,6 +519,7 @@ private fun DialogHost(
                 ContributionBottomSheet(
                     goal = goal,
                     accounts = uiState.accounts,
+                    accountAllocations = uiState.accountAllocations,
                     initialAccountId = dialogState.selectedAccountId,
                     onDismiss = { onEvent(GoalsEvent.DismissDialog) },
                     onContribute = { accountId, amount ->
@@ -534,6 +535,7 @@ private fun DialogHost(
                 WithdrawalBottomSheet(
                     goal = goal,
                     accounts = uiState.accounts,
+                    accountAllocations = uiState.accountAllocations,
                     onDismiss = { onEvent(GoalsEvent.DismissDialog) },
                     onWithdraw = { accountId: String, amount: Double ->
                         onEvent(GoalsEvent.Withdraw(dialogState.goalId, accountId, amount))

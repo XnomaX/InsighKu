@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.domain.model.AccountAllocation
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -43,7 +44,7 @@ import java.util.Locale
  * - Goal summary header with icon and progress
  * - Quick amount chips
  * - Live preview showing before/after contribution
- * - Beautiful source account selector
+ * - Beautiful source account selector with available cash
  * - Smooth animations
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,6 +52,7 @@ import java.util.Locale
 fun ContributionBottomSheet(
     goal: Goal,
     accounts: List<Account>,
+    accountAllocations: Map<String, AccountAllocation> = emptyMap(),
     initialAccountId: String? = null,
     onDismiss: () -> Unit,
     onContribute: (accountId: String, amount: Double) -> Unit
@@ -66,8 +68,10 @@ fun ContributionBottomSheet(
     var showAccountPicker by remember { mutableStateOf(false) }
 
     val selectedAccount = accounts.find { it.id == selectedAccountId }
+    val selectedAllocation = selectedAccountId?.let { accountAllocations[it] }
+    val availableCash = selectedAllocation?.availableCash ?: selectedAccount?.balance ?: 0.0
     val parsedAmount = amount.toDoubleOrNull() ?: 0.0
-    val isValid = selectedAccountId != null && parsedAmount > 0
+    val isValid = selectedAccountId != null && parsedAmount > 0 && parsedAmount <= availableCash
 
     // Calculate preview values
     val newTotalAmount = goal.currentAmount + parsedAmount
@@ -152,6 +156,7 @@ fun ContributionBottomSheet(
             } else {
                 AccountSelectorPremium(
                     account = selectedAccount,
+                    allocation = selectedAllocation,
                     onClick = { showAccountPicker = true },
                     goalColor = goalColor
                 )
@@ -490,9 +495,14 @@ private fun LivePreviewCard(
 @Composable
 private fun AccountSelectorPremium(
     account: Account?,
+    allocation: AccountAllocation?,
     onClick: () -> Unit,
     goalColor: Color
 ) {
+    val availableCash = allocation?.availableCash ?: account?.balance ?: 0.0
+    val totalAllocated = allocation?.allocatedToGoals ?: 0.0
+    val hasAllocations = totalAllocated > 0
+
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -534,11 +544,26 @@ private fun AccountSelectorPremium(
                     color = AppPalette.textPrimary
                 )
                 if (account != null) {
-                    Text(
-                        text = "Balance: ${formatCurrencyIDR(account.balance.toLong())}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted
-                    )
+                    // Show available cash if there are allocations
+                    if (hasAllocations) {
+                        Text(
+                            text = "Available: ${formatCurrencyIDR(availableCash.toLong())}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = SuccessColor
+                        )
+                        Text(
+                            text = "In goals: ${formatCurrencyIDR(totalAllocated.toLong())}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppPalette.textMuted
+                        )
+                    } else {
+                        Text(
+                            text = "Balance: ${formatCurrencyIDR(account.balance.toLong())}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppPalette.textMuted
+                        )
+                    }
                 }
             }
 
@@ -737,6 +762,7 @@ private fun formatCurrencyIDR(amount: Long): String {
 fun WithdrawalBottomSheet(
     goal: Goal,
     accounts: List<Account>,
+    accountAllocations: Map<String, AccountAllocation> = emptyMap(),
     onDismiss: () -> Unit,
     onWithdraw: (accountId: String, amount: Double) -> Unit
 ) {
@@ -745,6 +771,8 @@ fun WithdrawalBottomSheet(
     var showAccountPicker by remember { mutableStateOf(false) }
 
     val selectedAccount = accounts.find { it.id == selectedAccountId }
+    val selectedAllocation = selectedAccountId?.let { accountAllocations[it] }
+    val availableCash = selectedAllocation?.availableCash ?: selectedAccount?.balance ?: 0.0
     val parsedAmount = amount.toDoubleOrNull() ?: 0.0
     val isValid = selectedAccountId != null && parsedAmount > 0 && parsedAmount <= goal.currentAmount
 
@@ -882,6 +910,7 @@ fun WithdrawalBottomSheet(
             } else {
                 AccountSelectorPremium(
                     account = selectedAccount,
+                    allocation = selectedAllocation,
                     onClick = { showAccountPicker = true },
                     goalColor = expenseRed
                 )

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.repository.AccountAllocationRepository
 import com.example.insightku.feature.budgeting.data.model.ContributionType
 import com.example.insightku.feature.budgeting.data.model.GoalAccountEntity
 import com.example.insightku.feature.budgeting.data.model.GoalStatus
@@ -24,10 +25,22 @@ import java.time.ZoneId
 import java.util.UUID
 import javax.inject.Inject
 
+/**
+ * Intermediate data class for combining flows with different types.
+ */
+private data class CoreGoalsData(
+    val goals: List<Goal>,
+    val dailyTarget: com.example.insightku.feature.budgeting.domain.model.DailyTarget,
+    val rules: List<AutoAllocationRule>,
+    val summary: GoalSummary,
+    val accounts: List<Account>
+)
+
 @HiltViewModel
 class GoalsViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
-    private val accountDao: AccountDao
+    private val accountDao: AccountDao,
+    private val accountAllocationRepository: AccountAllocationRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GoalsUiState.initial())
@@ -44,20 +57,29 @@ class GoalsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // Combine all data sources
-            combine(
+            // Combine first 5 flows
+            val coreFlow = combine(
                 goalRepository.getActiveGoals(),
                 goalRepository.getDailyTarget(),
                 goalRepository.getAutoAllocationRules(),
                 goalRepository.getGoalsSummary(),
                 accountDao.getAllAccounts()
             ) { goals, dailyTarget, rules, summary, accounts ->
+                CoreGoalsData(goals, dailyTarget, rules, summary, accounts)
+            }
+
+            // Combine with allocations flow
+            coreFlow.combine(accountAllocationRepository.getAllAccountAllocations()) { core, allocations ->
+                // Create allocation map by account ID
+                val allocationMap = allocations.associateBy { it.account.id }
+
                 GoalsUiState(
-                    goals = goals,
-                    dailyTarget = dailyTarget,
-                    autoAllocationRules = rules,
-                    goalSummary = summary,
-                    accounts = accounts,
+                    goals = core.goals,
+                    dailyTarget = core.dailyTarget,
+                    autoAllocationRules = core.rules,
+                    goalSummary = core.summary,
+                    accounts = core.accounts,
+                    accountAllocations = allocationMap,
                     isLoading = false
                 )
             }.catch { e ->

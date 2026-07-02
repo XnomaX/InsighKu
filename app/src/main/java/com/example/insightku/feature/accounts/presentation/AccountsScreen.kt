@@ -61,10 +61,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.domain.model.AccountAllocation
+import com.example.insightku.core.domain.model.GoalAllocationDetail
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.LocalAccent
+import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.core.utils.CurrencyUtils
 
 @Composable
@@ -148,6 +151,7 @@ fun AccountsScreen(
         accountToView?.let { account ->
             AccountDetailSheet(
                 account = account,
+                allocation = uiState.getAllocation(account.id),
                 isOpen = true,
                 onDismiss = { accountToView = null },
                 onEdit = {
@@ -629,6 +633,7 @@ private fun EmptyAccountsState(
 @Composable
 private fun AccountDetailSheet(
     account: Account,
+    allocation: AccountAllocation?,
     isOpen: Boolean,
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
@@ -637,6 +642,7 @@ private fun AccountDetailSheet(
     if (!isOpen) return
 
     val accent = LocalAccent.current
+    val successGreen = com.example.insightku.core.ui.theme.SuccessColor
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val icon = when (account.type) {
@@ -759,6 +765,22 @@ private fun AccountDetailSheet(
                     .background(AppPalette.cardBorder)
             )
 
+            // ── Allocation Breakdown Section ─────────────────────────────────
+            if (allocation != null && allocation.hasAllocations) {
+                AllocationBreakdownSection(
+                    allocation = allocation,
+                    accountColor = accountColor
+                )
+
+                // Divider
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(AppPalette.cardBorder)
+                )
+            }
+
             // ── Details Section ────────────────────────────────────────────────
             Column(
                 modifier = Modifier
@@ -800,15 +822,6 @@ private fun AccountDetailSheet(
                         value = account.notes
                     )
                 }
-
-                // Latest Transaction
-                // NOTE: Transaction model has no accountId field. Once that field is added,
-                // wire up a latestTransaction parameter here to display real transaction data.
-                DetailRow(
-                    label = "Latest transaction",
-                    value = "No transactions yet",
-                    isPlaceholder = true
-                )
             }
 
             // Divider
@@ -904,6 +917,219 @@ private fun AccountDetailSheet(
             },
             onDismiss = { showDeleteConfirm = false }
         )
+    }
+}
+
+// ── Allocation Breakdown Section ───────────────────────────────────────────────
+
+@Composable
+private fun AllocationBreakdownSection(
+    allocation: AccountAllocation,
+    accountColor: Color
+) {
+    val successGreen = com.example.insightku.core.ui.theme.SuccessColor
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "ALLOCATION BREAKDOWN",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.5.sp,
+            color = AppPalette.textMuted
+        )
+
+        // Summary Cards Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Available Cash Card
+            AllocationSummaryCard(
+                title = "Available Cash",
+                amount = allocation.availableCash,
+                subtitle = "Can be spent freely",
+                color = successGreen,
+                modifier = Modifier.weight(1f)
+            )
+
+            // Allocated to Goals Card
+            AllocationSummaryCard(
+                title = "In Goals",
+                amount = allocation.allocatedToGoals,
+                subtitle = "Allocated to goals",
+                color = accountColor,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Goal Allocations List
+        if (allocation.goalAllocations.isNotEmpty()) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                allocation.goalAllocations.forEach { goalAllocation ->
+                    GoalAllocationItem(goalAllocation = goalAllocation)
+                }
+            }
+        }
+
+        // Allocation Progress Bar
+        if (allocation.allocationPercent > 0) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Total allocated",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppPalette.textMuted
+                    )
+                    Text(
+                        text = "${allocation.allocationPercent.toInt()}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppPalette.textPrimary
+                    )
+                }
+
+                // Progress bar
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(AppPalette.cardBorder)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth((allocation.allocationPercent / 100.0).toFloat().coerceIn(0f, 1f))
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(accountColor)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AllocationSummaryCard(
+    title: String,
+    amount: Double,
+    subtitle: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.cardElevated),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                color = AppPalette.textMuted
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = CurrencyUtils.formatAmount(amount, "IDR"),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = AppPalette.textMuted
+            )
+        }
+    }
+}
+
+@Composable
+private fun GoalAllocationItem(goalAllocation: GoalAllocationDetail) {
+    val goalColor = try {
+        Color(android.graphics.Color.parseColor(goalAllocation.goalColor))
+    } catch (e: Exception) {
+        LocalAccent.current
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+        border = BorderStroke(1.dp, goalColor.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Goal icon placeholder
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(goalColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Savings,
+                    contentDescription = null,
+                    tint = goalColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            // Goal info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = goalAllocation.goalName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppPalette.textPrimary
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "${goalAllocation.progressPercent.toInt()}% funded",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppPalette.textMuted
+                    )
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppPalette.textMuted
+                    )
+                    Text(
+                        text = CurrencyUtils.formatAmount(goalAllocation.allocatedAmount, "IDR"),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = goalColor
+                    )
+                }
+            }
+        }
     }
 }
 

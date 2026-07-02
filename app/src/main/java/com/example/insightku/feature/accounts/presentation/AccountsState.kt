@@ -2,6 +2,7 @@ package com.example.insightku.feature.accounts.presentation
 
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.domain.model.AccountAllocation
 
 /**
  * UI State for the Accounts screen.
@@ -12,8 +13,15 @@ data class AccountsUiState(
     val totalNetWorth: Double = 0.0,
     val totalAssets: Double = 0.0,
     val totalLiabilities: Double = 0.0,
+    // Account allocations map - key is accountId
+    val accountAllocations: Map<String, AccountAllocation> = emptyMap(),
     val error: String? = null
-)
+) {
+    /**
+     * Get allocation for a specific account.
+     */
+    fun getAllocation(accountId: String): AccountAllocation? = accountAllocations[accountId]
+}
 
 /**
  * UI State for the Add Account screen.
