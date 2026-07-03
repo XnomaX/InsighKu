@@ -920,8 +920,7 @@ private fun AccountDetailSheet(
     }
 }
 
-// ── Allocation Breakdown Section ───────────────────────────────────────────────
-
+// Allocation Breakdown Section - Detailed view of all allocations
 @Composable
 private fun AllocationBreakdownSection(
     allocation: AccountAllocation,
@@ -944,194 +943,150 @@ private fun AllocationBreakdownSection(
             color = AppPalette.textMuted
         )
 
-        // Summary Cards Row
+        // Current Balance
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Available Cash Card
-            AllocationSummaryCard(
-                title = "Available Cash",
-                amount = allocation.availableCash,
-                subtitle = "Can be spent freely",
-                color = successGreen,
-                modifier = Modifier.weight(1f)
+            Text(
+                text = "Current Balance",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppPalette.textMuted
             )
-
-            // Allocated to Goals Card
-            AllocationSummaryCard(
-                title = "In Goals",
-                amount = allocation.allocatedToGoals,
-                subtitle = "Allocated to goals",
-                color = accountColor,
-                modifier = Modifier.weight(1f)
+            Text(
+                text = CurrencyUtils.formatAmount(allocation.account.balance, "IDR"),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppPalette.textPrimary
             )
         }
 
-        // Goal Allocations List
+        // Goal Allocations
         if (allocation.goalAllocations.isNotEmpty()) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                allocation.goalAllocations.forEach { goalAllocation ->
-                    GoalAllocationItem(goalAllocation = goalAllocation)
-                }
-            }
+            AllocationListSection(
+                title = "Goal Allocations",
+                allocations = allocation.goalAllocations.map { AllocationItemData(it.goalName, it.allocatedAmount, it.goalColor) },
+                accentColor = accountColor
+            )
         }
 
-        // Allocation Progress Bar
-        if (allocation.allocationPercent > 0) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        // Budget Allocations
+        if (allocation.budgetAllocations.isNotEmpty()) {
+            AllocationListSection(
+                title = "Budget Allocations",
+                allocations = allocation.budgetAllocations.map { AllocationItemData(it.budgetName, it.allocatedAmount, null) },
+                accentColor = accountColor
+            )
+        }
+
+        // Available Cash
+        if (allocation.availableCash > 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Total allocated",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted
-                    )
-                    Text(
-                        text = "${allocation.allocationPercent.toInt()}%",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppPalette.textPrimary
-                    )
-                }
-
-                // Progress bar
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(AppPalette.cardBorder)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth((allocation.allocationPercent / 100.0).toFloat().coerceIn(0f, 1f))
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(accountColor)
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(successGreen)
+                    )
+                    Text(
+                        text = "Available Cash",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = AppPalette.textPrimary
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AllocationSummaryCard(
-    title: String,
-    amount: Double,
-    subtitle: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.cardElevated),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                color = AppPalette.textMuted
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = CurrencyUtils.formatAmount(amount, "IDR"),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.labelSmall,
-                color = AppPalette.textMuted
-            )
-        }
-    }
-}
-
-@Composable
-private fun GoalAllocationItem(goalAllocation: GoalAllocationDetail) {
-    val goalColor = try {
-        Color(android.graphics.Color.parseColor(goalAllocation.goalColor))
-    } catch (e: Exception) {
-        LocalAccent.current
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        border = BorderStroke(1.dp, goalColor.copy(alpha = 0.3f))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Goal icon placeholder
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(goalColor.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Savings,
-                    contentDescription = null,
-                    tint = goalColor,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            // Goal info
-            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = goalAllocation.goalName,
+                    text = CurrencyUtils.formatAmount(allocation.availableCash, "IDR"),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppPalette.textPrimary
+                    fontWeight = FontWeight.Bold,
+                    color = successGreen
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = "${goalAllocation.progressPercent.toInt()}% funded",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppPalette.textMuted
-                    )
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppPalette.textMuted
-                    )
-                    Text(
-                        text = CurrencyUtils.formatAmount(goalAllocation.allocatedAmount, "IDR"),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = goalColor
-                    )
-                }
             }
         }
     }
 }
+
+private data class AllocationItemData(
+    val name: String,
+    val amount: Double,
+    val colorHex: String?
+)
+
+@Composable
+private fun AllocationListSection(
+    title: String,
+    allocations: List<AllocationItemData>,
+    accentColor: Color
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = AppPalette.cardElevated)
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                allocations.forEach { item ->
+                    val itemColor = try {
+                        if (item.colorHex != null) {
+                            Color(android.graphics.Color.parseColor(item.colorHex))
+                        } else accentColor
+                    } catch (e: Exception) {
+                        accentColor
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(itemColor)
+                            )
+                            Text(
+                                text = item.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = AppPalette.textPrimary
+                            )
+                        }
+                        Text(
+                            text = CurrencyUtils.formatAmount(item.amount, "IDR"),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = AppPalette.textMuted
+                        )
+                    }
+                }
+            }
+        }
+    }
+    }
 
 // ── Detail Row ─────────────────────────────────────────────────────────────────
 

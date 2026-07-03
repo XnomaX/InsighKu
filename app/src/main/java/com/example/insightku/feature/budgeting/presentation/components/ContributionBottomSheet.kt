@@ -219,6 +219,45 @@ fun ContributionBottomSheet(
                 }
             }
 
+
+            // Insufficient Available Cash warning
+            val insufficientFunds = parsedAmount > availableCash && parsedAmount > 0
+            if (insufficientFunds) {
+                val shortfall = parsedAmount - availableCash
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                    border = BorderStroke(1.dp, Color(0xFFFF9800))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFFE65100),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Insufficient Available Cash",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFFE65100)
+                            )
+                            Text(
+                                text = "You need " + formatCurrencyIDR(shortfall.toLong()) + " more to complete this contribution.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF795548)
+                            )
+                        }
+                    }
+                }
+            }
+
             // ── Primary CTA Button ──────────────────────────────────────────────
             Spacer(modifier = Modifier.height(8.dp))
 

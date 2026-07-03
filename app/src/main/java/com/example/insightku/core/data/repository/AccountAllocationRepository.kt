@@ -87,12 +87,28 @@ class AccountAllocationRepository @Inject constructor(
             contributionDao.getTotalAllocatedFromAccountFlow(accountId)
         ) { accounts, totalAllocated ->
             val account = accounts.find { it.id == accountId }
-            account?.let {
+            account?.let { acc ->
+                // Fetch goal allocations (suspend operation wrapped in flow)
+                val goalAllocList = contributionDao.getGoalAllocationsFromAccount(accountId)
+                val goalDetails = goalAllocList.mapNotNull { ga ->
+                    val goalEntity = goalDao.getGoalById(ga.goalId) ?: return@mapNotNull null
+                    GoalAllocationDetail(
+                        goalId = ga.goalId,
+                        goalName = goalEntity.name,
+                        goalIcon = goalEntity.iconName,
+                        goalColor = goalEntity.color,
+                        allocatedAmount = ga.total,
+                        targetAmount = goalEntity.targetAmount,
+                        progressPercent = if (goalEntity.targetAmount > 0) {
+                            (ga.total / goalEntity.targetAmount * 100).coerceIn(0.0, 100.0)
+                        } else 0.0
+                    )
+                }
                 AccountAllocation(
-                    account = it,
+                    account = acc,
                     allocatedToGoals = totalAllocated,
                     allocatedToBudgets = 0.0,
-                    goalAllocations = emptyList(), // Simplified for Flow
+                    goalAllocations = goalDetails,
                     budgetAllocations = emptyList()
                 )
             }
@@ -108,11 +124,26 @@ class AccountAllocationRepository @Inject constructor(
         return accountDao.getAllAccounts().map { accounts ->
             accounts.mapNotNull { account ->
                 val totalAllocated = contributionDao.getTotalAllocatedFromAccount(account.id)
+                val goalAllocList = contributionDao.getGoalAllocationsFromAccount(account.id)
+                val goalDetails = goalAllocList.mapNotNull { ga ->
+                    val goalEntity = goalDao.getGoalById(ga.goalId) ?: return@mapNotNull null
+                    GoalAllocationDetail(
+                        goalId = ga.goalId,
+                        goalName = goalEntity.name,
+                        goalIcon = goalEntity.iconName,
+                        goalColor = goalEntity.color,
+                        allocatedAmount = ga.total,
+                        targetAmount = goalEntity.targetAmount,
+                        progressPercent = if (goalEntity.targetAmount > 0) {
+                            (ga.total / goalEntity.targetAmount * 100).coerceIn(0.0, 100.0)
+                        } else 0.0
+                    )
+                }
                 AccountAllocation(
                     account = account,
                     allocatedToGoals = totalAllocated,
                     allocatedToBudgets = 0.0,
-                    goalAllocations = emptyList(),
+                    goalAllocations = goalDetails,
                     budgetAllocations = emptyList()
                 )
             }
