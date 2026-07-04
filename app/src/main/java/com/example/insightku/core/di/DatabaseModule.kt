@@ -4,6 +4,7 @@ package com.example.insightku.core.di
 import android.content.Context
 import androidx.room.Room
 import com.example.insightku.core.data.local.dao.AccountDao
+import com.example.insightku.core.data.local.dao.BudgetAllocationDao
 import com.example.insightku.core.data.local.dao.BudgetDao
 import com.example.insightku.core.data.local.dao.CategoryDao
 import com.example.insightku.core.data.local.dao.DraftTransactionDao
@@ -64,6 +65,11 @@ object DatabaseModule {
     @Provides
     fun provideBudgetDao(database: InsightKuDatabase): BudgetDao {
         return database.budgetDao()
+    }
+
+    @Provides
+    fun provideBudgetAllocationDao(database: InsightKuDatabase): BudgetAllocationDao {
+        return database.budgetAllocationDao()
     }
 
     @Provides

@@ -1,6 +1,8 @@
 package com.example.insightku.core.data.repository
 
 import com.example.insightku.core.data.local.dao.AccountDao
+import com.example.insightku.core.data.local.dao.BudgetAllocationDao
+import com.example.insightku.core.data.local.dao.BudgetDao
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.domain.model.AccountAllocation
 import com.example.insightku.core.domain.model.BudgetAllocationDetail
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,8 +33,66 @@ import javax.inject.Singleton
 class AccountAllocationRepository @Inject constructor(
     private val accountDao: AccountDao,
     private val goalDao: com.example.insightku.feature.budgeting.data.local.dao.GoalDao,
-    private val contributionDao: ContributionDao
+    private val contributionDao: ContributionDao,
+    private val budgetDao: BudgetDao,
+    private val budgetAllocationDao: BudgetAllocationDao
 ) {
+
+    /**
+     * Get the current budget period boundaries (monthly).
+     * Returns Pair of (periodStart, periodEnd) timestamps.
+     */
+    private fun getCurrentBudgetPeriod(): Pair<Long, Long> {
+        val calendar = Calendar.getInstance()
+
+        // Start of current month
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val periodStart = calendar.timeInMillis
+
+        // End of current month
+        calendar.add(Calendar.MONTH, 1)
+        calendar.add(Calendar.MILLISECOND, -1)
+        val periodEnd = calendar.timeInMillis
+
+        return Pair(periodStart, periodEnd)
+    }
+
+    /**
+     * Get budget allocation details for an account.
+     */
+    private suspend fun getBudgetAllocationDetails(accountId: String): List<BudgetAllocationDetail> {
+        val (periodStart, periodEnd) = getCurrentBudgetPeriod()
+
+        val allocations = budgetAllocationDao.getBudgetAllocationsByCategoryFlow(
+            accountId, periodStart, periodEnd
+        ).first()
+
+        return allocations.mapNotNull { allocation ->
+            // Get the budget for this category
+            val budgets = budgetDao.getBudgetsByCategory(allocation.categoryId).first()
+            val budget = budgets.firstOrNull { it.isActive && it.startDate <= periodEnd && it.endDate >= periodStart }
+
+            budget?.let {
+                BudgetAllocationDetail(
+                    budgetId = it.id,
+                    budgetName = it.name,
+                    allocatedAmount = allocation.totalSpent,
+                    budgetLimit = it.amount,
+                    budgetIcon = allocation.categoryIcon,
+                    budgetColor = allocation.categoryColor,
+                    usagePercent = if (it.amount > 0) {
+                        (allocation.totalSpent / it.amount * 100).coerceIn(0.0, 100.0)
+                    } else 0.0,
+                    remaining = (it.amount - allocation.totalSpent).coerceAtLeast(0.0),
+                    isOverBudget = allocation.totalSpent > it.amount
+                )
+            }
+        }
+    }
 
     /**
      * Get complete allocation information for an account.
@@ -62,16 +123,16 @@ class AccountAllocationRepository @Inject constructor(
             )
         }
 
-        // For now, budget allocations are not tracked in this repository
-        // They'll be added when the Budget feature is refactored
-        val budgetAllocations = emptyList<BudgetAllocationDetail>()
+        // Get budget allocation details
+        val budgetDetails = getBudgetAllocationDetails(accountId)
+        val totalAllocatedToBudgets = budgetDetails.sumOf { it.allocatedAmount }
 
         return AccountAllocation(
             account = account,
             allocatedToGoals = totalAllocatedToGoals,
-            allocatedToBudgets = 0.0, // TODO: Add budget tracking
+            allocatedToBudgets = totalAllocatedToBudgets,
             goalAllocations = goalDetails,
-            budgetAllocations = budgetAllocations
+            budgetAllocations = budgetDetails
         )
     }
 
@@ -82,10 +143,13 @@ class AccountAllocationRepository @Inject constructor(
      * @return Flow of AccountAllocation, or empty flow if account not found
      */
     fun getAccountAllocationFlow(accountId: String): Flow<AccountAllocation?> {
+        val (periodStart, periodEnd) = getCurrentBudgetPeriod()
+
         return combine(
             accountDao.getAllAccounts(),
-            contributionDao.getTotalAllocatedFromAccountFlow(accountId)
-        ) { accounts, totalAllocated ->
+            contributionDao.getTotalAllocatedFromAccountFlow(accountId),
+            budgetAllocationDao.getTotalBudgetSpentFromAccountFlow(accountId, periodStart, periodEnd)
+        ) { accounts, totalAllocatedToGoals, totalAllocatedToBudgets ->
             val account = accounts.find { it.id == accountId }
             account?.let { acc ->
                 // Fetch goal allocations (suspend operation wrapped in flow)
@@ -104,12 +168,37 @@ class AccountAllocationRepository @Inject constructor(
                         } else 0.0
                     )
                 }
+
+                // Get budget allocations
+                val budgetAllocList = budgetAllocationDao.getBudgetAllocationsByCategoryFlow(
+                    accountId, periodStart, periodEnd
+                ).first()
+                val budgetDetails = budgetAllocList.mapNotNull { allocation ->
+                    val budgets = budgetDao.getBudgetsByCategory(allocation.categoryId).first()
+                    val budget = budgets.firstOrNull { it.isActive && it.startDate <= periodEnd && it.endDate >= periodStart }
+                    budget?.let {
+                        BudgetAllocationDetail(
+                            budgetId = it.id,
+                            budgetName = it.name,
+                            allocatedAmount = allocation.totalSpent,
+                            budgetLimit = it.amount,
+                            budgetIcon = allocation.categoryIcon,
+                            budgetColor = allocation.categoryColor,
+                            usagePercent = if (it.amount > 0) {
+                                (allocation.totalSpent / it.amount * 100).coerceIn(0.0, 100.0)
+                            } else 0.0,
+                            remaining = (it.amount - allocation.totalSpent).coerceAtLeast(0.0),
+                            isOverBudget = allocation.totalSpent > it.amount
+                        )
+                    }
+                }
+
                 AccountAllocation(
                     account = acc,
-                    allocatedToGoals = totalAllocated,
-                    allocatedToBudgets = 0.0,
+                    allocatedToGoals = totalAllocatedToGoals,
+                    allocatedToBudgets = totalAllocatedToBudgets,
                     goalAllocations = goalDetails,
-                    budgetAllocations = emptyList()
+                    budgetAllocations = budgetDetails
                 )
             }
         }
@@ -121,9 +210,14 @@ class AccountAllocationRepository @Inject constructor(
      * @return Flow of list of AccountAllocation
      */
     fun getAllAccountAllocations(): Flow<List<AccountAllocation>> {
-        return accountDao.getAllAccounts().map { accounts ->
+        val (periodStart, periodEnd) = getCurrentBudgetPeriod()
+
+        return combine(
+            accountDao.getAllAccounts(),
+            contributionDao.getTotalAllocatedFromAccountFlow("")
+        ) { accounts, _ ->
             accounts.mapNotNull { account ->
-                val totalAllocated = contributionDao.getTotalAllocatedFromAccount(account.id)
+                val totalAllocatedToGoals = contributionDao.getTotalAllocatedFromAccount(account.id)
                 val goalAllocList = contributionDao.getGoalAllocationsFromAccount(account.id)
                 val goalDetails = goalAllocList.mapNotNull { ga ->
                     val goalEntity = goalDao.getGoalById(ga.goalId) ?: return@mapNotNull null
@@ -139,12 +233,38 @@ class AccountAllocationRepository @Inject constructor(
                         } else 0.0
                     )
                 }
+
+                // Get budget allocations
+                val budgetAllocList = budgetAllocationDao.getBudgetAllocationsByCategoryFlow(
+                    account.id, periodStart, periodEnd
+                ).first()
+                val budgetDetails = budgetAllocList.mapNotNull { allocation ->
+                    val budgets = budgetDao.getBudgetsByCategory(allocation.categoryId).first()
+                    val budget = budgets.firstOrNull { it.isActive && it.startDate <= periodEnd && it.endDate >= periodStart }
+                    budget?.let {
+                        BudgetAllocationDetail(
+                            budgetId = it.id,
+                            budgetName = it.name,
+                            allocatedAmount = allocation.totalSpent,
+                            budgetLimit = it.amount,
+                            budgetIcon = allocation.categoryIcon,
+                            budgetColor = allocation.categoryColor,
+                            usagePercent = if (it.amount > 0) {
+                                (allocation.totalSpent / it.amount * 100).coerceIn(0.0, 100.0)
+                            } else 0.0,
+                            remaining = (it.amount - allocation.totalSpent).coerceAtLeast(0.0),
+                            isOverBudget = allocation.totalSpent > it.amount
+                        )
+                    }
+                }
+                val totalAllocatedToBudgets = budgetDetails.sumOf { it.allocatedAmount }
+
                 AccountAllocation(
                     account = account,
-                    allocatedToGoals = totalAllocated,
-                    allocatedToBudgets = 0.0,
+                    allocatedToGoals = totalAllocatedToGoals,
+                    allocatedToBudgets = totalAllocatedToBudgets,
                     goalAllocations = goalDetails,
-                    budgetAllocations = emptyList()
+                    budgetAllocations = budgetDetails
                 )
             }
         }

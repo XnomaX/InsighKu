@@ -108,6 +108,7 @@ import com.example.insightku.core.ui.theme.formatCurrency
 import com.example.insightku.feature.budgeting.presentation.BudgetingViewModel
 import com.example.insightku.feature.budgeting.presentation.event.GoalsEvent
 import com.example.insightku.feature.budgeting.presentation.screen.GoalsScreen
+import com.example.insightku.core.navigation.Route
 import com.example.insightku.feature.budgeting.presentation.viewmodel.GoalsViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -123,7 +124,8 @@ private enum class PlanningTab(val title: String, val icon: ImageVector) {
 
 @Composable
 fun BudgetingScreen(
-    viewModel: BudgetingViewModel = hiltViewModel()
+    viewModel: BudgetingViewModel = hiltViewModel(),
+    onNavigateToGoalDetail: ((String) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val tabs = PlanningTab.entries
@@ -219,7 +221,7 @@ fun BudgetingScreen(
                     }
                 }
                 PlanningTab.GOALS -> {
-                    GoalsScreen(viewModel = goalsViewModel)
+                    GoalsScreen(viewModel = goalsViewModel, onNavigateToGoalDetail = onNavigateToGoalDetail)
                 }
                 null -> {}
             }

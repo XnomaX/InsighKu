@@ -69,10 +69,13 @@ import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.core.utils.CurrencyUtils
+import com.example.insightku.feature.accounts.presentation.components.AllocationItemCard
 
 @Composable
 fun AccountsScreen(
     onNavigateToAddAccount: () -> Unit = {},
+    onNavigateToGoalDetail: (String) -> Unit = {},
+    onNavigateToBudgetDetail: (String) -> Unit = {},
     viewModel: AccountsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -161,7 +164,9 @@ fun AccountsScreen(
                 onDelete = {
                     viewModel.onEvent(AccountsEvent.DeleteAccount(account.id, account.name))
                     accountToView = null
-                }
+                },
+                onGoalClick = onNavigateToGoalDetail,
+                onBudgetClick = onNavigateToBudgetDetail
             )
         }
     }
@@ -637,7 +642,9 @@ private fun AccountDetailSheet(
     isOpen: Boolean,
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onGoalClick: (String) -> Unit = {},
+    onBudgetClick: (String) -> Unit = {}
 ) {
     if (!isOpen) return
 
@@ -769,7 +776,9 @@ private fun AccountDetailSheet(
             if (allocation != null && allocation.hasAllocations) {
                 AllocationBreakdownSection(
                     allocation = allocation,
-                    accountColor = accountColor
+                    accountColor = accountColor,
+                    onGoalClick = onGoalClick,
+                    onBudgetClick = onBudgetClick
                 )
 
                 // Divider
@@ -924,7 +933,9 @@ private fun AccountDetailSheet(
 @Composable
 private fun AllocationBreakdownSection(
     allocation: AccountAllocation,
-    accountColor: Color
+    accountColor: Color,
+    onGoalClick: (String) -> Unit = {},
+    onBudgetClick: (String) -> Unit = {}
 ) {
     val successGreen = com.example.insightku.core.ui.theme.SuccessColor
 
@@ -961,22 +972,65 @@ private fun AllocationBreakdownSection(
             )
         }
 
-        // Goal Allocations
+        // Goal Allocations with progress bars
         if (allocation.goalAllocations.isNotEmpty()) {
-            AllocationListSection(
-                title = "Goal Allocations",
-                allocations = allocation.goalAllocations.map { AllocationItemData(it.goalName, it.allocatedAmount, it.goalColor) },
-                accentColor = accountColor
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Goal Allocations",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppPalette.textMuted
+                )
+
+                allocation.goalAllocations.forEach { goal ->
+                    val goalColor = try {
+                        Color(android.graphics.Color.parseColor(goal.goalColor))
+                    } catch (e: Exception) {
+                        accountColor
+                    }
+
+                    AllocationItemCard(
+                        name = goal.goalName,
+                        amount = goal.allocatedAmount,
+                        progressPercent = goal.progressPercent,
+                        color = goalColor,
+                        icon = goal.goalIcon,
+                        targetAmount = goal.targetAmount,
+                        onClick = { onGoalClick(goal.goalId) }
+                    )
+                }
+            }
         }
 
-        // Budget Allocations
+        // Budget Allocations with progress bars
         if (allocation.budgetAllocations.isNotEmpty()) {
-            AllocationListSection(
-                title = "Budget Allocations",
-                allocations = allocation.budgetAllocations.map { AllocationItemData(it.budgetName, it.allocatedAmount, null) },
-                accentColor = accountColor
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Budget Allocations",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppPalette.textMuted
+                )
+
+                allocation.budgetAllocations.forEach { budget ->
+                    val budgetColor = try {
+                        budget.budgetColor?.let { Color(android.graphics.Color.parseColor(it)) }
+                    } catch (e: Exception) {
+                        null
+                    } ?: accountColor
+
+                    AllocationItemCard(
+                        name = budget.budgetName,
+                        amount = budget.allocatedAmount,
+                        progressPercent = budget.usagePercent,
+                        color = budgetColor,
+                        icon = budget.budgetIcon,
+                        targetAmount = budget.budgetLimit,
+                        isOverBudget = budget.isOverBudget,
+                        onClick = { onBudgetClick(budget.budgetId) }
+                    )
+                }
+            }
         }
 
         // Available Cash
@@ -1013,80 +1067,6 @@ private fun AllocationBreakdownSection(
         }
     }
 }
-
-private data class AllocationItemData(
-    val name: String,
-    val amount: Double,
-    val colorHex: String?
-)
-
-@Composable
-private fun AllocationListSection(
-    title: String,
-    allocations: List<AllocationItemData>,
-    accentColor: Color
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = AppPalette.textMuted
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = AppPalette.cardElevated)
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                allocations.forEach { item ->
-                    val itemColor = try {
-                        if (item.colorHex != null) {
-                            Color(android.graphics.Color.parseColor(item.colorHex))
-                        } else accentColor
-                    } catch (e: Exception) {
-                        accentColor
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(itemColor)
-                            )
-                            Text(
-                                text = item.name,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = AppPalette.textPrimary
-                            )
-                        }
-                        Text(
-                            text = CurrencyUtils.formatAmount(item.amount, "IDR"),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = AppPalette.textMuted
-                        )
-                    }
-                }
-            }
-        }
-    }
-    }
 
 // ── Detail Row ─────────────────────────────────────────────────────────────────
 

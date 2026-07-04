@@ -1,0 +1,51 @@
+package com.example.insightku.feature.budgeting.presentation.event
+
+/**
+ * User events for the Goal Detail screen.
+ */
+sealed class GoalDetailEvent {
+
+    // ── Navigation & Lifecycle ───────────────────────────────────────────────────
+
+    data class LoadGoal(val goalId: String) : GoalDetailEvent()
+
+    data object RefreshGoal : GoalDetailEvent()
+
+    data object ClearError : GoalDetailEvent()
+
+    data object ClearSnackbar : GoalDetailEvent()
+
+    // ── Goal Actions ───────────────────────────────────────────────────────────
+
+    data object EditGoal : GoalDetailEvent()
+
+    data object ArchiveGoal : GoalDetailEvent()
+
+    data object DeleteGoal : GoalDetailEvent()
+
+    data object ConfirmArchive : GoalDetailEvent()
+
+    data object ConfirmDelete : GoalDetailEvent()
+
+    // ── Contribution Actions ────────────────────────────────────────────────────
+
+    data object ShowContributeDialog : GoalDetailEvent()
+
+    data object ShowWithdrawDialog : GoalDetailEvent()
+
+    data object DismissDialog : GoalDetailEvent()
+
+    data class SelectAccount(val accountId: String) : GoalDetailEvent()
+
+    data class UpdateAmount(val amount: String) : GoalDetailEvent()
+
+    data class UpdateNotes(val notes: String) : GoalDetailEvent()
+
+    data object SubmitContribution : GoalDetailEvent()
+
+    data object SubmitWithdrawal : GoalDetailEvent()
+
+    // ── Pagination ──────────────────────────────────────────────────────────────
+
+    data object LoadMoreContributions : GoalDetailEvent()
+}
