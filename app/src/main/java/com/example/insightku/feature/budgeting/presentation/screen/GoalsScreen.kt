@@ -39,10 +39,22 @@ import java.util.Locale
  */
 @Composable
 fun GoalsScreen(
-    viewModel: GoalsViewModel = hiltViewModel()
+    viewModel: GoalsViewModel = hiltViewModel(),
+    onNavigateToGoalDetail: ((String) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Handle navigation to Goal Detail
+    LaunchedEffect(uiState.dialogState) {
+        if (uiState.dialogState is GoalsDialogState.GoalDetail) {
+            val goalId = (uiState.dialogState as GoalsDialogState.GoalDetail).goalId
+            if (onNavigateToGoalDetail != null) {
+                onNavigateToGoalDetail(goalId)
+                viewModel.onEvent(GoalsEvent.DismissDialog)
+            }
+        }
+    }
 
     Box(
         modifier = Modifier

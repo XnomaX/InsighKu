@@ -59,6 +59,8 @@ import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.home.presentation.DashboardEvent
 import com.example.insightku.core.data.local.dao.AccountDao
+import com.example.insightku.feature.budgeting.presentation.screen.BudgetDetailScreenPlaceholder
+import com.example.insightku.feature.budgeting.presentation.screen.GoalDetailScreen
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -214,6 +216,9 @@ fun MainScreen(
                 rootNavController             = rootNavController,
                 dashboardViewModel            = dashboardViewModel,
                 budgetingViewModel            = budgetingViewModel,
+                onNavigateToGoalDetail = { goalId ->
+                    navController.navigate(Route.goalDetailRoute(goalId))
+                },
                 onShowAddTransaction          = { showAddTransactionDialog = true },
                 onShowAddTransactionForStreak = {
                     showAddTransactionDialog = true
@@ -505,6 +510,7 @@ private fun MainNavHost(
     rootNavController: NavHostController,
     dashboardViewModel: DashboardViewModel,
     budgetingViewModel: BudgetingViewModel,
+    onNavigateToGoalDetail: (String) -> Unit = {},
     onShowAddTransaction: () -> Unit = {},
     onShowAddTransactionForStreak: () -> Unit = {},
     onOpenDraft: (DraftTransaction) -> Unit = {},
@@ -553,11 +559,22 @@ private fun MainNavHost(
             )
         }
         composable(Route.ANALYSIS) { AnalyticsScreen() }
-        composable(Route.BUDGETING) { BudgetingScreen(viewModel = budgetingViewModel) }
+        composable(Route.BUDGETING) {
+            BudgetingScreen(
+                budgetingViewModel = budgetingViewModel,
+                onNavigateToGoalDetail = onNavigateToGoalDetail
+            )
+        }
         composable(Route.ACCOUNTS) {
             val accountsViewModel: AccountsViewModel = hiltViewModel()
             AccountsScreen(
-                viewModel = accountsViewModel
+                viewModel = accountsViewModel,
+                onNavigateToGoalDetail = { goalId ->
+                    navController.navigate(Route.goalDetailRoute(goalId))
+                },
+                onNavigateToBudgetDetail = { budgetId ->
+                    navController.navigate(Route.budgetDetailRoute(budgetId))
+                }
             )
         }
         composable(Route.SETTINGS) {
@@ -583,6 +600,30 @@ private fun MainNavHost(
         composable(Route.AUTO_DETECTION_ONBOARDING) {
             com.example.insightku.feature.settings.presentation.AutoDetectionOnboardingScreen(
                 onFinish = { navController.popBackStack() }
+            )
+        }
+
+        // ── Goal Detail Route ──────────────────────────────────────────────────
+        composable(Route.GOAL_DETAIL) { backStackEntry ->
+            val goalId = backStackEntry.arguments?.getString("goalId") ?: return@composable
+            GoalDetailScreen(
+                goalId = goalId,
+                onBack = { navController.popBackStack() },
+                onNavigateToEditGoal = { id ->
+                    // Navigate to edit - will be implemented when EditGoalDialog is available
+                    navController.popBackStack()
+                },
+                onGoalArchived = { navController.popBackStack() },
+                onGoalDeleted = { navController.popBackStack() }
+            )
+        }
+
+        // ── Budget Detail Route ───────────────────────────────────────────────
+        composable(Route.BUDGET_DETAIL) { backStackEntry ->
+            val budgetId = backStackEntry.arguments?.getString("budgetId") ?: return@composable
+            BudgetDetailScreenPlaceholder(
+                budgetId = budgetId,
+                onBack = { navController.popBackStack() }
             )
         }
     }

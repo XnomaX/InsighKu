@@ -23,6 +23,10 @@ object Route {
     const val BANK_WHITELIST = "bank_whitelist"
     const val AUTO_DETECTION_ONBOARDING = "auto_detection_onboarding"
 
+    // Detail routes for allocations
+    const val GOAL_DETAIL = "goal_detail/{goalId}"
+    const val BUDGET_DETAIL = "budget_detail/{budgetId}"
+
     // Add transaction pre-filled from notification deep link
     const val ADD_FROM_NOTIFICATION = "add_from_notification?amount={amount}&title={title}&bankName={bankName}&type={type}&timestamp={timestamp}&description={description}"
 
@@ -32,4 +36,8 @@ object Route {
     // Deep link scheme
     const val DEEP_LINK_SCHEME = "insightku"
     const val DEEP_LINK_ADD_TRANSACTION = "insightku://add-transaction"
+
+    // Helper functions for detail routes
+    fun goalDetailRoute(goalId: String) = "goal_detail/$goalId"
+    fun budgetDetailRoute(budgetId: String) = "budget_detail/$budgetId"
 }

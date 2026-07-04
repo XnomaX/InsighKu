@@ -309,6 +309,9 @@ abstract class InsightKuDatabase : RoomDatabase() {
     abstract fun reservedBalanceDao(): com.example.insightku.feature.budgeting.data.local.dao.ReservedBalanceDao
     abstract fun autoAllocationRuleDao(): com.example.insightku.feature.budgeting.data.local.dao.AutoAllocationRuleDao
     abstract fun dailyTargetDao(): com.example.insightku.feature.budgeting.data.local.dao.DailyTargetDao
+
+    // Budget allocation DAOs
+    abstract fun budgetAllocationDao(): BudgetAllocationDao
 }
 
 

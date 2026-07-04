@@ -118,6 +118,12 @@ data class GoalAllocationDetail(
         get() = if (targetAmount > 0) {
             (allocatedAmount / targetAmount * 100).coerceIn(0.0, 100.0)
         } else 0.0
+
+    /**
+     * Progress as a fraction (0.0 to 1.0) for UI components
+     */
+    val progressFraction: Float
+        get() = (progressPercent / 100.0).toFloat().coerceIn(0f, 1f)
 }
 
 /**
@@ -127,23 +133,33 @@ data class GoalAllocationDetail(
  * @param budgetName The budget's name
  * @param allocatedAmount Total amount allocated to this budget from this account
  * @param budgetLimit The budget's limit
+ * @param budgetIcon The budget/category icon
+ * @param budgetColor The budget/category color
+ * @param usagePercent Usage percentage (0-100)
+ * @param remaining Remaining budget amount
+ * @param isOverBudget Whether spending exceeds the budget limit
  */
 data class BudgetAllocationDetail(
     val budgetId: String,
     val budgetName: String,
     val allocatedAmount: Double,
-    val budgetLimit: Double
+    val budgetLimit: Double,
+    val budgetIcon: String? = null,
+    val budgetColor: String? = null,
+    val usagePercent: Double = 0.0,
+    val remaining: Double = 0.0,
+    val isOverBudget: Boolean = false
 ) {
     /**
      * Remaining budget
      */
-    val remaining: Double
+    val remainingAmount: Double
         get() = (budgetLimit - allocatedAmount).coerceAtLeast(0.0)
 
     /**
      * Usage percentage (0-100)
      */
-    val usagePercent: Double
+    val usagePercentCalculated: Double
         get() = if (budgetLimit > 0) {
             (allocatedAmount / budgetLimit * 100).coerceIn(0.0, 100.0)
         } else 0.0
@@ -153,6 +169,15 @@ data class BudgetAllocationDetail(
      */
     val isExceeded: Boolean
         get() = allocatedAmount > budgetLimit
+
+    /**
+     * Progress as a fraction (0.0 to 1.0) for UI components
+     */
+    val progressFraction: Float
+        get() {
+            val percent = if (usagePercent > 0) usagePercent else usagePercentCalculated
+            return (percent / 100.0).toFloat().coerceIn(0f, 1f)
+        }
 }
 
 /**
