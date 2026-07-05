@@ -615,11 +615,12 @@ fun BudgetHealthCard(
     val soften = LocalComfortMode.current || tone == InsightTone.GENTLE
     val overColor = if (soften) Color(0xFFE57373) else ExpenseRed
     val warnColor = if (soften) Color(0xFFFFD699) else WarningYellow
+    val accent = LocalAccent.current
     val progressColor by animateColorAsState(
         targetValue = when {
             percentage >= 100.0 -> overColor
             percentage >= 70.0  -> warnColor
-            else                -> IncomeGreen
+            else                -> accent
         },
         animationSpec = tween(400),
         label = "healthColor"
@@ -630,153 +631,183 @@ fun BudgetHealthCard(
     val animatedProgress by animateFloatAsState(
         targetValue = if (animated) (percentage / 100.0).coerceIn(0.0, 1.0).toFloat() else 0f,
         animationSpec = tween(900, easing = androidx.compose.animation.core.EaseOutCubic),
-        label = "circularProgress"
+        label = "barProgress"
     )
 
-    // Tone-aware, emotionally-safe budget language. Gentle/comfort never shames an overspend;
-    // direct stays concise. Reuses the tone/soften signals read above.
     val healthLabel = when {
         totalBudget <= 0.0  -> "No limits set"
         percentage >= 100.0 -> if (soften) "A little past plan" else "Over budget"
         percentage >= 70.0  -> if (soften) "Getting close" else "Watch spending"
         else                -> if (tone == InsightTone.DIRECT) "Within budget" else "On track"
     }
-    val healthSubtitle = when {
-        totalBudget <= 0.0  -> "Set category limits to start tracking"
-        remaining < 0.0 -> when {
-            soften          -> "You've gone a little past your plan — that's okay, here's where things stand."
-            tone == InsightTone.DIRECT -> "Over your monthly budget."
-            else            -> "You've passed your monthly budget."
-        }
-        percentage >= 70.0 -> when {
-            soften          -> "You're getting close to your plan — no rush, just a heads-up."
-            tone == InsightTone.DIRECT -> "Near your monthly limit."
-            else            -> "You're approaching your monthly limit."
-        }
-        else -> when {
-            tone == InsightTone.DIRECT -> "Spending within budget."
-            else            -> "You're spending within healthy limits."
-        }
-    }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(20.dp),
+        color = AppPalette.card,
         tonalElevation = 0.dp,
-        shadowElevation = 4.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.07f))
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Top row: circular progress + stats
+            // Header row: label + percentage pill
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Circular progress
-                Box(contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        progress = { 1f },
-                        modifier = Modifier.size(88.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        strokeWidth = 8.dp,
-                        strokeCap = StrokeCap.Round
-                    )
-                    CircularProgressIndicator(
-                        progress = { animatedProgress },
-                        modifier = Modifier.size(88.dp),
-                        color = progressColor,
-                        strokeWidth = 8.dp,
-                        strokeCap = StrokeCap.Round
-                    )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "${percentage.toInt()}%",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = progressColor
-                        )
-                        Text(
-                            text = "used",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                // Right side stats
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Text(
+                    text = "Monthly Overview",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppPalette.textPrimary
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = progressColor.copy(alpha = 0.10f)
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            text = healthLabel,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = progressColor
-                        )
-                        Text(
-                            text = healthSubtitle,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 16.sp
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        BudgetMiniStat(
-                            label = "Spent",
-                            value = formatCurrencyPlain(limitedSpent),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
-                        BudgetMiniStat(
-                            label = "Left",
-                            value = if (totalBudget > 0) formatCurrencyPlain(remaining.coerceAtLeast(0.0)) else "—",
-                            color = if (remaining < 0) ExpenseRed else IncomeGreen,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    Text(
+                        text = "${percentage.toInt()}% used",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = progressColor,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
                 }
             }
 
-            // Divider
+            // Horizontal progress bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.07f))
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(AppPalette.cardBorder)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(animatedProgress)
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(progressColor)
+                )
+            }
+
+            // Health status label
+            Text(
+                text = healthLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = progressColor.copy(alpha = 0.8f)
             )
 
-            // Category health chips row
+            // 3-stat row: Budget | Spent | Remaining
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                BudgetInsightChip(
-                    label = "$safeCount safe",
-                    icon = Icons.Outlined.Shield,
-                    color = IncomeGreen,
+                BudgetHeroStat(
+                    label = "Budget",
+                    value = formatCurrencyPlain(totalBudget),
+                    color = AppPalette.textPrimary,
                     modifier = Modifier.weight(1f)
                 )
-                BudgetInsightChip(
-                    label = "$riskyCount warning",
-                    icon = Icons.Outlined.Warning,
-                    color = WarningYellow,
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(36.dp)
+                        .background(AppPalette.cardBorder)
+                        .align(Alignment.CenterVertically)
+                )
+                BudgetHeroStat(
+                    label = "Spent",
+                    value = formatCurrencyPlain(limitedSpent),
+                    color = progressColor,
                     modifier = Modifier.weight(1f)
                 )
-                BudgetInsightChip(
-                    label = "$overBudgetCount over",
-                    icon = Icons.Outlined.PieChart,
-                    color = ExpenseRed,
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(36.dp)
+                        .background(AppPalette.cardBorder)
+                        .align(Alignment.CenterVertically)
+                )
+                BudgetHeroStat(
+                    label = "Remaining",
+                    value = if (totalBudget > 0) formatCurrencyPlain(remaining.coerceAtLeast(0.0)) else "—",
+                    color = if (remaining < 0) ExpenseRed else IncomeGreen,
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            // Compact category summary
+            if (totalBudget > 0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (safeCount > 0) {
+                        CompactStatDot(label = "$safeCount safe", color = IncomeGreen)
+                    }
+                    if (riskyCount > 0) {
+                        CompactStatDot(label = "$riskyCount warning", color = WarningYellow)
+                    }
+                    if (overBudgetCount > 0) {
+                        CompactStatDot(label = "$overBudgetCount over", color = ExpenseRed)
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun BudgetHeroStat(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = AppPalette.textMuted
+        )
+    }
+}
+
+@Composable
+private fun CompactStatDot(label: String, color: Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = AppPalette.textMuted
+        )
     }
 }
 

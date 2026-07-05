@@ -37,6 +37,10 @@ sealed class GoalDetailEvent {
 
     data class SelectAccount(val accountId: String) : GoalDetailEvent()
 
+    data object ShowAccountPicker : GoalDetailEvent()
+
+    data object HideAccountPicker : GoalDetailEvent()
+
     data class UpdateAmount(val amount: String) : GoalDetailEvent()
 
     data class UpdateNotes(val notes: String) : GoalDetailEvent()

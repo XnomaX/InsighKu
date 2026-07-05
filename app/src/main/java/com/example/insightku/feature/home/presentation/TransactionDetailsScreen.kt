@@ -1,9 +1,5 @@
 package com.example.insightku.feature.home.presentation
-import com.example.insightku.core.ui.components.dialogs.IconOption
-import com.example.insightku.core.ui.components.dialogs.BudgetLimitInput
-import com.example.insightku.core.ui.components.dialogs.RecurringPeriodSelector
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
-import com.example.insightku.core.ui.components.dialogs.CategoryIconInfo
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -66,6 +62,11 @@ import kotlin.math.abs
 // Semantic colors — theme-invariant, used for financial polarity only.
 private val TxIncomeGreen = Color(0xFF10B981)
 private val TxExpenseRed  = Color(0xFFEF4444)
+private val TxTransferBlue = Color(0xFF3B82F6)
+private val TxGoalPurple = Color(0xFF8B5CF6)
+private val TxWithdrawalTeal = Color(0xFF0D9488)
+private val TxAutoAllocIndigo = Color(0xFF6366F1)
+private val TxAdjustOrange = Color(0xFFF59E0B)
 
 // All surface/text/border tokens are resolved at runtime from AppPalette or
 // LocalAccent so they adapt to dark mode and the user's chosen accent.
@@ -77,8 +78,53 @@ private val TxTextPrimary: Color @Composable get() = AppPalette.textPrimary
 private val TxTextMuted:   Color @Composable get() = AppPalette.textMuted
 private val TxTint:        Color @Composable get() = AppPalette.cardElevated
 
+// --- Type-based helpers -------------------------------------------------------
+
+/** Get the accent color for a transaction type. */
+private fun txTypeColor(type: TransactionType): Color = when (type) {
+    TransactionType.INCOME -> TxIncomeGreen
+    TransactionType.EXPENSE -> TxExpenseRed
+    TransactionType.TRANSFER_OUT, TransactionType.TRANSFER_IN -> TxTransferBlue
+    TransactionType.GOAL_CONTRIBUTION -> TxGoalPurple
+    TransactionType.GOAL_WITHDRAWAL -> TxWithdrawalTeal
+    TransactionType.AUTO_ALLOCATION -> TxAutoAllocIndigo
+    TransactionType.BALANCE_ADJUSTMENT -> TxAdjustOrange
+}
+
+/** Get the display label for a transaction type (e.g. "Transfer", "Goal Contribution"). */
+private fun txTypeLabel(type: TransactionType): String = when (type) {
+    TransactionType.INCOME -> "Income"
+    TransactionType.EXPENSE -> "Expense"
+    TransactionType.TRANSFER_OUT -> "Transfer Out"
+    TransactionType.TRANSFER_IN -> "Transfer In"
+    TransactionType.GOAL_CONTRIBUTION -> "Goal Contribution"
+    TransactionType.GOAL_WITHDRAWAL -> "Goal Withdrawal"
+    TransactionType.AUTO_ALLOCATION -> "Auto Allocation"
+    TransactionType.BALANCE_ADJUSTMENT -> "Balance Adjustment"
+}
+
+/** Get the amount prefix/sign for display. */
+private fun txAmountPrefix(type: TransactionType): String = when (type) {
+    TransactionType.INCOME -> "+"
+    TransactionType.EXPENSE -> "-"
+    else -> "" // Transfers, goals, adjustments show plain amount
+}
+
+/** Whether this type should show category info. */
+private fun txShowCategory(type: TransactionType): Boolean = type == TransactionType.INCOME || type == TransactionType.EXPENSE
+
+/** Whether this type allows editing. */
+private fun txAllowsEdit(type: TransactionType): Boolean = when (type) {
+    TransactionType.INCOME, TransactionType.EXPENSE -> true
+    TransactionType.BALANCE_ADJUSTMENT -> true
+    else -> false // System-generated: transfers, goals, auto-allocation
+}
+
+/** Whether this type allows deletion. */
+private fun txAllowsDelete(type: TransactionType): Boolean = txAllowsEdit(type)
+
 // --- Enums --------------------------------------------------------------------
-enum class FilterType { ALL, INCOME, EXPENSE, RECURRING, INSTALLMENT, TODAY, WEEK, MONTH }
+enum class FilterType { ALL, INCOME, EXPENSE, TRANSFER, GOAL, AUTO_ALLOC, TODAY, WEEK, MONTH }
 enum class SortType   { NEWEST, OLDEST, HIGHEST, LOWEST, CATEGORY }
 
 // --- Transaction group label --------------------------------------------------
@@ -191,8 +237,9 @@ fun TransactionDetailsScreen(
             val matchFilter = when (filterType) {
                 FilterType.INCOME      -> tx.type == TransactionType.INCOME
                 FilterType.EXPENSE     -> tx.type == TransactionType.EXPENSE
-                FilterType.RECURRING   -> tx.description?.contains("recurring", ignoreCase = true) == true
-                FilterType.INSTALLMENT -> tx.description?.contains("installment", ignoreCase = true) == true
+                FilterType.TRANSFER    -> tx.type == TransactionType.TRANSFER_IN || tx.type == TransactionType.TRANSFER_OUT
+                FilterType.GOAL        -> tx.type == TransactionType.GOAL_CONTRIBUTION || tx.type == TransactionType.GOAL_WITHDRAWAL
+                FilterType.AUTO_ALLOC  -> tx.type == TransactionType.AUTO_ALLOCATION
                 FilterType.TODAY       -> cal.get(Calendar.DAY_OF_YEAR) == txCal.get(Calendar.DAY_OF_YEAR) &&
                                           cal.get(Calendar.YEAR) == txCal.get(Calendar.YEAR)
                 FilterType.WEEK        -> tx.date >= Calendar.getInstance().apply { add(Calendar.WEEK_OF_YEAR, -1) }.timeInMillis
@@ -282,6 +329,7 @@ fun PremiumTransactionListView(
 ) {
     val totalIncome  = remember(transactions) { transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount } }
     val totalExpense = remember(transactions) { transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { abs(it.amount) } }
+
 
     // Group transactions by time period
     val grouped = remember(transactions) {
@@ -568,10 +616,11 @@ private fun PremiumFilterRow(
 ) {
     val filters = listOf(
         FilterType.ALL         to "All",
-        FilterType.EXPENSE     to "Expense",
         FilterType.INCOME      to "Income",
-        FilterType.RECURRING   to "Recurring",
-        FilterType.INSTALLMENT to "Installments",
+        FilterType.EXPENSE     to "Expense",
+        FilterType.TRANSFER    to "Transfer",
+        FilterType.GOAL        to "Goals",
+        FilterType.AUTO_ALLOC  to "Auto",
         FilterType.TODAY       to "Today",
         FilterType.WEEK        to "This Week",
         FilterType.MONTH       to "This Month"
@@ -752,9 +801,9 @@ fun PremiumTransactionCard(
         runCatching { Color(android.graphics.Color.parseColor(matchedCat!!.color)) }.getOrDefault(resolved.color)
     } else resolved.color
     val catIcon     = resolved.icon
-    val isIncome    = transaction.type == TransactionType.INCOME
-    val amountColor = if (isIncome) TxIncomeGreen else TxExpenseRed
-    val prefix      = if (isIncome) "+" else "-"
+    val amountColor = txTypeColor(transaction.type)
+    val prefix      = txAmountPrefix(transaction.type)
+    val showCat     = txShowCategory(transaction.type)
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -793,7 +842,7 @@ fun PremiumTransactionCard(
                 Icon(catIcon, null, tint = catColor, modifier = Modifier.size(22.dp))
             }
 
-            // Title + category + time
+            // Title + type badge + time
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -810,41 +859,55 @@ fun PremiumTransactionCard(
                     verticalAlignment      = Alignment.CenterVertically,
                     horizontalArrangement  = Arrangement.spacedBy(6.dp)
                 ) {
+                    // Type badge (always shown)
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = catColor.copy(alpha = 0.10f)
+                        color = amountColor.copy(alpha = 0.10f)
                     ) {
                         Text(
-                            transaction.category,
+                            txTypeLabel(transaction.type),
                             style    = MaterialTheme.typography.labelSmall,
-                            color    = catColor,
+                            color    = amountColor,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             maxLines = 1
                         )
                     }
-                    Text(
-                        "·",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TxTextMuted
-                    )
+                    // Category badge (only for Income/Expense)
+                    if (showCat && transaction.category.isNotBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = catColor.copy(alpha = 0.10f)
+                        ) {
+                            Text(
+                                transaction.category,
+                                style    = MaterialTheme.typography.labelSmall,
+                                color    = catColor,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                maxLines = 1
+                            )
+                        }
+                    }
                     Text(
                         TimeUtils.toShortRelativeTime(transaction.date),
                         style = MaterialTheme.typography.labelSmall,
                         color = TxTextMuted
                     )
                 }
-                // Show account name if available
-                val account = accountMap[transaction.accountId]
-                if (account != null) {
+                // Show context line: goal name for goals, account name otherwise
+                val contextLabel = when {
+                    (transaction.type == TransactionType.GOAL_CONTRIBUTION || transaction.type == TransactionType.GOAL_WITHDRAWAL || transaction.type == TransactionType.AUTO_ALLOCATION) && !transaction.goalName.isNullOrBlank() -> transaction.goalName
+                    else -> accountMap[transaction.accountId]?.name
+                }
+                if (contextLabel != null) {
                     Text(
-                        account.name,
+                        contextLabel,
                         style = MaterialTheme.typography.labelSmall,
                         color = TxTextMuted
                     )
                 }
             }
 
-            // Amount + type indicator
+            // Amount
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -855,15 +918,16 @@ fun PremiumTransactionCard(
                     fontWeight = FontWeight.Bold,
                     color      = amountColor
                 )
+                // Sync status badge
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = amountColor.copy(alpha = 0.10f)
+                    color = if (transaction.isSynced) TxIncomeGreen.copy(alpha = 0.10f) else TxAdjustOrange.copy(alpha = 0.10f)
                 ) {
                     Text(
-                        if (isIncome) "IN" else "OUT",
+                        if (transaction.isSynced) "Synced" else "Syncing",
                         style      = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color      = amountColor,
+                        color      = if (transaction.isSynced) TxIncomeGreen else TxAdjustOrange,
                         modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -934,7 +998,14 @@ fun TransactionDetailOverlay(
     var showDeleteDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val isIncome    = transaction.type == TransactionType.INCOME
+    val txType      = transaction.type
+    val amountColor = txTypeColor(txType)
+    val typeLabel   = txTypeLabel(txType)
+    val prefix      = txAmountPrefix(txType)
+    val showCat     = txShowCategory(txType)
+    val canEdit     = txAllowsEdit(txType)
+    val canDelete   = txAllowsDelete(txType)
+
     // Resolve icon: try category.icon field first, fall back to fuzzy name match
     val matchedCat  = categoryMap[transaction.category.trim().lowercase()]
     val iconKey     = matchedCat?.icon?.ifBlank { null } ?: transaction.category
@@ -945,8 +1016,6 @@ fun TransactionDetailOverlay(
         runCatching { Color(android.graphics.Color.parseColor(matchedCat!!.color)) }.getOrDefault(resolved.color)
     } else resolved.color
     val catIcon     = resolved.icon
-    val amountColor = if (isIncome) TxIncomeGreen else TxExpenseRed
-    val prefix      = if (isIncome) "+" else "-"
 
     val accent = TxAccent
     ModalBottomSheet(
@@ -980,14 +1049,18 @@ fun TransactionDetailOverlay(
                 }
                 Text(transaction.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TxTextPrimary, textAlign = TextAlign.Center)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(shape = RoundedCornerShape(50.dp), color = catColor.copy(alpha = 0.10f)) {
-                        Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Box(Modifier.size(5.dp).clip(CircleShape).background(catColor))
-                            Text(transaction.category, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = catColor)
+                    // Category badge (only for Income/Expense)
+                    if (showCat && transaction.category.isNotBlank()) {
+                        Surface(shape = RoundedCornerShape(50.dp), color = catColor.copy(alpha = 0.10f)) {
+                            Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Box(Modifier.size(5.dp).clip(CircleShape).background(catColor))
+                                Text(transaction.category, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = catColor)
+                            }
                         }
                     }
+                    // Type badge (always shown)
                     Surface(shape = RoundedCornerShape(8.dp), color = amountColor.copy(alpha = 0.10f)) {
-                        Text(if (isIncome) "INCOME" else "EXPENSE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = amountColor, letterSpacing = 1.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                        Text(typeLabel.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = amountColor, letterSpacing = 1.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
                     }
                 }
                 Text("$prefix ${formatCurrencyRp(transaction.amount)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = amountColor, letterSpacing = (-0.5).sp)
@@ -1002,6 +1075,7 @@ fun TransactionDetailOverlay(
                     PremiumInfoTile(Icons.Default.AccessTime, "Time", transaction.time, accent, Modifier.weight(1f))
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Account info
                     val account = accountMap[transaction.accountId]
                     val accountIcon = when (account?.type) {
                         AccountType.CASH -> Icons.Default.Payments
@@ -1012,37 +1086,102 @@ fun TransactionDetailOverlay(
                     }
                     val accountColor = account?.let { runCatching { Color(android.graphics.Color.parseColor(it.color)) }.getOrDefault(Color(0xFF3B82F6)) } ?: Color(0xFF3B82F6)
                     PremiumInfoTile(accountIcon, "Account", account?.name ?: "No account", accountColor, Modifier.weight(1f))
+                    // Sync status
                     PremiumInfoTile(
-                        if (transaction.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
-                        "Status", if (transaction.isSynced) "Synced" else "Pending",
-                        if (transaction.isSynced) TxIncomeGreen else Color(0xFFF59E0B), Modifier.weight(1f)
+                        if (transaction.isSynced) Icons.Default.CloudDone else Icons.Default.CloudQueue,
+                        "Status", if (transaction.isSynced) "Synced" else "Syncing",
+                        if (transaction.isSynced) TxIncomeGreen else TxAdjustOrange, Modifier.weight(1f)
                     )
+                }
+                // Transfer info: show related account
+                if (txType == TransactionType.TRANSFER_OUT || txType == TransactionType.TRANSFER_IN) {
+                    transaction.relatedAccountId?.let { relatedId ->
+                        val relatedAccount = accountMap[relatedId]
+                        val label = if (txType == TransactionType.TRANSFER_OUT) "To Account" else "From Account"
+                        PremiumInfoTile(
+                            Icons.Default.SwapHoriz, label,
+                            relatedAccount?.name ?: relatedId,
+                            TxTransferBlue, Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                // Goal info: show goal name
+                if (txType == TransactionType.GOAL_CONTRIBUTION || txType == TransactionType.GOAL_WITHDRAWAL || txType == TransactionType.AUTO_ALLOCATION) {
+                    transaction.goalName?.let { goalName ->
+                        val goalIcon = if (txType == TransactionType.GOAL_WITHDRAWAL) Icons.Default.ArrowUpward else Icons.Default.Flag
+                        val goalColor = if (txType == TransactionType.GOAL_WITHDRAWAL) TxWithdrawalTeal else TxGoalPurple
+                        PremiumInfoTile(goalIcon, "Goal", goalName, goalColor, Modifier.fillMaxWidth())
+                    }
+                }
+                // Contribution type info for Goal Contribution
+                if (txType == TransactionType.GOAL_CONTRIBUTION) {
+                    val contribType = if (transaction.isAuto) "Auto Allocation" else "Manual"
+                    PremiumInfoTile(
+                        if (transaction.isAuto) Icons.Default.AutoAwesome else Icons.Default.TouchApp,
+                        "Contribution Type", contribType,
+                        TxGoalPurple, Modifier.fillMaxWidth()
+                    )
+                }
+                // Allocation rule info for Auto Allocation
+                if (txType == TransactionType.AUTO_ALLOCATION) {
+                    transaction.referenceId?.let { ruleId ->
+                        PremiumInfoTile(
+                            Icons.Default.AutoAwesome, "Allocation Rule", ruleId,
+                            TxAutoAllocIndigo, Modifier.fillMaxWidth()
+                        )
+                    }
                 }
                 if (!transaction.description.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.Notes, "Notes", transaction.description, Color(0xFF8B5CF6))
                 if (!transaction.location.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.LocationOn, "Location", transaction.location, Color(0xFFEC4899))
             }
 
-            // -- Action buttons --------------------------------------------
+            // -- Action buttons (type-dependent) --------------------------------
             Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Surface(Modifier.weight(1f).height(50.dp).clickable { onEdit(transaction) }, RoundedCornerShape(16.dp), TxTint, border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.3f))) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Icon(Icons.Default.Edit, null, tint = accent, modifier = Modifier.size(16.dp))
-                                Text("Edit", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = accent)
+                // Edit + Delete for editable types (Income, Expense, Balance Adjustment)
+                if (canEdit) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(Modifier.weight(1f).height(50.dp).clickable { onEdit(transaction) }, RoundedCornerShape(16.dp), TxTint, border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.3f))) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Icon(Icons.Default.Edit, null, tint = accent, modifier = Modifier.size(16.dp))
+                                    Text("Edit", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = accent)
+                                }
                             }
                         }
-                    }
-                    Surface(Modifier.weight(1f).height(50.dp).clickable { showDeleteDialog = true }, RoundedCornerShape(16.dp), TxExpenseRed.copy(alpha = 0.10f)) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Icon(Icons.Default.Delete, null, tint = TxExpenseRed, modifier = Modifier.size(16.dp))
-                                Text("Delete", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxExpenseRed)
+                        Surface(Modifier.weight(1f).height(50.dp).clickable { showDeleteDialog = true }, RoundedCornerShape(16.dp), TxExpenseRed.copy(alpha = 0.10f)) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Icon(Icons.Default.Delete, null, tint = TxExpenseRed, modifier = Modifier.size(16.dp))
+                                    Text("Delete", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxExpenseRed)
+                                }
                             }
                         }
                     }
                 }
-                if (onDuplicate != null) {
+                // Goal Contribution/Withdrawal: View Goal button
+                if (txType == TransactionType.GOAL_CONTRIBUTION || txType == TransactionType.GOAL_WITHDRAWAL || txType == TransactionType.AUTO_ALLOCATION) {
+                    Surface(Modifier.fillMaxWidth().height(50.dp).clickable { onDismiss() }, RoundedCornerShape(16.dp), TxTint, border = androidx.compose.foundation.BorderStroke(1.dp, TxGoalPurple.copy(alpha = 0.3f))) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Default.Flag, null, tint = TxGoalPurple, modifier = Modifier.size(16.dp))
+                                Text("View Goal", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxGoalPurple)
+                            }
+                        }
+                    }
+                }
+                // Transfer: View Transfer Details button
+                if (txType == TransactionType.TRANSFER_OUT || txType == TransactionType.TRANSFER_IN) {
+                    Surface(Modifier.fillMaxWidth().height(50.dp).clickable { onDismiss() }, RoundedCornerShape(16.dp), TxTint, border = androidx.compose.foundation.BorderStroke(1.dp, TxTransferBlue.copy(alpha = 0.3f))) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Default.SwapHoriz, null, tint = TxTransferBlue, modifier = Modifier.size(16.dp))
+                                Text("View Transfer Details", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxTransferBlue)
+                            }
+                        }
+                    }
+                }
+                // Duplicate only for editable types
+                if (canEdit && onDuplicate != null) {
                     Surface(
                         Modifier.fillMaxWidth().height(46.dp).clickable {
                             onDuplicate(transaction.copy(id = java.util.UUID.randomUUID().toString(), date = System.currentTimeMillis()))

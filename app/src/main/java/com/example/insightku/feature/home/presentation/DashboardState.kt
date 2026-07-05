@@ -3,6 +3,7 @@ package com.example.insightku.feature.home.presentation
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.DraftTransaction
+import com.example.insightku.feature.budgeting.domain.model.Goal
 
 /**
  * Represents the entire state for the Dashboard screen.
@@ -37,7 +38,18 @@ data class DashboardUiState(
     val monthlySavings: Double = 0.0,
     val insightMessages: List<String> = emptyList(),
     // Draft Inbox — draft hasil deteksi notifikasi bank yang menunggu ditinjau.
-    val pendingDrafts: List<DraftTransaction> = emptyList()
+    val pendingDrafts: List<DraftTransaction> = emptyList(),
+    // ── Goals Preview ────────────────────────────────────────────────────────
+    val previewGoals: List<Goal> = emptyList(),
+    val totalGoalCount: Int = 0,
+    val hasActiveGoals: Boolean = false,
+    // ── Budget Preview ────────────────────────────────────────────────────────
+    val previewBudgets: List<BudgetSpendingItem> = emptyList(),
+    val totalBudgetCount: Int = 0,
+    val hasActiveBudgets: Boolean = false,
+    // ── Account Balances ──────────────────────────────────────────────────────
+    val totalAccountBalance: Double = 0.0,
+    val accountCount: Int = 0
 ) {
     // Visual-only streak: shows 0 (dormant) until user logs a transaction today.
     // The real currentStreak is preserved — this never touches streak history.

@@ -97,8 +97,6 @@ dependencies {
     // Lottie for animated flame icon
     implementation("com.airbnb.android:lottie-compose:6.4.0")
 
-    // Chart Library for Interactive Donut Charts
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")

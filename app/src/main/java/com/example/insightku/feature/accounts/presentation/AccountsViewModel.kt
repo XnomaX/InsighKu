@@ -79,30 +79,54 @@ class AccountsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Load transactions for a specific account (All Transactions filtered by accountId).
+     * This powers the Account Detail screen — no separate history table needed.
+     */
+    fun loadAccountTransactions(accountId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(selectedAccountId = accountId)
+            try {
+                transactionDao.getTransactionsByAccountIdFlow(accountId).collect { transactions ->
+                    _uiState.value = _uiState.value.copy(accountTransactions = transactions)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Failed to load account transactions"
+                )
+            }
+        }
+    }
+
+    /**
+     * Clear the selected account (close Account Detail).
+     */
+    fun clearSelectedAccount() {
+        _uiState.value = _uiState.value.copy(
+            selectedAccountId = null,
+            accountTransactions = emptyList()
+        )
+    }
+
     private fun deleteAccount(accountId: String) {
         viewModelScope.launch {
             try {
                 val userId = authRepository.getCurrentUserId()
 
                 // Step 1: Restore account balances for all transactions in this account
-                // before deleting them. Each transaction's balance effect must be reversed.
                 val transactions = transactionDao.getTransactionsByAccountId(accountId)
                 for (tx in transactions) {
                     if (tx.accountId.isNotBlank()) {
-                        val delta = if (tx.type == TransactionType.INCOME) {
-                            -tx.amount  // Reverse income: subtract
-                        } else {
-                            tx.amount   // Reverse expense: add back
-                        }
-                        accountDao.updateBalance(tx.accountId, delta)
+                        // Reverse the transaction's effect on the account balance
+                        val reverseDelta = -TransactionType.balanceDelta(tx.type, tx.amount)
+                        accountDao.updateBalance(tx.accountId, reverseDelta)
                     }
                 }
 
                 // Step 2: Delete all transactions in this account from Room
                 transactionDao.deleteTransactionsByAccountId(accountId)
 
-                // Step 3: Also delete from Firestore (best effort — if offline, orphaned docs remain
-                // until next refresh which will remove them since Room is source of truth)
+                // Step 3: Also delete from Firestore (best effort)
                 if (userId != null) {
                     try {
                         for (tx in transactions) {
@@ -110,13 +134,17 @@ class AccountsViewModel @Inject constructor(
                                 .collection("transactions").document(tx.id).delete().await()
                         }
                     } catch (e: Exception) {
-                        // Firestore offline — Room already deleted, orphaned Firestore docs
-                        // will be cleaned up on next refreshTransactions()
+                        // Firestore offline — Room already deleted
                     }
                 }
 
                 // Step 4: Deactivate the account
                 accountDao.deactivateAccount(accountId)
+
+                // Clear selection if this was the selected account
+                if (_uiState.value.selectedAccountId == accountId) {
+                    clearSelectedAccount()
+                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = e.message ?: "Failed to delete account"
@@ -128,7 +156,6 @@ class AccountsViewModel @Inject constructor(
     private fun setAsDefault(accountId: String) {
         viewModelScope.launch {
             try {
-                // Clear all defaults first, then set the new one
                 accountDao.clearAllDefaults()
                 val account = accountDao.getAccountById(accountId)
                 if (account != null) {

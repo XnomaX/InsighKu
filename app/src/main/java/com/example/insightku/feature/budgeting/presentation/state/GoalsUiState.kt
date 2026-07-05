@@ -3,8 +3,10 @@ package com.example.insightku.feature.budgeting.presentation.state
 import com.example.insightku.core.domain.model.AccountAllocation
 import com.example.insightku.feature.budgeting.data.model.AllocationTriggerType
 import com.example.insightku.feature.budgeting.data.model.AllocationValueType
+import com.example.insightku.feature.budgeting.data.model.ConfirmationMode
 import com.example.insightku.feature.budgeting.data.model.GoalAccountEntity
 import com.example.insightku.feature.budgeting.data.model.GoalStatus
+import com.example.insightku.feature.budgeting.data.model.ScheduledFrequency
 import com.example.insightku.feature.budgeting.domain.model.*
 import java.time.LocalDate
 
@@ -86,6 +88,7 @@ enum class AccountAction {
 
 /**
  * State for auto-allocation rule creation/editing form.
+ * Enhanced for Smart Auto Allocation with all configuration options.
  */
 data class AutoAllocationRuleForm(
     val goalId: String = "",
@@ -96,10 +99,33 @@ data class AutoAllocationRuleForm(
     val threshold: String = "",
     val allocationType: AllocationValueType = AllocationValueType.PERCENT,
     val allocationValue: String = "10",
-    val isEnabled: Boolean = true
+    val isEnabled: Boolean = true,
+
+    // ── Smart Auto Allocation Fields ──────────────────────────────────────────
+    val sourceAccountId: String? = null,
+    val confirmationMode: ConfirmationMode = ConfirmationMode.AUTO,
+    val incomeCategoryIds: List<String> = emptyList(),
+    val minIncomeAmount: String = "",
+    val roundUpEnabled: Boolean = false,
+    val roundUpIncrement: Double = 5000.0,
+    val scheduledFrequency: ScheduledFrequency = ScheduledFrequency.DAILY,
+    val scheduledDayOfWeek: Int = 1,
+    val scheduledDayOfMonth: Int = 1
 ) {
     val isValid: Boolean
-        get() = goalId.isNotBlank() && allocationValue.toDoubleOrNull()?.let { it > 0 } == true
+        get() {
+            val baseValid = goalId.isNotBlank() && allocationValue.toDoubleOrNull()?.let { it > 0 } == true
+            return when (triggerType) {
+                AllocationTriggerType.INCOME_RECEIVED -> baseValid
+                AllocationTriggerType.ROUND_UP -> baseValid && roundUpEnabled
+                AllocationTriggerType.SPENDING_CATEGORY -> baseValid && categoryId != null
+                AllocationTriggerType.BALANCE_ABOVE -> baseValid && threshold.toDoubleOrNull() != null
+                AllocationTriggerType.DAILY,
+                AllocationTriggerType.WEEKLY,
+                AllocationTriggerType.BIWEEKLY,
+                AllocationTriggerType.MONTHLY -> baseValid && sourceAccountId != null
+            }
+        }
 
     fun toRule(): AutoAllocationRule? {
         val value = allocationValue.toDoubleOrNull() ?: return null
@@ -117,7 +143,16 @@ data class AutoAllocationRuleForm(
             allocationValue = value,
             isEnabled = isEnabled,
             createdAt = java.time.Instant.now(),
-            updatedAt = java.time.Instant.now()
+            updatedAt = java.time.Instant.now(),
+            sourceAccountId = sourceAccountId,
+            confirmationMode = confirmationMode,
+            incomeCategoryIds = incomeCategoryIds,
+            minIncomeAmount = minIncomeAmount.toDoubleOrNull() ?: 0.0,
+            roundUpEnabled = roundUpEnabled,
+            roundUpIncrement = roundUpIncrement,
+            scheduledFrequency = scheduledFrequency,
+            scheduledDayOfWeek = scheduledDayOfWeek,
+            scheduledDayOfMonth = scheduledDayOfMonth
         )
     }
 }

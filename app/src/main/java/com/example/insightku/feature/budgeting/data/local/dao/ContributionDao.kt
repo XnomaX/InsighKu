@@ -169,6 +169,28 @@ interface ContributionDao {
         ORDER BY c.createdAt DESC
     """)
     fun getContributionsFromAccount(accountId: String): Flow<List<ContributionEntity>>
+
+    // ── Offline-First Sync Support ──────────────────────────────────────────────
+
+    /** Mark a contribution as synced to Firestore. */
+    @Query("UPDATE contributions SET isSynced = 1 WHERE id = :id")
+    suspend fun markAsSynced(id: String)
+
+    /** Get all contributions that haven't been synced to Firestore yet. */
+    @Query("SELECT * FROM contributions WHERE isSynced = 0")
+    suspend fun getUnsyncedContributions(): List<ContributionEntity>
+
+    /** Get all contributions for a goal that haven't been synced. */
+    @Query("SELECT * FROM contributions WHERE goalId = :goalId AND isSynced = 0")
+    suspend fun getUnsyncedContributionsByGoal(goalId: String): List<ContributionEntity>
+
+    /** Insert contribution from Firestore (remote refresh). Uses IGNORE to preserve local unsynced data. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertContributionFromRemote(contribution: ContributionEntity)
+
+    /** Bulk insert contributions from Firestore remote sync. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertContributionsFromRemote(contributions: List<ContributionEntity>)
 }
 
 /**

@@ -38,7 +38,6 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.adaptiveDp
 import com.example.insightku.core.ui.theme.rememberWindowSize
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
     onSignUpSuccess: (UserData) -> Unit,

@@ -18,18 +18,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.SuccessColor
+import com.example.insightku.core.ui.theme.WarningYellow
+import com.example.insightku.core.ui.theme.formatCurrencyCompactIDR
 import com.example.insightku.feature.budgeting.data.model.GoalStatus
 import com.example.insightku.feature.budgeting.domain.model.Goal
-import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /**
  * Premium GoalCard with improved visual hierarchy and modern design.
@@ -176,13 +176,13 @@ fun GoalCard(
                 // Current amount
                 Column {
                     Text(
-                        text = formatCurrencyCompact(goal.currentAmount),
+                        text = formatCurrencyCompactIDR(goal.currentAmount),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (isCompleted) SuccessColor else AppPalette.textPrimary
                     )
                     Text(
-                        text = "of ${formatCurrencyCompact(goal.targetAmount)}",
+                        text = "of ${formatCurrencyCompactIDR(goal.targetAmount)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
@@ -237,7 +237,7 @@ fun GoalCard(
                                     modifier = Modifier.size(12.dp)
                                 )
                                 Text(
-                                    text = "${formatCurrencyCompact(goal.remainingAmount)} to go",
+                                    text = "${formatCurrencyCompactIDR(goal.remainingAmount)} to go",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = goalColor,
                                     fontWeight = FontWeight.Medium
@@ -497,13 +497,13 @@ fun CompactGoalCard(
 
             // Amounts
             Text(
-                text = formatCurrencyCompact(goal.currentAmount),
+                text = formatCurrencyCompactIDR(goal.currentAmount),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppPalette.textPrimary
             )
             Text(
-                text = "of ${formatCurrencyCompact(goal.targetAmount)}",
+                text = "of ${formatCurrencyCompactIDR(goal.targetAmount)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted
             )
@@ -530,51 +530,4 @@ fun CompactGoalCard(
     }
 }
 
-// ─── Helper Functions ──────────────────────────────────────────────────────────
 
-private fun getGoalIcon(iconName: String): ImageVector {
-    return when (iconName.lowercase()) {
-        "savings", "piggy bank" -> Icons.Outlined.Savings
-        "wallet", "account balance wallet" -> Icons.Outlined.AccountBalanceWallet
-        "cash", "money", "paid" -> Icons.Outlined.Paid
-        "flight", "airplane" -> Icons.Outlined.Flight
-        "car", "directions car" -> Icons.Outlined.DirectionsCar
-        "home", "house" -> Icons.Outlined.Home
-        "school", "education", "graduation" -> Icons.Outlined.School
-        "health", "health and safety" -> Icons.Outlined.HealthAndSafety
-        "warning", "emergency" -> Icons.Outlined.Warning
-        "trending up", "investment", "stocks" -> Icons.Outlined.TrendingUp
-        "card giftcard", "gift" -> Icons.Outlined.CardGiftcard
-        "celebration" -> Icons.Outlined.Celebration
-        "star" -> Icons.Outlined.Star
-        "flag", "target", "gps fixed" -> Icons.Outlined.Flag
-        "beach", "travel" -> Icons.Outlined.BeachAccess
-        "hotel", "suitcase" -> Icons.Outlined.Luggage
-        "laptop", "technology" -> Icons.Outlined.Laptop
-        "phone", "smartphone" -> Icons.Outlined.Smartphone
-        "diamond", "gold", "investment" -> Icons.Outlined.Diamond
-        else -> Icons.Outlined.Savings
-    }
-}
-
-private fun formatCurrencyCompact(amount: Double): String {
-    return when {
-        amount >= 1_000_000_000 -> {
-            val formatted = NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount / 1_000_000_000)
-            "Rp$formatted M"
-        }
-        amount >= 1_000_000 -> {
-            val formatted = NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount / 1_000_000)
-            "Rp$formatted M"
-        }
-        amount >= 1_000 -> {
-            val formatted = NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount / 1_000)
-            "Rp$formatted K"
-        }
-        else -> "Rp${NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount.toLong())}"
-    }
-}
-
-// Color references
-private val ExpenseRed = Color(0xFFEF4444)
-private val WarningYellow = Color(0xFFF59E0B)

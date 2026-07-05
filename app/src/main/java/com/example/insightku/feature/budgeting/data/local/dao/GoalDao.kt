@@ -46,4 +46,26 @@ interface GoalDao {
 
     @Query("DELETE FROM goals WHERE id = :id")
     suspend fun deleteGoalById(id: String)
+
+    // ── Offline-First Sync Support ──────────────────────────────────────────────
+
+    /** Mark a goal as synced to Firestore. */
+    @Query("UPDATE goals SET isSynced = 1 WHERE id = :id")
+    suspend fun markAsSynced(id: String)
+
+    /** Get all goals that haven't been synced to Firestore yet. */
+    @Query("SELECT * FROM goals WHERE isSynced = 0")
+    suspend fun getUnsyncedGoals(): List<GoalEntity>
+
+    /** Get all unsynced goals as Flow. */
+    @Query("SELECT * FROM goals WHERE isSynced = 0")
+    fun getUnsyncedGoalsFlow(): Flow<List<GoalEntity>>
+
+    /** Insert or update a goal from Firestore (remote refresh). Uses IGNORE to preserve local unsynced data. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertGoalFromRemote(goal: GoalEntity)
+
+    /** Bulk insert/update goals from Firestore remote sync. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertGoalsFromRemote(goals: List<GoalEntity>)
 }

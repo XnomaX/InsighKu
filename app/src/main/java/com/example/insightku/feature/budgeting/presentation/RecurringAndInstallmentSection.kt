@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit
 // ─── Design tokens (theme-aware — react to light/dark + accent from Settings) ───
 
 private val Purple: Color     @Composable get() = LocalAccent.current
-private val Green      = Color(0xFF10B981)
 private val Orange     = Color(0xFFFF9800)
 private val Red        = Color(0xFFE57373)
 private val Border: Color     @Composable get() = AppPalette.cardBorder

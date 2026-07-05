@@ -22,7 +22,7 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getTransactionById(id: String): Transaction?
 
-    @Query("SELECT SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END) FROM transactions")
+    @Query("SELECT SUM(CASE WHEN type IN ('INCOME','TRANSFER_IN','GOAL_WITHDRAWAL','BALANCE_ADJUSTMENT') AND amount > 0 THEN amount WHEN type IN ('EXPENSE','TRANSFER_OUT','GOAL_CONTRIBUTION','AUTO_ALLOCATION') THEN -amount ELSE 0 END) FROM transactions")
     fun getTotalBalance(): Flow<Double>
 
     @Query("SELECT SUM(amount) FROM transactions WHERE type = 'INCOME'")
@@ -105,6 +105,22 @@ interface TransactionDao {
      */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertTransactionsFromRemote(transactions: List<Transaction>)
+
+    // ── Unified Ledger Queries ────────────────────────────────────────────────
+
+    /** Get all transactions for a specific account (reactive Flow). */
+    @Query("SELECT * FROM transactions WHERE accountId = :accountId ORDER BY date DESC")
+    fun getTransactionsByAccountIdFlow(accountId: String): Flow<List<Transaction>>
+
+    /** Get all transactions related to a goal (contributions, withdrawals, auto-allocations). */
+    @Query("""SELECT * FROM transactions WHERE goalId = :goalId
+        AND type IN ('GOAL_CONTRIBUTION','GOAL_WITHDRAWAL','AUTO_ALLOCATION')
+        ORDER BY date DESC""")
+    fun getTransactionsByGoalIdFlow(goalId: String): Flow<List<Transaction>>
+
+    /** Get transfer pair by transferId. */
+    @Query("SELECT * FROM transactions WHERE transferId = :transferId ORDER BY date DESC")
+    suspend fun getTransactionsByTransferId(transferId: String): List<Transaction>
 }
 
 

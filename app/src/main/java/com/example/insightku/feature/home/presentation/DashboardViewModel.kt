@@ -8,6 +8,9 @@ import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.feature.auth.data.AuthRepository
+import com.example.insightku.core.data.local.dao.AccountDao
+import com.example.insightku.feature.budgeting.data.repository.GoalRepository
+import com.example.insightku.feature.budgeting.domain.model.Goal
 import com.example.insightku.feature.home.domain.AddTransactionUseCase
 import com.example.insightku.feature.home.domain.GetTransactionsUseCase
 import com.example.insightku.feature.home.presentation.BudgetSpendingItem
@@ -44,7 +47,9 @@ class DashboardViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val errorBus: ErrorBus,
     private val sessionManager: SessionManager,
-    private val prefs: UserPreferencesDataStore
+    private val prefs: UserPreferencesDataStore,
+    private val goalRepository: GoalRepository,
+    private val accountDao: AccountDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -61,6 +66,9 @@ class DashboardViewModel @Inject constructor(
     init {
         loadUserName()
         loadDashboardData()
+        loadGoalProgress()
+        loadBudgetProgress()
+        loadAccountBalances()
         refreshData()
     }
 
@@ -139,6 +147,73 @@ class DashboardViewModel @Inject constructor(
                 val msg = e.message ?: "Gagal memuat data dashboard"
                 _uiState.update { it.copy(isLoading = false, error = msg) }
                 errorBus.send(msg)
+            }
+        }
+    }
+
+    /**
+     * Observe Goals summary from Room — updates instantly when goals/contributions change.
+     */
+    private fun loadGoalProgress() {
+        viewModelScope.launch {
+            goalRepository.getActiveGoals().collect { goals ->
+                val sorted = goals.sortedWith(
+                    compareBy<Goal> { it.daysRemaining ?: Int.MAX_VALUE }
+                        .thenByDescending { it.progressPercent }
+                        .thenByDescending { it.updatedAt.toEpochMilli() }
+                )
+                _uiState.update {
+                    it.copy(
+                        previewGoals = sorted.take(3),
+                        totalGoalCount = goals.size,
+                        hasActiveGoals = goals.isNotEmpty()
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Observe total account balance from Room — updates instantly when account balances change.
+     * Uses account balance as the primary totalBalance for the hero card.
+     */
+    private fun loadAccountBalances() {
+        viewModelScope.launch {
+            try {
+                accountDao.getAllAccounts().collect { accounts ->
+                    if (accounts.isNotEmpty()) {
+                        val accountBalance = accounts.sumOf { acc -> acc.balance }
+                _uiState.update {
+                    it.copy(
+                        // Use account balance as the primary displayed balance
+                        totalBalance = accountBalance,
+                        totalAccountBalance = accountBalance,
+                        accountCount = accounts.size
+                    )
+                }
+                    }
+                    // When no accounts exist, keep whatever totalBalance was set by
+                    // updateStateFromTransactions (transaction-derived fallback).
+                }
+            } catch (e: Exception) {
+                // Silently keep the existing totalBalance on error
+            }
+        }
+    }
+
+    /**
+     * Observe budget spending from transaction categories — updates when transactions change.
+     */
+    private fun loadBudgetProgress() {
+        viewModelScope.launch {
+            transactionRepository.getAllCategories().collect { categories ->
+                val budgetCategories = categories.filter { it.budgetLimit != null && it.budgetLimit > 0 }
+                _uiState.update {
+                    it.copy(
+                        totalBudgetCount = budgetCategories.size,
+                        hasActiveBudgets = budgetCategories.isNotEmpty()
+                    )
+                }
             }
         }
     }
@@ -262,10 +337,8 @@ class DashboardViewModel @Inject constructor(
         categories: List<Category> = emptyList(),
         pendingDrafts: List<com.example.insightku.core.data.model.DraftTransaction> = emptyList()
     ) {
-        // All-time balance
-        val totalBalance = transactions.sumOf {
-            if (it.type == TransactionType.INCOME) it.amount else -it.amount
-        }
+        // Account balance is now the primary source of truth (set by loadAccountBalances).
+        // The transaction-derived fallback is handled by loadAccountBalances when no accounts exist.
 
         // Current-month range
         val monthStart = Calendar.getInstance().apply {
@@ -425,10 +498,39 @@ class DashboardViewModel @Inject constructor(
         val insightMessages = buildInsightMessages(monthlyIncome, monthlyExpenses, monthlySavings, streak)
         // -----------------------------------------------------------------------
 
+        // Compute budget totals from category limits
+        val budgetTotalLimit = categories.filter { it.budgetLimit != null && it.budgetLimit > 0 }
+            .sumOf { it.budgetLimit ?: 0.0 }
+        val budgetTotalSpent = budgetCategorySpending
+            .filter { it.limit != null && it.limit > 0 }
+            .sumOf { it.spent }
+        val budgetUtilization = if (budgetTotalLimit > 0) (budgetTotalSpent / budgetTotalLimit) * 100 else 0.0
+
+        // Preserve the account-sourced totalBalance (set by loadAccountBalances)
+        val currentTotalBalance = _uiState.value.totalBalance
+
+        // Top 3 budgets by spent percentage (for dashboard preview)
+        // Include ALL categories with budget limits, even those without expenses this month
+        val allBudgetItems = categories
+            .filter { it.budgetLimit != null && it.budgetLimit > 0 }
+            .map { cat ->
+                val existing = budgetCategorySpending.find { it.categoryName.trim().lowercase() == cat.name.trim().lowercase() }
+                BudgetSpendingItem(
+                    categoryName = cat.name,
+                    iconName     = cat.icon ?: cat.name,
+                    colorHex     = cat.color ?: "",
+                    spent        = existing?.spent ?: 0.0,
+                    limit        = cat.budgetLimit
+                )
+            }
+        val previewBudgets = allBudgetItems
+            .sortedByDescending { it.spent / (it.limit ?: 1.0) }
+            .take(3)
+
         _uiState.update {
             it.copy(
                 isLoading              = false,
-                totalBalance           = totalBalance,
+                totalBalance           = currentTotalBalance,
                 monthlyIncome          = monthlyIncome,
                 monthlyExpenses        = monthlyExpenses,
                 monthlySavings         = monthlySavings,
@@ -446,7 +548,10 @@ class DashboardViewModel @Inject constructor(
                 recurringBudgets       = recurring,
                 installments           = installments,
                 budgetCategorySpending = budgetCategorySpending,
-                pendingDrafts          = pendingDrafts
+                pendingDrafts          = pendingDrafts,
+                previewBudgets         = previewBudgets,
+                totalBudgetCount       = allBudgetItems.size,
+                hasActiveBudgets       = previewBudgets.isNotEmpty()
             )
         }
     }

@@ -58,13 +58,11 @@ import com.example.insightku.core.notification.NotificationTransactionData
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.home.presentation.DashboardEvent
-import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.feature.budgeting.presentation.screen.BudgetDetailScreenPlaceholder
 import com.example.insightku.feature.budgeting.presentation.screen.GoalDetailScreen
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
-private val NavPurple   = Color(0xFF7C4DFF)
 private val NavBorder: Color  @Composable get() = AppPalette.cardBorder
 private val NavBg: Color      @Composable get() = AppPalette.card
 private val NavInactive = Color(0xFFB0AABF)
@@ -98,7 +96,6 @@ private val navItems = listOf(
 
 // ─── MainScreen ───────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
@@ -539,6 +536,20 @@ private fun MainNavHost(
                     navController.navigate(Route.SETTINGS) {
                         // Keep HOME in back stack so Back returns to it
                         launchSingleTop = true
+                    }
+                },
+                onNavigateToGoals              = {
+                    navController.navigate(Route.BUDGETING) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState    = true
+                    }
+                },
+                onNavigateToBudgeting          = {
+                    navController.navigate(Route.BUDGETING) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState    = true
                     }
                 }
             )
