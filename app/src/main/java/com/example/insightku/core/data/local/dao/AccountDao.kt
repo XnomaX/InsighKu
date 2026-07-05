@@ -77,8 +77,14 @@ interface AccountDao {
      */
     @Query("""
         SELECT COALESCE(
-            SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END),
-            0.0
+            SUM(
+                CASE
+                    WHEN type IN ('INCOME', 'TRANSFER_IN', 'GOAL_WITHDRAWAL') THEN amount
+                    WHEN type IN ('EXPENSE', 'TRANSFER_OUT', 'GOAL_CONTRIBUTION', 'AUTO_ALLOCATION') THEN -amount
+                    WHEN type = 'BALANCE_ADJUSTMENT' THEN amount
+                    ELSE 0
+                END
+            ), 0.0
         ) FROM transactions WHERE accountId = :accountId
     """)
     suspend fun calculateBalanceFromTransactions(accountId: String): Double

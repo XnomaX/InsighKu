@@ -34,7 +34,6 @@ import java.util.Locale
  * - Spent vs remaining amounts
  * - Transaction list for the budget period
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetDetailScreen(
     budgetId: String,

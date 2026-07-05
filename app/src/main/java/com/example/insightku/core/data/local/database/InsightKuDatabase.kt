@@ -271,6 +271,37 @@ val MIGRATION_12_13 = object : Migration(12, 13) {
     }
 }
 
+val MIGRATION_13_14 = object : Migration(13, 14) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Add isSynced column to goals table (default true = existing data is already synced)
+        db.execSQL("ALTER TABLE goals ADD COLUMN isSynced INTEGER NOT NULL DEFAULT 1")
+        // Add isSynced column to contributions table
+        db.execSQL("ALTER TABLE contributions ADD COLUMN isSynced INTEGER NOT NULL DEFAULT 1")
+    }
+}
+
+/**
+ * Migration 14 → 15: Extend transactions for unified ledger.
+ * All Transactions becomes the single source of truth for every financial activity.
+ */
+val MIGRATION_14_15 = object : Migration(14, 15) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Extended metadata for unified ledger
+        db.execSQL("ALTER TABLE transactions ADD COLUMN relatedAccountId TEXT")
+        db.execSQL("ALTER TABLE transactions ADD COLUMN goalId TEXT")
+        db.execSQL("ALTER TABLE transactions ADD COLUMN goalName TEXT")
+        db.execSQL("ALTER TABLE transactions ADD COLUMN transferId TEXT")
+        db.execSQL("ALTER TABLE transactions ADD COLUMN sourceModule TEXT NOT NULL DEFAULT 'transaction'")
+        db.execSQL("ALTER TABLE transactions ADD COLUMN referenceId TEXT")
+        db.execSQL("ALTER TABLE transactions ADD COLUMN isAuto INTEGER NOT NULL DEFAULT 0")
+        // Indexes for new query patterns
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_accountId ON transactions (accountId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_goalId ON transactions (goalId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_transferId ON transactions (transferId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_type ON transactions (type)")
+    }
+}
+
 @Database(
     entities = [
         Transaction::class,
@@ -288,7 +319,7 @@ val MIGRATION_12_13 = object : Migration(12, 13) {
         com.example.insightku.feature.budgeting.data.model.AutoAllocationRuleEntity::class,
         com.example.insightku.feature.budgeting.data.model.DailyTargetEntity::class
     ],
-    version = 13,
+    version = 16,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

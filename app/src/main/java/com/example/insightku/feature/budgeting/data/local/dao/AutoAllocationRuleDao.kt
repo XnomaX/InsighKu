@@ -37,6 +37,9 @@ interface AutoAllocationRuleDao {
     @Query("UPDATE auto_allocation_rules SET isEnabled = :enabled, updatedAt = :updatedAt WHERE id = :id")
     suspend fun setRuleEnabled(id: String, enabled: Boolean, updatedAt: Long = System.currentTimeMillis())
 
+    @Query("UPDATE auto_allocation_rules SET lastExecutedAt = :timestamp WHERE id = :id")
+    suspend fun setLastExecutedAt(id: String, timestamp: Long)
+
     @Delete
     suspend fun deleteRule(rule: AutoAllocationRuleEntity)
 

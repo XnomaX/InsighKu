@@ -471,7 +471,6 @@ private fun AutoAllocationRulesSection(
 /**
  * Host for all dialogs.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DialogHost(
     dialogState: GoalsDialogState,
@@ -563,6 +562,7 @@ private fun DialogHost(
             AutoAllocationDialog(
                 rule = rule,
                 goals = uiState.goals,
+                accounts = uiState.accounts,
                 onDismiss = { onEvent(GoalsEvent.DismissDialog) },
                 onSave = { newRule ->
                     if (rule != null) {

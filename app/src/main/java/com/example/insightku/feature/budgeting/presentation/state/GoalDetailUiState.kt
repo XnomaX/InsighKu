@@ -1,6 +1,7 @@
 package com.example.insightku.feature.budgeting.presentation.state
 
 import com.example.insightku.core.data.model.Account
+import com.example.insightku.feature.budgeting.domain.model.AutoAllocationRule
 import com.example.insightku.feature.budgeting.domain.model.Contribution
 import com.example.insightku.feature.budgeting.domain.model.Goal
 import java.time.Instant
@@ -49,10 +50,23 @@ data class GoalDetailUiState(
     val showSuccessAnimation: Boolean = false,
     val successMessage: String = "",
 
+    // Balance validation
+    val isInsufficientFunds: Boolean = false,
+    val shortfall: Double = 0.0,
+
+    // Account picker
+    val showAccountPicker: Boolean = false,
+
+    // Pending sync indicator
+    val hasUnsyncedChanges: Boolean = false,
+
     // Pagination for contribution history
     val contributionPage: Int = 0,
     val hasMoreContributions: Boolean = false,
-    val isLoadingMore: Boolean = false
+    val isLoadingMore: Boolean = false,
+
+    // Auto-allocation rules
+    val allocationRules: List<AutoAllocationRule> = emptyList()
 ) {
     // Computed properties
     val hasContributions: Boolean get() = contributions.isNotEmpty()

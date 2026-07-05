@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.model.Account
+import com.example.insightku.feature.budgeting.data.local.dao.AutoAllocationRuleDao
 import com.example.insightku.feature.budgeting.data.model.ContributionType
 import com.example.insightku.feature.budgeting.data.model.GoalStatus
 import com.example.insightku.feature.budgeting.data.repository.GoalRepository
+import com.example.insightku.feature.budgeting.domain.model.AutoAllocationRule
 import com.example.insightku.feature.budgeting.domain.model.Contribution
 import com.example.insightku.feature.budgeting.domain.model.Goal
 import com.example.insightku.feature.budgeting.presentation.event.GoalDetailEvent
@@ -28,6 +30,7 @@ private const val CONTRIBUTION_PAGE_SIZE = 20
 class GoalDetailViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
     private val accountDao: AccountDao,
+    private val autoAllocationRuleDao: AutoAllocationRuleDao,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -65,6 +68,8 @@ class GoalDetailViewModel @Inject constructor(
             is GoalDetailEvent.ShowContributeDialog -> showContributeDialog()
             is GoalDetailEvent.ShowWithdrawDialog -> showWithdrawDialog()
             is GoalDetailEvent.DismissDialog -> dismissDialog()
+            is GoalDetailEvent.ShowAccountPicker -> _uiState.update { it.copy(showAccountPicker = true) }
+            is GoalDetailEvent.HideAccountPicker -> _uiState.update { it.copy(showAccountPicker = false) }
             is GoalDetailEvent.SelectAccount -> selectAccount(event.accountId)
             is GoalDetailEvent.UpdateAmount -> updateAmount(event.amount)
             is GoalDetailEvent.UpdateNotes -> updateNotes(event.notes)
@@ -88,7 +93,24 @@ class GoalDetailViewModel @Inject constructor(
                 val accounts = accountDao.getAllAccounts().first()
                 val accountMap = accounts.associateBy { it.id }
 
-                // Load goal as flow
+                // Observe unsynced status in background
+                launch {
+                    goalRepository.hasUnsyncedGoalsFlow()
+                        .collect { hasUnsynced ->
+                            _uiState.update { it.copy(hasUnsyncedChanges = hasUnsynced) }
+                        }
+                }
+
+                // Observe auto-allocation rules for this goal
+                launch {
+                    autoAllocationRuleDao.getRulesByGoal(goalId)
+                        .collect { entities ->
+                            val rules = entities.map { AutoAllocationRule.fromEntity(it) }
+                            _uiState.update { it.copy(allocationRules = rules) }
+                        }
+                }
+
+                // Load goal as flow (reactive from Room)
                 goalRepository.getGoalByIdFlow(goalId)
                     .combine(goalRepository.getContributionsByGoal(goalId)) { goal, contributions ->
                         Pair(goal, contributions)
@@ -120,8 +142,8 @@ class GoalDetailViewModel @Inject constructor(
                         // Generate timeline events
                         val timelineEvents = generateTimelineEvents(goal, contributions)
 
-                        _uiState.update {
-                            it.copy(
+                        _uiState.update { current ->
+                            current.copy(
                                 goal = goal,
                                 contributions = contributions.take(CONTRIBUTION_PAGE_SIZE),
                                 linkedAccounts = linkedAccountList,
@@ -132,7 +154,8 @@ class GoalDetailViewModel @Inject constructor(
                                 lastActivityDate = contributionSummary.lastActivity,
                                 timelineEvents = timelineEvents,
                                 isLoading = false,
-                                hasMoreContributions = contributions.size > CONTRIBUTION_PAGE_SIZE
+                                hasMoreContributions = contributions.size > CONTRIBUTION_PAGE_SIZE,
+                                hasUnsyncedChanges = current.hasUnsyncedChanges
                             )
                         }
                     }
@@ -198,7 +221,8 @@ class GoalDetailViewModel @Inject constructor(
                 showWithdrawDialog = false,
                 showEditGoalDialog = false,
                 showDeleteConfirmDialog = false,
-                showArchiveConfirmDialog = false
+                showArchiveConfirmDialog = false,
+                showAccountPicker = false
             )
         }
     }
@@ -207,14 +231,25 @@ class GoalDetailViewModel @Inject constructor(
      * Select account for contribution.
      */
     private fun selectAccount(accountId: String) {
-        _uiState.update { it.copy(selectedAccountId = accountId) }
+        _uiState.update { it.copy(selectedAccountId = accountId, isInsufficientFunds = false, shortfall = 0.0) }
     }
 
     /**
      * Update contribution amount.
      */
     private fun updateAmount(amount: String) {
-        _uiState.update { it.copy(contributionAmount = amount) }
+        val state = _uiState.value
+        val account = state.selectedAccountId?.let { state.accountMap[it] }
+        val enteredAmount = amount.toDoubleOrNull() ?: 0.0
+        val insufficientFunds = account != null && enteredAmount > 0 && enteredAmount > account.balance
+        val shortfall = if (insufficientFunds) enteredAmount - (account?.balance ?: 0.0) else 0.0
+        _uiState.update {
+            it.copy(
+                contributionAmount = amount,
+                isInsufficientFunds = insufficientFunds,
+                shortfall = shortfall
+            )
+        }
     }
 
     /**
@@ -238,7 +273,22 @@ class GoalDetailViewModel @Inject constructor(
             return
         }
 
-        _uiState.update { it.copy(isSubmitting = true) }
+        // Validate account balance
+        val account = state.accountMap[accountId]
+        if (account != null) {
+            val availableBalance = account.balance
+            if (amount > availableBalance) {
+                _uiState.update {
+                    it.copy(
+                        isInsufficientFunds = true,
+                        shortfall = amount - availableBalance
+                    )
+                }
+                return
+            }
+        }
+
+        _uiState.update { it.copy(isSubmitting = true, isInsufficientFunds = false, shortfall = 0.0) }
 
         viewModelScope.launch {
             goalRepository.contribute(

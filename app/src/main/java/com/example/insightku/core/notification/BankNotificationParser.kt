@@ -187,6 +187,7 @@ object BankNotificationParser {
         val hasTypeKeyword = when (parsed.type) {
             TransactionType.INCOME  -> incomeKeywords.any { combined.contains(it, ignoreCase = true) }
             TransactionType.EXPENSE -> expenseKeywords.any { combined.contains(it, ignoreCase = true) }
+            else -> false // Newer types (transfers, goals, etc.) are never created by notification parsing
         }
 
         return when {

@@ -2,6 +2,7 @@ package com.example.insightku.feature.accounts.presentation
 
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.domain.model.AccountAllocation
 
 /**
@@ -15,6 +16,9 @@ data class AccountsUiState(
     val totalLiabilities: Double = 0.0,
     // Account allocations map - key is accountId
     val accountAllocations: Map<String, AccountAllocation> = emptyMap(),
+    // Account detail: transactions filtered by accountId
+    val selectedAccountId: String? = null,
+    val accountTransactions: List<Transaction> = emptyList(),
     val error: String? = null
 ) {
     /**

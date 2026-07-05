@@ -106,6 +106,7 @@ class DraftTransactionManager {
         val typeLabel  = when (parsed.type) {
             TransactionType.INCOME  -> "Dana Masuk"
             TransactionType.EXPENSE -> "Pembayaran"
+            else -> "Transaksi" // Transfers, goals, etc. are never created by notification parsing
         }
 
         // Deep link URI: opens AddTransaction with pre-filled data + draftId so the

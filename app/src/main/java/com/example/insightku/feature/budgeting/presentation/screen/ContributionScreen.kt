@@ -39,6 +39,7 @@ import com.example.insightku.feature.budgeting.domain.model.Goal
 import com.example.insightku.feature.budgeting.presentation.event.ContributionEvent
 import com.example.insightku.feature.budgeting.presentation.state.ContributionUiState
 import com.example.insightku.feature.budgeting.presentation.state.QuickAmount
+import com.example.insightku.feature.budgeting.presentation.components.getGoalIcon
 import com.example.insightku.feature.budgeting.presentation.viewmodel.ContributionViewModel
 
 /**
@@ -838,21 +839,6 @@ private fun AccountPickerDialog(
 }
 
 
-
-private fun getGoalIcon(iconName: String): androidx.compose.ui.graphics.vector.ImageVector {
-    return when (iconName.lowercase()) {
-        "savings", "piggy bank" -> Icons.Outlined.Savings
-        "wallet", "account balance wallet" -> Icons.Outlined.AccountBalanceWallet
-        "cash", "money", "paid" -> Icons.Outlined.Paid
-        "flight", "airplane" -> Icons.Outlined.Flight
-        "car", "directions car" -> Icons.Outlined.DirectionsCar
-        "home", "house" -> Icons.Outlined.Home
-        "school", "education" -> Icons.Outlined.School
-        "health" -> Icons.Outlined.HealthAndSafety
-        "trending up", "investment" -> Icons.Outlined.TrendingUp
-        else -> Icons.Outlined.Savings
-    }
-}
 
 private fun getAccountIcon(accountType: AccountType): androidx.compose.ui.graphics.vector.ImageVector {
     return when (accountType) {

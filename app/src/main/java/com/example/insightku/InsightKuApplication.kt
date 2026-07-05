@@ -8,6 +8,8 @@ import androidx.work.*
 import com.example.insightku.core.notification.BankNotificationListenerService
 import com.example.insightku.core.worker.AutoTransactionWorker
 import com.example.insightku.core.worker.DraftReminderWorker
+import com.example.insightku.core.worker.ScheduledAllocationWorker
+import com.example.insightku.core.worker.SyncGoalWorker
 import com.example.insightku.core.worker.SyncTransactionWorker
 import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
@@ -41,6 +43,8 @@ class InsightKuApplication : Application(), Configuration.Provider {
         super.onCreate()
         FirebaseApp.initializeApp(this)
         scheduleSyncWorker()
+        scheduleGoalSyncWorker()
+        scheduleScheduledAllocationWorker()
         scheduleAutoTransactionWorker()
         scheduleDraftReminderWorker()
         NotificationListenerService.requestRebind(
@@ -80,6 +84,52 @@ class InsightKuApplication : Application(), Configuration.Provider {
      * Query recurring + installment yang jatuh tempo, buat transaksi otomatis,
      * backfill transaksi yang terlewat, kirim notifikasi dengan action hapus.
      */
+    /**
+     * Schedule SyncGoalWorker as PeriodicWork (every 4 hours).
+     * Safety-net for syncing unsynced Goals and Contributions to Firestore.
+     */
+    private fun scheduleGoalSyncWorker() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = PeriodicWorkRequestBuilder<SyncGoalWorker>(
+            repeatInterval = 4,
+            repeatIntervalTimeUnit = TimeUnit.HOURS
+        )
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            SyncGoalWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            syncRequest
+        )
+    }
+
+    /**
+     * Schedule ScheduledAllocationWorker as PeriodicWork (every 6 hours).
+     * Evaluates daily/weekly/biweekly/monthly allocation rules and balance-above rules.
+     */
+    private fun scheduleScheduledAllocationWorker() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val request = PeriodicWorkRequestBuilder<ScheduledAllocationWorker>(
+            repeatInterval = 6,
+            repeatIntervalTimeUnit = TimeUnit.HOURS
+        )
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            ScheduledAllocationWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+    }
+
     private fun scheduleAutoTransactionWorker() {
         val request = PeriodicWorkRequestBuilder<AutoTransactionWorker>(
             repeatInterval = 1,

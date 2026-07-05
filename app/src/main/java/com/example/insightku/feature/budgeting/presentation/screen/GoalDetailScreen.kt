@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -36,13 +35,21 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.core.ui.theme.WarningYellow
 import com.example.insightku.core.ui.theme.ExpenseRed
+import com.example.insightku.core.ui.theme.formatCurrencyCompactIDR
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.insightku.feature.budgeting.data.model.AllocationTriggerType
+import com.example.insightku.feature.budgeting.domain.model.AutoAllocationRule
 import com.example.insightku.feature.budgeting.domain.model.Contribution
 import com.example.insightku.feature.budgeting.domain.model.DailyTarget
 import com.example.insightku.feature.budgeting.domain.model.Goal
+import com.example.insightku.feature.budgeting.presentation.components.getGoalIcon
 import com.example.insightku.feature.budgeting.presentation.state.GoalTimelineEvent
 import com.example.insightku.feature.budgeting.presentation.state.TimelineEventType
 import com.example.insightku.feature.budgeting.presentation.event.GoalDetailEvent
@@ -231,7 +238,7 @@ private fun ErrorContent(message: String, onBack: () -> Unit, onRetry: () -> Uni
             modifier = Modifier.fillMaxSize().padding(20.dp),
             contentAlignment = Alignment.Center
         ) {
-            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = AppPalette.card)) {
+            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = AppPalette.card), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp), border = BorderStroke(1.dp, AppPalette.cardBorder)) {
                 Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Outlined.Error, null, tint = ExpenseRed, modifier = Modifier.size(48.dp))
                     Spacer(Modifier.height(16.dp))
@@ -274,7 +281,7 @@ private fun GoalDetailContent(
         item { Spacer(Modifier.height(12.dp)); ContributionSummarySection(uiState = uiState, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         item { Spacer(Modifier.height(12.dp)); ContributionHistorySection(contributions = uiState.contributions, accountMap = uiState.accountMap, goalColor = goalColor, isLoadingMore = uiState.isLoadingMore, hasMore = uiState.hasMoreContributions, onLoadMore = { onEvent(GoalDetailEvent.LoadMoreContributions) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         item { Spacer(Modifier.height(12.dp)); TimelineSection(events = uiState.timelineEvents, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-        item { Spacer(Modifier.height(12.dp)); ReservedAutoAllocationSection(goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        item { Spacer(Modifier.height(12.dp)); AutoAllocationSection(goal = goal, rules = uiState.allocationRules, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         if (!goal.isPaused) {
             item { Spacer(Modifier.height(12.dp)); ActionButtonsSection(goal = goal, goalColor = goalColor, onContribute = { onEvent(GoalDetailEvent.ShowContributeDialog) }, onWithdraw = { onEvent(GoalDetailEvent.ShowWithdrawDialog) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         }
@@ -333,12 +340,6 @@ private fun PremiumDetailHeader(
                 Box(
                     modifier = Modifier
                         .size(96.dp)
-                        .shadow(
-                            elevation = 12.dp,
-                            shape = RoundedCornerShape(28.dp),
-                            spotColor = goalColor.copy(alpha = 0.25f),
-                            ambientColor = goalColor.copy(alpha = 0.10f)
-                        )
                         .clip(RoundedCornerShape(28.dp))
                         .background(
                             Brush.linearGradient(
@@ -466,7 +467,8 @@ private fun GoalSummaryCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             // Row 1: Target | Saved | Remaining
@@ -476,7 +478,7 @@ private fun GoalSummaryCard(
             ) {
                 SummaryItem(
                     label = "Target",
-                    value = formatCurrencyCompact(goal.targetAmount),
+                    value = formatCurrencyCompactIDR(goal.targetAmount),
                     modifier = Modifier.weight(1f)
                 )
                 // Vertical divider
@@ -489,7 +491,7 @@ private fun GoalSummaryCard(
                 )
                 SummaryItem(
                     label = "Saved",
-                    value = formatCurrencyCompact(goal.currentAmount),
+                    value = formatCurrencyCompactIDR(goal.currentAmount),
                     valueColor = if (goal.isCompleted) SuccessColor else goalColor,
                     fontWeight = FontWeight.ExtraBold,
                     modifier = Modifier.weight(1f)
@@ -503,7 +505,7 @@ private fun GoalSummaryCard(
                 )
                 SummaryItem(
                     label = "Remaining",
-                    value = formatCurrencyCompact(goal.remainingAmount),
+                    value = formatCurrencyCompactIDR(goal.remainingAmount),
                     valueColor = AppPalette.textMuted,
                     modifier = Modifier.weight(1f)
                 )
@@ -605,7 +607,8 @@ private fun ProgressSection(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             // Top row: percentage pill + saved/target
@@ -630,7 +633,7 @@ private fun ProgressSection(
 
                 // Saved / Target text
                 Text(
-                    "${formatCurrencyCompact(goal.currentAmount)} / ${formatCurrencyCompact(goal.targetAmount)}",
+                    "${formatCurrencyCompactIDR(goal.currentAmount)} / ${formatCurrencyCompactIDR(goal.targetAmount)}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textMuted
@@ -680,7 +683,7 @@ private fun ProgressSection(
                                 .size(6.dp)
                                 .clip(CircleShape)
                                 .background(if (isPassed) Color.White else AppPalette.cardBorder)
-                                .shadow(1.dp, CircleShape, spotColor = Color.Black.copy(alpha = 0.1f))
+                                
                         )
                     }
                 }
@@ -695,7 +698,7 @@ private fun ProgressSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    if (goal.isCompleted) "Goal achieved!" else "${formatCurrencyCompact(goal.remainingAmount)} remaining",
+                    if (goal.isCompleted) "Goal achieved!" else "${formatCurrencyCompactIDR(goal.remainingAmount)} remaining",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
                     color = if (goal.isCompleted) SuccessColor else AppPalette.textMuted
@@ -753,7 +756,7 @@ private fun ContributionSummarySection(
                 uiState.latestContribution?.let { latest ->
                     ContributionMiniCard(
                         label = "Latest",
-                        value = formatCurrencyCompact(kotlin.math.abs(latest.amount)),
+                        value = formatCurrencyCompactIDR(kotlin.math.abs(latest.amount)),
                         subtitle = "last saved",
                         icon = Icons.Outlined.TrendingUp,
                         color = SuccessColor,
@@ -765,7 +768,7 @@ private fun ContributionSummarySection(
                 if (uiState.averageContribution > 0) {
                     ContributionMiniCard(
                         label = "Average",
-                        value = formatCurrencyCompact(uiState.averageContribution),
+                        value = formatCurrencyCompactIDR(uiState.averageContribution),
                         subtitle = "per contribution",
                         icon = Icons.Outlined.Analytics,
                         color = PurpleViolet,
@@ -800,7 +803,8 @@ private fun ContributionMiniCard(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -859,11 +863,11 @@ private fun ContributionHistorySection(
             EmptyContributionsCard(goalColor)
         } else {
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(Dimens.CardRadius),
+                modifier = Modifier.fillMaxWidth(),                shape = RoundedCornerShape(Dimens.CardRadius),
                 colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, AppPalette.cardBorder)
+    ) {
                 Column {
                     contributions.forEachIndexed { index, contribution ->
                         val isWithdrawal = contribution.isWithdrawal
@@ -961,10 +965,10 @@ private fun ContributionHistorySection(
 @Composable
 private fun EmptyContributionsCard(goalColor: Color) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Dimens.CardRadius),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = Modifier.fillMaxWidth(),                shape = RoundedCornerShape(Dimens.CardRadius),
+                colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(32.dp),
@@ -1011,19 +1015,18 @@ private fun TimelineSection(
         if (events.isEmpty()) {
             EmptyTimelineCard(goalColor)
         } else {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(Dimens.CardRadius),
-                colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    events.forEachIndexed { index, event ->
-                        TimelineEventItem(
-                            event = event,
-                            goalColor = goalColor,
-                            isLast = index == events.lastIndex
-                        )
+            Card(        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.CardRadius),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card),        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            events.forEachIndexed { index, event ->
+                TimelineEventItem(
+                    event = event,
+                    goalColor = goalColor,
+                    isLast = index == events.lastIndex
+                )
                     }
                 }
             }
@@ -1088,7 +1091,7 @@ private fun TimelineEventItem(event: GoalTimelineEvent, goalColor: Color, isLast
         }
         event.amount?.let { amount ->
             Text(
-                "${if (amount > 0) "+" else ""}${formatCurrencyCompact(kotlin.math.abs(amount))}",
+                "${if (amount > 0) "+" else ""}${formatCurrencyCompactIDR(kotlin.math.abs(amount))}",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = if (amount > 0) SuccessColor else ExpenseRed
@@ -1104,7 +1107,8 @@ private fun EmptyTimelineCard(goalColor: Color) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(32.dp),
@@ -1140,54 +1144,146 @@ private fun EmptyTimelineCard(goalColor: Color) {
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun ReservedAutoAllocationSection(goalColor: Color, modifier: Modifier = Modifier) {
+private fun AutoAllocationSection(
+    goal: Goal,
+    rules: List<AutoAllocationRule>,
+    goalColor: Color,
+    modifier: Modifier = Modifier
+) {
     Column(modifier = modifier.fillMaxWidth()) {
-        SectionHeader(title = "Auto Allocation", subtitle = "Coming soon")
+        SectionHeader(
+            title = "Auto Allocation",
+            subtitle = if (rules.isEmpty()) "No rules set up yet" else "${rules.size} active rule${if (rules.size != 1) "s" else ""}"
+        )
         Spacer(Modifier.height(12.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(Dimens.CardRadius),
-            colors = CardDefaults.cardColors(containerColor = AppPalette.cardElevated),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Dimens.CardInnerPadding),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+
+        if (rules.isEmpty()) {
+            // Empty state
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(Dimens.CardRadius),
+                colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, AppPalette.cardBorder)
             ) {
-                Icon(
-                    Icons.Outlined.AutoAwesome,
-                    null,
-                    tint = AppPalette.textMuted.copy(alpha = 0.5f),
-                    modifier = Modifier.size(24.dp)
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Automatic savings",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = AppPalette.textMuted
-                    )
-                    Text(
-                        "Set up automatic contributions from your accounts",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppPalette.textMuted.copy(alpha = 0.7f)
-                    )
-                }
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = AppPalette.cardBorder
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(Dimens.CardInnerPadding),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        "Coming",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppPalette.textMuted,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    Icon(
+                        Icons.Outlined.AutoAwesome,
+                        null,
+                        tint = goalColor.copy(alpha = 0.5f),
+                        modifier = Modifier.size(24.dp)
                     )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Automatic savings",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = AppPalette.textPrimary
+                        )
+                        Text(
+                            "Set up rules to save automatically from your income or accounts",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppPalette.textMuted
+                        )
+                    }
                 }
             }
+        } else {
+            // Show active rules
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(Dimens.CardRadius),
+                colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, AppPalette.cardBorder)
+            ) {
+                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                    rules.forEachIndexed { index, rule ->
+                        AutoAllocationRuleItem(rule = rule, goalColor = goalColor)
+                        if (index < rules.lastIndex) {
+                            HorizontalDivider(
+                                color = AppPalette.cardBorder,
+                                thickness = 1.dp,
+                                modifier = Modifier.padding(horizontal = Dimens.CardInnerPadding)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutoAllocationRuleItem(
+    rule: AutoAllocationRule,
+    goalColor: Color
+) {
+    val triggerIcon = when (rule.triggerType) {
+        AllocationTriggerType.INCOME_RECEIVED -> Icons.Outlined.TrendingUp
+        AllocationTriggerType.SPENDING_CATEGORY -> Icons.Outlined.Category
+        AllocationTriggerType.ROUND_UP -> Icons.Outlined.ChangeHistory
+        AllocationTriggerType.DAILY, AllocationTriggerType.WEEKLY,
+        AllocationTriggerType.BIWEEKLY, AllocationTriggerType.MONTHLY -> Icons.Outlined.Schedule
+        AllocationTriggerType.BALANCE_ABOVE -> Icons.Outlined.AccountBalance
+    }
+    val statusColor = if (rule.isEnabled) SuccessColor else AppPalette.textMuted
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.CardInnerPadding, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Icon
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(goalColor.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(triggerIcon, null, tint = goalColor, modifier = Modifier.size(20.dp))
+        }
+
+        // Description
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = rule.triggerLabel,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = AppPalette.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = rule.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppPalette.textMuted,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        // Status badge
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = statusColor.copy(alpha = 0.10f)
+        ) {
+            Text(
+                text = if (rule.isEnabled) "Active" else "Off",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = statusColor,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
         }
     }
 }
@@ -1233,7 +1329,7 @@ private fun ActionButtonsSection(
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = goalColor),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 2.dp)
             ) {
                 Icon(Icons.Outlined.Add, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
@@ -1264,9 +1360,9 @@ private fun DangerZoneSection(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(Dimens.CardRadius),
-            colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
+            colors = CardDefaults.cardColors(containerColor = AppPalette.card),        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(1.dp, AppPalette.cardBorder)
+    ) {
             Column(modifier = Modifier.padding(Dimens.CardInnerPadding)) {
                 Row(
                     modifier = Modifier
@@ -1419,6 +1515,35 @@ private fun ContributionDialog(uiState: GoalDetailUiState, onEvent: (GoalDetailE
                 }
             }
 
+            // Pending sync indicator
+            if (uiState.hasUnsyncedChanges) {
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = WarningYellow.copy(alpha = 0.10f),
+                    border = BorderStroke(1.dp, WarningYellow.copy(alpha = 0.25f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.CloudUpload,
+                            contentDescription = null,
+                            tint = WarningYellow,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            "Pending sync",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = WarningYellow
+                        )
+                    }
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
 
             // ── Amount Input ──
@@ -1468,7 +1593,7 @@ private fun ContributionDialog(uiState: GoalDetailUiState, onEvent: (GoalDetailE
                 if (exceedsTarget) {
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "Amount exceeds remaining target (${formatCurrencyCompact(goal.remainingAmount)})",
+                        "Amount exceeds remaining target (${formatCurrencyCompactIDR(goal.remainingAmount)})",
                         style = MaterialTheme.typography.labelSmall,
                         color = WarningYellow
                     )
@@ -1498,7 +1623,7 @@ private fun ContributionDialog(uiState: GoalDetailUiState, onEvent: (GoalDetailE
                             )
                         ) {
                             Text(
-                                "+${formatCurrencyCompact(chipAmount).removePrefix("Rp")}",
+                                "+${formatCurrencyCompactIDR(chipAmount).removePrefix("Rp")}",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (isSelected) goalColor else AppPalette.textMuted,
@@ -1511,9 +1636,10 @@ private fun ContributionDialog(uiState: GoalDetailUiState, onEvent: (GoalDetailE
 
             Spacer(Modifier.height(20.dp))
 
-            // ── Account Selector ──
-            val linkedAccounts = uiState.linkedAccounts
-            if (linkedAccounts.isNotEmpty()) {
+            // ── Account Selector (Dropdown Style) ──
+            val displayAccounts = uiState.linkedAccounts.ifEmpty { uiState.accountMap.values.toList() }
+            if (displayAccounts.isNotEmpty()) {
+                val selectedAccount = displayAccounts.find { it.id == uiState.selectedAccountId }
                 Text(
                     "From Account",
                     style = MaterialTheme.typography.labelLarge,
@@ -1521,60 +1647,26 @@ private fun ContributionDialog(uiState: GoalDetailUiState, onEvent: (GoalDetailE
                     color = AppPalette.textMuted
                 )
                 Spacer(Modifier.height(8.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(linkedAccounts.size) { index ->
-                        val account = linkedAccounts[index]
-                        val isSelected = uiState.selectedAccountId == account.id
-                        val accountColor = remember(account.color) {
-                            try { Color(android.graphics.Color.parseColor(account.color)) }
-                            catch (e: Exception) { PurpleViolet }
-                        }
-                        Surface(
-                            onClick = { onEvent(GoalDetailEvent.SelectAccount(account.id)) },
-                            shape = RoundedCornerShape(14.dp),
-                            color = if (isSelected) accountColor.copy(alpha = 0.12f) else AppPalette.cardElevated,
-                            border = BorderStroke(
-                                1.5.dp,
-                                if (isSelected) accountColor.copy(alpha = 0.5f) else AppPalette.cardBorder
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(accountColor)
-                                )
-                                Column {
-                                    Text(
-                                        account.name,
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (isSelected) accountColor else AppPalette.textPrimary
-                                    )
-                                    Text(
-                                        account.type.displayName,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = AppPalette.textMuted
-                                    )
-                                }
-                                if (isSelected) {
-                                    Icon(
-                                        Icons.Outlined.CheckCircle,
-                                        null,
-                                        tint = accountColor,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                AccountDropdownSelector(
+                    account = selectedAccount,
+                    isWithdraw = isWithdraw,
+                    onClick = { onEvent(GoalDetailEvent.ShowAccountPicker) }
+                )
                 Spacer(Modifier.height(4.dp))
+            }
+
+            // Account Picker Sheet
+            if (uiState.showAccountPicker && displayAccounts.isNotEmpty()) {
+                AccountPickerSheet(
+                    accounts = displayAccounts,
+                    selectedAccountId = uiState.selectedAccountId,
+                    isWithdraw = isWithdraw,
+                    onAccountSelected = {
+                        onEvent(GoalDetailEvent.SelectAccount(it.id))
+                        onEvent(GoalDetailEvent.HideAccountPicker)
+                    },
+                    onDismiss = { onEvent(GoalDetailEvent.HideAccountPicker) }
+                )
             }
 
             // ── Progress Preview ──
@@ -1670,6 +1762,43 @@ private fun ContributionDialog(uiState: GoalDetailUiState, onEvent: (GoalDetailE
 
             Spacer(Modifier.height(20.dp))
 
+            // ── Insufficient Funds Warning ──
+            if (uiState.isInsufficientFunds) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = ExpenseRed.copy(alpha = 0.08f)),
+                    border = BorderStroke(1.dp, ExpenseRed.copy(alpha = 0.2f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Warning,
+                            contentDescription = null,
+                            tint = ExpenseRed,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Insufficient Funds",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ExpenseRed
+                            )
+                            Text(
+                                "You need ${CurrencyUtils.formatAmountCompact(uiState.shortfall)} more in this account",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ExpenseRed.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
             // ── Notes ──
             OutlinedTextField(
                 value = uiState.contributionNotes,
@@ -1737,6 +1866,256 @@ private fun ContributionDialog(uiState: GoalDetailUiState, onEvent: (GoalDetailE
             }
         }
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════
+// ─── Account Dropdown Selector ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun AccountDropdownSelector(
+    account: Account?,
+    isWithdraw: Boolean,
+    onClick: () -> Unit
+) {
+    val accountColor = remember(account?.color) {
+        try { Color(android.graphics.Color.parseColor(account?.color ?: "#9C27B0")) }
+        catch (e: Exception) { PurpleViolet }
+    }
+    val accountIcon = when (account?.type) {
+        AccountType.CASH -> Icons.Outlined.Payments
+        AccountType.BANK_ACCOUNT -> Icons.Outlined.AccountBalance
+        AccountType.E_WALLET -> Icons.Outlined.AccountBalanceWallet
+        AccountType.CREDIT_CARD -> Icons.Outlined.CreditCard
+        else -> Icons.Outlined.AccountBalance
+    }
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = AppPalette.cardElevated,
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Account icon in a tinted circle
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(accountColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    accountIcon,
+                    contentDescription = null,
+                    tint = accountColor,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            // Account name and balance
+            Column(modifier = Modifier.weight(1f)) {
+                if (account != null) {
+                    Text(
+                        account.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppPalette.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        CurrencyUtils.formatAmountCompact(account.balance),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = if (account.balance > 0) SuccessColor else ExpenseRed
+                    )
+                } else {
+                    Text(
+                        if (isWithdraw) "Select destination account" else "Select source account",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppPalette.textMuted
+                    )
+                }
+            }
+
+            // Chevron
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = AppPalette.textMuted,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════
+// ─── Account Picker Sheet ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AccountPickerSheet(
+    accounts: List<Account>,
+    selectedAccountId: String?,
+    isWithdraw: Boolean,
+    onAccountSelected: (Account) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = AppPalette.card,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Text(
+                if (isWithdraw) "To Account" else "From Account",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppPalette.textPrimary
+            )
+        },
+        text = {
+            Column {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    if (isWithdraw) "To Account" else "From Account",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppPalette.textPrimary
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        Icons.Outlined.Close,
+                        contentDescription = "Close",
+                        tint = AppPalette.textMuted
+                    )
+                }
+            }
+
+            HorizontalDivider(color = AppPalette.cardBorder)
+
+            // Account list
+            accounts.forEachIndexed { index, account ->
+                val isSelected = account.id == selectedAccountId
+                val accountColor = remember(account.color) {
+                    try { Color(android.graphics.Color.parseColor(account.color)) }
+                    catch (e: Exception) { PurpleViolet }
+                }
+                val accountIcon = when (account.type) {
+                    AccountType.CASH -> Icons.Outlined.Payments
+                    AccountType.BANK_ACCOUNT -> Icons.Outlined.AccountBalance
+                    AccountType.E_WALLET -> Icons.Outlined.AccountBalanceWallet
+                    AccountType.CREDIT_CARD -> Icons.Outlined.CreditCard
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onAccountSelected(account) }
+                        .background(
+                            if (isSelected) accountColor.copy(alpha = 0.08f)
+                            else Color.Transparent
+                        )
+                        .padding(horizontal = 24.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Account icon
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isSelected) accountColor.copy(alpha = 0.15f)
+                                else AppPalette.cardElevated
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            accountIcon,
+                            contentDescription = null,
+                            tint = if (isSelected) accountColor else AppPalette.textMuted,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    // Account info
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            account.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = AppPalette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                CurrencyUtils.formatAmountCompact(account.balance),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (account.balance > 0) SuccessColor else ExpenseRed
+                            )
+                            Text(
+                                "•",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppPalette.textMuted.copy(alpha = 0.5f)
+                            )
+                            Text(
+                                when (account.type) {
+                                    AccountType.CASH -> "Cash"
+                                    AccountType.BANK_ACCOUNT -> "Bank"
+                                    AccountType.E_WALLET -> "E-Wallet"
+                                    AccountType.CREDIT_CARD -> "Credit Card"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppPalette.textMuted
+                            )
+                        }
+                    }
+
+                    // Checkmark for selected
+                    if (isSelected) {
+                        Icon(
+                            Icons.Outlined.CheckCircle,
+                            contentDescription = "Selected",
+                            tint = accountColor,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                if (index < accounts.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        color = AppPalette.cardBorder
+                    )
+                }
+            }
+        }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = AppPalette.textMuted)
+            }
+        }
+    )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -1816,48 +2195,13 @@ private fun SectionHeader(title: String, subtitle: String) {
 // ─── Helper Functions ───────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════════
 
-private fun getGoalIcon(iconName: String): ImageVector {
-    return when (iconName.lowercase()) {
-        "savings", "piggy bank" -> Icons.Outlined.Savings
-        "wallet", "account balance wallet" -> Icons.Outlined.AccountBalanceWallet
-        "cash", "money", "paid" -> Icons.Outlined.Paid
-        "flight", "airplane" -> Icons.Outlined.Flight
-        "car", "directions car" -> Icons.Outlined.DirectionsCar
-        "home", "house" -> Icons.Outlined.Home
-        "school", "education", "graduation" -> Icons.Outlined.School
-        "health", "health and safety" -> Icons.Outlined.HealthAndSafety
-        "warning", "emergency" -> Icons.Outlined.Warning
-        "trending up", "investment", "stocks" -> Icons.Outlined.TrendingUp
-        "card giftcard", "gift" -> Icons.Outlined.CardGiftcard
-        "celebration" -> Icons.Outlined.Celebration
-        "star" -> Icons.Outlined.Star
-        "flag", "target", "gps fixed" -> Icons.Outlined.Flag
-        "beach", "travel" -> Icons.Outlined.BeachAccess
-        "hotel", "suitcase" -> Icons.Outlined.Luggage
-        "laptop", "technology" -> Icons.Outlined.Laptop
-        "phone", "smartphone" -> Icons.Outlined.Smartphone
-        "diamond", "gold", "investment" -> Icons.Outlined.Diamond
-        else -> Icons.Outlined.Savings
-    }
-}
+
 
 private fun formatCurrencyFull(amount: Double): String {
     return "Rp ${NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount.toLong())}"
 }
 
-private fun formatCurrencyCompact(amount: Double): String {
-    return when {
-        amount >= 1_000_000 -> {
-            val formatted = NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount / 1_000_000)
-            "Rp$formatted M"
-        }
-        amount >= 1_000 -> {
-            val formatted = NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount / 1_000)
-            "Rp$formatted K"
-        }
-        else -> "Rp${NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount.toLong())}"
-    }
-}
+
 
 // ═══════════════════════════════════════════════════════════════════════════════════
 // ─── Legacy Composables (Dialog-based Entry Point) ─────────────────────────────
@@ -1892,7 +2236,7 @@ private fun ContributionSummarySectionLegacy(
                 if (latest != null) {
                     ContributionMiniCard(
                         label = "Latest",
-                        value = formatCurrencyCompact(kotlin.math.abs(latest.amount)),
+                        value = formatCurrencyCompactIDR(kotlin.math.abs(latest.amount)),
                         subtitle = "last saved",
                         icon = Icons.Outlined.TrendingUp,
                         color = SuccessColor,
@@ -1904,7 +2248,7 @@ private fun ContributionSummarySectionLegacy(
                 if (average > 0) {
                     ContributionMiniCard(
                         label = "Average",
-                        value = formatCurrencyCompact(average),
+                        value = formatCurrencyCompactIDR(average),
                         subtitle = "per contribution",
                         icon = Icons.Outlined.Analytics,
                         color = PurpleViolet,
@@ -2119,7 +2463,8 @@ private fun DailyTargetCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
             Row(

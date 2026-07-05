@@ -1,6 +1,7 @@
 package com.example.insightku.core.data.model
 
 import androidx.annotation.Keep
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -39,7 +40,13 @@ import java.util.*
 @IgnoreExtraProperties
 @Entity(
     tableName = "transactions",
-    indices = [Index(value = ["date"])]
+    indices = [
+        Index(value = ["date"]),
+        Index(value = ["accountId"]),
+        Index(value = ["goalId"]),
+        Index(value = ["transferId"]),
+        Index(value = ["type"])
+    ]
 )
 data class Transaction(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
@@ -55,9 +62,26 @@ data class Transaction(
     /**
      * ID of the Account this transaction belongs to.
      * Every transaction MUST belong to exactly one Account.
-     * This replaces the old paymentMethod field which stored free-form strings.
      */
     val accountId: String = "",
+
+    // ── Extended Metadata (All Transactions as Single Source of Truth) ──────
+    /** For transfers: the other account involved. */
+    val relatedAccountId: String? = null,
+    /** For goal contributions/withdrawals/auto-allocation. */
+    val goalId: String? = null,
+    /** Human-readable goal name (denormalized for display). */
+    val goalName: String? = null,
+    /** For transfers: shared ID linking the pair of transactions. */
+    val transferId: String? = null,
+    /** Module that created this transaction: transaction, transfer, goal, auto_allocation, adjustment. */
+    @ColumnInfo(defaultValue = "'transaction'")
+    val sourceModule: String = "transaction",
+    /** Reference to the originating entity (e.g. contribution ID). */
+    val referenceId: String? = null,
+    /** True if created by Auto Allocation rule. Shows "Auto" badge. */
+    @ColumnInfo(defaultValue = "0")
+    val isAuto: Boolean = false,
 
     // ── Offline-First Sync Fields ───────────────────────────────────────────
     /** true = sudah ada di Firestore, false = hanya di Room (belum sync) */
@@ -66,11 +90,8 @@ data class Transaction(
     var isSynced: Boolean = false,
 
     /**
-     * LEGACY — tidak lagi dipakai. Draft kini hidup di tabel terpisah `draft_transactions`
-     * (lihat DraftTransaction), bukan sebagai flag di tabel transaksi utama. Field & kolom
-     * ini sengaja DIPERTAHANKAN: men-drop-nya butuh recreate-table migration pada tabel
-     * transaksi utama (blast radius besar) untuk membuang satu boolean inert — tidak sepadan.
-     * Selalu false untuk transaksi baru. Jangan baca/tulis field ini di kode baru.
+     * LEGACY — tidak lagi dipakai. Draft kini hidup di tabel terpisah.
+     * Selalu false untuk transaksi baru.
      */
     @get:PropertyName("isDraft")
     @set:PropertyName("isDraft")
@@ -80,8 +101,41 @@ data class Transaction(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+/**
+ * All transaction types supported by the unified ledger.
+ * Every financial event that changes an account balance creates a Transaction
+ * with one of these types.
+ */
 enum class TransactionType {
-    INCOME, EXPENSE
+    INCOME,
+    EXPENSE,
+    TRANSFER_OUT,
+    TRANSFER_IN,
+    GOAL_CONTRIBUTION,
+    GOAL_WITHDRAWAL,
+    AUTO_ALLOCATION,
+    BALANCE_ADJUSTMENT;
+
+    companion object {
+        fun fromString(value: String): TransactionType =
+            entries.find { it.name == value } ?: EXPENSE
+
+        /**
+         * Calculate the balance delta for a given transaction type.
+         * Positive = money comes in, negative = money goes out.
+         * Used by TransactionRepository, AccountDao, and AccountsViewModel.
+         */
+        fun balanceDelta(type: TransactionType, amount: Double): Double = when (type) {
+            INCOME -> amount
+            EXPENSE -> -amount
+            TRANSFER_IN -> amount
+            TRANSFER_OUT -> -amount
+            GOAL_CONTRIBUTION -> -amount
+            GOAL_WITHDRAWAL -> amount
+            AUTO_ALLOCATION -> -amount
+            BALANCE_ADJUSTMENT -> amount
+        }
+    }
 }
 
 

@@ -17,7 +17,6 @@ import com.example.insightku.core.ui.theme.LocalAccent
  * Placeholder for GoalDetailScreen navigation.
  * TODO: Implement proper goal detail with ViewModel to fetch goal by ID
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalDetailScreenPlaceholder(
     goalId: String,
@@ -93,7 +92,6 @@ fun GoalDetailScreenPlaceholder(
  * Placeholder for BudgetDetailScreen navigation.
  * TODO: Implement proper budget detail with ViewModel to fetch budget by ID
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetDetailScreenPlaceholder(
     budgetId: String,

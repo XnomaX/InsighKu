@@ -54,7 +54,10 @@ data class ContributionEntity(
     @ColumnInfo(defaultValue = "''")
     val notes: String = "",
     @ColumnInfo(defaultValue = "0")
-    val createdAt: Long = 0L
+    val createdAt: Long = 0L,
+    /** true = synced to Firestore, false = only in Room (pending sync) */
+    @ColumnInfo(defaultValue = "1")
+    val isSynced: Boolean = true
 ) {
     val contributionType: ContributionType get() = ContributionType.fromString(type)
 }

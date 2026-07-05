@@ -83,15 +83,21 @@ class TransactionRepository @Inject constructor(
         transactionDao.insertTransactionsFromRemote(transactions)
     }
 
+    /** Get transactions for a specific account as a Flow. */
+    fun getTransactionsByAccountIdFlow(accountId: String): Flow<List<Transaction>> =
+        transactionDao.getTransactionsByAccountIdFlow(accountId)
+
+    /** Get all transactions for a specific account (one-shot). */
+    suspend fun getTransactionsByAccountId(accountId: String): List<Transaction> =
+        transactionDao.getTransactionsByAccountId(accountId)
+
+
+
     suspend fun addTransaction(transaction: Transaction, userId: String) {
         // Step 1: Update account balance FIRST (before saving transaction)
         // This ensures balance is consistent even if transaction save fails
         if (transaction.accountId.isNotBlank()) {
-            val delta = if (transaction.type == TransactionType.INCOME) {
-                transaction.amount
-            } else {
-                -transaction.amount
-            }
+            val delta = TransactionType.balanceDelta(transaction.type, transaction.amount)
             accountDao.updateBalance(transaction.accountId, delta)
         }
 
@@ -138,34 +144,16 @@ class TransactionRepository @Inject constructor(
         val original = transactionDao.getTransactionByIdWithAccount(transaction.id)
 
         if (original != null) {
-            // Calculate balance impact for original transaction
-            val originalDelta = if (original.type == TransactionType.INCOME) {
-                -original.amount  // Reverse the original income effect
-            } else {
-                original.amount   // Reverse the original expense effect
-            }
-
-            // Calculate balance impact for new transaction
-            val newDelta = if (transaction.type == TransactionType.INCOME) {
-                transaction.amount
-            } else {
-                -transaction.amount
-            }
+            val originalDelta = -TransactionType.balanceDelta(original.type, original.amount)
+            val newDelta = TransactionType.balanceDelta(transaction.type, transaction.amount)
 
             if (original.accountId.isNotBlank()) {
-                // Same account - apply net difference
                 accountDao.updateBalance(original.accountId, originalDelta + newDelta)
             } else if (transaction.accountId.isNotBlank()) {
-                // Moved to a new account
                 accountDao.updateBalance(transaction.accountId, newDelta)
             }
         } else if (transaction.accountId.isNotBlank()) {
-            // Original not found but new has account - apply balance change
-            val newDelta = if (transaction.type == TransactionType.INCOME) {
-                transaction.amount
-            } else {
-                -transaction.amount
-            }
+            val newDelta = TransactionType.balanceDelta(transaction.type, transaction.amount)
             accountDao.updateBalance(transaction.accountId, newDelta)
         }
 
@@ -185,13 +173,9 @@ class TransactionRepository @Inject constructor(
         val transaction = transactionDao.getTransactionByIdWithAccount(transactionId)
 
         if (transaction != null && transaction.accountId.isNotBlank()) {
-            // Restore account balance: opposite of what the transaction did
-            val delta = if (transaction.type == TransactionType.INCOME) {
-                -transaction.amount  // Reverse income: subtract the amount
-            } else {
-                transaction.amount   // Reverse expense: add the amount back
-            }
-            accountDao.updateBalance(transaction.accountId, delta)
+            // Restore account balance: reverse the transaction's effect
+            val reverseDelta = -TransactionType.balanceDelta(transaction.type, transaction.amount)
+            accountDao.updateBalance(transaction.accountId, reverseDelta)
         }
 
         transactionDao.deleteTransaction(transactionId)

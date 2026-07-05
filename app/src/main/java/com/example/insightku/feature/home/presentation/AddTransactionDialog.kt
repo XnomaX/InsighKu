@@ -1,9 +1,5 @@
 package com.example.insightku.feature.home.presentation
-import com.example.insightku.core.ui.components.dialogs.IconOption
-import com.example.insightku.core.ui.components.dialogs.BudgetLimitInput
-import com.example.insightku.core.ui.components.dialogs.RecurringPeriodSelector
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
-import com.example.insightku.core.ui.components.dialogs.CategoryIconInfo
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -531,7 +527,6 @@ private fun ModeOptionCard(
 
 // ─── Manual Form ──────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColumnScope.ManualFormContent(
     formData: TransactionFormData,
@@ -902,9 +897,6 @@ private fun CategoryItemCard(
     }
 }
 
-private fun categoryIconForName(iconName: String): androidx.compose.ui.graphics.vector.ImageVector =
-    CategoryIconResolver.resolveIcon(iconName)
-
 // ─── Form Section Card ────────────────────────────────────────────────────────
 
 @Composable
@@ -936,18 +928,6 @@ private fun FormSectionTitle(text: String) {
 }
 
 // ─── Section Label ────────────────────────────────────────────────────────────
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text          = text,
-        style         = MaterialTheme.typography.labelSmall,
-        fontWeight    = FontWeight.Bold,
-        color         = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-        letterSpacing = 1.2.sp,
-        modifier      = Modifier.padding(start = 2.dp)
-    )
-}
 
 @Composable
 private fun AmountHeroCard(
