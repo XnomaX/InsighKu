@@ -133,6 +133,7 @@ private fun LoginScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = screenPadding)
+                .imePadding()
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

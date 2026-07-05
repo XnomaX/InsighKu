@@ -561,7 +561,7 @@ private fun MainNavHost(
         composable(Route.ANALYSIS) { AnalyticsScreen() }
         composable(Route.BUDGETING) {
             BudgetingScreen(
-                budgetingViewModel = budgetingViewModel,
+                viewModel = budgetingViewModel,
                 onNavigateToGoalDetail = onNavigateToGoalDetail
             )
         }

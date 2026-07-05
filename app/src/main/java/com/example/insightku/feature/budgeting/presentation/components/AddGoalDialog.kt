@@ -224,8 +224,7 @@ fun AddGoalDialog(
                     .verticalScroll(rememberScrollState())
                     .background(GoalBg)
                     .padding(24.dp)
-                    .navigationBarsPadding()
-                    .imePadding(),
+                    .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Goal Name

@@ -563,8 +563,8 @@ fun ColumnScope.ManualFormContent(
     Column(
         modifier = Modifier
             .weight(1f)
-            .verticalScroll(rememberScrollState())
             .imePadding()
+            .verticalScroll(rememberScrollState())
             .background(AppPalette.background)
             .padding(horizontal = 18.dp)
             .padding(top = 20.dp, bottom = 24.dp),
