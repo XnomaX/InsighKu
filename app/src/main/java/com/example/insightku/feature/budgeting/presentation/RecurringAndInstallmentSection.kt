@@ -127,51 +127,11 @@ fun RecurringPaymentCard(
     )
 
     if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            shape            = RoundedCornerShape(28.dp),
-            containerColor   = AppPalette.card,
-            icon             = {
-                Box(
-                    modifier         = Modifier.size(52.dp).clip(CircleShape).background(Color(0xFFFFF5F5)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = Color(0xFFE57373), modifier = Modifier.size(24.dp))
-                }
-            },
-            title = {
-                Text("Remove Payment?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-            },
-            text = {
-                Text(
-                    "\"${budget.name}\" will be removed from your recurring payments.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppPalette.textMuted
-                )
-            },
-            dismissButton = {
-                Surface(
-                    modifier = Modifier.height(42.dp).clickable { showDeleteConfirm = false },
-                    shape    = RoundedCornerShape(50.dp),
-                    color    = AppPalette.card,
-                    border   = BorderStroke(1.dp, AppPalette.cardBorder)
-                ) {
-                    Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-                        Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
-                    }
-                }
-            },
-            confirmButton = {
-                Surface(
-                    modifier = Modifier.height(42.dp).clickable { showDeleteConfirm = false; onDelete() },
-                    shape    = RoundedCornerShape(50.dp),
-                    color    = Color(0xFFE57373)
-                ) {
-                    Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-                        Text("Remove", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                }
-            }
+        com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog(
+            itemName = budget.name,
+            onDismiss = { showDeleteConfirm = false },
+            onConfirm = { showDeleteConfirm = false; onDelete() },
+            message = "\"${budget.name}\" will be removed from your recurring payments."
         )
     }
 
@@ -378,51 +338,11 @@ fun InstallmentCard(
     )
 
     if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            shape            = RoundedCornerShape(28.dp),
-            containerColor   = AppPalette.card,
-            icon             = {
-                Box(
-                    modifier         = Modifier.size(52.dp).clip(CircleShape).background(Color(0xFFFFF5F5)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = Color(0xFFE57373), modifier = Modifier.size(24.dp))
-                }
-            },
-            title = {
-                Text("Remove Installment?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-            },
-            text = {
-                Text(
-                    "\"${installment.name}\" will be removed from your installments.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppPalette.textMuted
-                )
-            },
-            dismissButton = {
-                Surface(
-                    modifier = Modifier.height(42.dp).clickable { showDeleteConfirm = false },
-                    shape    = RoundedCornerShape(50.dp),
-                    color    = AppPalette.card,
-                    border   = BorderStroke(1.dp, AppPalette.cardBorder)
-                ) {
-                    Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-                        Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
-                    }
-                }
-            },
-            confirmButton = {
-                Surface(
-                    modifier = Modifier.height(42.dp).clickable { showDeleteConfirm = false; onDelete() },
-                    shape    = RoundedCornerShape(50.dp),
-                    color    = Color(0xFFE57373)
-                ) {
-                    Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-                        Text("Remove", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                }
-            }
+        com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog(
+            itemName = installment.name,
+            onDismiss = { showDeleteConfirm = false },
+            onConfirm = { showDeleteConfirm = false; onDelete() },
+            message = "\"${installment.name}\" will be removed from your installments."
         )
     }
 

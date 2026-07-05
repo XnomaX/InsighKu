@@ -505,23 +505,15 @@ private fun DialogHost(
         }
 
         is GoalsDialogState.ArchiveGoal -> {
-            AlertDialog(
-                onDismissRequest = { onEvent(GoalsEvent.DismissDialog) },
-                title = { Text("Archive Goal?") },
-                text = { Text("Are you sure you want to archive \"${dialogState.goalName}\"? You can still view its history but it won't appear in your active goals.") },
-                confirmButton = {
-                    TextButton(
-                        onClick = { onEvent(GoalsEvent.ArchiveGoal(dialogState.goalId)) },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text("Archive")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { onEvent(GoalsEvent.DismissDialog) }) {
-                        Text("Cancel")
-                    }
-                }
+            com.example.insightku.core.ui.components.dialogs.PremiumDialog(
+                type = com.example.insightku.core.ui.components.dialogs.PremiumDialogType.ARCHIVE,
+                customIcon = Icons.Outlined.Archive,
+                title = "Archive Goal?",
+                message = "Are you sure you want to archive \"${dialogState.goalName}\"? You can still view its history but it won't appear in your active goals.",
+                confirmText = "Archive",
+                dismissText = "Cancel",
+                onConfirm = { onEvent(GoalsEvent.ArchiveGoal(dialogState.goalId)) },
+                onDismiss = { onEvent(GoalsEvent.DismissDialog) }
             )
         }
 

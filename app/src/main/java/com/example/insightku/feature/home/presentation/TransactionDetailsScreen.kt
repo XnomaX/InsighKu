@@ -1063,31 +1063,18 @@ fun TransactionDetailOverlay(
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            icon = {
-                Box(Modifier.size(48.dp).clip(CircleShape).background(TxExpenseRed.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.DeleteForever, null, tint = TxExpenseRed, modifier = Modifier.size(26.dp))
-                }
+        com.example.insightku.core.ui.components.dialogs.PremiumDialog(
+            type = com.example.insightku.core.ui.components.dialogs.PremiumDialogType.ERROR,
+            customIcon = Icons.Default.DeleteForever,
+            title = "Delete Transaction?",
+            message = "\"${transaction.title}\" will be permanently deleted.",
+            confirmText = "Delete",
+            dismissText = "Cancel",
+            onConfirm = {
+                showDeleteDialog = false
+                onDelete(transaction.id)
             },
-            title = { Text("Delete Transaction?", fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleLarge) },
-            text  = { Text("\"${transaction.title}\" will be permanently deleted.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            confirmButton = {
-                Box(
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(TxExpenseRed)
-                        .pointerInput(Unit) { detectTapGestures { showDeleteDialog = false; onDelete(transaction.id) } }
-                        .padding(horizontal = 20.dp, vertical = 10.dp)
-                ) { Text("Delete", fontWeight = FontWeight.Bold, color = Color.White) }
-            },
-            dismissButton = {
-                Box(
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
-                        .border(1.dp, TxCardBorder, RoundedCornerShape(12.dp))
-                        .pointerInput(Unit) { detectTapGestures { showDeleteDialog = false } }
-                        .padding(horizontal = 20.dp, vertical = 10.dp)
-                ) { Text("Cancel", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            },
-            shape = RoundedCornerShape(24.dp), containerColor = TxCard
+            onDismiss = { showDeleteDialog = false }
         )
     }
 }

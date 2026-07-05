@@ -589,56 +589,11 @@ private fun DeleteCategoryDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape            = RoundedCornerShape(28.dp),
-        containerColor   = AppPalette.card,
-        icon             = {
-            Box(
-                modifier         = Modifier.size(52.dp).clip(CircleShape).background(Color(0xFFFFF5F5)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFE57373), modifier = Modifier.size(26.dp))
-            }
-        },
-        title = {
-            Text(
-                text       = "Delete Category?",
-                style      = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color      = AppPalette.textPrimary
-            )
-        },
-        text = {
-            Text(
-                text  = "\"$categoryName\" will be removed. Its transactions will be unlinked.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppPalette.textMuted
-            )
-        },
-        dismissButton = {
-            Surface(
-                modifier = Modifier.height(42.dp).clickable(onClick = onDismiss),
-                shape    = RoundedCornerShape(50.dp),
-                color    = AppPalette.card,
-                border   = androidx.compose.foundation.BorderStroke(1.dp, AppPalette.cardBorder)
-            ) {
-                Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-                    Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
-                }
-            }
-        },
-        confirmButton = {
-            Surface(
-                modifier = Modifier.height(42.dp).clickable(onClick = onConfirm),
-                shape    = RoundedCornerShape(50.dp),
-                color    = Color(0xFFE57373)
-            ) {
-                Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-                    Text("Delete", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            }
-        }
+    com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog(
+        itemName = categoryName,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        message = "\"$categoryName\" will be removed. Its transactions will be unlinked."
     )
 }
 
