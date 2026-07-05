@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +37,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -468,50 +470,96 @@ private fun AccountRow(
 
                     DropdownMenu(
                         expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier
+                            .padding(horizontal = 6.dp)
+                            .background(
+                                AppPalette.card,
+                                RoundedCornerShape(16.dp)
+                            )
                     ) {
+                        // Edit
                         DropdownMenuItem(
                             text = {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Text(
+                                    text = "Edit",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AppPalette.textPrimary
+                                )
+                            },
+                            leadingIcon = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(LocalAccent.current.copy(alpha = 0.08f)),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.Edit,
                                         contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = AppPalette.textMuted
+                                        tint = LocalAccent.current,
+                                        modifier = Modifier.size(16.dp)
                                     )
-                                    Text("Edit")
                                 }
                             },
                             onClick = {
                                 showMenu = false
                                 onEdit()
-                            }
+                            },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .height(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
                         )
+
+                        // ── Danger zone separator ──
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            HorizontalDivider(
+                                color = ExpenseRed.copy(alpha = 0.15f),
+                                thickness = 1.dp
+                            )
+                        }
+
+                        // Delete (destructive)
                         DropdownMenuItem(
                             text = {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Text(
+                                    text = "Delete",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = ExpenseRed
+                                )
+                            },
+                            leadingIcon = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(ExpenseRed.copy(alpha = 0.10f)),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.Delete,
                                         contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = ExpenseRed
-                                    )
-                                    Text(
-                                        text = "Delete",
-                                        color = ExpenseRed
+                                        tint = ExpenseRed,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                             },
                             onClick = {
                                 showMenu = false
                                 showDeleteConfirm = true
-                            }
+                            },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .height(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
                         )
                     }
                 }
