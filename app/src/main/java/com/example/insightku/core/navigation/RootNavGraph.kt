@@ -13,7 +13,6 @@ import com.example.insightku.core.ui.components.RootViewModel
 
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.navigation.compose.NavHost
@@ -66,7 +65,6 @@ fun RootNavGraph(notificationData: NotificationTransactionData? = null) {
             route = "root_graph",
             modifier = Modifier
                 .fillMaxSize()
-                .imePadding()  // keyboard tidak nabrak content
         ) {
             // Splash Screen — Protected Route Controller
             composable(Route.SPLASH) {

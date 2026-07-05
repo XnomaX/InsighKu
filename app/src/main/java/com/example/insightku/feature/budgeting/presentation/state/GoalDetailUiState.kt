@@ -44,6 +44,11 @@ data class GoalDetailUiState(
     val contributionAmount: String = "",
     val contributionNotes: String = "",
 
+    // Submission state
+    val isSubmitting: Boolean = false,
+    val showSuccessAnimation: Boolean = false,
+    val successMessage: String = "",
+
     // Pagination for contribution history
     val contributionPage: Int = 0,
     val hasMoreContributions: Boolean = false,

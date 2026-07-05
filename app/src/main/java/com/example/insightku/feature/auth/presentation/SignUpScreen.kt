@@ -92,6 +92,7 @@ fun SignUpScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = screenPadding)
+            .imePadding()
             .verticalScroll(scrollState)
             .semantics { contentDescription = "Sign up screen" },
         horizontalAlignment = Alignment.CenterHorizontally

@@ -43,6 +43,7 @@ fun ForgotPasswordScreen(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .padding(24.dp)
+            .imePadding()
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

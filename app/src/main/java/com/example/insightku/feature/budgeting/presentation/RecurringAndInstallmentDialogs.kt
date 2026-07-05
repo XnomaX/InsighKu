@@ -112,7 +112,7 @@ fun AddRecurringPaymentDialog(
             // Form
             Column(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                    .background(SheetBg).padding(24.dp).navigationBarsPadding().imePadding(),
+                    .background(SheetBg).padding(24.dp).navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 SheetFormField(label = "PAYMENT NAME", value = name,
@@ -288,7 +288,7 @@ fun AddInstallmentDialog(
 
             Column(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                    .background(SheetBg).padding(24.dp).navigationBarsPadding().imePadding(),
+                    .background(SheetBg).padding(24.dp).navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 SheetFormField(label = "INSTALLMENT NAME", value = name,

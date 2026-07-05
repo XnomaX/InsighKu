@@ -112,8 +112,7 @@ fun ContributionBottomSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 40.dp)
-                .navigationBarsPadding()
-                .imePadding(),
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // ── Header: Goal Summary ────────────────────────────────────────────
@@ -844,8 +843,7 @@ fun WithdrawalBottomSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 40.dp)
-                .navigationBarsPadding()
-                .imePadding(),
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Header

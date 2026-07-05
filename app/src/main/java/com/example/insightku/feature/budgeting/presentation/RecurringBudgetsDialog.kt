@@ -104,9 +104,9 @@ fun RecurringBudgetsDialog(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onSurface
-            ) {
-                Column(Modifier.fillMaxSize()) {
-                    DialogHeader(
+    ) {
+        Column(Modifier.fillMaxSize().imePadding()) {
+            DialogHeader(
                         showAddForm = showAddForm,
                         isEditing = editingBudget != null,
                         onBack = ::handleBackToList,
@@ -586,25 +586,11 @@ fun DeleteConfirmationDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                Spacer(Modifier.width(8.dp))
-                Text("Hapus Pembayaran")
-            }
-        },
-        text = { Text("Apakah Anda yakin ingin menghapus pembayaran berulang \"$budgetName\"? Tindakan ini tidak dapat dibatalkan.") },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) { Text("Ya, Hapus") }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text("Batal") }
-        }
+    com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog(
+        itemName = budgetName,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        message = "Apakah Anda yakin ingin menghapus pembayaran berulang \"$budgetName\"? Tindakan ini tidak dapat dibatalkan."
     )
 }
 

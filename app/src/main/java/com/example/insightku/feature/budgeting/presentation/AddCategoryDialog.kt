@@ -151,8 +151,7 @@ fun AddCategoryDialog(
                     .verticalScroll(rememberScrollState())
                     .background(DialogBg)
                     .padding(24.dp)
-                    .navigationBarsPadding()
-                    .imePadding(),
+                    .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 // Name

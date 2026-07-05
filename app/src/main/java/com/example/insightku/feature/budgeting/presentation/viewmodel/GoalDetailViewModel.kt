@@ -238,6 +238,8 @@ class GoalDetailViewModel @Inject constructor(
             return
         }
 
+        _uiState.update { it.copy(isSubmitting = true) }
+
         viewModelScope.launch {
             goalRepository.contribute(
                 goalId = goal.id,
@@ -249,11 +251,15 @@ class GoalDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         showContributeDialog = false,
-                        snackbarMessage = "Contribution added successfully"
+                        isSubmitting = false,
+                        showSuccessAnimation = true,
+                        successMessage = "Contribution added successfully"
                     )
                 }
+                kotlinx.coroutines.delay(2000)
+                _uiState.update { it.copy(showSuccessAnimation = false, successMessage = "") }
             }.onFailure { e ->
-                _uiState.update { it.copy(error = e.message ?: "Failed to add contribution") }
+                _uiState.update { it.copy(isSubmitting = false, error = e.message ?: "Failed to add contribution") }
             }
         }
     }
@@ -272,6 +278,8 @@ class GoalDetailViewModel @Inject constructor(
             return
         }
 
+        _uiState.update { it.copy(isSubmitting = true) }
+
         viewModelScope.launch {
             goalRepository.withdraw(
                 goalId = goal.id,
@@ -282,11 +290,15 @@ class GoalDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         showWithdrawDialog = false,
-                        snackbarMessage = "Withdrawal successful"
+                        isSubmitting = false,
+                        showSuccessAnimation = true,
+                        successMessage = "Withdrawal successful"
                     )
                 }
+                kotlinx.coroutines.delay(2000)
+                _uiState.update { it.copy(showSuccessAnimation = false, successMessage = "") }
             }.onFailure { e ->
-                _uiState.update { it.copy(error = e.message ?: "Failed to withdraw") }
+                _uiState.update { it.copy(isSubmitting = false, error = e.message ?: "Failed to withdraw") }
             }
         }
     }
