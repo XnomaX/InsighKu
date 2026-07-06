@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.insightku.feature.home.presentation.TransactionData
@@ -122,13 +121,13 @@ fun ReadyToScanContent(isIncome: Boolean, onScan: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(96.dp)
-                .background(Color(0xFF5A2A82).copy(alpha = 0.1f), shape = CircleShape),
+                .background(com.example.insightku.core.ui.theme.AppPalette.primary.copy(alpha = 0.1f), shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 Icons.Default.CameraAlt,
                 contentDescription = null,
-                tint = Color(0xFF5A2A82),
+                tint = com.example.insightku.core.ui.theme.AppPalette.primary,
                 modifier = Modifier.size(48.dp)
             )
         }
@@ -147,7 +146,7 @@ fun ReadyToScanContent(isIncome: Boolean, onScan: () -> Unit) {
         Button(
             onClick = onScan,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A2A82))
+            colors = ButtonDefaults.buttonColors(containerColor = com.example.insightku.core.ui.theme.AppPalette.primary)
         ) {
             Icon(Icons.Default.CameraAlt, contentDescription = null)
             Spacer(Modifier.width(8.dp))
@@ -174,7 +173,7 @@ fun ProcessingContent(isIncome: Boolean, text: String) {
             .padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        CircularProgressIndicator(color = Color(0xFF5A2A82), strokeWidth = 4.dp)
+        CircularProgressIndicator(color = com.example.insightku.core.ui.theme.AppPalette.primary, strokeWidth = 4.dp)
         Spacer(Modifier.height(24.dp))
         Text(text, fontWeight = FontWeight.Bold)
         Text(
@@ -202,15 +201,15 @@ fun ScannedContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFDCFCE7), RoundedCornerShape(8.dp))
+                .background(com.example.insightku.core.ui.theme.AppPalette.success.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF10B981))
+            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = com.example.insightku.core.ui.theme.AppPalette.success)
             Spacer(Modifier.width(8.dp))
             Text(
                 "${if (isIncome) "Income document" else "Receipt"} scanned! Review and add details.",
-                color = Color(0xFF166534),
+                color = com.example.insightku.core.ui.theme.AppPalette.success,
                 fontWeight = FontWeight.Medium
             )
         }
@@ -287,7 +286,7 @@ fun ScannedContent(
                 enabled = formData.merchant.isNotBlank() && formData.amount.isNotBlank() && formData.category.isNotBlank(),
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isIncome) Color(0xFF10B981) else Color(0xFF5A2A82)
+                    containerColor = if (isIncome) com.example.insightku.core.ui.theme.AppPalette.success else com.example.insightku.core.ui.theme.AppPalette.primary
                 )
             ) {
                 Text("Add ${if (isIncome) "Income" else "Transaction"}")
@@ -315,15 +314,15 @@ private fun ResultContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFDCFCE7), RoundedCornerShape(8.dp))
+                .background(com.example.insightku.core.ui.theme.AppPalette.success.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF10B981))
+            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = com.example.insightku.core.ui.theme.AppPalette.success)
             Spacer(Modifier.width(8.dp))
             Text(
                 "AI extracted the details. Please review.",
-                color = Color(0xFF166534),
+                color = com.example.insightku.core.ui.theme.AppPalette.success,
                 fontWeight = FontWeight.Medium,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -367,7 +366,7 @@ private fun ResultContent(
                 },
                 enabled = merchant.isNotBlank() && amount.isNotBlank(),
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A2A82))
+                colors = ButtonDefaults.buttonColors(containerColor = com.example.insightku.core.ui.theme.AppPalette.primary)
             ) {
                 Text("Confirm")
             }
@@ -375,12 +374,6 @@ private fun ResultContent(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ReceiptScannerDialogPreview() {
-    MaterialTheme {
-        ReceiptScannerDialog(isOpen = true, onDismiss = {}, onTransactionConfirmed = {})
-    }
-}
+
 
 

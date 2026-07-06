@@ -156,20 +156,20 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0F0A1E))
+            .background(com.example.insightku.core.ui.theme.AppPalette.background)
             .padding(horizontal = 16.dp)
     ) {
         Spacer(Modifier.height(16.dp))
 
         // ── Header ────────────────────────────────────────────────────────────
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.BugReport, null, tint = Color(0xFF7C4DFF), modifier = Modifier.size(22.dp))
+            Icon(Icons.Default.BugReport, null, tint = com.example.insightku.core.ui.theme.AppPalette.accent, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(8.dp))
             Text("Notification Debug", style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { refreshTick++ }) {
-                Icon(Icons.Default.Refresh, "Refresh", tint = Color(0xFFAB8FD4))
+                Icon(Icons.Default.Refresh, "Refresh", tint = com.example.insightku.core.ui.theme.AppPalette.textMuted)
             }
         }
 
@@ -185,7 +185,7 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
         Spacer(Modifier.height(8.dp))
 
         // ── Diagnostics ───────────────────────────────────────────────────────
-        Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFF1A1030)) {
+        Surface(shape = RoundedCornerShape(10.dp), color = com.example.insightku.core.ui.theme.AppPalette.card) {
             Column(Modifier.fillMaxWidth().padding(10.dp)) {
                 DiagRow("ComponentName", componentNameStr)
                 DiagRow("Match",         if (isListenerEnabled) "YES ✓" else "NO ✗")
@@ -197,7 +197,7 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
             Spacer(Modifier.height(8.dp))
             Button(
                 onClick  = { BankNotificationListenerService.openSettings(context) },
-                colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DFF)),
+                colors   = ButtonDefaults.buttonColors(containerColor = com.example.insightku.core.ui.theme.AppPalette.accent),
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Buka Notification Access Settings") }
         } else {
@@ -206,11 +206,11 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
                 OutlinedButton(
                     onClick  = { BankNotificationListenerService.forceReconnect(context) },
                     modifier = Modifier.weight(1f)
-                ) { Text("Force Reconnect", color = Color(0xFFAB8FD4), fontSize = 12.sp) }
+                ) { Text("Force Reconnect", color = com.example.insightku.core.ui.theme.AppPalette.textMuted, fontSize = 12.sp) }
                 OutlinedButton(
                     onClick  = { NotificationDebugLog.clearAll() },
                     modifier = Modifier.weight(1f)
-                ) { Text("Clear Log", color = Color(0xFFAB8FD4), fontSize = 12.sp) }
+                ) { Text("Clear Log", color = com.example.insightku.core.ui.theme.AppPalette.textMuted, fontSize = 12.sp) }
             }
         }
 
@@ -219,23 +219,23 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
         // ── Tabs ──────────────────────────────────────────────────────────────
         TabRow(
             selectedTabIndex = selectedTab,
-            containerColor   = Color(0xFF1A1030),
-            contentColor     = Color(0xFF7C4DFF)
+            containerColor   = com.example.insightku.core.ui.theme.AppPalette.card,
+            contentColor     = com.example.insightku.core.ui.theme.AppPalette.accent
         ) {
             Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                Text("All (${rawEntries.size})", color = if (selectedTab == 0) Color(0xFF7C4DFF) else Color(0xFFAB8FD4),
+                Text("All (${rawEntries.size})", color = if (selectedTab == 0) com.example.insightku.core.ui.theme.AppPalette.accent else com.example.insightku.core.ui.theme.AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
             Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                Text("Bank (${bankEntries.size})", color = if (selectedTab == 1) Color(0xFF7C4DFF) else Color(0xFFAB8FD4),
+                Text("Bank (${bankEntries.size})", color = if (selectedTab == 1) com.example.insightku.core.ui.theme.AppPalette.accent else com.example.insightku.core.ui.theme.AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
             Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }) {
-                Text("Service", color = if (selectedTab == 2) Color(0xFF7C4DFF) else Color(0xFFAB8FD4),
+                Text("Service", color = if (selectedTab == 2) com.example.insightku.core.ui.theme.AppPalette.accent else com.example.insightku.core.ui.theme.AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
             Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }) {
-                Text("Battery", color = if (selectedTab == 3) Color(0xFF7C4DFF) else Color(0xFFAB8FD4),
+                Text("Battery", color = if (selectedTab == 3) com.example.insightku.core.ui.theme.AppPalette.accent else com.example.insightku.core.ui.theme.AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
         }

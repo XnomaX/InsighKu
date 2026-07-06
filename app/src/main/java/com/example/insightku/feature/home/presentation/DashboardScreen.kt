@@ -36,7 +36,9 @@ fun DashboardScreen(
     onDraftDismissed: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToGoals: () -> Unit = {},
-    onNavigateToBudgeting: () -> Unit = {}
+    onNavigateToBudgeting: () -> Unit = {},
+    onCreateGoal: () -> Unit = {},
+    onCreateBudget: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -89,7 +91,9 @@ fun DashboardScreen(
                 onDraftDismissed = onDraftDismissed,
                 onNavigateToSettings = onNavigateToSettings,
                 onNavigateToGoals = onNavigateToGoals,
-                onNavigateToBudgeting = onNavigateToBudgeting
+                onNavigateToBudgeting = onNavigateToBudgeting,
+                onCreateGoal = onCreateGoal,
+                onCreateBudget = onCreateBudget
             )
         }
     }
@@ -108,7 +112,9 @@ fun DashboardScreenContent(
     onDraftDismissed: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToGoals: () -> Unit = {},
-    onNavigateToBudgeting: () -> Unit = {}
+    onNavigateToBudgeting: () -> Unit = {},
+    onCreateGoal: () -> Unit = {},
+    onCreateBudget: () -> Unit = {}
 ) {
     val density = LocalDensity.current
     var showStreakPopup by remember { mutableStateOf(false) }
@@ -211,8 +217,9 @@ fun DashboardScreenContent(
                     goals = uiState.previewGoals,
                     totalCount = uiState.totalGoalCount,
                     isBalanceVisible = !LocalHideAmounts.current,
-                    onClickGoal = { /* TODO: navigate to goal detail */ },
+                    onClickGoal = { onNavigateToGoals() },
                     onClickViewAll = onNavigateToGoals,
+                    onCreateGoal = onCreateGoal,
                     modifier = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical = Dimens.CardSpacing
@@ -226,6 +233,7 @@ fun DashboardScreenContent(
                     totalCount = uiState.totalBudgetCount,
                     isBalanceVisible = !LocalHideAmounts.current,
                     onClickViewAll = onNavigateToBudgeting,
+                    onCreateBudget = onCreateBudget,
                     modifier = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical = Dimens.CardSpacing

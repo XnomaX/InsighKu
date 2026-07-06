@@ -264,7 +264,7 @@ fun EditAccountDialog(
                             text = "Cancel",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF6B6B8A)
+                            color = AppPalette.textDialogMuted
                         )
                     }
                 }
@@ -342,7 +342,7 @@ private fun CurrencyTextFieldEdit(
     }
 
     val borderColor by animateColorAsState(
-        targetValue = if (error != null) Color(0xFFEF4444) else SheetBorder,
+        targetValue = if (error != null) AppPalette.error else SheetBorder,
         animationSpec = tween(180),
         label = "currency_border"
     )
@@ -381,11 +381,10 @@ private fun CurrencyTextFieldEdit(
                     selection = TextRange(cursorTarget.coerceIn(0, newDisplay.length))
                 )
             },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
+            modifier = Modifier.fillMaxWidth(),                    placeholder = {
                 Text(
                     placeholder,
-                    color = Color(0xFFBDBDBD),
+                    color = AppPalette.placeholder,
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -400,7 +399,7 @@ private fun CurrencyTextFieldEdit(
             },
             singleLine = true,
             isError = error != null,
-            supportingText = error?.let { { Text(it, color = Color(0xFFEF4444)) } },
+            supportingText = error?.let { { Text(it, color = AppPalette.error) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -408,7 +407,7 @@ private fun CurrencyTextFieldEdit(
                 unfocusedBorderColor = borderColor,
                 focusedContainerColor = AppPalette.card,
                 unfocusedContainerColor = AppPalette.card,
-                errorBorderColor = Color(0xFFEF4444),
+                errorBorderColor = AppPalette.error,
                 focusedTextColor = accentColor,
                 unfocusedTextColor = accentColor
             ),
@@ -440,10 +439,10 @@ private fun AccountFormFieldEdit(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(placeholder, color = Color(0xFFBDBDBD)) },
+            placeholder = { Text(placeholder, color = AppPalette.placeholder) },
             singleLine = true,
             isError = error != null,
-            supportingText = error?.let { { Text(it, color = Color(0xFFEF4444)) } },
+            supportingText = error?.let { { Text(it, color = AppPalette.error) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(

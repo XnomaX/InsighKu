@@ -2,9 +2,9 @@ package com.example.insightku.feature.budgeting.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.repository.AccountAllocationRepository
+import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.feature.budgeting.data.model.ContributionType
 import com.example.insightku.feature.budgeting.data.model.GoalAccountEntity
 import com.example.insightku.feature.budgeting.data.model.GoalStatus
@@ -39,7 +39,7 @@ private data class CoreGoalsData(
 @HiltViewModel
 class GoalsViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
-    private val accountDao: AccountDao,
+    private val accountRepository: AccountRepository,
     private val accountAllocationRepository: AccountAllocationRepository
 ) : ViewModel() {
 
@@ -63,7 +63,7 @@ class GoalsViewModel @Inject constructor(
                 goalRepository.getDailyTarget(),
                 goalRepository.getAutoAllocationRules(),
                 goalRepository.getGoalsSummary(),
-                accountDao.getAllAccounts()
+                accountRepository.getAllAccounts()
             ) { goals, dailyTarget, rules, summary, accounts ->
                 CoreGoalsData(goals, dailyTarget, rules, summary, accounts)
             }

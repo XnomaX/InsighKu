@@ -2,9 +2,9 @@ package com.example.insightku.feature.accounts.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.data.repository.AccountRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EditAccountViewModel @Inject constructor(
-    private val accountDao: AccountDao
+    private val accountRepository: AccountRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditAccountUiState())
@@ -112,7 +112,7 @@ class EditAccountViewModel @Inject constructor(
 
             try {
                 // Fetch existing account to preserve mutable fields
-                val existingAccount = accountDao.getAccountById(currentState.accountId)
+                val existingAccount = accountRepository.getAccountById(currentState.accountId)
                 val updatedAccount = existingAccount?.copy(
                     name = currentState.accountName.trim(),
                     accountType = currentState.selectedType.name,
@@ -122,7 +122,7 @@ class EditAccountViewModel @Inject constructor(
                     updatedAt = System.currentTimeMillis()
                 ) ?: throw Exception("Account not found")
 
-                accountDao.updateAccount(updatedAccount)
+                accountRepository.updateAccount(updatedAccount)
 
                 _uiState.update {
                     it.copy(

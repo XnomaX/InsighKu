@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.ui.components.TransactionTypePresentation
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.feature.home.presentation.TransactionItem
@@ -106,11 +108,27 @@ fun RecentTransactionsPreview(
 
 @Composable
 private fun TransactionItemRow(transaction: TransactionItem, onClick: () -> Unit) {
-    val resolved = CategoryIconResolver.resolve(
-        transaction.iconName.ifBlank { transaction.category }
-    )
-    val icon  = resolved.icon
-    val color = resolved.color
+    val isSystemType = transaction.transactionType !in setOf(TransactionType.INCOME, TransactionType.EXPENSE)
+    val presentation = TransactionTypePresentation.forType(transaction.transactionType)
+    
+    // Use semantic icon/color for system types; category-based for Income/Expense
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+    val color: androidx.compose.ui.graphics.Color
+    if (isSystemType) {
+        icon = presentation.icon
+        color = presentation.color
+    } else {
+        val resolved = CategoryIconResolver.resolve(
+            transaction.iconName.ifBlank { transaction.category }
+        )
+        icon = resolved.icon
+        color = resolved.color
+    }
+    
+    // Determine amount color and prefix
+    val amountColor = if (isSystemType) presentation.color else if (transaction.isIncome) IncomeGreen else AppPalette.textPrimary
+    val amountPrefix = if (transaction.isIncome) "+" else if (isSystemType && presentation.color == IncomeGreen) "+" else ""
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -137,17 +155,17 @@ private fun TransactionItemRow(transaction: TransactionItem, onClick: () -> Unit
                 maxLines = 1
             )
             Text(
-                text = transaction.category,
+                text = if (isSystemType) presentation.label else transaction.category,
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted
             )
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
-                text = (if (transaction.isIncome) "+" else "") + formatCurrencyShort(abs(transaction.amount)),
+                text = "$amountPrefix ${formatCurrencyShort(abs(transaction.amount))}",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = if (transaction.isIncome) IncomeGreen else AppPalette.textPrimary
+                color = amountColor
             )
             Text(
                 text = transaction.time,

@@ -66,7 +66,13 @@ data class GoalDetailUiState(
     val isLoadingMore: Boolean = false,
 
     // Auto-allocation rules
-    val allocationRules: List<AutoAllocationRule> = emptyList()
+    val allocationRules: List<AutoAllocationRule> = emptyList(),
+
+    // Auto-allocation dialog state
+    val showAutoAllocationDialog: Boolean = false,
+    val editingAutoAllocationRule: AutoAllocationRule? = null,
+    val showDeleteAutoAllocationRuleConfirm: Boolean = false,
+    val pendingDeleteAutoAllocationRuleId: String? = null
 ) {
     // Computed properties
     val hasContributions: Boolean get() = contributions.isNotEmpty()

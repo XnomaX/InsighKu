@@ -34,6 +34,42 @@ object AppPalette {
     val textMuted: Color @Composable @ReadOnlyComposable get() =
         if (isDark) Color(0xFFAB8FD4) else Color(0xFF9E9E9E)
 
+    // ── Semantic UI colors (shared across screens) ────────────────────────
+
+    /** Brand accent — purple. */
+    val accent: Color = Color(0xFF7C4DFF)
+    /** Primary brand color (dark purple). */
+    val primary: Color = Color(0xFF5A2A82)
+    /** Success / positive indicator. */
+    val success: Color = Color(0xFF10B981)
+    /** Error / danger indicator. */
+    val error: Color = Color(0xFFEF4444)
+    /** Warning / amber indicator. */
+    val warning: Color = Color(0xFFF59E0B)
+    /** Cyan accent (travel, dental, water). */
+    val cyan: Color = Color(0xFF06B6D4)
+    /** Neutral gray (housing, taxes). */
+    val gray: Color = Color(0xFF6B7280)
+    /** Indigo (parking, photography, service). */
+    val indigo: Color = Color(0xFF6366F1)
+    /** Muted dialog text. */
+    val textDialogMuted: Color = Color(0xFF6B6B8A)
+    /** Placeholder / hint text. */
+    val placeholder: Color = Color(0xFFBDBDBD)
+    /** Delete action red. */
+    val deleteRed: Color = Color(0xFFE57373)
+    /** Delete action background. */
+    val deleteBg: Color = Color(0xFFFFF5F5)
+    /** Success chip background. */
+    val successChipBg: Color = Color(0xFF064E3B)
+    /** Error chip background. */
+    val errorChipBg: Color = Color(0xFF450A0A)
+
+    // Semantic info-tile colors
+    val notesPurple: Color = Color(0xFF8B5CF6)
+    val locationPink: Color = Color(0xFFEC4899)
+    val defaultBlue: Color = Color(0xFF3B82F6)
+
     // Goal feature colors
     val GoalColors = listOf(
         "#7C3AED", // Purple

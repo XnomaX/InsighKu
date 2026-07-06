@@ -46,7 +46,6 @@ import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.Savings
@@ -105,8 +104,10 @@ import com.example.insightku.core.ui.theme.PurpleTint
 import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.core.ui.theme.WarningYellow
 import com.example.insightku.core.ui.theme.formatCurrency
+import com.example.insightku.feature.budgeting.presentation.BudgetingAction
 import com.example.insightku.feature.budgeting.presentation.BudgetingViewModel
 import com.example.insightku.feature.budgeting.presentation.event.GoalsEvent
+import com.example.insightku.feature.budgeting.presentation.components.PlanningHeader
 import com.example.insightku.feature.budgeting.presentation.screen.GoalsScreen
 import com.example.insightku.core.navigation.Route
 import com.example.insightku.feature.budgeting.presentation.viewmodel.GoalsViewModel
@@ -125,7 +126,9 @@ private enum class PlanningTab(val title: String, val icon: ImageVector) {
 @Composable
 fun BudgetingScreen(
     viewModel: BudgetingViewModel = hiltViewModel(),
-    onNavigateToGoalDetail: ((String) -> Unit)? = null
+    onNavigateToGoalDetail: ((String) -> Unit)? = null,
+    initialAction: BudgetingAction? = null,
+    onActionConsumed: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val tabs = PlanningTab.entries
@@ -133,6 +136,22 @@ fun BudgetingScreen(
     val coroutineScope = rememberCoroutineScope()
     val goalsViewModel: GoalsViewModel = hiltViewModel()
     val goalsUiState by goalsViewModel.uiState.collectAsState()
+
+    // Handle initial action from Home screen CTAs
+    LaunchedEffect(initialAction) {
+        when (initialAction) {
+            is BudgetingAction.OpenCreateGoal -> {
+                pagerState.animateScrollToPage(1)
+                goalsViewModel.onEvent(GoalsEvent.ShowAddGoalDialog())
+                onActionConsumed()
+            }
+            is BudgetingAction.OpenCreateBudget -> {
+                viewModel.onEvent(BudgetingEvent.ShowAddBudgetDialog(initialAction.categoryType))
+                onActionConsumed()
+            }
+            null -> {}
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -150,8 +169,15 @@ fun BudgetingScreen(
             label = "header_animation"
         ) { pageIndex ->
             when (tabs.getOrNull(pageIndex)) {
-                PlanningTab.BUDGETING -> BudgetingHeader()
-                PlanningTab.GOALS -> GoalsHeader(onAddClick = { goalsViewModel.onEvent(GoalsEvent.ShowAddGoalDialog()) })
+                PlanningTab.BUDGETING -> PlanningHeader(
+                    title = "Budgeting",
+                    subtitle = "Spending control center"
+                )
+                PlanningTab.GOALS -> PlanningHeader(
+                    title = "Goals",
+                    subtitle = "Track your savings goals",
+                    onAddClick = { goalsViewModel.onEvent(GoalsEvent.ShowAddGoalDialog()) }
+                )
                 null -> Box(modifier = Modifier.fillMaxWidth())
             }
         }
@@ -229,91 +255,7 @@ fun BudgetingScreen(
     }
 }
 
-@Composable
-private fun BudgetingHeader() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(AppPalette.background)
-            .padding(horizontal = Dimens.ScreenHorizontalPadding)
-            .padding(top = 16.dp, bottom = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        Text(
-            text = "Budgeting",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = "Spending control center",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
 
-/**
- * Goals page header with Add button on the right.
- */
-@Composable
-private fun GoalsHeader(
-    onAddClick: () -> Unit
-) {
-    val accent = LocalAccent.current
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(AppPalette.background)
-            .padding(horizontal = Dimens.ScreenHorizontalPadding)
-            .padding(top = 16.dp, bottom = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = "Goals",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = AppPalette.textPrimary
-            )
-            Text(
-                text = "Track your savings goals",
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppPalette.textMuted
-            )
-        }
-
-        // Add button like Accounts screen
-        Surface(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .clickable { onAddClick() },
-            shape = RoundedCornerShape(50),
-            color = accent.copy(alpha = 0.10f)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Add,
-                    contentDescription = null,
-                    tint = accent,
-                    modifier = Modifier.size(17.dp)
-                )
-                Text(
-                    text = "Add",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = accent
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun BudgetingScreenContent(

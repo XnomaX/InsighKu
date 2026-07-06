@@ -1,6 +1,5 @@
 package com.example.insightku.feature.home.domain
 
-import android.util.Log
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.auth.data.AuthRepository
@@ -78,12 +77,11 @@ class AddTransactionUseCase @Inject constructor(
                         type = ContributionType.AUTO_ALLOCATION
                     ).onSuccess {
                         executedSuggestions.add(suggestion)
-                        Log.d(TAG, "Auto-allocated Rp${suggestion.amount} to ${suggestion.goalName}")
-                    }.onFailure { e ->
-                        Log.e(TAG, "Failed to auto-allocate to ${suggestion.goalName}: ${e.message}")
+                    }.onFailure { _ ->
+                        // Allocation failed — skip this suggestion
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error executing auto-allocation: ${e.message}", e)
+                } catch (_: Exception) {
+                    // Allocation execution error — skip this suggestion
                 }
             }
 

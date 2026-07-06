@@ -30,15 +30,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
 import kotlin.math.roundToInt
 
-private val EditBorder  = Color(0xFFECE7F6)
-private val EditBg      = Color(0xFFFAF9FE)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +54,7 @@ fun EditCategoryDialog(
     val sheetState         = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val categoryType = category.type
-    val accentColor  = if (categoryType == CategoryType.EXPENSE) Color(0xFF7C4DFF) else Color(0xFF10B981)
+    val accentColor  = if (categoryType == CategoryType.EXPENSE) com.example.insightku.core.ui.theme.AppPalette.accent else com.example.insightku.core.ui.theme.AppPalette.success
     val iconSet      = if (categoryType == CategoryType.EXPENSE) expenseCategoryIcons else incomeCategoryIcons
 
     var name             by remember(category) { mutableStateOf(category.name) }
@@ -89,7 +87,7 @@ fun EditCategoryDialog(
     ModalBottomSheet(
         onDismissRequest = { handleDismiss() },
         sheetState       = sheetState,
-        containerColor   = Color.White,
+        containerColor   = com.example.insightku.core.ui.theme.AppPalette.card,
         dragHandle       = {
             Box(
                 modifier         = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
@@ -100,7 +98,7 @@ fun EditCategoryDialog(
                         .width(36.dp)
                         .height(4.dp)
                         .clip(RoundedCornerShape(50.dp))
-                        .background(EditBorder)
+                        .background(com.example.insightku.core.ui.theme.AppPalette.cardBorder)
                 )
             }
         }
@@ -127,30 +125,30 @@ fun EditCategoryDialog(
                     text       = "Edit Category",
                     style      = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color      = Color(0xFF1A1A2E)
+                    color      = com.example.insightku.core.ui.theme.AppPalette.textPrimary
                 )
                 Text(
                     text  = "Update your budget category",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9E9E9E)
+                    color = com.example.insightku.core.ui.theme.AppPalette.textMuted
                 )
             }
 
-            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(EditBorder))
+            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(com.example.insightku.core.ui.theme.AppPalette.cardBorder))
 
             // Scrollable form
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .background(EditBg)
+                    .background(com.example.insightku.core.ui.theme.AppPalette.background)
                     .padding(24.dp)
                     .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 // Name
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("CATEGORY NAME", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF9E9E9E))
+                    Text("CATEGORY NAME", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = com.example.insightku.core.ui.theme.AppPalette.textMuted)
                     OutlinedTextField(
                         value         = name,
                         onValueChange = { name = it; nameError = null },
@@ -160,12 +158,12 @@ fun EditCategoryDialog(
                         shape         = RoundedCornerShape(14.dp),
                         colors        = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor      = accentColor,
-                            unfocusedBorderColor    = EditBorder,
+                            unfocusedBorderColor    = com.example.insightku.core.ui.theme.AppPalette.cardBorder,
                             errorBorderColor        = MaterialTheme.colorScheme.error,
-                            focusedContainerColor   = Color.White,
-                            unfocusedContainerColor = Color.White
+                            focusedContainerColor   = com.example.insightku.core.ui.theme.AppPalette.card,
+                            unfocusedContainerColor = com.example.insightku.core.ui.theme.AppPalette.card
                         ),
-                        placeholder = { Text("e.g. Food & Drinks", color = Color(0xFFBDBDBD)) }
+                        placeholder = { Text("e.g. Food & Drinks", color = com.example.insightku.core.ui.theme.AppPalette.placeholder) }
                     )
                     if (nameError != null) {
                         Text(nameError!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
@@ -174,7 +172,7 @@ fun EditCategoryDialog(
 
                 // Icon picker
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("ICON", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF9E9E9E))
+                    Text("ICON", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = com.example.insightku.core.ui.theme.AppPalette.textMuted)
                     LazyVerticalGrid(
                         columns               = GridCells.Adaptive(56.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -195,7 +193,7 @@ fun EditCategoryDialog(
                 // Budget limit + recurring (EXPENSE only)
                 if (categoryType == CategoryType.EXPENSE) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("BUDGET LIMIT & ALERT", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF9E9E9E))
+                        Text("BUDGET LIMIT & ALERT", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = com.example.insightku.core.ui.theme.AppPalette.textMuted)
                         BudgetLimitInput(
                             budgetLimitText         = budgetLimitText,
                             onBudgetLimitTextChange = { budgetLimitText = it },
@@ -204,7 +202,7 @@ fun EditCategoryDialog(
                         )
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("BUDGET RESET", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF9E9E9E))
+                        Text("BUDGET RESET", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = com.example.insightku.core.ui.theme.AppPalette.textMuted)
                         RecurringPeriodSelector(selected = selectedPeriod, onSelect = { selectedPeriod = it })
                     }
                 }
@@ -214,11 +212,11 @@ fun EditCategoryDialog(
                     Surface(
                         modifier = Modifier.weight(1f).height(50.dp).clickable { handleDismiss() },
                         shape    = RoundedCornerShape(14.dp),
-                        color    = Color.White,
-                        border   = BorderStroke(1.dp, EditBorder)
+                        color    = com.example.insightku.core.ui.theme.AppPalette.card,
+                        border   = BorderStroke(1.dp, com.example.insightku.core.ui.theme.AppPalette.cardBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
+                            Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = com.example.insightku.core.ui.theme.AppPalette.textDialogMuted)
                         }
                     }
                     Box(
@@ -258,17 +256,17 @@ fun EditCategoryDialog(
                             .height(50.dp)
                             .clickable { onCategoryDeleted(category.id) },
                         shape  = RoundedCornerShape(14.dp),
-                        color  = Color(0xFFFFF5F5),
-                        border = BorderStroke(1.dp, Color(0xFFE57373).copy(alpha = 0.4f))
+                        color  = com.example.insightku.core.ui.theme.AppPalette.deleteBg,
+                        border = BorderStroke(1.dp, com.example.insightku.core.ui.theme.AppPalette.deleteRed.copy(alpha = 0.4f))
                     ) {
                         Row(
                             modifier              = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment     = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFFE57373))
+                            Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = com.example.insightku.core.ui.theme.AppPalette.deleteRed)
                             Spacer(Modifier.width(8.dp))
-                            Text("Delete Category", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFFE57373))
+                            Text("Delete Category", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = com.example.insightku.core.ui.theme.AppPalette.deleteRed)
                         }
                     }
                 }
@@ -276,37 +274,5 @@ fun EditCategoryDialog(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun EditExpenseCategoryDialogPreview() {
-    MaterialTheme {
-        EditCategoryDialog(
-            isOpen = true,
-            onDismiss = {},
-            category = Category(id = "1", name = "Food", color = "#F59E0B", budgetLimit = 1000.0, icon = "Food & Drinks", alertThreshold = 90, categoryType = CategoryType.EXPENSE.name),
-            onCategoryEdited  = {},
-            onCategoryDeleted = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun EditIncomeCategoryDialogPreview() {
-    MaterialTheme {
-        EditCategoryDialog(
-            isOpen = true,
-            onDismiss = {},
-            category = Category(id = "2", name = "Salary", color = "#10B981", icon = "Salary", categoryType = CategoryType.INCOME.name),
-            onCategoryEdited  = {},
-            onCategoryDeleted = {}
-        )
-    }
-}
-
-
-
-
 
 

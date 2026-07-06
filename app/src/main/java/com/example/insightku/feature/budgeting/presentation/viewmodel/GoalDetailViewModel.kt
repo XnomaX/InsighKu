@@ -3,8 +3,8 @@ package com.example.insightku.feature.budgeting.presentation.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.feature.budgeting.data.local.dao.AutoAllocationRuleDao
 import com.example.insightku.feature.budgeting.data.model.ContributionType
 import com.example.insightku.feature.budgeting.data.model.GoalStatus
@@ -29,7 +29,7 @@ private const val CONTRIBUTION_PAGE_SIZE = 20
 @HiltViewModel
 class GoalDetailViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
-    private val accountDao: AccountDao,
+    private val accountRepository: AccountRepository,
     private val autoAllocationRuleDao: AutoAllocationRuleDao,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -78,6 +78,17 @@ class GoalDetailViewModel @Inject constructor(
 
             // Pagination
             is GoalDetailEvent.LoadMoreContributions -> loadMoreContributions()
+
+            // Auto Allocation
+            is GoalDetailEvent.ShowAutoAllocationDialog -> showAutoAllocationDialog()
+            is GoalDetailEvent.ShowEditAutoAllocationRule -> showEditAutoAllocationRule(event.rule)
+            is GoalDetailEvent.AddAutoAllocationRule -> addAutoAllocationRule(event.rule)
+            is GoalDetailEvent.UpdateAutoAllocationRule -> updateAutoAllocationRule(event.rule)
+            is GoalDetailEvent.DeleteAutoAllocationRule -> showDeleteAutoAllocationConfirm(event.ruleId)
+            is GoalDetailEvent.ShowDeleteAutoAllocationConfirm -> showDeleteAutoAllocationConfirm(event.ruleId)
+            is GoalDetailEvent.ConfirmDeleteAutoAllocationRule -> confirmDeleteAutoAllocationRule()
+            is GoalDetailEvent.CancelDeleteAutoAllocationRule -> cancelDeleteAutoAllocationRule()
+            is GoalDetailEvent.ToggleAutoAllocationRule -> toggleAutoAllocationRule(event.ruleId, event.enabled)
         }
     }
 
@@ -90,7 +101,7 @@ class GoalDetailViewModel @Inject constructor(
 
             try {
                 // Load accounts map first
-                val accounts = accountDao.getAllAccounts().first()
+                val accounts = accountRepository.getAllAccounts().first()
                 val accountMap = accounts.associateBy { it.id }
 
                 // Observe unsynced status in background
@@ -222,7 +233,9 @@ class GoalDetailViewModel @Inject constructor(
                 showEditGoalDialog = false,
                 showDeleteConfirmDialog = false,
                 showArchiveConfirmDialog = false,
-                showAccountPicker = false
+                showAccountPicker = false,
+                showAutoAllocationDialog = false,
+                editingAutoAllocationRule = null
             )
         }
     }
@@ -394,6 +407,96 @@ class GoalDetailViewModel @Inject constructor(
                 .onFailure { e ->
                     _uiState.update { it.copy(error = e.message ?: "Failed to delete goal") }
                 }
+        }
+    }
+
+    // ── Auto Allocation ──────────────────────────────────────────────────────────
+
+    private fun showAutoAllocationDialog() {
+        _uiState.update {
+            it.copy(
+                showAutoAllocationDialog = true,
+                editingAutoAllocationRule = null
+            )
+        }
+    }
+
+    private fun showEditAutoAllocationRule(rule: AutoAllocationRule) {
+        _uiState.update {
+            it.copy(
+                showAutoAllocationDialog = true,
+                editingAutoAllocationRule = rule
+            )
+        }
+    }
+
+    private fun addAutoAllocationRule(rule: AutoAllocationRule) {
+        viewModelScope.launch {
+            goalRepository.addAutoAllocationRule(rule)
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(showAutoAllocationDialog = false, editingAutoAllocationRule = null)
+                    }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message ?: "Failed to add rule") }
+                }
+        }
+    }
+
+    private fun updateAutoAllocationRule(rule: AutoAllocationRule) {
+        viewModelScope.launch {
+            goalRepository.updateAutoAllocationRule(rule)
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(showAutoAllocationDialog = false, editingAutoAllocationRule = null)
+                    }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message ?: "Failed to update rule") }
+                }
+        }
+    }
+
+    private fun showDeleteAutoAllocationConfirm(ruleId: String) {
+        _uiState.update {
+            it.copy(
+                showDeleteAutoAllocationRuleConfirm = true,
+                pendingDeleteAutoAllocationRuleId = ruleId
+            )
+        }
+    }
+
+    private fun confirmDeleteAutoAllocationRule() {
+        val ruleId = _uiState.value.pendingDeleteAutoAllocationRuleId ?: return
+        _uiState.update {
+            it.copy(
+                showDeleteAutoAllocationRuleConfirm = false,
+                pendingDeleteAutoAllocationRuleId = null,
+                showAutoAllocationDialog = false,
+                editingAutoAllocationRule = null
+            )
+        }
+        viewModelScope.launch {
+            goalRepository.deleteAutoAllocationRule(ruleId)
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message ?: "Failed to delete rule") }
+                }
+        }
+    }
+
+    private fun cancelDeleteAutoAllocationRule() {
+        _uiState.update {
+            it.copy(
+                showDeleteAutoAllocationRuleConfirm = false,
+                pendingDeleteAutoAllocationRuleId = null
+            )
+        }
+    }
+
+    private fun toggleAutoAllocationRule(ruleId: String, enabled: Boolean) {
+        viewModelScope.launch {
+            goalRepository.setRuleEnabled(ruleId, enabled)
         }
     }
 

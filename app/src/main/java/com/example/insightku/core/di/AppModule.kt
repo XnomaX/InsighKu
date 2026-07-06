@@ -3,6 +3,11 @@ package com.example.insightku.core.di
 import android.content.Context
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.core.datastore.SessionManager
+import com.example.insightku.feature.home.data.DataStoreStreakPreferences
+import com.example.insightku.feature.home.domain.StreakPreferences
+import com.example.insightku.feature.budgeting.data.repository.AutoAllocationDataSourceImpl
+import com.example.insightku.feature.budgeting.domain.engine.AutoAllocationDataSource
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -43,5 +48,18 @@ object AppModule {
     @Provides
     @Singleton
     fun provideErrorBus(): ErrorBus = ErrorBus()
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class DomainModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindStreakPreferences(impl: DataStoreStreakPreferences): StreakPreferences
+
+    @Binds
+    @Singleton
+    abstract fun bindAutoAllocationDataSource(impl: AutoAllocationDataSourceImpl): AutoAllocationDataSource
 }
 

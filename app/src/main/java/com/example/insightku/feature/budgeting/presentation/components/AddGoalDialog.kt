@@ -283,7 +283,7 @@ fun AddGoalDialog(
                             Icon(
                                 Icons.Default.EditCalendar,
                                 contentDescription = null,
-                                tint = Color(0xFFB39DDB),
+                                tint = AppPalette.accent,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -339,7 +339,7 @@ fun AddGoalDialog(
                                 "Cancel",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF6B6B8A)
+                                color = AppPalette.textDialogMuted
                             )
                         }
                     }
@@ -348,7 +348,7 @@ fun AddGoalDialog(
                             .weight(1f)
                             .height(50.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(if (isValid) GoalPurple else Color(0xFFE0E0E0))
+                            .background(if (isValid) GoalPurple else AppPalette.textMuted)
                             .clickable(enabled = isValid) {
                                 if (name.trim().length < 2) {
                                     nameError = "Name must be at least 2 characters"
@@ -504,7 +504,7 @@ private fun GoalFormField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(placeholder, color = Color(0xFFBDBDBD)) },
+            placeholder = { Text(placeholder, color = AppPalette.placeholder) },
             prefix = if (prefix != null) {
                 { Text(prefix, fontWeight = FontWeight.Bold, color = accentColor) }
             } else null,
@@ -517,11 +517,11 @@ private fun GoalFormField(
                 unfocusedBorderColor = GoalBorder,
                 focusedContainerColor = AppPalette.card,
                 unfocusedContainerColor = AppPalette.card,
-                errorBorderColor = Color(0xFFEF4444)
+                errorBorderColor = AppPalette.error
             )
         )
         if (error != null) {
-            Text(error, style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF4444))
+            Text(error, style = MaterialTheme.typography.labelSmall, color = AppPalette.error)
         }
     }
 }
