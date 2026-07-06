@@ -45,7 +45,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.core.data.model.Account
@@ -1518,67 +1517,5 @@ fun FormTextField(
     onImeAction   = onImeAction,
     trailingIcon  = trailingIcon
 )
-
-// ─── Previews ─────────────────────────────────────────────────────────────────
-
-@Preview(name = "Mode Selection", showBackground = true, widthDp = 360, heightDp = 520)
-@Composable
-private fun PreviewModeSelection() {
-    MaterialTheme {
-        AddTransactionDialog(isOpen = true, onDismiss = {}, onTransactionAdded = {}, onOpenScanner = {})
-    }
-}
-
-@Preview(name = "Expense Form", showBackground = true, widthDp = 360, heightDp = 760)
-@Composable
-private fun PreviewExpenseForm() {
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize()) {
-            var formData by remember { mutableStateOf(TransactionFormData(isIncome = false)) }
-            Column(Modifier.fillMaxSize()) {
-                DialogGradientHeader(
-                    step = AddTransactionStep.ManualForm,
-                    isIncome = false,
-                    onBack = {},
-                    onClose = {}
-                )
-                ManualFormContent(
-                    formData = formData,
-                    onFormDataChanged = { formData = it },
-                    onSubmit = {},
-                    onBack = {}
-                )
-            }
-        }
-    }
-}
-
-@Preview(name = "Income Form", showBackground = true, widthDp = 360, heightDp = 760)
-@Composable
-private fun PreviewIncomeForm() {
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize()) {
-            var formData by remember { mutableStateOf(TransactionFormData(isIncome = true, category = "Salary")) }
-            Column(Modifier.fillMaxSize()) {
-                DialogGradientHeader(
-                    step = AddTransactionStep.ManualForm,
-                    isIncome = true,
-                    onBack = {},
-                    onClose = {}
-                )
-                ManualFormContent(
-                    formData = formData,
-                    onFormDataChanged = { formData = it },
-                    onSubmit = {},
-                    onBack = {}
-                )
-            }
-        }
-    }
-}
-
-
-
-
 
 

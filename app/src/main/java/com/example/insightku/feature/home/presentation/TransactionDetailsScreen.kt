@@ -1,4 +1,5 @@
 package com.example.insightku.feature.home.presentation
+import com.example.insightku.core.ui.components.TransactionTypePresentation
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 
 import androidx.activity.compose.BackHandler
@@ -41,7 +42,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -59,14 +59,14 @@ import java.util.*
 import kotlin.math.abs
 
 // --- Design tokens ------------------------------------------------------------
-// Semantic colors — theme-invariant, used for financial polarity only.
-private val TxIncomeGreen = Color(0xFF10B981)
-private val TxExpenseRed  = Color(0xFFEF4444)
-private val TxTransferBlue = Color(0xFF3B82F6)
-private val TxGoalPurple = Color(0xFF8B5CF6)
-private val TxWithdrawalTeal = Color(0xFF0D9488)
-private val TxAutoAllocIndigo = Color(0xFF6366F1)
-private val TxAdjustOrange = Color(0xFFF59E0B)
+// Semantic colors delegated to TransactionTypePresentation for single source of truth.
+private val TxIncomeGreen @Composable get() = TransactionTypePresentation.INCOME.color
+private val TxExpenseRed @Composable get() = TransactionTypePresentation.EXPENSE.color
+private val TxTransferBlue @Composable get() = TransactionTypePresentation.TRANSFER_OUT.color
+private val TxGoalPurple @Composable get() = TransactionTypePresentation.GOAL_CONTRIBUTION.color
+private val TxWithdrawalTeal @Composable get() = TransactionTypePresentation.GOAL_WITHDRAWAL.color
+private val TxAutoAllocIndigo @Composable get() = TransactionTypePresentation.AUTO_ALLOCATION.color
+private val TxAdjustOrange @Composable get() = TransactionTypePresentation.BALANCE_ADJUSTMENT.color
 
 // All surface/text/border tokens are resolved at runtime from AppPalette or
 // LocalAccent so they adapt to dark mode and the user's chosen accent.
@@ -81,47 +81,26 @@ private val TxTint:        Color @Composable get() = AppPalette.cardElevated
 // --- Type-based helpers -------------------------------------------------------
 
 /** Get the accent color for a transaction type. */
-private fun txTypeColor(type: TransactionType): Color = when (type) {
-    TransactionType.INCOME -> TxIncomeGreen
-    TransactionType.EXPENSE -> TxExpenseRed
-    TransactionType.TRANSFER_OUT, TransactionType.TRANSFER_IN -> TxTransferBlue
-    TransactionType.GOAL_CONTRIBUTION -> TxGoalPurple
-    TransactionType.GOAL_WITHDRAWAL -> TxWithdrawalTeal
-    TransactionType.AUTO_ALLOCATION -> TxAutoAllocIndigo
-    TransactionType.BALANCE_ADJUSTMENT -> TxAdjustOrange
-}
+private fun txTypeColor(type: TransactionType): Color = TransactionTypePresentation.colorForType(type)
 
 /** Get the display label for a transaction type (e.g. "Transfer", "Goal Contribution"). */
-private fun txTypeLabel(type: TransactionType): String = when (type) {
-    TransactionType.INCOME -> "Income"
-    TransactionType.EXPENSE -> "Expense"
-    TransactionType.TRANSFER_OUT -> "Transfer Out"
-    TransactionType.TRANSFER_IN -> "Transfer In"
-    TransactionType.GOAL_CONTRIBUTION -> "Goal Contribution"
-    TransactionType.GOAL_WITHDRAWAL -> "Goal Withdrawal"
-    TransactionType.AUTO_ALLOCATION -> "Auto Allocation"
-    TransactionType.BALANCE_ADJUSTMENT -> "Balance Adjustment"
-}
+private fun txTypeLabel(type: TransactionType): String = TransactionTypePresentation.labelForType(type)
 
 /** Get the amount prefix/sign for display. */
 private fun txAmountPrefix(type: TransactionType): String = when (type) {
     TransactionType.INCOME -> "+"
     TransactionType.EXPENSE -> "-"
-    else -> "" // Transfers, goals, adjustments show plain amount
+    else -> ""
 }
 
 /** Whether this type should show category info. */
-private fun txShowCategory(type: TransactionType): Boolean = type == TransactionType.INCOME || type == TransactionType.EXPENSE
+private fun txShowCategory(type: TransactionType): Boolean = TransactionTypePresentation.forType(type).showCategory
 
 /** Whether this type allows editing. */
-private fun txAllowsEdit(type: TransactionType): Boolean = when (type) {
-    TransactionType.INCOME, TransactionType.EXPENSE -> true
-    TransactionType.BALANCE_ADJUSTMENT -> true
-    else -> false // System-generated: transfers, goals, auto-allocation
-}
+private fun txAllowsEdit(type: TransactionType): Boolean = TransactionTypePresentation.forType(type).allowsEdit
 
 /** Whether this type allows deletion. */
-private fun txAllowsDelete(type: TransactionType): Boolean = txAllowsEdit(type)
+private fun txAllowsDelete(type: TransactionType): Boolean = TransactionTypePresentation.forType(type).allowsDelete
 
 // --- Enums --------------------------------------------------------------------
 enum class FilterType { ALL, INCOME, EXPENSE, TRANSFER, GOAL, AUTO_ALLOC, TODAY, WEEK, MONTH }
@@ -1084,7 +1063,7 @@ fun TransactionDetailOverlay(
                         AccountType.CREDIT_CARD -> Icons.Default.CreditCard
                         null -> Icons.Default.AccountBalance
                     }
-                    val accountColor = account?.let { runCatching { Color(android.graphics.Color.parseColor(it.color)) }.getOrDefault(Color(0xFF3B82F6)) } ?: Color(0xFF3B82F6)
+                    val accountColor = account?.let { runCatching { Color(android.graphics.Color.parseColor(it.color)) }.getOrDefault(AppPalette.defaultBlue) } ?: AppPalette.defaultBlue
                     PremiumInfoTile(accountIcon, "Account", account?.name ?: "No account", accountColor, Modifier.weight(1f))
                     // Sync status
                     PremiumInfoTile(
@@ -1131,8 +1110,8 @@ fun TransactionDetailOverlay(
                         )
                     }
                 }
-                if (!transaction.description.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.Notes, "Notes", transaction.description, Color(0xFF8B5CF6))
-                if (!transaction.location.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.LocationOn, "Location", transaction.location, Color(0xFFEC4899))
+                if (!transaction.description.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.Notes, "Notes", transaction.description, AppPalette.notesPurple)
+                if (!transaction.location.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.LocationOn, "Location", transaction.location, AppPalette.locationPink)
             }
 
             // -- Action buttons (type-dependent) --------------------------------
@@ -1294,72 +1273,7 @@ private fun PremiumInfoTileWide(
     }
 }
 
-// --- Previews -----------------------------------------------------------------
 
-private val SAMPLE_TRANSACTIONS = listOf(
-    Transaction(id = "1", title = "Monthly Salary", amount = 8500000.0, category = "Salary",
-        type = TransactionType.INCOME, date = System.currentTimeMillis() - 3_600_000L,
-        description = "April salary", accountId = "sample-bank"),
-    Transaction(id = "2", title = "Starbucks Coffee", amount = 65000.0, category = "Food & Drinks",
-        type = TransactionType.EXPENSE, date = System.currentTimeMillis() - 7_200_000L,
-        description = "Iced latte", location = "Starbucks Sudirman", accountId = "sample-eWallet"),
-    Transaction(id = "3", title = "Freelance Project", amount = 2500000.0, category = "Freelance",
-        type = TransactionType.INCOME, date = System.currentTimeMillis() - 86_400_000L * 2, accountId = "sample-cash"),
-    Transaction(id = "4", title = "Netflix", amount = 54000.0, category = "Entertainment",
-        type = TransactionType.EXPENSE, date = System.currentTimeMillis() - 86_400_000L * 5,
-        accountId = "sample-credit"),
-    Transaction(id = "5", title = "Grab Ride", amount = 32000.0, category = "Transportation",
-        type = TransactionType.EXPENSE, date = System.currentTimeMillis() - 86_400_000L * 10, accountId = "sample-eWallet")
-)
-
-private val SAMPLE_ACCOUNTS = listOf(
-    Account(id = "sample-bank", name = "Bank BCA", accountType = AccountType.BANK_ACCOUNT.name, balance = 5000000.0, color = "#3B82F6"),
-    Account(id = "sample-eWallet", name = "GoPay", accountType = AccountType.E_WALLET.name, balance = 500000.0, color = "#00AED6"),
-    Account(id = "sample-cash", name = "Cash", accountType = AccountType.CASH.name, balance = 1000000.0, color = "#10B981"),
-    Account(id = "sample-credit", name = "Visa Card", accountType = AccountType.CREDIT_CARD.name, balance = 500000.0, color = "#EF4444")
-)
-
-@Preview(showBackground = true, name = "Transaction List")
-@Composable
-fun TransactionDetailsScreenListPreview() {
-    MaterialTheme {
-        TransactionDetailsScreen(initialTransactions = SAMPLE_TRANSACTIONS, accounts = SAMPLE_ACCOUNTS, onBack = {})
-    }
-}
-
-@Preview(showBackground = true, name = "Detail Overlay - Expense", widthDp = 400, heightDp = 800)
-@Composable
-private fun PreviewDetailOverlayExpense() {
-    val accountMap = SAMPLE_ACCOUNTS.associateBy { it.id }
-    MaterialTheme {
-        Box(Modifier.fillMaxSize()) {
-            TransactionDetailOverlay(
-                transaction = SAMPLE_TRANSACTIONS[1],
-                accountMap = accountMap,
-                onDismiss   = {},
-                onEdit      = {},
-                onDelete    = {}
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, name = "Detail Overlay - Income", widthDp = 400, heightDp = 800)
-@Composable
-private fun PreviewDetailOverlayIncome() {
-    val accountMap = SAMPLE_ACCOUNTS.associateBy { it.id }
-    MaterialTheme {
-        Box(Modifier.fillMaxSize()) {
-            TransactionDetailOverlay(
-                transaction = SAMPLE_TRANSACTIONS[0],
-                accountMap = accountMap,
-                onDismiss   = {},
-                onEdit      = {},
-                onDelete    = {}
-            )
-        }
-    }
-}
 
 
 

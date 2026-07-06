@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.insightku.core.navigation.BottomNavItem
@@ -111,73 +110,3 @@ fun MainNavBar(
         }
     }
 }
-
-@Preview
-@Composable
-fun MainNavBarPreview() {
-    // Preview component untuk testing
-    MaterialTheme {
-        Surface {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-            ) {
-                // Mock preview tanpa NavController
-                NavigationBar(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter),
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 8.dp
-                ) {
-                    bottomNavItems.forEachIndexed { index, item ->
-                        if (index == 2) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-
-                        NavigationBarItem(
-                            selected = index == 0, // Mock selection
-                            onClick = { },
-                            icon = {
-                                Icon(
-                                    imageVector = if (index == 0) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = item.title
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = item.title,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
-                        )
-
-                        if (index == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-                    }
-                }
-
-                // FAB Preview
-                FloatingActionButton(
-                    onClick = { },
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = (-28).dp)
-                        .size(56.dp),
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add Transaction",
-                        tint = Color.White
-                    )
-                }
-            }
-        }
-    }
-}
-
-

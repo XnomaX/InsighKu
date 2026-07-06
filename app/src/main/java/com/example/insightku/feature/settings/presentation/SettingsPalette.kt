@@ -23,31 +23,31 @@ object SettingsPalette {
     val Purple: Color
         @Composable @ReadOnlyComposable
         get() = LocalAccent.current
-    val IncomeGreen = Color(0xFF10B981)
-    val ExpenseRed = Color(0xFFEF4444)
+    val IncomeGreen: Color = com.example.insightku.core.ui.theme.AppPalette.success
+    val ExpenseRed: Color = com.example.insightku.core.ui.theme.AppPalette.error
 
     val isDark: Boolean
         @Composable @ReadOnlyComposable
         get() = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     val background: Color @Composable @ReadOnlyComposable get() =
-        if (isDark) Color(0xFF0F0A1E) else Color(0xFFFAF9FE)
+        com.example.insightku.core.ui.theme.AppPalette.background
 
     val card: Color @Composable @ReadOnlyComposable get() =
-        if (isDark) Color(0xFF1A1030) else Color.White
+        com.example.insightku.core.ui.theme.AppPalette.card
 
     /** A second elevation layer for nested panels (previews, learning rows). */
     val cardElevated: Color @Composable @ReadOnlyComposable get() =
-        if (isDark) Color(0xFF241840) else Color(0xFFF7F4FE)
+        com.example.insightku.core.ui.theme.AppPalette.cardElevated
 
     val cardBorder: Color @Composable @ReadOnlyComposable get() =
-        if (isDark) Color(0xFF2D2050) else Color(0xFFECE7F6)
+        com.example.insightku.core.ui.theme.AppPalette.cardBorder
 
     val textPrimary: Color @Composable @ReadOnlyComposable get() =
-        if (isDark) Color(0xFFEDE9FE) else Color(0xFF1A1A2E)
+        com.example.insightku.core.ui.theme.AppPalette.textPrimary
 
     val textMuted: Color @Composable @ReadOnlyComposable get() =
-        if (isDark) Color(0xFFAB8FD4) else Color(0xFF9E9E9E)
+        com.example.insightku.core.ui.theme.AppPalette.textMuted
 
     /** Soft fill behind icon boxes / chips — the accent at low alpha. */
     fun tint(accent: Color): Color = accent.copy(alpha = 0.12f)

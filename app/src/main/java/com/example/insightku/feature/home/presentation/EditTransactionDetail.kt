@@ -62,8 +62,8 @@ private val EditBorder: Color      @Composable get() = AppPalette.cardBorder
 private val EditSurface: Color     @Composable get() = AppPalette.card
 private val EditTextPrimary: Color @Composable get() = AppPalette.textPrimary
 private val EditTextMuted: Color   @Composable get() = AppPalette.textMuted
-private val EditIncomeGreen = Color(0xFF10B981)
-private val EditExpenseRed  = Color(0xFFEF4444)
+private val EditIncomeGreen = AppPalette.success
+private val EditExpenseRed  = AppPalette.error
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -588,7 +588,7 @@ private fun EditAccountChipRow(
 
                     val accountColor = runCatching {
                         Color(android.graphics.Color.parseColor(account.color))
-                    }.getOrDefault(Color(0xFF7C4DFF))
+                    }.getOrDefault(AppPalette.accent)
 
                     val bgColor by animateColorAsState(
                         targetValue   = if (isSelected) accountColor.copy(alpha = 0.10f) else EditSurface,

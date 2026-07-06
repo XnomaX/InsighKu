@@ -8,6 +8,7 @@ import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.data.repository.TransactionRepository
+import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.feature.home.domain.CategoryMemory
 import com.example.insightku.core.utils.ErrorBus
@@ -33,6 +34,7 @@ data class AddTransactionUiState(
 @HiltViewModel
 class AddTransactionViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
+    private val categoryRepository: CategoryRepository,
     private val authRepository: AuthRepository,
     private val preferencesDataStore: UserPreferencesDataStore,
     private val draftRepository: DraftTransactionRepository,
@@ -42,17 +44,17 @@ class AddTransactionViewModel @Inject constructor(
     private val categoryMemory = CategoryMemory()
 
     // All categories — for backward compat
-    val categories: StateFlow<List<Category>> = transactionRepository
+    val categories: StateFlow<List<Category>> = categoryRepository
         .getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // Expense categories only — shown when transaction type = EXPENSE.
-    val expenseCategories: StateFlow<List<Category>> = transactionRepository
+    val expenseCategories: StateFlow<List<Category>> = categoryRepository
         .getExpenseCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // Income categories only — shown when transaction type = INCOME
-    val incomeCategories: StateFlow<List<Category>> = transactionRepository
+    val incomeCategories: StateFlow<List<Category>> = categoryRepository
         .getIncomeCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

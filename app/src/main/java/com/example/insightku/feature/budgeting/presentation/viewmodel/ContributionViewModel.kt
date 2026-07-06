@@ -3,8 +3,8 @@ package com.example.insightku.feature.budgeting.presentation.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.feature.budgeting.data.model.ContributionType
 import com.example.insightku.feature.budgeting.data.repository.GoalRepository
 import com.example.insightku.feature.budgeting.domain.model.Goal
@@ -22,7 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ContributionViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
-    private val accountDao: AccountDao,
+    private val accountRepository: AccountRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -71,7 +71,7 @@ class ContributionViewModel @Inject constructor(
 
             try {
                 // Load accounts
-                val accounts = accountDao.getAllAccounts().first()
+                val accounts = accountRepository.getAllAccounts().first()
                 val defaultAccount = accounts.firstOrNull()
 
                 // Load goal

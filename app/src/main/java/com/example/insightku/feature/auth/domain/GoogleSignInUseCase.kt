@@ -2,6 +2,7 @@ package com.example.insightku.feature.auth.domain
 
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.data.repository.TransactionRepository
+import com.example.insightku.core.data.repository.CategoryRepository
 import javax.inject.Inject
 
 /**
@@ -14,7 +15,8 @@ import javax.inject.Inject
  */
 class GoogleSignInUseCase @Inject constructor(
     private val authRepository: AuthRepository,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val categoryRepository: CategoryRepository
 ) {
     suspend operator fun invoke(idToken: String): Result<Unit> {
         // Langkah 1: Google Firebase auth
@@ -26,7 +28,7 @@ class GoogleSignInUseCase @Inject constructor(
         if (userId != null) {
             runCatching {
                 transactionRepository.refreshTransactions(userId)
-                transactionRepository.refreshCategories(userId)
+                categoryRepository.refreshCategories(userId)
             }
         }
 

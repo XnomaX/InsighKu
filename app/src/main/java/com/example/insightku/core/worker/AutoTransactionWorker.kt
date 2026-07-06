@@ -5,14 +5,14 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.example.insightku.core.data.local.dao.InstallmentDao
-import com.example.insightku.core.data.local.dao.RecurringBudgetDao
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.data.repository.TransactionRepository
+import com.example.insightku.core.data.repository.RecurringBudgetRepository
+import com.example.insightku.core.data.repository.InstallmentRepository
 import com.example.insightku.feature.auth.data.AuthRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -26,8 +26,8 @@ private const val TAG = "AutoTransactionDebug"
 class AutoTransactionWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val recurringBudgetDao: RecurringBudgetDao,
-    private val installmentDao: InstallmentDao,
+    private val recurringBudgetRepository: RecurringBudgetRepository,
+    private val installmentRepository: InstallmentRepository,
     private val transactionRepository: TransactionRepository,
     private val authRepository: AuthRepository
 ) : CoroutineWorker(context, workerParams) {
@@ -47,7 +47,7 @@ class AutoTransactionWorker @AssistedInject constructor(
         var allSuccess = true
 
         // ── Recurring budgets ─────────────────────────────────────────────────
-        val dueRecurring = recurringBudgetDao.getDueRecurringBudgets(now)
+        val dueRecurring = recurringBudgetRepository.getDueRecurringBudgets(now)
         Log.d(TAG, "Active recurring due = ${dueRecurring.size}")
 
         for (budget in dueRecurring) {
@@ -100,7 +100,7 @@ class AutoTransactionWorker @AssistedInject constructor(
             // Update nextDue and lastProcessed
             val updated = budget.copy(nextDue = nextDue, lastProcessed = lastProcessed)
             try {
-                transactionRepository.updateRecurringBudget(updated, userId)
+                recurringBudgetRepository.updateRecurringBudget(updated, userId)
                 Log.d(TAG, "Updated nextDue for recurring id=${budget.id} → $nextDue")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to update recurring id=${budget.id}: ${e.message}")
@@ -109,7 +109,7 @@ class AutoTransactionWorker @AssistedInject constructor(
         }
 
         // ── Installments ──────────────────────────────────────────────────────
-        val allInstallments = installmentDao.getAllInstallments().first()
+        val allInstallments = installmentRepository.getAllInstallments().first()
         val dueInstallments = allInstallments.filter { it.isActive && it.nextDueDate <= now && !it.isCompleted }
         Log.d(TAG, "Active installments due = ${dueInstallments.size}")
 
@@ -162,7 +162,7 @@ class AutoTransactionWorker @AssistedInject constructor(
                 isActive    = !isNowComplete
             )
             try {
-                transactionRepository.updateInstallment(updated, userId)
+                installmentRepository.updateInstallment(updated, userId)
                 Log.d(TAG, "Updated installment id=${installment.id}: paidMonths=$paidMonths, nextDue=$nextDue, isActive=${updated.isActive}")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to update installment id=${installment.id}: ${e.message}")

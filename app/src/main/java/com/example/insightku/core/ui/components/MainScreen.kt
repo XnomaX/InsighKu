@@ -25,7 +25,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,6 +43,7 @@ import com.example.insightku.feature.budgeting.presentation.BudgetingScreen
 import com.example.insightku.feature.home.presentation.DashboardScreen
 import com.example.insightku.feature.settings.presentation.SettingsScreen
 import com.example.insightku.feature.home.presentation.AddTransactionDialog
+import com.example.insightku.feature.budgeting.presentation.BudgetingAction
 import com.example.insightku.feature.budgeting.presentation.DialogState
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -115,6 +115,7 @@ fun MainScreen(
     val accounts = accountsUiState.accounts
     var showAddTransactionDialog   by remember { mutableStateOf(false) }
     var pendingStreakPopup          by remember { mutableStateOf(false) }
+    var pendingBudgetingAction      by remember { mutableStateOf<BudgetingAction?>(null) }
     // Prefill source for AddTransaction: either the launch deep link, or a tapped draft.
     var activeDraftData            by remember { mutableStateOf<NotificationTransactionData?>(null) }
 
@@ -241,6 +242,24 @@ fun MainScreen(
                         }
                     }
                 },
+                onCreateGoal = {
+                    pendingBudgetingAction = BudgetingAction.OpenCreateGoal
+                    navController.navigate(Route.BUDGETING) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState    = true
+                    }
+                },
+                onCreateBudget = {
+                    pendingBudgetingAction = BudgetingAction.OpenCreateBudget()
+                    navController.navigate(Route.BUDGETING) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState    = true
+                    }
+                },
+                pendingBudgetingAction   = pendingBudgetingAction,
+                onBudgetingActionConsumed = { pendingBudgetingAction = null },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
@@ -512,6 +531,10 @@ private fun MainNavHost(
     onShowAddTransactionForStreak: () -> Unit = {},
     onOpenDraft: (DraftTransaction) -> Unit = {},
     onDraftDismissed: (DraftTransaction) -> Unit = {},
+    onCreateGoal: () -> Unit = {},
+    onCreateBudget: () -> Unit = {},
+    pendingBudgetingAction: BudgetingAction? = null,
+    onBudgetingActionConsumed: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -551,7 +574,9 @@ private fun MainNavHost(
                         launchSingleTop = true
                         restoreState    = true
                     }
-                }
+                },
+                onCreateGoal                   = onCreateGoal,
+                onCreateBudget                 = onCreateBudget
             )
         }
         composable(Route.TRANSACTION_DETAILS) {
@@ -573,7 +598,9 @@ private fun MainNavHost(
         composable(Route.BUDGETING) {
             BudgetingScreen(
                 viewModel = budgetingViewModel,
-                onNavigateToGoalDetail = onNavigateToGoalDetail
+                onNavigateToGoalDetail = onNavigateToGoalDetail,
+                initialAction = pendingBudgetingAction,
+                onActionConsumed = onBudgetingActionConsumed
             )
         }
         composable(Route.ACCOUNTS) {
@@ -639,28 +666,5 @@ private fun MainNavHost(
         }
     }
 }
-
-// ─── Previews ─────────────────────────────────────────────────────────────────
-
-@Preview(showBackground = true, backgroundColor = 0xFFFAF9FE)
-@Composable
-private fun PremiumBottomNavPreview() {
-    MaterialTheme {
-        Box(
-            modifier          = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFFAF9FE))
-                .padding(16.dp),
-            contentAlignment  = Alignment.BottomCenter
-        ) {
-            PremiumBottomNav(
-                navController = rememberNavController(),
-                onAddClick    = {}
-            )
-        }
-    }
-}
-
-
 
 

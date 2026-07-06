@@ -1,5 +1,7 @@
 package com.example.insightku.feature.budgeting.presentation.event
 
+import com.example.insightku.feature.budgeting.domain.model.AutoAllocationRule
+
 /**
  * User events for the Goal Detail screen.
  */
@@ -52,4 +54,16 @@ sealed class GoalDetailEvent {
     // ── Pagination ──────────────────────────────────────────────────────────────
 
     data object LoadMoreContributions : GoalDetailEvent()
+
+    // ── Auto Allocation ──────────────────────────────────────────────────────────
+
+    data object ShowAutoAllocationDialog : GoalDetailEvent()
+    data class ShowEditAutoAllocationRule(val rule: AutoAllocationRule) : GoalDetailEvent()
+    data class AddAutoAllocationRule(val rule: AutoAllocationRule) : GoalDetailEvent()
+    data class UpdateAutoAllocationRule(val rule: AutoAllocationRule) : GoalDetailEvent()
+    data class DeleteAutoAllocationRule(val ruleId: String) : GoalDetailEvent()
+    data class ShowDeleteAutoAllocationConfirm(val ruleId: String) : GoalDetailEvent()
+    data object ConfirmDeleteAutoAllocationRule : GoalDetailEvent()
+    data object CancelDeleteAutoAllocationRule : GoalDetailEvent()
+    data class ToggleAutoAllocationRule(val ruleId: String, val enabled: Boolean) : GoalDetailEvent()
 }

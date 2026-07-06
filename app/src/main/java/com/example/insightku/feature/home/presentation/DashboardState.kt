@@ -3,6 +3,7 @@ package com.example.insightku.feature.home.presentation
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.DraftTransaction
+import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.budgeting.domain.model.Goal
 
 /**
@@ -84,7 +85,8 @@ data class TransactionItem(
     val time: String,
     val isIncome: Boolean = false,
     val iconName: String,
-    val colorHex: String
+    val colorHex: String,
+    val transactionType: TransactionType = TransactionType.EXPENSE
 )
 
 data class BudgetSpendingItem(

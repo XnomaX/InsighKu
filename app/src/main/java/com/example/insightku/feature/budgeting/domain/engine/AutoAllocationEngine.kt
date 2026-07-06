@@ -1,15 +1,11 @@
 package com.example.insightku.feature.budgeting.domain.engine
 
-import android.util.Log
-import com.example.insightku.core.data.local.dao.AccountDao
-import com.example.insightku.core.data.local.dao.CategoryDao
-import com.example.insightku.core.data.local.dao.TransactionDao
+import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.feature.budgeting.data.local.dao.AutoAllocationRuleDao
-import com.example.insightku.feature.budgeting.data.local.dao.ContributionDao
-import com.example.insightku.feature.budgeting.data.local.dao.GoalDao
 import com.example.insightku.feature.budgeting.data.model.AllocationTriggerType
+import com.example.insightku.feature.budgeting.data.model.AutoAllocationRuleEntity
+import com.example.insightku.feature.budgeting.data.model.GoalEntity
 import com.example.insightku.feature.budgeting.data.model.AllocationValueType
 import com.example.insightku.feature.budgeting.data.model.GoalStatus
 import com.example.insightku.feature.budgeting.domain.model.AllocationSuggestion
@@ -49,25 +45,14 @@ import kotlin.math.min
  */
 @Singleton
 class AutoAllocationEngine @Inject constructor(
-    private val autoAllocationRuleDao: AutoAllocationRuleDao,
-    private val goalDao: GoalDao,
-    private val contributionDao: ContributionDao,
-    private val accountDao: AccountDao,
-    private val transactionDao: TransactionDao,
-    private val categoryDao: CategoryDao
+    private val dataSource: AutoAllocationDataSource,
+    private val accountRepository: AccountRepository
 ) {
-    companion object {
-        private const val TAG = "AutoAllocationEngine"
-    }
-
     /**
      * Process a new transaction and evaluate all matching auto-allocation rules.
      * Called after a transaction is saved to Room.
      */
-    suspend fun processTransaction(transaction: Transaction): AutoAllocationResult {
-        Log.d(TAG, "Processing transaction: ${transaction.id} type=${transaction.type} amount=${transaction.amount}")
-
-        val enabledRules = autoAllocationRuleDao.getEnabledRulesSync()
+    suspend fun processTransaction(transaction: Transaction): AutoAllocationResult {        val enabledRules = dataSource.getEnabledRules()
         if (enabledRules.isEmpty()) {
             return AutoAllocationResult(
                 suggestions = emptyList(),
@@ -80,12 +65,12 @@ class AutoAllocationEngine @Inject constructor(
         // Pre-load category ID-to-name map for filtering
         val categoryIdToName = mutableMapOf<String, String>()
         try {
-            val categories = categoryDao.getAllCategories().first()
+            val categories = dataSource.getAllCategories().first()
             categories.forEach { cat ->
                 categoryIdToName[cat.id] = cat.name
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to load categories for filtering", e)
+        } catch (_: Exception) {
+            // Failed to load categories — filtering will be skipped
         }
 
         val suggestions = mutableListOf<AllocationSuggestion>()
@@ -94,7 +79,7 @@ class AutoAllocationEngine @Inject constructor(
         for (entity in enabledRules) {
             val rule = AutoAllocationRule.fromEntity(
                 entity,
-                goalDao.getGoalById(entity.goalId)?.name ?: "Unknown Goal"
+                dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal"
             )
 
             try {
@@ -103,16 +88,14 @@ class AutoAllocationEngine @Inject constructor(
                     when (rule.confirmationMode) {
                         com.example.insightku.feature.budgeting.data.model.ConfirmationMode.AUTO -> {
                             autoExecuted.add(result)
-                            Log.d(TAG, "Auto-allocated ${result.amount} to ${result.goalName}")
                         }
                         com.example.insightku.feature.budgeting.data.model.ConfirmationMode.CONFIRMATION_REQUIRED -> {
                             suggestions.add(result)
-                            Log.d(TAG, "Suggested ${result.amount} for ${result.goalName}")
                         }
                     }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error evaluating rule ${rule.id}: ${e.message}", e)
+            } catch (_: Exception) {
+                // Rule evaluation error — skip this rule
             }
         }
 
@@ -129,9 +112,7 @@ class AutoAllocationEngine @Inject constructor(
      * Evaluates DAILY, WEEKLY, BIWEEKLY, MONTHLY triggers.
      */
     suspend fun processScheduledAllocations(): AutoAllocationResult {
-        Log.d(TAG, "Processing scheduled allocations")
-
-        val enabledRules = autoAllocationRuleDao.getEnabledRulesSync()
+        val enabledRules = dataSource.getEnabledRules()
         val scheduledRules = enabledRules.filter { rule ->
             val trigger = AllocationTriggerType.fromString(rule.triggerType)
             trigger in listOf(
@@ -157,7 +138,7 @@ class AutoAllocationEngine @Inject constructor(
         for (entity in scheduledRules) {
             val rule = AutoAllocationRule.fromEntity(
                 entity,
-                goalDao.getGoalById(entity.goalId)?.name ?: "Unknown Goal"
+                dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal"
             )
 
             if (!shouldExecuteScheduled(rule)) continue
@@ -170,8 +151,8 @@ class AutoAllocationEngine @Inject constructor(
                         com.example.insightku.feature.budgeting.data.model.ConfirmationMode.CONFIRMATION_REQUIRED -> suggestions.add(result)
                     }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error evaluating scheduled rule ${rule.id}: ${e.message}", e)
+            } catch (_: Exception) {
+                // Scheduled rule evaluation error — skip this rule
             }
         }
 
@@ -187,7 +168,7 @@ class AutoAllocationEngine @Inject constructor(
      * Process balance-above rules.
      */
     suspend fun processBalanceAboveRules(): AutoAllocationResult {
-        val enabledRules = autoAllocationRuleDao.getEnabledRulesSync()
+        val enabledRules = dataSource.getEnabledRules()
         val balanceRules = enabledRules.filter {
             AllocationTriggerType.fromString(it.triggerType) == AllocationTriggerType.BALANCE_ABOVE
         }
@@ -198,7 +179,7 @@ class AutoAllocationEngine @Inject constructor(
         for (entity in balanceRules) {
             val rule = AutoAllocationRule.fromEntity(
                 entity,
-                goalDao.getGoalById(entity.goalId)?.name ?: "Unknown Goal"
+                dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal"
             )
 
             try {
@@ -209,8 +190,8 @@ class AutoAllocationEngine @Inject constructor(
                         com.example.insightku.feature.budgeting.data.model.ConfirmationMode.CONFIRMATION_REQUIRED -> suggestions.add(result)
                     }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error evaluating balance rule ${rule.id}: ${e.message}", e)
+            } catch (_: Exception) {
+                // Balance rule evaluation error — skip this rule
             }
         }
 
@@ -260,47 +241,31 @@ class AutoAllocationEngine @Inject constructor(
         transaction: Transaction,
         categoryIdToName: Map<String, String>
     ): AllocationSuggestion? {
-        val goal = goalDao.getGoalById(rule.goalId) ?: return null
-        if (goal.goalStatus != GoalStatus.ACTIVE) {
-            Log.d(TAG, "Skipping rule ${rule.id}: goal ${goal.name} is ${goal.goalStatus}")
-            return null
-        }
+        val goal = dataSource.getGoalById(rule.goalId) ?: return null
+        if (goal.goalStatus != GoalStatus.ACTIVE) return null
 
-        val currentAmount = contributionDao.getTotalContributed(rule.goalId)
-        if (currentAmount >= goal.targetAmount) {
-            Log.d(TAG, "Skipping rule ${rule.id}: goal ${goal.name} already completed")
-            return null
-        }
+        val currentAmount = dataSource.getTotalContributed(rule.goalId)
+        if (currentAmount >= goal.targetAmount) return null
 
         // Category filtering: rule stores category IDs, transaction stores category name
         if (rule.incomeCategoryIds.isNotEmpty()) {
-            // Convert rule's category IDs to names and check if transaction's category matches any
             val allowedCategoryNames = rule.incomeCategoryIds.mapNotNull { id -> categoryIdToName[id] }
-            if (allowedCategoryNames.isNotEmpty() && transaction.category !in allowedCategoryNames) {
-                Log.d(TAG, "Skipping rule ${rule.id}: category '${transaction.category}' not in filter (allowed: $allowedCategoryNames)")
-                return null
-            }
+            if (allowedCategoryNames.isNotEmpty() && transaction.category !in allowedCategoryNames) return null
         }
 
-        if (rule.minIncomeAmount > 0 && transaction.amount < rule.minIncomeAmount) {
-            Log.d(TAG, "Skipping rule ${rule.id}: income ${transaction.amount} < minimum ${rule.minIncomeAmount}")
-            return null
-        }
+        if (rule.minIncomeAmount > 0 && transaction.amount < rule.minIncomeAmount) return null
 
         val sourceAccountId = rule.sourceAccountId ?: transaction.accountId
         if (sourceAccountId.isBlank()) return null
 
-        val account = accountDao.getAccountById(sourceAccountId) ?: return null
+        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
         val allocationAmount = calculateAllocationAmount(rule, transaction.amount)
         if (allocationAmount <= 0) return null
 
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
 
-        if (account.balance < actualAmount) {
-            Log.d(TAG, "Skipping rule ${rule.id}: insufficient balance ${account.balance} < $actualAmount")
-            return null
-        }
+        if (account.balance < actualAmount) return null
 
         return AllocationSuggestion(
             goalId = rule.goalId,
@@ -316,10 +281,10 @@ class AutoAllocationEngine @Inject constructor(
     private suspend fun evaluateRoundUpRule(rule: AutoAllocationRule, transaction: Transaction): AllocationSuggestion? {
         if (!rule.roundUpEnabled) return null
 
-        val goal = goalDao.getGoalById(rule.goalId) ?: return null
+        val goal = dataSource.getGoalById(rule.goalId) ?: return null
         if (goal.goalStatus != GoalStatus.ACTIVE) return null
 
-        val currentAmount = contributionDao.getTotalContributed(rule.goalId)
+        val currentAmount = dataSource.getTotalContributed(rule.goalId)
         if (currentAmount >= goal.targetAmount) return null
 
         val roundedUp = ceil(transaction.amount / rule.roundUpIncrement) * rule.roundUpIncrement
@@ -330,7 +295,7 @@ class AutoAllocationEngine @Inject constructor(
         val sourceAccountId = rule.sourceAccountId ?: transaction.accountId
         if (sourceAccountId.isBlank()) return null
 
-        val account = accountDao.getAccountById(sourceAccountId) ?: return null
+        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(roundUpAmount, remainingToGoal)
 
@@ -348,10 +313,10 @@ class AutoAllocationEngine @Inject constructor(
     }
 
     private suspend fun evaluateSpendingCategoryRule(rule: AutoAllocationRule, transaction: Transaction): AllocationSuggestion? {
-        val goal = goalDao.getGoalById(rule.goalId) ?: return null
+        val goal = dataSource.getGoalById(rule.goalId) ?: return null
         if (goal.goalStatus != GoalStatus.ACTIVE) return null
 
-        val currentAmount = contributionDao.getTotalContributed(rule.goalId)
+        val currentAmount = dataSource.getTotalContributed(rule.goalId)
         if (currentAmount >= goal.targetAmount) return null
 
         val triggerCategoryId = rule.triggerParams?.categoryId
@@ -363,7 +328,7 @@ class AutoAllocationEngine @Inject constructor(
         val sourceAccountId = rule.sourceAccountId ?: transaction.accountId
         if (sourceAccountId.isBlank()) return null
 
-        val account = accountDao.getAccountById(sourceAccountId) ?: return null
+        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
 
@@ -381,14 +346,14 @@ class AutoAllocationEngine @Inject constructor(
     }
 
     private suspend fun evaluateScheduledRule(rule: AutoAllocationRule): AllocationSuggestion? {
-        val goal = goalDao.getGoalById(rule.goalId) ?: return null
+        val goal = dataSource.getGoalById(rule.goalId) ?: return null
         if (goal.goalStatus != GoalStatus.ACTIVE) return null
 
-        val currentAmount = contributionDao.getTotalContributed(rule.goalId)
+        val currentAmount = dataSource.getTotalContributed(rule.goalId)
         if (currentAmount >= goal.targetAmount) return null
 
         val sourceAccountId = rule.sourceAccountId ?: return null
-        val account = accountDao.getAccountById(sourceAccountId) ?: return null
+        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
 
         val allocationAmount = calculateAllocationAmount(rule, account.balance)
         if (allocationAmount <= 0) return null
@@ -410,15 +375,15 @@ class AutoAllocationEngine @Inject constructor(
     }
 
     private suspend fun evaluateBalanceAboveRule(rule: AutoAllocationRule): AllocationSuggestion? {
-        val goal = goalDao.getGoalById(rule.goalId) ?: return null
+        val goal = dataSource.getGoalById(rule.goalId) ?: return null
         if (goal.goalStatus != GoalStatus.ACTIVE) return null
 
-        val currentAmount = contributionDao.getTotalContributed(rule.goalId)
+        val currentAmount = dataSource.getTotalContributed(rule.goalId)
         if (currentAmount >= goal.targetAmount) return null
 
         val threshold = rule.triggerParams?.threshold ?: return null
         val accountId = rule.triggerParams.accountId ?: rule.sourceAccountId ?: return null
-        val account = accountDao.getAccountById(accountId) ?: return null
+        val account = accountRepository.getAccountById(accountId) ?: return null
 
         if (account.balance <= threshold) return null
 

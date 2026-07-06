@@ -2,14 +2,12 @@ package com.example.insightku.feature.accounts.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.insightku.core.data.local.dao.AccountDao
-import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.data.repository.AccountAllocationRepository
+import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.feature.auth.data.AuthRepository
-import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,10 +19,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AccountsViewModel @Inject constructor(
-    private val accountDao: AccountDao,
-    private val transactionDao: TransactionDao,
+    private val accountRepository: AccountRepository,
     private val authRepository: AuthRepository,
-    private val firestore: FirebaseFirestore,
     private val accountAllocationRepository: AccountAllocationRepository
 ) : ViewModel() {
 
@@ -48,10 +44,10 @@ class AccountsViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             combine(
-                accountDao.getAllAccounts(),
-                accountDao.getTotalNetWorth(),
-                accountDao.getTotalAssets(),
-                accountDao.getTotalLiabilities(),
+                accountRepository.getAllAccounts(),
+                accountRepository.getTotalNetWorth(),
+                accountRepository.getTotalAssets(),
+                accountRepository.getTotalLiabilities(),
                 accountAllocationRepository.getAllAccountAllocations()
             ) { accounts, netWorth, assets, liabilities, allocations ->
                 // Create allocation map by account ID
@@ -87,7 +83,7 @@ class AccountsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(selectedAccountId = accountId)
             try {
-                transactionDao.getTransactionsByAccountIdFlow(accountId).collect { transactions ->
+                accountRepository.getTransactionsByAccountIdFlow(accountId).collect { transactions ->
                     _uiState.value = _uiState.value.copy(accountTransactions = transactions)
                 }
             } catch (e: Exception) {
@@ -112,34 +108,7 @@ class AccountsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val userId = authRepository.getCurrentUserId()
-
-                // Step 1: Restore account balances for all transactions in this account
-                val transactions = transactionDao.getTransactionsByAccountId(accountId)
-                for (tx in transactions) {
-                    if (tx.accountId.isNotBlank()) {
-                        // Reverse the transaction's effect on the account balance
-                        val reverseDelta = -TransactionType.balanceDelta(tx.type, tx.amount)
-                        accountDao.updateBalance(tx.accountId, reverseDelta)
-                    }
-                }
-
-                // Step 2: Delete all transactions in this account from Room
-                transactionDao.deleteTransactionsByAccountId(accountId)
-
-                // Step 3: Also delete from Firestore (best effort)
-                if (userId != null) {
-                    try {
-                        for (tx in transactions) {
-                            firestore.collection("users").document(userId)
-                                .collection("transactions").document(tx.id).delete().await()
-                        }
-                    } catch (e: Exception) {
-                        // Firestore offline — Room already deleted
-                    }
-                }
-
-                // Step 4: Deactivate the account
-                accountDao.deactivateAccount(accountId)
+                accountRepository.deleteAccount(accountId, userId)
 
                 // Clear selection if this was the selected account
                 if (_uiState.value.selectedAccountId == accountId) {
@@ -156,11 +125,7 @@ class AccountsViewModel @Inject constructor(
     private fun setAsDefault(accountId: String) {
         viewModelScope.launch {
             try {
-                accountDao.clearAllDefaults()
-                val account = accountDao.getAccountById(accountId)
-                if (account != null) {
-                    accountDao.updateAccount(account.copy(isDefault = true))
-                }
+                accountRepository.setAsDefault(accountId)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = e.message ?: "Failed to set default account"

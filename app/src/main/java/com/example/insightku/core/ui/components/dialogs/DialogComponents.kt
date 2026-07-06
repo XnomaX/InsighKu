@@ -310,7 +310,7 @@ object CategoryIconResolver {
     private fun fallback() = CategoryIconInfo(
         name  = "Others",
         icon  = Icons.Default.Category,
-        color = Color(0xFF79747E)
+        color = Color(0xFF79747E) // muted gray — intentionally not in AppPalette
     )
 }
 
@@ -320,7 +320,7 @@ object CategoryIconResolver {
 fun IconOption(
     iconData: CategoryIconInfo,
     isSelected: Boolean,
-    accentColor: Color = Color(0xFF7C4DFF),
+    accentColor: Color = com.example.insightku.core.ui.theme.AppPalette.accent,
     onClick: () -> Unit
 ) {
     Box(
@@ -330,7 +330,7 @@ fun IconOption(
             .background(if (isSelected) accentColor.copy(alpha = 0.12f) else Color.White)
             .border(
                 width = if (isSelected) 1.5.dp else 1.dp,
-                color = if (isSelected) accentColor else Color(0xFFECE7F6),
+                color = if (isSelected) accentColor else com.example.insightku.core.ui.theme.AppPalette.cardBorder,
                 shape = RoundedCornerShape(12.dp)
             )
             .padding(10.dp),
@@ -359,9 +359,9 @@ internal fun CategoryTypeSelector(
     selected: CategoryType,
     onSelect: (CategoryType) -> Unit
 ) {
-    val purple = Color(0xFF7C4DFF)
-    val green  = Color(0xFF10B981)
-    val border = Color(0xFFECE7F6)
+    val purple = com.example.insightku.core.ui.theme.AppPalette.accent
+    val green  = com.example.insightku.core.ui.theme.AppPalette.success
+    val border = com.example.insightku.core.ui.theme.AppPalette.cardBorder
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -371,7 +371,7 @@ internal fun CategoryTypeSelector(
             val isSelected   = selected == type
             val activeColor  = if (type == CategoryType.EXPENSE) purple else green
             val bgColor      = if (isSelected) activeColor else Color.White
-            val contentColor = if (isSelected) Color.White else Color(0xFF6B6B8A)
+            val contentColor = if (isSelected) Color.White else com.example.insightku.core.ui.theme.AppPalette.textDialogMuted
             val borderColor  = if (isSelected) activeColor else border
 
             Surface(
@@ -405,8 +405,8 @@ fun RecurringPeriodSelector(
     selected: String?,
     onSelect: (String?) -> Unit
 ) {
-    val purple = Color(0xFF7C4DFF)
-    val border = Color(0xFFECE7F6)
+    val purple = com.example.insightku.core.ui.theme.AppPalette.accent
+    val border = com.example.insightku.core.ui.theme.AppPalette.cardBorder
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -432,7 +432,7 @@ fun RecurringPeriodSelector(
                 text       = "None",
                 style      = MaterialTheme.typography.labelSmall,
                 fontWeight = if (noneSelected) FontWeight.Bold else FontWeight.Normal,
-                color      = if (noneSelected) Color.White else Color(0xFF6B6B8A)
+                color      = if (noneSelected) Color.White else com.example.insightku.core.ui.theme.AppPalette.textDialogMuted
             )
         }
 
@@ -457,7 +457,7 @@ fun RecurringPeriodSelector(
                     text       = period,
                     style      = MaterialTheme.typography.labelSmall,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color      = if (isSelected) Color.White else Color(0xFF6B6B8A)
+                    color      = if (isSelected) Color.White else com.example.insightku.core.ui.theme.AppPalette.textDialogMuted
                 )
             }
         }
@@ -473,8 +473,8 @@ fun BudgetLimitInput(
     alertThreshold: Float,
     onAlertThresholdChange: (Float) -> Unit
 ) {
-    val purple      = Color(0xFF7C4DFF)
-    val border      = Color(0xFFECE7F6)
+    val purple      = com.example.insightku.core.ui.theme.AppPalette.accent
+    val border      = com.example.insightku.core.ui.theme.AppPalette.cardBorder
     val parsedLimit = budgetLimitText.filter { it.isDigit() }.toLongOrNull() ?: 0L
 
     Surface(
@@ -496,7 +496,7 @@ fun BudgetLimitInput(
                 Text(
                     text  = "Monthly Budget",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF6B6B8A)
+                    color = com.example.insightku.core.ui.theme.AppPalette.textDialogMuted
                 )
                 if (parsedLimit > 0) {
                     Text(
@@ -513,7 +513,7 @@ fun BudgetLimitInput(
                 modifier      = Modifier.fillMaxWidth(),
                 singleLine    = true,
                 placeholder   = {
-                    Text("e.g. 2.000.000", color = Color(0xFFBDBDBD), style = MaterialTheme.typography.bodyMedium)
+                    Text("e.g. 2.000.000", color = com.example.insightku.core.ui.theme.AppPalette.placeholder, style = MaterialTheme.typography.bodyMedium)
                 },
                 leadingIcon   = {
                     Text("Rp", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = purple)
@@ -546,7 +546,7 @@ fun BudgetLimitInput(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Alert at", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF6B6B8A))
+                Text("Alert at", style = MaterialTheme.typography.bodyMedium, color = com.example.insightku.core.ui.theme.AppPalette.textDialogMuted)
                 Text(
                     "${alertThreshold.roundToInt()}% of budget",
                     style      = MaterialTheme.typography.bodyMedium,
@@ -558,7 +558,7 @@ fun BudgetLimitInput(
                 Text(
                     "≈ Rp ${(parsedLimit * alertThreshold / 100).toLong().formatCurrencyLong()}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF9E9E9E)
+                    color = com.example.insightku.core.ui.theme.AppPalette.textMuted
                 )
             }
             Slider(
@@ -573,8 +573,8 @@ fun BudgetLimitInput(
                 )
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("50%",  style = MaterialTheme.typography.labelSmall, color = Color(0xFFBDBDBD))
-                Text("100%", style = MaterialTheme.typography.labelSmall, color = Color(0xFFBDBDBD))
+                Text("50%",  style = MaterialTheme.typography.labelSmall, color = com.example.insightku.core.ui.theme.AppPalette.placeholder)
+                Text("100%", style = MaterialTheme.typography.labelSmall, color = com.example.insightku.core.ui.theme.AppPalette.placeholder)
             }
         }
     }

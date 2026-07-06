@@ -2,9 +2,9 @@ package com.example.insightku.feature.accounts.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.data.repository.AccountRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddAccountViewModel @Inject constructor(
-    private val accountDao: AccountDao
+    private val accountRepository: AccountRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddAccountUiState())
@@ -109,7 +109,7 @@ class AddAccountViewModel @Inject constructor(
                     notes = currentState.notes.trim()
                 )
 
-                accountDao.insertAccount(account)
+                accountRepository.insertAccount(account)
 
                 _uiState.update {
                     it.copy(

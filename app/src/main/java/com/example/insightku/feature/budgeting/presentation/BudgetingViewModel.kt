@@ -10,7 +10,11 @@ import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.data.repository.TransactionRepository
-import com.example.insightku.core.data.local.dao.AccountDao
+import com.example.insightku.core.data.repository.AccountRepository
+import com.example.insightku.core.data.repository.CategoryRepository
+import com.example.insightku.core.data.repository.RecurringBudgetRepository
+import com.example.insightku.core.data.repository.InstallmentRepository
+
 import com.example.insightku.feature.budgeting.presentation.BudgetCategory
 import com.example.insightku.feature.budgeting.presentation.BudgetingEvent
 import com.example.insightku.feature.budgeting.presentation.BudgetingUiState
@@ -46,10 +50,13 @@ import javax.inject.Inject
 @HiltViewModel
 class BudgetingViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
+    private val categoryRepository: CategoryRepository,
+    private val recurringBudgetRepository: RecurringBudgetRepository,
+    private val installmentRepository: InstallmentRepository,
     private val authRepository: AuthRepository,
     private val errorBus: ErrorBus,
     private val sessionManager: SessionManager,
-    private val accountDao: AccountDao
+    private val accountRepository: AccountRepository
 ) : ViewModel() {
 
     private data class BudgetSnapshot(
@@ -134,11 +141,11 @@ class BudgetingViewModel @Inject constructor(
 	            try {
                 val monthRange = currentMonthRange()
                 combine(
-                    transactionRepository.getAllCategories(),
+                    categoryRepository.getAllCategories(),
                     transactionRepository.getTransactionsByDateRange(monthRange.first, monthRange.last),
-                    transactionRepository.getRecurringBudgets(),
-                    transactionRepository.getAllInstallments(),
-                    accountDao.getAllAccounts()
+                    recurringBudgetRepository.getAllRecurringBudgets(),
+                    installmentRepository.getAllInstallments(),
+                    accountRepository.getAllAccounts()
                 ) { categories, transactions, recurringBudgets, installments, accounts ->
                     val activeCategories = categories.filter { it.isActive && it.id !in pendingDeleteIds && !it.isSystemCategory }
                     val monthlyExpenses = transactions
@@ -255,19 +262,19 @@ class BudgetingViewModel @Inject constructor(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             android.util.Log.d("InsightKu_Recurring", "=== BudgetingViewModel.refreshData() userId=$userId ===")
             try {
-                val hasLocalCategories = transactionRepository.hasAnyCategories()
+                val hasLocalCategories = categoryRepository.hasAnyCategories()
                 android.util.Log.d("InsightKu_Recurring", "hasLocalCategories=$hasLocalCategories")
                 if (!hasLocalCategories) {
-                    transactionRepository.refreshCategories(userId)
+                    categoryRepository.refreshCategories(userId)
                 }
                 transactionRepository.refreshTransactions(userId)
 
-                transactionRepository.refreshRecurringBudgets(userId)
-                transactionRepository.refreshInstallments(userId)
+                recurringBudgetRepository.refreshRecurringBudgets(userId)
+                installmentRepository.refreshInstallments(userId)
 
                 transactionRepository.cleanupUncategorizedTransactions(userId)
-                transactionRepository.cleanupVirtualCategoryDocuments(userId)
-                transactionRepository.cleanupInvalidRecurringBudgets()
+                categoryRepository.cleanupVirtualCategoryDocuments(userId)
+                recurringBudgetRepository.cleanupInvalidRecurringBudgets()
                 android.util.Log.d("InsightKu_Recurring", "=== refreshData() complete ===")
             } catch (e: CancellationException) {
                 throw e
@@ -283,7 +290,7 @@ class BudgetingViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                transactionRepository.insertCategory(category, userId)
+                categoryRepository.insertCategory(category, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal menambah kategori"
@@ -301,13 +308,13 @@ class BudgetingViewModel @Inject constructor(
                     // Virtual row — create a real Category with a proper UUID.
                     // Never write the "transaction-only-" id to Room or Firestore.
                     val realCategory = category.copy(id = java.util.UUID.randomUUID().toString())
-                    transactionRepository.insertCategory(realCategory, userId)
+                    categoryRepository.insertCategory(realCategory, userId)
                     // Also rename the transactions so they match the new real category name
                     transactionRepository.moveTransactionsByCategory(
                         category.name, realCategory.name
                     )
                 } else {
-                    transactionRepository.updateCategory(category, userId)
+                    categoryRepository.updateCategory(category, userId)
                 }
                 _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
@@ -350,7 +357,7 @@ class BudgetingViewModel @Inject constructor(
                 if (categoryId.startsWith("transaction-only-")) {
                     transactionRepository.moveTransactionsToBlank(categoryName, userId)
                 } else {
-                    transactionRepository.deleteCategoryAndMigrateTransactions(categoryId, categoryName, userId)
+                    categoryRepository.deleteCategoryAndMigrateTransactions(categoryId, categoryName, userId)
                 }
                 android.util.Log.d("InsightKu_Delete", "Delete SUCCESS: id=$categoryId")
                 // Room no longer emits this id — safe to remove from pending set
@@ -371,7 +378,7 @@ class BudgetingViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                transactionRepository.insertRecurringBudget(budget, userId)
+                recurringBudgetRepository.insertRecurringBudget(budget, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal menambah budget berulang"
@@ -385,7 +392,7 @@ class BudgetingViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                transactionRepository.updateRecurringBudget(budget, userId)
+                recurringBudgetRepository.updateRecurringBudget(budget, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal update budget berulang"
@@ -399,7 +406,7 @@ class BudgetingViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                transactionRepository.deleteRecurringBudget(budget.id.toString(), userId)
+                recurringBudgetRepository.deleteRecurringBudget(budget.id.toString(), userId)
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal hapus budget berulang"
                 _uiState.update { it.copy(error = errorMessage) }
@@ -412,7 +419,7 @@ class BudgetingViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                transactionRepository.insertInstallment(installment, userId)
+                installmentRepository.insertInstallment(installment, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal menambah cicilan"
@@ -426,7 +433,7 @@ class BudgetingViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                transactionRepository.updateInstallment(installment, userId)
+                installmentRepository.updateInstallment(installment, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal update cicilan"
@@ -446,7 +453,7 @@ class BudgetingViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
-                transactionRepository.deleteInstallment(installmentId, userId)
+                installmentRepository.deleteInstallment(installmentId, userId)
             } catch (e: Exception) {
                 val errorMessage = e.message ?: "Gagal hapus cicilan"
                 _uiState.update { it.copy(error = errorMessage) }
@@ -477,7 +484,7 @@ class BudgetingViewModel @Inject constructor(
         val userCategories = defaultBudgetCategories()
         (systemCategories + userCategories).forEach { category ->
             try {
-                transactionRepository.insertCategory(category, userId)
+                categoryRepository.insertCategory(category, userId)
             } catch (e: Exception) {
                 // Keep screen usable even if one remote write fails
             }

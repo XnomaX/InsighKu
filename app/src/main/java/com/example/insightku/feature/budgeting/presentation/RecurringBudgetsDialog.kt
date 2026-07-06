@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -41,7 +40,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-val PurpleMain = Color(0xFF5A82A)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,7 +171,7 @@ fun DialogHeader(
                 }
                 Spacer(Modifier.width(8.dp))
             }
-            Icon(Icons.Default.Repeat, contentDescription = null, tint = PurpleMain)
+            Icon(Icons.Default.Repeat, contentDescription = null, tint = com.example.insightku.core.ui.theme.AppPalette.accent)
             Spacer(Modifier.width(8.dp))
             Text(
                 text = when {
@@ -244,7 +243,7 @@ fun ColumnScope.BudgetList(
             .fillMaxWidth()
             .padding(16.dp)
             .height(50.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = PurpleMain)
+        colors = ButtonDefaults.buttonColors(containerColor = com.example.insightku.core.ui.theme.AppPalette.accent)
     ) {
         Icon(Icons.Default.Add, contentDescription = null)
         Spacer(Modifier.width(8.dp))
@@ -292,7 +291,7 @@ fun RecurringBudgetItem(
                     )
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                         if (budget.isActive) {
-                            Icon(Icons.Default.Notifications, contentDescription = null, tint = PurpleMain, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.Notifications, contentDescription = null, tint = com.example.insightku.core.ui.theme.AppPalette.accent, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
                         }
                         Text(formatNextDue(budget.nextDue), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -312,7 +311,7 @@ fun RecurringBudgetItem(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = PurpleMain, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = com.example.insightku.core.ui.theme.AppPalette.accent, modifier = Modifier.size(18.dp))
                     }
                     IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
@@ -470,7 +469,7 @@ fun ColumnScope.AddEditBudgetForm(
             },
             enabled = name.isNotBlank() && amount.isNotBlank() && categoryId != null,
             modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.buttonColors(containerColor = PurpleMain)
+            colors = ButtonDefaults.buttonColors(containerColor = com.example.insightku.core.ui.theme.AppPalette.accent)
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(Modifier.width(4.dp))
@@ -541,7 +540,7 @@ private fun RecurringBudgetAccountSelector(
                     val isSelected = selectedAccountId == account.id
                     val accountColor = runCatching {
                         Color(android.graphics.Color.parseColor(account.color))
-                    }.getOrDefault(PurpleMain)
+                    }.getOrDefault(com.example.insightku.core.ui.theme.AppPalette.accent)
                     val accountIcon = when (account.type) {
                         AccountType.CASH -> Icons.Default.Payments
                         AccountType.BANK_ACCOUNT -> Icons.Default.AccountBalance
@@ -609,72 +608,3 @@ private fun formatNextDue(dateMillis: Long): String {
         else -> "Dalam $days hari"
     }
 }
-
-@Preview(name = "List View", showBackground = true)
-@Composable
-fun RecurringBudgetsDialogPreview() {
-    val budgets = remember {
-        mutableStateListOf(
-            RecurringBudget(1, "Netflix", 186000.0, BudgetFrequency.MONTHLY, "cat_1", null, true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(5), 3),
-            RecurringBudget(2, "Spotify", 54000.0, BudgetFrequency.MONTHLY, "cat_1", null, true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(12), 7)
-        )
-    }
-
-    MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            RecurringBudgetsDialog(
-                isOpen = true,
-                onDismiss = {},
-                recurringBudgets = budgets,
-                onBudgetAdded = { budgets.add(it.copy(id = (budgets.maxOfOrNull { b -> b.id } ?: 0) + 1)) },
-                onBudgetEdited = { edited ->
-                    val index = budgets.indexOfFirst { it.id == edited.id }
-                    if (index != -1) {
-                        budgets[index] = edited
-                    }
-                },
-                onBudgetDeleted = { toDelete -> budgets.removeIf { it.id == toDelete.id } }
-            )
-        }
-    }
-}
-
-@Preview(name = "Add Form", showBackground = true)
-@Composable
-fun AddBudgetFormPreview() {
-    MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            RecurringBudgetsDialog(
-                isOpen = true,
-                onDismiss = {},
-                recurringBudgets = emptyList(),
-                onBudgetAdded = {},
-                onBudgetEdited = {},
-                onBudgetDeleted = {},
-                showAddFormInitially = true
-            )
-        }
-    }
-}
-
-@Preview(name = "Edit Form", showBackground = true)
-@Composable
-fun EditBudgetFormPreview() {
-    val editingBudget = RecurringBudget(1, "Netflix", 186000.0, BudgetFrequency.MONTHLY, "cat_1", null, true, null, System.currentTimeMillis() + TimeUnit.DAYS.toMillis(5), 3)
-    MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            RecurringBudgetsDialog(
-                isOpen = true,
-                onDismiss = {},
-                recurringBudgets = emptyList(),
-                onBudgetAdded = {},
-                onBudgetEdited = {},
-                onBudgetDeleted = {},
-                showAddFormInitially = true,
-                editingBudgetInitially = editingBudget
-            )
-        }
-    }
-}
-
-

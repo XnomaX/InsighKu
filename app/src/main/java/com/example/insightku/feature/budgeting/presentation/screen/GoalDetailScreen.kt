@@ -55,6 +55,7 @@ import com.example.insightku.feature.budgeting.presentation.state.TimelineEventT
 import com.example.insightku.feature.budgeting.presentation.event.GoalDetailEvent
 import com.example.insightku.feature.budgeting.presentation.state.GoalDetailUiState
 import com.example.insightku.feature.budgeting.presentation.viewmodel.GoalDetailViewModel
+import com.example.insightku.feature.budgeting.presentation.components.AutoAllocationDialog
 import java.text.NumberFormat
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -161,6 +162,32 @@ fun GoalDetailScreen(
                     goalName = uiState.goal?.name ?: "",
                     onConfirm = { viewModel.onEvent(GoalDetailEvent.ConfirmArchive) },
                     onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) }
+                )
+            }
+
+            if (uiState.showDeleteAutoAllocationRuleConfirm) {
+                DeleteAutoAllocationRuleConfirmDialog(
+                    onConfirm = { viewModel.onEvent(GoalDetailEvent.ConfirmDeleteAutoAllocationRule) },
+                    onDismiss = { viewModel.onEvent(GoalDetailEvent.CancelDeleteAutoAllocationRule) }
+                )
+            }
+
+            if (uiState.showAutoAllocationDialog) {
+                AutoAllocationDialog(
+                    rule = uiState.editingAutoAllocationRule,
+                    goals = listOfNotNull(uiState.goal),
+                    accounts = uiState.linkedAccounts,
+                    onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) },
+                    onSave = { rule ->
+                        if (uiState.editingAutoAllocationRule != null) {
+                            viewModel.onEvent(GoalDetailEvent.UpdateAutoAllocationRule(rule))
+                        } else {
+                            viewModel.onEvent(GoalDetailEvent.AddAutoAllocationRule(rule))
+                        }
+                    },
+                    onDelete = uiState.editingAutoAllocationRule?.let { rule ->
+                        { viewModel.onEvent(GoalDetailEvent.ShowDeleteAutoAllocationConfirm(rule.id)) }
+                    }
                 )
             }
         }
@@ -281,7 +308,7 @@ private fun GoalDetailContent(
         item { Spacer(Modifier.height(12.dp)); ContributionSummarySection(uiState = uiState, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         item { Spacer(Modifier.height(12.dp)); ContributionHistorySection(contributions = uiState.contributions, accountMap = uiState.accountMap, goalColor = goalColor, isLoadingMore = uiState.isLoadingMore, hasMore = uiState.hasMoreContributions, onLoadMore = { onEvent(GoalDetailEvent.LoadMoreContributions) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         item { Spacer(Modifier.height(12.dp)); TimelineSection(events = uiState.timelineEvents, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-        item { Spacer(Modifier.height(12.dp)); AutoAllocationSection(goal = goal, rules = uiState.allocationRules, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        item { Spacer(Modifier.height(12.dp)); AutoAllocationSection(goal = goal, rules = uiState.allocationRules, goalColor = goalColor, onAddRule = { onEvent(GoalDetailEvent.ShowAutoAllocationDialog) }, onEditRule = { onEvent(GoalDetailEvent.ShowEditAutoAllocationRule(it)) }, onToggleRule = { ruleId, enabled -> onEvent(GoalDetailEvent.ToggleAutoAllocationRule(ruleId, enabled)) }, onDeleteRule = { onEvent(GoalDetailEvent.DeleteAutoAllocationRule(it)) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         if (!goal.isPaused) {
             item { Spacer(Modifier.height(12.dp)); ActionButtonsSection(goal = goal, goalColor = goalColor, onContribute = { onEvent(GoalDetailEvent.ShowContributeDialog) }, onWithdraw = { onEvent(GoalDetailEvent.ShowWithdrawDialog) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         }
@@ -1148,6 +1175,10 @@ private fun AutoAllocationSection(
     goal: Goal,
     rules: List<AutoAllocationRule>,
     goalColor: Color,
+    onAddRule: () -> Unit,
+    onEditRule: (AutoAllocationRule) -> Unit,
+    onToggleRule: (String, Boolean) -> Unit,
+    onDeleteRule: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -1158,9 +1189,9 @@ private fun AutoAllocationSection(
         Spacer(Modifier.height(12.dp))
 
         if (rules.isEmpty()) {
-            // Empty state
+            // Empty state — tappable to add first rule
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onAddRule),
                 shape = RoundedCornerShape(Dimens.CardRadius),
                 colors = CardDefaults.cardColors(containerColor = AppPalette.card),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -1192,6 +1223,12 @@ private fun AutoAllocationSection(
                             color = AppPalette.textMuted
                         )
                     }
+                    Icon(
+                        Icons.Outlined.Add,
+                        null,
+                        tint = goalColor,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         } else {
@@ -1205,7 +1242,12 @@ private fun AutoAllocationSection(
             ) {
                 Column(modifier = Modifier.padding(vertical = 4.dp)) {
                     rules.forEachIndexed { index, rule ->
-                        AutoAllocationRuleItem(rule = rule, goalColor = goalColor)
+                        AutoAllocationRuleItem(
+                            rule = rule,
+                            goalColor = goalColor,
+                            onClick = { onEditRule(rule) },
+                            onToggle = { enabled -> onToggleRule(rule.id, enabled) }
+                        )
                         if (index < rules.lastIndex) {
                             HorizontalDivider(
                                 color = AppPalette.cardBorder,
@@ -1216,6 +1258,26 @@ private fun AutoAllocationSection(
                     }
                 }
             }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Add Rule button
+            Surface(
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onAddRule),
+                shape = RoundedCornerShape(Dimens.CardRadius),
+                color = goalColor.copy(alpha = 0.08f),
+                border = BorderStroke(1.dp, goalColor.copy(alpha = 0.2f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(Icons.Outlined.Add, null, tint = goalColor, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Add Rule", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = goalColor)
+                }
+            }
         }
     }
 }
@@ -1223,7 +1285,9 @@ private fun AutoAllocationSection(
 @Composable
 private fun AutoAllocationRuleItem(
     rule: AutoAllocationRule,
-    goalColor: Color
+    goalColor: Color,
+    onClick: () -> Unit,
+    onToggle: (Boolean) -> Unit
 ) {
     val triggerIcon = when (rule.triggerType) {
         AllocationTriggerType.INCOME_RECEIVED -> Icons.Outlined.TrendingUp
@@ -1238,6 +1302,7 @@ private fun AutoAllocationRuleItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = Dimens.CardInnerPadding, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1272,19 +1337,17 @@ private fun AutoAllocationRuleItem(
             )
         }
 
-        // Status badge
-        Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = statusColor.copy(alpha = 0.10f)
-        ) {
-            Text(
-                text = if (rule.isEnabled) "Active" else "Off",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = statusColor,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        // Toggle switch
+        Switch(
+            checked = rule.isEnabled,
+            onCheckedChange = onToggle,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = SuccessColor,
+                uncheckedThumbColor = AppPalette.textMuted,
+                uncheckedTrackColor = AppPalette.cardBorder
             )
-        }
+        )
     }
 }
 
@@ -2167,6 +2230,16 @@ private fun ArchiveConfirmDialog(goalName: String, onConfirm: () -> Unit, onDism
         onDismiss = onDismiss,
         onConfirm = onConfirm,
         message = "Are you sure you want to archive \"$goalName\"? You can view archived goals in settings."
+    )
+}
+
+@Composable
+private fun DeleteAutoAllocationRuleConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog(
+        itemName = "auto-allocation rule",
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        message = "Are you sure you want to delete this auto-allocation rule? Automatic savings for this rule will stop."
     )
 }
 

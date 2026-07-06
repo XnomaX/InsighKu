@@ -3,6 +3,9 @@ package com.example.insightku.feature.auth.domain
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.data.repository.DraftTransactionRepository
+import com.example.insightku.core.data.repository.CategoryRepository
+import com.example.insightku.core.data.repository.RecurringBudgetRepository
+import com.example.insightku.core.data.repository.InstallmentRepository
 import javax.inject.Inject
 
 /**
@@ -33,6 +36,9 @@ import javax.inject.Inject
 class LogoutUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val transactionRepository: TransactionRepository,
+    private val categoryRepository: CategoryRepository,
+    private val recurringBudgetRepository: RecurringBudgetRepository,
+    private val installmentRepository: InstallmentRepository,
     private val draftRepository: DraftTransactionRepository
 ) {
     suspend operator fun invoke(): Result<Unit> {
@@ -42,9 +48,9 @@ class LogoutUseCase @Inject constructor(
 
             // Langkah 3: Bersihkan semua cache Room
             transactionRepository.deleteAllLocalTransactions()
-            transactionRepository.deleteAllLocalCategories()
-            transactionRepository.deleteAllLocalRecurringBudgets()
-            transactionRepository.deleteAllLocalInstallments()
+            categoryRepository.deleteAllLocalCategories()
+            recurringBudgetRepository.deleteAllLocalRecurringBudgets()
+            installmentRepository.deleteAllLocalInstallments()
             // Draft device-local — bersihkan agar tidak bocor antar user.
             draftRepository.deleteAll()
 

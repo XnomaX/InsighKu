@@ -26,7 +26,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -731,21 +730,6 @@ private fun PasswordRequirement(text: String, isMet: Boolean) {
             color = if (isMet) Color(0xFF6D28D9) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
     }
-}
-
-@Preview
-@Composable
-fun SignUpScreenPreview() {
-    SignUpScreen(
-        onSignUpSuccess = {},
-        onNavigateToLogin = {}
-    )
-}
-
-@Preview
-@Composable
-fun PasswordStrengthIndicatorPreview() {
-    PasswordStrengthIndicator(password = "Password123!")
 }
 
 private data class PasswordStrength(

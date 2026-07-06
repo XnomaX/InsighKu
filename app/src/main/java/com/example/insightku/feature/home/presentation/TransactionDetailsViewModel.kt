@@ -6,6 +6,7 @@ import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.data.repository.TransactionRepository
+import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.feature.home.domain.GetTransactionsUseCase
 import com.example.insightku.core.utils.ErrorBus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +20,7 @@ import javax.inject.Inject
 class TransactionDetailsViewModel @Inject constructor(
     private val getTransactionsUseCase: GetTransactionsUseCase,
     private val transactionRepository: TransactionRepository,
+    private val categoryRepository: CategoryRepository,
     private val authRepository: AuthRepository,
     private val errorBus: ErrorBus
 ) : ViewModel() {
@@ -60,7 +62,7 @@ class TransactionDetailsViewModel @Inject constructor(
     private fun loadCategories() {
         viewModelScope.launch {
             try {
-                transactionRepository.getAllCategories().collect { cats ->
+                categoryRepository.getAllCategories().collect { cats ->
                     _categories.value = cats
                 }
             } catch (e: CancellationException) {
