@@ -1,13 +1,10 @@
 package com.example.insightku.feature.auth.presentation
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -16,36 +13,54 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
-import com.example.insightku.feature.auth.presentation.SignUpViewModel
 import com.example.insightku.core.data.model.UserData
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.adaptiveDp
-import com.example.insightku.core.ui.theme.rememberWindowSize
+import com.example.insightku.feature.auth.presentation.components.*
 
 @Composable
 fun SignUpScreen(
     onSignUpSuccess: (UserData) -> Unit,
-    onNavigateToLogin: () -> Unit,
-    onBack: (() -> Unit)? = null
+    onNavigateToLogin: () -> Unit
 ) {
     val viewModel: SignUpViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState.success) {
+        if (uiState.success) {
+            onSignUpSuccess(UserData(name = uiState.name, email = uiState.email))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.resetState()
+    }
+
+    SignUpScreenContent(
+        uiState = uiState,
+        onEvent = viewModel::onEvent,
+        onNavigateToLogin = onNavigateToLogin
+    )
+}
+
+@Composable
+private fun SignUpScreenContent(
+    uiState: SignUpState,
+    onEvent: (SignUpEvent) -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
     var showPassword by remember { mutableStateOf(false) }
     var showConfirmPassword by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
@@ -53,661 +68,210 @@ fun SignUpScreen(
     val passwordFocusRequester = remember { FocusRequester() }
     val confirmPasswordFocusRequester = remember { FocusRequester() }
 
-    // Responsive values
-    val screenPadding      = adaptiveDp(Dimens.AuthScreenPaddingCompact, Dimens.AuthScreenPaddingMedium, Dimens.AuthScreenPaddingExpanded)
-    val logoSize           = adaptiveDp(Dimens.AuthLogoSizeCompact, Dimens.AuthLogoSizeMedium, Dimens.AuthLogoSizeExpanded)
-    val cardInnerPadding   = adaptiveDp(Dimens.CardInnerPaddingCompact, Dimens.CardInnerPaddingMedium, Dimens.CardInnerPaddingExpanded)
-    val formSpacing        = adaptiveDp(Dimens.FormSpacingCompact, Dimens.FormSpacingMedium, Dimens.FormSpacingExpanded)
-    val buttonHeight       = adaptiveDp(Dimens.ButtonHeightCompact, Dimens.ButtonHeightMedium, Dimens.ButtonHeightExpanded)
-    val iconLogoSize       = adaptiveDp(Dimens.AuthLogoSizeCompact * 0.5f, Dimens.AuthLogoSizeMedium * 0.5f, Dimens.AuthLogoSizeExpanded * 0.5f)
+    val screenPadding = adaptiveDp(
+        Dimens.AuthScreenPaddingCompact,
+        Dimens.AuthScreenPaddingMedium,
+        Dimens.AuthScreenPaddingExpanded
+    )
+    val formSpacing = adaptiveDp(
+        Dimens.FormSpacingCompact,
+        Dimens.FormSpacingMedium,
+        Dimens.FormSpacingExpanded
+    )
 
-    // Theme colors
-    val primaryPurple = MaterialTheme.colorScheme.primary
-    val lightGrayBg = MaterialTheme.colorScheme.surfaceVariant
-    val errorColor = MaterialTheme.colorScheme.error
-    val successColor = MaterialTheme.colorScheme.tertiary
-    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
-
-    // Handle sign up success
-    LaunchedEffect(uiState.success) {
-        if (uiState.success) {
-            onSignUpSuccess(UserData(name = uiState.name, email = uiState.email))
-        }
-    }
-
-    // Reset state when screen is first loaded
-    LaunchedEffect(Unit) {
-        viewModel.resetState()
-    }
-
-    // Box terluar handle status bar inset agar logo tidak terpotong
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(AppPalette.background)
             .statusBarsPadding()
     ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = screenPadding)
-            .imePadding()
-            .verticalScroll(scrollState)
-            .semantics { contentDescription = "Sign up screen" },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
-        // App Icon
-        Box(
+        Column(
             modifier = Modifier
-                .size(logoSize)
-                .background(
-                    color = primaryPurple.copy(alpha = 0.1f),
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .padding(horizontal = screenPadding)
+                .imePadding()
+                .verticalScroll(scrollState)
+                .semantics { contentDescription = "Sign up screen" },
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                Icons.Default.Lightbulb,
-                contentDescription = "InsightKu logo",
-                modifier = Modifier.size(iconLogoSize),
-                tint = primaryPurple
+            Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
+
+            // ─── Header ──────────────────────────────────────────────────
+            AuthHeader(
+                title = stringResource(R.string.signup_title),
+                subtitle = stringResource(R.string.signup_subtitle)
             )
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(formSpacing * 2))
 
-        // Welcome Text
-        Text(
-            text = "Join InsightKu",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            ),
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Create your account for smarter financial tracking",
-            style = MaterialTheme.typography.bodyMedium,
-            color = onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(formSpacing))
-
-        // Sign Up Form within a Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(
-                modifier = Modifier.padding(cardInnerPadding)
-            ) {
-                // Name Field with validation
-                NameInputField(
+            // ─── Form Card ───────────────────────────────────────────────
+            AuthFormCard {
+                // Name
+                AuthTextField(
                     value = uiState.name,
-                    onValueChange = { viewModel.onEvent(SignUpEvent.NameChanged(it)) },
+                    onValueChange = { onEvent(SignUpEvent.NameChanged(it)) },
+                    label = stringResource(R.string.name_label),
+                    placeholder = stringResource(R.string.name_placeholder),
+                    leadingIcon = Icons.Default.Person,
                     isError = uiState.nameError != null,
                     errorMessage = uiState.nameError,
-                    onNext = { emailFocusRequester.requestFocus() },
-                    lightGrayBg = lightGrayBg,
-                    errorColor = errorColor,
-                    successColor = successColor,
-                    onSurfaceVariant = onSurfaceVariant
+                    keyboardType = KeyboardType.Text,
+                    onNext = { emailFocusRequester.requestFocus() }
                 )
 
                 Spacer(modifier = Modifier.height(formSpacing))
 
-                // Email Field with validation
-                EmailInputField(
+                // Email
+                AuthTextField(
                     value = uiState.email,
-                    onValueChange = { viewModel.onEvent(SignUpEvent.EmailChanged(it)) },
+                    onValueChange = { onEvent(SignUpEvent.EmailChanged(it)) },
+                    label = stringResource(R.string.email_label),
+                    placeholder = stringResource(R.string.email_placeholder),
+                    leadingIcon = Icons.Default.Email,
                     isError = uiState.emailError != null,
                     errorMessage = uiState.emailError,
+                    keyboardType = KeyboardType.Email,
                     onNext = { passwordFocusRequester.requestFocus() },
-                    focusRequester = emailFocusRequester,
-                    lightGrayBg = lightGrayBg,
-                    errorColor = errorColor,
-                    successColor = successColor,
-                    onSurfaceVariant = onSurfaceVariant
+                    focusRequester = emailFocusRequester
                 )
 
                 Spacer(modifier = Modifier.height(formSpacing))
 
-                // Password Field with validation
-                PasswordInputField(
+                // Password
+                AuthTextField(
                     value = uiState.password,
-                    onValueChange = { viewModel.onEvent(SignUpEvent.PasswordChanged(it)) },
+                    onValueChange = { onEvent(SignUpEvent.PasswordChanged(it)) },
+                    label = stringResource(R.string.password_label),
+                    placeholder = "Create a password",
+                    leadingIcon = Icons.Default.Lock,
                     isError = uiState.passwordError != null,
                     errorMessage = uiState.passwordError,
+                    isPassword = true,
                     showPassword = showPassword,
                     onTogglePasswordVisibility = { showPassword = !showPassword },
+                    keyboardType = KeyboardType.Password,
                     onNext = { confirmPasswordFocusRequester.requestFocus() },
-                    focusRequester = passwordFocusRequester,
-                    lightGrayBg = lightGrayBg,
-                    errorColor = errorColor,
-                    successColor = successColor,
-                    onSurfaceVariant = onSurfaceVariant,
-                    label = "Password",
-                    placeholder = "Create a password"
+                    focusRequester = passwordFocusRequester
                 )
 
-                // Password Strength Indicator
-                if (uiState.password.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(formSpacing * 0.5f))
-                    PasswordStrengthIndicator(password = uiState.password)
+                // Password Strength
+                AnimatedVisibility(visible = uiState.password.isNotEmpty()) {
+                    PasswordStrengthSection(password = uiState.password)
                 }
 
                 Spacer(modifier = Modifier.height(formSpacing))
 
-                // Confirm Password Field with validation
-                PasswordInputField(
+                // Confirm Password
+                AuthTextField(
                     value = uiState.confirmPassword,
-                    onValueChange = { viewModel.onEvent(SignUpEvent.ConfirmPasswordChanged(it)) },
+                    onValueChange = { onEvent(SignUpEvent.ConfirmPasswordChanged(it)) },
+                    label = stringResource(R.string.confirm_password_label),
+                    placeholder = stringResource(R.string.confirm_password_placeholder),
+                    leadingIcon = Icons.Default.Lock,
                     isError = uiState.confirmPasswordError != null,
                     errorMessage = uiState.confirmPasswordError,
+                    isPassword = true,
                     showPassword = showConfirmPassword,
                     onTogglePasswordVisibility = { showConfirmPassword = !showConfirmPassword },
-                    onNext = {
-                        if (uiState.isSignUpEnabled) {
-                            viewModel.onEvent(SignUpEvent.Submit)
-                        }
-                    },
-                    focusRequester = confirmPasswordFocusRequester,
-                    lightGrayBg = lightGrayBg,
-                    errorColor = errorColor,
-                    successColor = successColor,
-                    onSurfaceVariant = onSurfaceVariant,
-                    label = "Confirm Password",
-                    placeholder = "Confirm your password"
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                    onNext = { if (uiState.isSignUpEnabled) onEvent(SignUpEvent.Submit) },
+                    focusRequester = confirmPasswordFocusRequester
                 )
 
                 Spacer(modifier = Modifier.height(formSpacing))
 
-                // General Error Display
+                // Error Card
                 if (uiState.error != null) {
-                    ErrorCard(
+                    AuthErrorCard(
                         errorMessage = uiState.error!!,
-                        onDismiss = { viewModel.clearError() },
-                        errorColor = errorColor
+                        onDismiss = { onEvent(SignUpEvent.ClearError) }
                     )
                     Spacer(modifier = Modifier.height(formSpacing))
                 }
 
                 // Sign Up Button
-                Button(
-                    onClick = { viewModel.onEvent(SignUpEvent.Submit) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(buttonHeight)
-                        .semantics {
-                            contentDescription = if (uiState.isLoading) {
-                                "Creating account, please wait"
-                            } else if (uiState.isSignUpEnabled) {
-                                "Create account button, enabled"
-                            } else {
-                                "Create account button, disabled. Please fill in all valid information"
-                            }
-                        },
-                    enabled = uiState.isSignUpEnabled && !uiState.isLoading,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = primaryPurple,
-                        disabledContainerColor = primaryPurple.copy(alpha = 0.5f)
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Create Account", fontSize = 16.sp, color = MaterialTheme.colorScheme.onPrimary)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(formSpacing))
-
-        // Login Prompt
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.semantics { contentDescription = "Login section" }
-        ) {
-            Text(
-                text = "Already have an account?",
-                color = onSurfaceVariant,
-                fontSize = 13.sp,
-                style = MaterialTheme.typography.bodySmall
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            TextButton(
-                onClick = onNavigateToLogin,
-                modifier = Modifier.semantics { contentDescription = "Login to InsightKu link" },
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
-            ) {
-                Text(
-                    text = "Login to InsightKu",
-                    color = primaryPurple,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    style = MaterialTheme.typography.bodySmall
+                AuthButton(
+                    text = stringResource(R.string.signup_button),
+                    onClick = { onEvent(SignUpEvent.Submit) },
+                    enabled = uiState.isSignUpEnabled,
+                    isLoading = uiState.isLoading,
+                    loadingText = stringResource(R.string.creating_account)
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
-    } // end Column
-    } // end Box
-}
+            Spacer(modifier = Modifier.height(formSpacing * 2))
 
-@Composable
-private fun NameInputField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    isError: Boolean,
-    errorMessage: String?,
-    onNext: () -> Unit,
-    lightGrayBg:   Color,
-    errorColor: Color,
-    successColor: Color,
-    onSurfaceVariant: Color
-) {
-    Column {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text("Full Name") },
-            placeholder = { Text("Enter your full name") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics {
-                    contentDescription = if (isError) {
-                        "Name input field, error: ${errorMessage ?: "Invalid name"}"
-                    } else {
-                        "Name input field"
-                    }
-                },
-            shape = RoundedCornerShape(14.dp),
-            leadingIcon = {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    tint = when {
-                        isError -> errorColor
-                        value.isNotEmpty() && !isError -> successColor
-                        else -> onSurfaceVariant
-                    }
-                )
-            },
-            trailingIcon = {
-                if (value.isNotEmpty()) {
-                    Icon(
-                        if (isError) Icons.Default.Error else Icons.Default.Check,
-                        contentDescription = if (isError) "Invalid name" else "Valid name",
-                        tint = if (isError) errorColor else successColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = lightGrayBg,
-                unfocusedContainerColor = lightGrayBg,
-                errorContainerColor = errorColor.copy(alpha = 0.1f),
-                focusedBorderColor = when {
-                    isError -> errorColor
-                    value.isNotEmpty() && !isError -> successColor
-                    else -> MaterialTheme.colorScheme.primary
-                },
-                unfocusedBorderColor = when {
-                    isError -> errorColor
-                    value.isNotEmpty() && !isError -> successColor
-                    else -> Color.Transparent
-                },
-                errorBorderColor = errorColor,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                errorLabelColor = errorColor
-            ),
-            isError = isError,
-            singleLine = true,
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Next,
-                keyboardType = KeyboardType.Text
-            ),
-            keyboardActions = KeyboardActions(onNext = { onNext() })
-        )
-
-        // Error message
-        if (isError && errorMessage != null) {
-            Text(
-                text = errorMessage,
-                color = errorColor,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 4.dp)
-                    .semantics { contentDescription = "Name error: $errorMessage" }
+            // ─── Footer ──────────────────────────────────────────────────
+            AuthFooter(
+                promptText = stringResource(R.string.has_account_prompt),
+                actionText = stringResource(R.string.login_link),
+                onActionClick = onNavigateToLogin
             )
+
+            Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
         }
     }
 }
 
-@Composable
-private fun EmailInputField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    isError: Boolean,
-    errorMessage: String?,
-    onNext: () -> Unit,
-    focusRequester: FocusRequester,
-    lightGrayBg: Color,
-    errorColor: Color,
-    successColor: Color,
-    onSurfaceVariant: Color
-) {
-    Column {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text("Email") },
-            placeholder = { Text("Enter your email") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                .semantics {
-                    contentDescription = if (isError) {
-                        "Email input field, error: ${errorMessage ?: "Invalid email"}"
-                    } else {
-                        "Email input field"
-                    }
-                },
-            shape = RoundedCornerShape(14.dp),
-            leadingIcon = {
-                Icon(
-                    Icons.Default.Email,
-                    contentDescription = null,
-                    tint = when {
-                        isError -> errorColor
-                        value.isNotEmpty() && !isError -> successColor
-                        else -> onSurfaceVariant
-                    }
-                )
-            },
-            trailingIcon = {
-                if (value.isNotEmpty()) {
-                    Icon(
-                        if (isError) Icons.Default.Error else Icons.Default.Check,
-                        contentDescription = if (isError) "Invalid email" else "Valid email",
-                        tint = if (isError) errorColor else successColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = lightGrayBg,
-                unfocusedContainerColor = lightGrayBg,
-                errorContainerColor = errorColor.copy(alpha = 0.1f),
-                focusedBorderColor = when {
-                    isError -> errorColor
-                    value.isNotEmpty() && !isError -> successColor
-                    else -> MaterialTheme.colorScheme.primary
-                },
-                unfocusedBorderColor = when {
-                    isError -> errorColor
-                    value.isNotEmpty() && !isError -> successColor
-                    else -> Color.Transparent
-                },
-                errorBorderColor = errorColor,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                errorLabelColor = errorColor
-            ),
-            isError = isError,
-            singleLine = true,
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Next,
-                keyboardType = KeyboardType.Email
-            ),
-            keyboardActions = KeyboardActions(onNext = { onNext() })
-        )
-
-        // Error message
-        if (isError && errorMessage != null) {
-            Text(
-                text = errorMessage,
-                color = errorColor,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 4.dp)
-                    .semantics { contentDescription = "Email error: $errorMessage" }
-            )
-        }
-    }
-}
+// ─── Password Strength Section ────────────────────────────────────────────────
 
 @Composable
-private fun PasswordInputField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    isError: Boolean,
-    errorMessage: String?,
-    showPassword: Boolean,
-    onTogglePasswordVisibility: () -> Unit,
-    onNext: () -> Unit,
-    focusRequester: FocusRequester,
-    lightGrayBg: Color,
-    errorColor: Color,
-    successColor: Color,
-    onSurfaceVariant: Color,
-    label: String,
-    placeholder: String
-) {
-    Column {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(label) },
-            placeholder = { Text(placeholder) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                .semantics {
-                    contentDescription = if (isError) {
-                        "$label input field, error: ${errorMessage ?: "Invalid $label"}"
-                    } else {
-                        "$label input field"
-                    }
-                },
-            shape = RoundedCornerShape(14.dp),
-            leadingIcon = {
-                Icon(
-                    Icons.Default.Lock,
-                    contentDescription = null,
-                    tint = when {
-                        isError -> errorColor
-                        value.isNotEmpty() && !isError -> successColor
-                        else -> onSurfaceVariant
-                    }
-                )
-            },
-            trailingIcon = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (value.isNotEmpty()) {
-                        Icon(
-                            if (isError) Icons.Default.Error else Icons.Default.Check,
-                            contentDescription = if (isError) "Invalid $label" else "Valid $label",
-                            tint = if (isError) errorColor else successColor,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    IconButton(
-                        onClick = onTogglePasswordVisibility,
-                        modifier = Modifier.semantics {
-                            contentDescription = if (showPassword) "Hide password" else "Show password"
-                        }
-                    ) {
-                        Icon(
-                            if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = null,
-                            tint = onSurfaceVariant
-                        )
-                    }
-                }
-            },
-            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = lightGrayBg,
-                unfocusedContainerColor = lightGrayBg,
-                errorContainerColor = errorColor.copy(alpha = 0.1f),
-                focusedBorderColor = when {
-                    isError -> errorColor
-                    value.isNotEmpty() && !isError -> successColor
-                    else -> MaterialTheme.colorScheme.primary
-                },
-                unfocusedBorderColor = when {
-                    isError -> errorColor
-                    value.isNotEmpty() && !isError -> successColor
-                    else -> Color.Transparent
-                },
-                errorBorderColor = errorColor,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                errorLabelColor = errorColor
-            ),
-            isError = isError,
-            singleLine = true,
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Next,
-                keyboardType = KeyboardType.Password
-            ),
-            keyboardActions = KeyboardActions(onNext = { onNext() })
-        )
-
-        // Error message
-        if (isError && errorMessage != null) {
-            Text(
-                text = errorMessage,
-                color = errorColor,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 4.dp)
-                    .semantics { contentDescription = "$label error: $errorMessage" }
-            )
-        }
-    }
-}
-
-@Composable
-private fun ErrorCard(
-    errorMessage: String,
-    onDismiss: () -> Unit,
-    errorColor: Color
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = errorColor.copy(alpha = 0.1f)
-        ),
-        border = BorderStroke(1.dp, errorColor.copy(alpha = 0.3f)),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    Icons.Default.Error,
-                    contentDescription = "Error",
-                    tint = errorColor,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = errorMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = errorColor,
-                    modifier = Modifier.semantics {
-                        contentDescription = "Error message: $errorMessage"
-                    }
-                )
-            }
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .size(24.dp)
-                    .semantics { contentDescription = "Dismiss error message" }
-            ) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = errorColor
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PasswordStrengthIndicator(password: String) {
+private fun PasswordStrengthSection(password: String) {
     val strength = calculatePasswordStrength(password)
+    val formSpacing = adaptiveDp(
+        Dimens.FormSpacingCompact,
+        Dimens.FormSpacingMedium,
+        Dimens.FormSpacingExpanded
+    )
 
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
     ) {
-        Text(
-            text = "Password Strength",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        // Strength bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            LinearProgressIndicator(
+                progress = { strength.progress },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(4.dp),
+                color = strength.color,
+                trackColor = AppPalette.cardBorder,
+            )
+            Text(
+                text = strength.label,
+                style = MaterialTheme.typography.labelSmall,
+                color = strength.color,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
 
-        LinearProgressIndicator(
-            progress = { strength.progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp),
-            color = strength.color,
-            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-        )
+        Spacer(modifier = Modifier.height(10.dp))
 
-        Text(
-            text = strength.text,
-            style = MaterialTheme.typography.bodySmall,
-            color = strength.color,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-
-        if (password.isNotEmpty()) {
-            Column(
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                PasswordRequirement(
-                    text = "At least 6 characters",
-                    isMet = password.length >= 6
-                )
-                PasswordRequirement(
-                    text = "Contains a number",
-                    isMet = password.any { it.isDigit() }
-                )
-                PasswordRequirement(
-                    text = "Contains a letter",
-                    isMet = password.any { it.isLetter() }
-                )
-            }
+        // Requirements
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            PasswordRequirement(
+                text = stringResource(R.string.password_req_length),
+                isMet = password.length >= 8
+            )
+            PasswordRequirement(
+                text = stringResource(R.string.password_req_number),
+                isMet = password.any { it.isDigit() }
+            )
+            PasswordRequirement(
+                text = stringResource(R.string.password_req_letter),
+                isMet = password.any { it.isLetter() }
+            )
+            PasswordRequirement(
+                text = stringResource(R.string.password_req_special),
+                isMet = password.any { !it.isLetterOrDigit() }
+            )
         }
     }
 }
@@ -716,33 +280,35 @@ fun PasswordStrengthIndicator(password: String) {
 private fun PasswordRequirement(text: String, isMet: Boolean) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 2.dp)
+        modifier = Modifier.padding(vertical = 1.dp)
     ) {
         Icon(
-            imageVector = if (isMet) Icons.Default.Check else Icons.Default.Close,
+            imageVector = if (isMet) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
             contentDescription = null,
-            tint = if (isMet) AppPalette.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(16.dp)
+            tint = if (isMet) AppPalette.success else AppPalette.textMuted.copy(alpha = 0.4f),
+            modifier = Modifier.size(14.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = if (isMet) AppPalette.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            color = if (isMet) AppPalette.success else AppPalette.textMuted.copy(alpha = 0.6f)
         )
     }
 }
 
+// ─── Password Strength Calculation ────────────────────────────────────────────
+
 private data class PasswordStrength(
     val progress: Float,
     val color: Color,
-    val text: String
+    val label: String
 )
 
+@Composable
 private fun calculatePasswordStrength(password: String): PasswordStrength {
     var score = 0
-
-    if (password.length >= 6) score++
+    if (password.length >= 8) score++
     if (password.any { it.isDigit() }) score++
     if (password.any { it.isLetter() }) score++
     if (password.any { it.isUpperCase() }) score++
@@ -752,29 +318,27 @@ private fun calculatePasswordStrength(password: String): PasswordStrength {
         0, 1 -> PasswordStrength(
             progress = 0.2f,
             color = AppPalette.error,
-            text = "Terlalu lemah"
+            label = stringResource(R.string.password_strength_weak)
         )
         2 -> PasswordStrength(
             progress = 0.4f,
             color = AppPalette.warning,
-            text = "Lemah"
+            label = stringResource(R.string.password_strength_fair)
         )
         3 -> PasswordStrength(
             progress = 0.6f,
             color = AppPalette.accent,
-            text = "Cukup"
+            label = stringResource(R.string.password_strength_good)
         )
         4 -> PasswordStrength(
             progress = 0.8f,
             color = AppPalette.cyan,
-            text = "Kuat"
+            label = stringResource(R.string.password_strength_strong)
         )
         else -> PasswordStrength(
             progress = 1.0f,
             color = AppPalette.success,
-            text = "Sangat Kuat"
+            label = stringResource(R.string.password_strength_excellent)
         )
     }
 }
-
-

@@ -1,216 +1,255 @@
 package com.example.insightku.feature.auth.presentation
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.insightku.feature.auth.presentation.ForgotPasswordViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.insightku.R
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.core.ui.theme.adaptiveDp
+import com.example.insightku.feature.auth.presentation.components.*
 
 @Composable
 fun ForgotPasswordScreen(
     viewModel: ForgotPasswordViewModel = hiltViewModel(),
     onNavigateToLogin: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    ForgotPasswordScreenContent(
+        uiState = uiState,
+        onEvent = viewModel::onEvent,
+        onNavigateToLogin = onNavigateToLogin
+    )
+}
+
+@Composable
+private fun ForgotPasswordScreenContent(
+    uiState: ForgotPasswordState,
+    onEvent: (ForgotPasswordEvent) -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
     val scrollState = rememberScrollState()
+    val screenPadding = adaptiveDp(
+        Dimens.AuthScreenPaddingCompact,
+        Dimens.AuthScreenPaddingMedium,
+        Dimens.AuthScreenPaddingExpanded
+    )
+    val formSpacing = adaptiveDp(
+        Dimens.FormSpacingCompact,
+        Dimens.FormSpacingMedium,
+        Dimens.FormSpacingExpanded
+    )
 
-    val primaryPurple = MaterialTheme.colorScheme.primary
-    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
-    val successColor = MaterialTheme.colorScheme.tertiary
-
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(AppPalette.background)
             .statusBarsPadding()
-            .padding(24.dp)
-            .imePadding()
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
-        ) {
-            IconButton(
-                onClick = onNavigateToLogin
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // App Icon
-        Box(
+        Column(
             modifier = Modifier
-                .size(80.dp)
-                .background(
-                    color = primaryPurple.copy(alpha = 0.1f),
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .padding(horizontal = screenPadding)
+                .imePadding()
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                Icons.Default.Lightbulb,
-                contentDescription = "InsightKu logo",
-                modifier = Modifier.size(40.dp),
-                tint = primaryPurple
-            )
-        }
+            Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Title and Subtitle
-        Text(
-            text = "Reset Your Password",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            ),
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Enter your email and we'll send a link to reset your password.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Reset Form Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp)
+            // ─── Back Button ─────────────────────────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (!uiState.isEmailSent) {
-                    // Email Input Field
-                    OutlinedTextField(
-                        value = uiState.email,
-                        onValueChange = {
-                            // Trim spasi di awal/akhir secara otomatis
-                            viewModel.onEvent(ForgotPasswordEvent.EmailChanged(it.trim()))
-                        },
-                        label = { Text("Email") },
-                        placeholder = { Text("Masukkan email kamu") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Email,
-                                contentDescription = "Email",
-                                tint = if (uiState.error != null) MaterialTheme.colorScheme.error else onSurfaceVariant
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            errorContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                            focusedBorderColor = if (uiState.error != null) MaterialTheme.colorScheme.error else primaryPurple,
-                            unfocusedBorderColor = Color.Transparent,
-                        ),
-                        singleLine = true,
-                        isError = uiState.error != null
+                IconButton(
+                    onClick = onNavigateToLogin,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = AppPalette.textPrimary,
+                        modifier = Modifier.size(24.dp)
                     )
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(formSpacing))
 
-                    // Send Reset Link Button
-                    Button(
-                        onClick = { viewModel.onEvent(ForgotPasswordEvent.Submit) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        enabled = uiState.email.trim().isNotBlank() && !uiState.isLoading,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = primaryPurple,
-                            disabledContainerColor = primaryPurple.copy(alpha = 0.5f)
-                        ),
-                        shape = CircleShape
+            // ─── Header ──────────────────────────────────────────────────
+            AnimatedContent(
+                targetState = uiState.isEmailSent,
+                transitionSpec = {
+                    fadeIn() + slideInVertically(initialOffsetY = { it / 4 }) togetherWith
+                        fadeOut() + slideOutVertically(targetOffsetY = { -it / 4 })
+                },
+                label = "forgot_password_content"
+            ) { emailSent ->
+                if (!emailSent) {
+                    // ─── Request Form ────────────────────────────────────
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
+                        // Logo
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(
+                                    color = AppPalette.accent.copy(alpha = 0.08f),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Lightbulb,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = AppPalette.accent
                             )
-                        } else {
-                            Text("Send Reset Link", fontSize = 16.sp, color = MaterialTheme.colorScheme.onPrimary)
                         }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Text(
+                            text = stringResource(R.string.forgot_password_title),
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            ),
+                            color = AppPalette.textPrimary
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = stringResource(R.string.forgot_password_subtitle),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppPalette.textMuted,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(formSpacing * 2))
+
+                        // Form Card
+                        AuthFormCard {
+                            AuthTextField(
+                                value = uiState.email,
+                                onValueChange = { onEvent(ForgotPasswordEvent.EmailChanged(it.trim())) },
+                                label = stringResource(R.string.email_label),
+                                placeholder = stringResource(R.string.forgot_password_email_placeholder),
+                                leadingIcon = Icons.Default.Email,
+                                isError = uiState.error != null,
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
+                                imeAction = androidx.compose.ui.text.input.ImeAction.Done,
+                                onDone = {
+                                    if (uiState.email.isNotBlank() && !uiState.isLoading) {
+                                        onEvent(ForgotPasswordEvent.Submit)
+                                    }
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(formSpacing * 2))
+
+                            AuthButton(
+                                text = stringResource(R.string.forgot_password_button),
+                                onClick = { onEvent(ForgotPasswordEvent.Submit) },
+                                enabled = uiState.email.isNotBlank(),
+                                isLoading = uiState.isLoading,
+                                loadingText = stringResource(R.string.sending_reset_link)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(formSpacing * 2))
+
+                        // Back to Sign In
+                        AuthSecondaryButton(
+                            text = stringResource(R.string.back_to_sign_in),
+                            onClick = onNavigateToLogin
+                        )
                     }
                 } else {
-                    // Success State
+                    // ─── Success State ────────────────────────────────────
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = "Success",
-                            tint = successColor,
-                            modifier = Modifier.size(64.dp)
-                        )
+                        Spacer(modifier = Modifier.height(formSpacing * 2))
+
+                        // Success Icon
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .background(
+                                    color = AppPalette.success.copy(alpha = 0.1f),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = AppPalette.success,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
-                            text = "Reset link sent!",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold
+                            text = stringResource(R.string.reset_link_sent_title),
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
                             ),
-                            color = successColor
+                            color = AppPalette.textPrimary
                         )
 
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         Text(
-                            text = "Check your email for the password reset link. You can now close this page.",
+                            text = stringResource(R.string.reset_link_sent_subtitle, uiState.email),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            color = AppPalette.textMuted,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(formSpacing * 3))
+
+                        AuthButton(
+                            text = stringResource(R.string.back_to_sign_in),
+                            onClick = onNavigateToLogin,
+                            buttonColor = AppPalette.success
                         )
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Back to Sign In
-        TextButton(onClick = onNavigateToLogin) {
-            Text(
-                text = "Back to Sign In",
-                color = primaryPurple,
-                fontWeight = FontWeight.Bold
-            )
+            Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
         }
     }
 }
-

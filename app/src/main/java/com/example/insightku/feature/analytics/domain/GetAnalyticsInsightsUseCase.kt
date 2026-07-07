@@ -16,10 +16,10 @@ class GetAnalyticsInsightsUseCase @Inject constructor(
     private val getTransactions: GetTransactionsUseCase,
     private val engine: InsightEngine
 ) {
-    /** Emits derived insights; wraps derivation in [Result] so the ViewModel can surface errors. */
-    operator fun invoke(): Flow<Result<AnalyticsInsights>> =
+    /** Emits derived insights for a specific period type; wraps derivation in [Result]. */
+    operator fun invoke(periodType: AnalyticsPeriodType = AnalyticsPeriodType.MONTHLY): Flow<Result<AnalyticsInsights>> =
         getTransactions()
-            .map { txns -> runCatching { engine.derive(txns, System.currentTimeMillis()) } }
+            .map { txns -> runCatching { engine.derive(txns, System.currentTimeMillis(), periodType) } }
             .flowOn(Dispatchers.Default)
 
     /** Pull remote → Room; the Room Flow then re-emits and re-derives. */

@@ -75,6 +75,9 @@ class SignUpViewModel @Inject constructor(
             is SignUpEvent.Submit -> {
                 if (validateInput()) signUp()
             }
+            is SignUpEvent.ClearError -> {
+                _uiState.update { it.copy(error = null) }
+            }
         }
     }
 
