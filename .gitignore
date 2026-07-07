@@ -1,15 +1,57 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
+# Built application files
+*.apk
+*.aab
+*.ap_
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle files
+.gradle/
+.gradle-sandbox/
+build/
 /captures
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android Studio
+/.idea/
+*.iml
+
+# Kotlin
+.kotlin/
+
+# Signing
+*.jks
+*.keystore
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# External native build
 .externalNativeBuild
 .cxx
-local.properties
+
+# Memory profiler
+*.hprof
+
+# Firebase (optional — download from Firebase Console if excluded)
+# google-services.json
+
+# Node (Firebase Hosting)
+node_modules/
+package-lock.json
+package.json
