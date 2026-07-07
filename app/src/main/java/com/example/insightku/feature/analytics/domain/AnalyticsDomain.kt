@@ -52,7 +52,6 @@ data class HeatmapCell(
     val topTimeOfDay: String?,
     val comparison: DayComparison
 ) {
-    // Aliases used by AnalyticsSections UI
     val weekIndex: Int get() = weekOfMonth
     val amount: Double get() = totalAmount
     val dateLabel: String get() = label
@@ -109,9 +108,120 @@ data class MoodData(
     val summaryLine: String get() = caption.ifBlank { headline }
 }
 
+// ── Weekly Insights ───────────────────────────────────────────────────────────
+
+/** A single day's spending summary within the week. */
+data class DaySummary(
+    val dayOfWeek: Int,       // Calendar.MONDAY..SUNDAY
+    val dayLabel: String,     // "Mon", "Tue", etc.
+    val totalSpent: Double,
+    val transactionCount: Int,
+    val topCategory: String?,
+    val isToday: Boolean
+)
+
+/** Week-over-week comparison data. */
+data class WeekComparison(
+    val thisWeekTotal: Double,
+    val lastWeekTotal: Double,
+    val deltaPercent: Double,   // positive = spent more this week
+    val thisWeekDays: Int,
+    val lastWeekDays: Int
+)
+
+/** Weekly habit insight — which day was biggest, which was quietest. */
+data class WeeklyHabit(
+    val loudestDay: String,
+    val loudestAmount: Double,
+    val quietestDay: String,
+    val quietestAmount: Double,
+    val streakDays: Int,        // consecutive days with transactions
+    val avgDailySpend: Double,
+    val totalCategories: Int
+)
+
+// ── Monthly Insights ──────────────────────────────────────────────────────────
+
+/** Income vs Expense balance for a month. */
+data class CashflowBalance(
+    val totalIncome: Double,
+    val totalExpenses: Double,
+    val savingsAmount: Double,
+    val savingsRate: Double,    // 0.0 .. 1.0
+    val isPositive: Boolean
+)
+
+/** Top categories with amounts and percentages. */
+data class CategoryRanking(
+    val name: String,
+    val amount: Double,
+    val percentage: Double
+)
+
+/** Month-over-month trend point. */
+data class TrendPoint(
+    val label: String,
+    val income: Double,
+    val expense: Double,
+    val savings: Double
+)
+
+/** Monthly health summary. */
+data class MonthlyHealth(
+    val balance: CashflowBalance,
+    val topCategories: List<CategoryRanking>,
+    val trend: List<TrendPoint>,
+    val recurringTotal: Double,
+    val healthScore: Int       // 0..100
+)
+
+// ── Annual Insights ───────────────────────────────────────────────────────────
+
+/** Monthly data point within a year for trend visualization. */
+data class AnnualMonthPoint(
+    val monthIndex: Int,       // 0..11
+    val monthLabel: String,    // "Jan", "Feb", etc.
+    val income: Double,
+    val expense: Double,
+    val savings: Double
+)
+
+/** Year-over-year comparison. */
+data class YearComparison(
+    val thisYearTotal: Double,
+    val lastYearTotal: Double,
+    val deltaPercent: Double,
+    val thisYearIncome: Double,
+    val lastYearIncome: Double
+)
+
+/** Annual growth data. */
+data class AnnualGrowth(
+    val monthlyPoints: List<AnnualMonthPoint>,
+    val yearComparison: YearComparison?,
+    val bestMonth: AnnualMonthPoint?,
+    val worstMonth: AnnualMonthPoint?,
+    val totalSaved: Double,
+    val totalIncome: Double,
+    val totalExpenses: Double,
+    val avgMonthlyExpense: Double,
+    val savingsRate: Double,
+    val categoryEvolution: List<Pair<String, Double>>  // category → total for the year
+)
+
+// ── Hero Insight ──────────────────────────────────────────────────────────────
+
+/** The single most important insight at the top of each period view. */
+data class HeroInsight(
+    val emoji: String,
+    val headline: String,
+    val subtext: String
+)
+
 // ── Analytics Insights (output of InsightEngine) ──────────────────────────────
 
 data class AnalyticsInsights(
+    // Core (shared across periods)
     val personality: SpendingPersonality,
     val twoYous: TwoYousData?,
     val patterns: List<BehavioralPattern>,
@@ -122,25 +232,232 @@ data class AnalyticsInsights(
     val bigDecisions: List<BigDecision>,
     val streak: StreakData,
     val spotlight: SpotlightData,
-    val mood: MoodData?
+    val mood: MoodData?,
+    val heroInsight: HeroInsight,
+
+    // Weekly-specific
+    val weekComparison: WeekComparison? = null,
+    val weeklyHabit: WeeklyHabit? = null,
+    val dailySummaries: List<DaySummary> = emptyList(),
+
+    // Monthly-specific
+    val monthlyHealth: MonthlyHealth? = null,
+
+    // Annual-specific
+    val annualGrowth: AnnualGrowth? = null
 )
+
+// ── Insight Engine ────────────────────────────────────────────────────────────
 
 class InsightEngine @Inject constructor() {
 
-    fun derive(transactions: List<Transaction>, nowMillis: Long): AnalyticsInsights {
+    fun derive(
+        transactions: List<Transaction>,
+        nowMillis: Long,
+        periodType: AnalyticsPeriodType = AnalyticsPeriodType.MONTHLY
+    ): AnalyticsInsights {
+        return when (periodType) {
+            AnalyticsPeriodType.WEEKLY -> deriveWeekly(transactions, nowMillis)
+            AnalyticsPeriodType.MONTHLY -> deriveMonthly(transactions, nowMillis)
+            AnalyticsPeriodType.ANNUAL -> deriveAnnual(transactions, nowMillis)
+        }
+    }
+
+    // ── Weekly Derivation ─────────────────────────────────────────────────────
+
+    private fun deriveWeekly(allTxns: List<Transaction>, nowMillis: Long): AnalyticsInsights {
+        val week = AnalyticsPeriod.currentWeek(nowMillis)
+        val prevWeek = AnalyticsPeriod.previousWeek(nowMillis)
+        val weekTxns = allTxns.filter { week.contains(it.date) }
+        val prevWeekTxns = allTxns.filter { prevWeek.contains(it.date) }
+
+        val dayNames = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+
+        // Daily summaries
+        val dailySums = weekTxns.groupBy {
+            java.util.Calendar.getInstance().apply { timeInMillis = it.date }.get(java.util.Calendar.DAY_OF_WEEK) - 1
+        }
+        val todayDow = java.util.Calendar.getInstance().apply { timeInMillis = nowMillis }
+            .get(java.util.Calendar.DAY_OF_WEEK) - 1
+
+        val dailySummaries = (0..6).map { dow ->
+            val dayTxns = dailySums[dow] ?: emptyList()
+            DaySummary(
+                dayOfWeek = dow,
+                dayLabel = dayNames[dow],
+                totalSpent = dayTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount },
+                transactionCount = dayTxns.size,
+                topCategory = dayTxns.groupBy { it.category }.maxByOrNull { it.value.sumOf { t -> t.amount } }?.key,
+                isToday = dow == todayDow
+            )
+        }
+
+        // Week comparison
+        val thisWeekTotal = weekTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
+        val lastWeekTotal = prevWeekTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
+        val deltaPct = if (lastWeekTotal > 0) ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100 else 0.0
+
+        val weekComparison = WeekComparison(
+            thisWeekTotal = thisWeekTotal,
+            lastWeekTotal = lastWeekTotal,
+            deltaPercent = deltaPct,
+            thisWeekDays = weekTxns.map { dayKey(it.date) }.distinct().size,
+            lastWeekDays = prevWeekTxns.map { dayKey(it.date) }.distinct().size
+        )
+
+        // Weekly habit
+        val loudestDay = dailySums.maxByOrNull { it.value.filter { t -> t.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { t -> t.amount } }
+        val quietestDay = dailySums.minByOrNull { it.value.filter { t -> t.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { t -> t.amount } }
+
+        val expenseTxns = weekTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+        val daysWithTxns = expenseTxns.map { dayKey(it.date) }.distinct().size
+        val streakDays = calculateStreakDays(expenseTxns, nowMillis)
+
+        val weeklyHabit = WeeklyHabit(
+            loudestDay = loudestDay?.let { dayNames[it.key] } ?: "—",
+            loudestAmount = loudestDay?.value?.filter { t -> t.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }?.sumOf { it.amount } ?: 0.0,
+            quietestDay = quietestDay?.let { dayNames[it.key] } ?: "—",
+            quietestAmount = quietestDay?.value?.filter { t -> t.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }?.sumOf { it.amount } ?: 0.0,
+            streakDays = streakDays,
+            avgDailySpend = if (daysWithTxns > 0) thisWeekTotal / daysWithTxns else 0.0,
+            totalCategories = weekTxns.map { it.category }.distinct().size
+        )
+
+        // Hero insight for weekly
+        val heroInsight = if (weekTxns.isEmpty()) {
+            HeroInsight("📊", "Your week at a glance", "Start logging transactions to see weekly insights")
+        } else {
+            val daysBelowAvg = dailySums.count { (_, txns) ->
+                val dayTotal = txns.filter { t -> t.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
+                dayTotal < weeklyHabit.avgDailySpend && dayTotal > 0
+            }
+            if (daysBelowAvg >= 4) {
+                HeroInsight("🎯", "You stayed under your average for $daysBelowAvg of 7 days", "Consistent spending habits build long-term financial health")
+            } else if (deltaPct < -10) {
+                HeroInsight("📉", "You spent ${kotlin.math.abs(deltaPct).toInt()}% less than last week", "Your spending habits are trending in a great direction")
+            } else if (deltaPct > 20) {
+                HeroInsight("📈", "Spending picked up ${deltaPct.toInt()}% from last week", "Weekend spending continues to influence your total")
+            } else {
+                HeroInsight("🌊", "Steady week with ${expenseTxns.size} transactions", "You're maintaining a balanced spending rhythm")
+            }
+        }
+
+        // Existing shared derivations
+        val personality = derivePersonality(weekTxns)
+        val twoYous = deriveTwoYous(weekTxns)
+        val patterns = derivePatterns(weekTxns, allTxns, nowMillis)
+        val noticing = deriveNoticing(weekTxns)
+        val categorySlices = topCategorySlices(weekTxns)
+        val bigDecisions = deriveBigDecisions(weekTxns)
+        val streak = deriveStreak(allTxns, nowMillis)
+        val spotlight = deriveSpotlight(weekTxns, nowMillis)
+        val mood = deriveMood(allTxns, nowMillis)
+
+        return AnalyticsInsights(
+            personality = personality,
+            twoYous = twoYous,
+            patterns = patterns,
+            noticing = noticing,
+            heatmapCells = emptyList(),
+            rhythm = RhythmCaption(weeklyHabit.loudestDay + "s are your biggest spending days"),
+            categorySlices = categorySlices,
+            bigDecisions = bigDecisions,
+            streak = streak,
+            spotlight = spotlight,
+            mood = mood,
+            heroInsight = heroInsight,
+            weekComparison = weekComparison,
+            weeklyHabit = weeklyHabit,
+            dailySummaries = dailySummaries
+        )
+    }
+
+    // ── Monthly Derivation ────────────────────────────────────────────────────
+
+    private fun deriveMonthly(allTxns: List<Transaction>, nowMillis: Long): AnalyticsInsights {
         val period = AnalyticsPeriod.currentMonth(nowMillis)
-        val monthTxns = transactions.filter { period.contains(it.date) }
+        val prevPeriod = AnalyticsPeriod.previousMonth(nowMillis)
+        val monthTxns = allTxns.filter { period.contains(it.date) }
+        val prevMonthTxns = allTxns.filter { prevPeriod.contains(it.date) }
+
+        // Cashflow
+        val income = monthTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.INCOME }.sumOf { it.amount }
+        val expenses = monthTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
+        val savings = income - expenses
+        val savingsRate = if (income > 0) (savings / income).coerceIn(0.0, 1.0) else 0.0
+
+        val balance = CashflowBalance(
+            totalIncome = income,
+            totalExpenses = expenses,
+            savingsAmount = savings,
+            savingsRate = savingsRate,
+            isPositive = savings > 0
+        )
+
+        // Category ranking
+        val expenseTxns = monthTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+        val totalExpense = expenseTxns.sumOf { it.amount }.coerceAtLeast(1.0)
+        val topCategories = expenseTxns.groupBy { it.category }
+            .map { (cat, txns) -> cat to txns.sumOf { it.amount } }
+            .sortedByDescending { it.second }
+            .take(6)
+            .map { (cat, amt) -> CategoryRanking(cat, amt, amt / totalExpense) }
+
+        // Trend (last 6 months)
+        val trend = (5 downTo 0).map { i ->
+            val cal = java.util.Calendar.getInstance().apply {
+                timeInMillis = nowMillis
+                add(java.util.Calendar.MONTH, -i)
+            }
+            val mp = AnalyticsPeriod.currentMonth(cal.timeInMillis)
+            val mTxns = allTxns.filter { mp.contains(it.date) }
+            TrendPoint(
+                label = java.text.SimpleDateFormat("MMM", java.util.Locale.getDefault()).format(cal.time),
+                income = mTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.INCOME }.sumOf { it.amount },
+                expense = mTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount },
+                savings = 0.0
+            ).let { it.copy(savings = it.income - it.expense) }
+        }
+
+        // Health score (0-100)
+        val healthScore = calculateHealthScore(balance, topCategories)
+
+        // Recurring (subscriptions/bills detected by repeated category + similar amounts)
+        val recurringTotal = detectRecurring(monthTxns)
+
+        val monthlyHealth = MonthlyHealth(
+            balance = balance,
+            topCategories = topCategories,
+            trend = trend,
+            recurringTotal = recurringTotal,
+            healthScore = healthScore
+        )
+
+        // Hero insight for monthly
+        val heroInsight = if (monthTxns.isEmpty()) {
+            HeroInsight("📊", "Your month at a glance", "Start logging transactions to see financial health insights")
+        } else {
+            val prevExpenses = prevMonthTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
+            val expDelta = if (prevExpenses > 0) ((expenses - prevExpenses) / prevExpenses) * 100 else 0.0
+            when {
+                savings > 0 && savingsRate > 0.2 -> HeroInsight("🎉", "You saved ${(savingsRate * 100).toInt()}% of your income this month", "This was your most consistent saving month")
+                savings > 0 -> HeroInsight("✅", "Positive balance this month", "You earned more than you spent — keep it up")
+                expDelta < -15 -> HeroInsight("📉", "Expenses dropped ${kotlin.math.abs(expDelta).toInt()}% from last month", "Your spending discipline is improving")
+                expDelta > 15 -> HeroInsight("📈", "Spending rose ${expDelta.toInt()}% from last month", "Take a moment to review where it went")
+                else -> HeroInsight("🌊", "Steady month with ${expenseTxns.size} transactions", "Your finances are staying balanced")
+            }
+        }
 
         val personality = derivePersonality(monthTxns)
         val twoYous = deriveTwoYous(monthTxns)
-        val patterns = derivePatterns(monthTxns, transactions, nowMillis)
+        val patterns = derivePatterns(monthTxns, allTxns, nowMillis)
         val heatmap = deriveHeatmap(monthTxns, nowMillis)
         val rhythm = deriveRhythm(monthTxns)
         val slices = deriveCategorySlices(monthTxns)
         val bigDecisions = deriveBigDecisions(monthTxns)
-        val streak = deriveStreak(transactions, nowMillis)
-        val spotlight = deriveSpotlight(transactions, nowMillis)
-        val mood = deriveMood(transactions, nowMillis)
+        val streak = deriveStreak(allTxns, nowMillis)
+        val spotlight = deriveSpotlight(allTxns, nowMillis)
+        val mood = deriveMood(allTxns, nowMillis)
         val noticing = deriveNoticing(monthTxns)
 
         return AnalyticsInsights(
@@ -154,9 +471,129 @@ class InsightEngine @Inject constructor() {
             bigDecisions = bigDecisions,
             streak = streak,
             spotlight = spotlight,
-            mood = mood
+            mood = mood,
+            heroInsight = heroInsight,
+            monthlyHealth = monthlyHealth
         )
     }
+
+    // ── Annual Derivation ─────────────────────────────────────────────────────
+
+    private fun deriveAnnual(allTxns: List<Transaction>, nowMillis: Long): AnalyticsInsights {
+        val yearPeriod = AnalyticsPeriod.currentYear(nowMillis)
+        val yearTxns = allTxns.filter { yearPeriod.contains(it.date) }
+
+        val monthLabels = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+        // Monthly points
+        val monthlyPoints = (0..11).map { m ->
+            val cal = java.util.Calendar.getInstance().apply {
+                timeInMillis = nowMillis
+                set(java.util.Calendar.MONTH, m)
+            }
+            val mp = AnalyticsPeriod.currentMonth(cal.timeInMillis)
+            val mTxns = allTxns.filter { mp.contains(it.date) }
+            val inc = mTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.INCOME }.sumOf { it.amount }
+            val exp = mTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
+            AnnualMonthPoint(m, monthLabels[m], inc, exp, inc - exp)
+        }
+
+        // Filter to only months that have passed
+        val currentMonth = java.util.Calendar.getInstance().apply { timeInMillis = nowMillis }
+            .get(java.util.Calendar.MONTH)
+        val activeMonths = monthlyPoints.filter { it.monthIndex <= currentMonth }
+
+        // Year comparison
+        val prevYearPeriod = AnalyticsPeriod.previousYear(nowMillis)
+        val prevYearTxns = allTxns.filter { prevYearPeriod.contains(it.date) }
+        val thisYearTotal = yearTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
+        val lastYearTotal = prevYearTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
+        val thisYearIncome = yearTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.INCOME }.sumOf { it.amount }
+        val lastYearIncome = prevYearTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.INCOME }.sumOf { it.amount }
+
+        val yearComparison = if (lastYearTotal > 0 || lastYearIncome > 0) {
+            YearComparison(
+                thisYearTotal = thisYearTotal,
+                lastYearTotal = lastYearTotal,
+                deltaPercent = if (lastYearTotal > 0) ((thisYearTotal - lastYearTotal) / lastYearTotal) * 100 else 0.0,
+                thisYearIncome = thisYearIncome,
+                lastYearIncome = lastYearIncome
+            )
+        } else null
+
+        // Best/worst month (by savings)
+        val bestMonth = activeMonths.maxByOrNull { it.savings }
+        val worstMonth = activeMonths.minByOrNull { it.savings }
+
+        // Totals
+        val totalSaved = activeMonths.sumOf { it.savings }
+        val totalIncome = activeMonths.sumOf { it.income }
+        val totalExpenses = activeMonths.sumOf { it.expense }
+        val avgMonthlyExpense = if (activeMonths.isNotEmpty()) totalExpenses / activeMonths.size else 0.0
+        val savingsRate = if (totalIncome > 0) (totalSaved / totalIncome).coerceIn(0.0, 1.0) else 0.0
+
+        // Category evolution
+        val categoryEvolution = yearTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+            .groupBy { it.category }
+            .map { (cat, txns) -> cat to txns.sumOf { it.amount } }
+            .sortedByDescending { it.second }
+            .take(8)
+
+        val annualGrowth = AnnualGrowth(
+            monthlyPoints = activeMonths,
+            yearComparison = yearComparison,
+            bestMonth = bestMonth,
+            worstMonth = worstMonth,
+            totalSaved = totalSaved,
+            totalIncome = totalIncome,
+            totalExpenses = totalExpenses,
+            avgMonthlyExpense = avgMonthlyExpense,
+            savingsRate = savingsRate,
+            categoryEvolution = categoryEvolution
+        )
+
+        // Hero insight for annual
+        val heroInsight = if (yearTxns.isEmpty()) {
+            HeroInsight("📊", "Your year in review", "Start logging transactions to see your financial journey")
+        } else {
+            when {
+                yearComparison != null && yearComparison.deltaPercent < -10 -> HeroInsight("🏆", "Expenses dropped ${kotlin.math.abs(yearComparison.deltaPercent).toInt()}% from last year", "This has been your strongest financial year so far")
+                totalSaved > 0 && savingsRate > 0.15 -> HeroInsight("🎉", "You saved ${(savingsRate * 100).toInt()}% of your total income", "Your financial discipline is paying off")
+                bestMonth != null && bestMonth.savings > 0 -> HeroInsight("⭐", "${bestMonth.monthLabel} was your best month", "You saved ${formatAmount(bestMonth.savings)} that month")
+                else -> HeroInsight("📈", "A year of ${activeMonths.size} months tracked", "Your financial story is taking shape")
+            }
+        }
+
+        val personality = derivePersonality(yearTxns)
+        val twoYous = deriveTwoYous(yearTxns)
+        val patterns = derivePatterns(yearTxns, allTxns, nowMillis)
+        val rhythm = deriveRhythm(yearTxns)
+        val slices = deriveCategorySlices(yearTxns)
+        val bigDecisions = deriveBigDecisions(yearTxns)
+        val streak = deriveStreak(allTxns, nowMillis)
+        val spotlight = deriveSpotlight(allTxns, nowMillis)
+        val mood = deriveMood(allTxns, nowMillis)
+        val noticing = deriveNoticing(yearTxns)
+
+        return AnalyticsInsights(
+            personality = personality,
+            twoYous = twoYous,
+            patterns = patterns,
+            noticing = noticing,
+            heatmapCells = emptyList(),
+            rhythm = rhythm,
+            categorySlices = slices,
+            bigDecisions = bigDecisions,
+            streak = streak,
+            spotlight = spotlight,
+            mood = mood,
+            heroInsight = heroInsight,
+            annualGrowth = annualGrowth
+        )
+    }
+
+    // ── Shared Derivations ────────────────────────────────────────────────────
 
     private fun derivePersonality(txns: List<Transaction>): SpendingPersonality {
         if (txns.isEmpty()) return SpendingPersonality.ONBOARDING
@@ -204,8 +641,9 @@ class InsightEngine @Inject constructor() {
     }
 
     private fun topCategorySlices(txns: List<Transaction>): List<CategorySlice> {
-        val total = txns.sumOf { it.amount }.coerceAtLeast(1.0)
-        return txns.groupBy { it.category }
+        val total = txns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }.coerceAtLeast(1.0)
+        return txns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+            .groupBy { it.category }
             .map { (cat, t) -> cat to t.sumOf { it.amount } }
             .sortedByDescending { it.second }
             .take(3)
@@ -214,22 +652,34 @@ class InsightEngine @Inject constructor() {
 
     private fun derivePatterns(monthTxns: List<Transaction>, allTxns: List<Transaction>, nowMillis: Long): List<BehavioralPattern> {
         val patterns = mutableListOf<BehavioralPattern>()
-        val weekendRatio = if (monthTxns.isEmpty()) 0.0 else
-            monthTxns.filter { isWeekend(it.date) }.sumOf { it.amount } / monthTxns.sumOf { it.amount }
+        val expenseTxns = monthTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+        if (expenseTxns.isEmpty()) return patterns
+
+        val weekendRatio = expenseTxns.filter { isWeekend(it.date) }.sumOf { it.amount } / expenseTxns.sumOf { it.amount }
         if (weekendRatio > 0.45) patterns.add(BehavioralPattern("🌙", "About half your spending lands on weekends."))
 
-        val topCat = monthTxns.groupBy { it.category }.maxByOrNull { it.value.sumOf { t -> t.amount } }
+        val topCat = expenseTxns.groupBy { it.category }.maxByOrNull { it.value.sumOf { t -> t.amount } }
         if (topCat != null) {
             val days = topCat.value.map { dayKey(it.date) }.distinct().size
-            if (days >= 8) patterns.add(BehavioralPattern("🔁", "${topCat.key} has been a regular — it showed up on $days different days."))
+            if (days >= 4) patterns.add(BehavioralPattern("🔁", "${topCat.key} has been a regular — it showed up on $days different days."))
         }
+
+        val avgDaily = expenseTxns.sumOf { it.amount } / expenseTxns.map { dayKey(it.date) }.distinct().size.coerceAtLeast(1)
+        val aboveAvgDays = expenseTxns.groupBy { dayKey(it.date) }
+            .count { (_, txns) -> txns.sumOf { it.amount } > avgDaily * 1.5 }
+        if (aboveAvgDays >= 2) {
+            patterns.add(BehavioralPattern("⚡", "$aboveAvgDays days had spending 50% above your daily average."))
+        }
+
         return patterns.take(3)
     }
 
     private fun deriveHeatmap(txns: List<Transaction>, nowMillis: Long): List<HeatmapCell> {
-        val cal = java.util.Calendar.getInstance().apply { timeInMillis = nowMillis }
-        val monthAvg = if (txns.isEmpty()) 1.0 else txns.sumOf { it.amount } / txns.map { dayKey(it.date) }.distinct().size.coerceAtLeast(1)
-        return txns.groupBy { dayKey(it.date) }.map { (_, dayTxns) ->
+        val expenseTxns = txns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+        if (expenseTxns.isEmpty()) return emptyList()
+
+        val monthAvg = expenseTxns.sumOf { it.amount } / expenseTxns.map { dayKey(it.date) }.distinct().size.coerceAtLeast(1)
+        return expenseTxns.groupBy { dayKey(it.date) }.map { (_, dayTxns) ->
             val dayCal = java.util.Calendar.getInstance().apply { timeInMillis = dayTxns.first().date }
             val total = dayTxns.sumOf { it.amount }
             HeatmapCell(
@@ -251,9 +701,10 @@ class InsightEngine @Inject constructor() {
     }
 
     private fun deriveRhythm(txns: List<Transaction>): RhythmCaption {
-        if (txns.isEmpty()) return RhythmCaption("")
+        val expenseTxns = txns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+        if (expenseTxns.isEmpty()) return RhythmCaption("")
         val dayNames = arrayOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-        val loudestDay = txns.groupBy {
+        val loudestDay = expenseTxns.groupBy {
             java.util.Calendar.getInstance().apply { timeInMillis = it.date }.get(java.util.Calendar.DAY_OF_WEEK) - 1
         }.maxByOrNull { it.value.sumOf { t -> t.amount } }?.key ?: return RhythmCaption("")
         return RhythmCaption("${dayNames[loudestDay]}s are your loudest spending days")
@@ -262,37 +713,49 @@ class InsightEngine @Inject constructor() {
     private fun deriveCategorySlices(txns: List<Transaction>): List<CategorySlice> = topCategorySlices(txns)
 
     private fun deriveBigDecisions(txns: List<Transaction>): List<BigDecision> {
-        val total = txns.sumOf { it.amount }.coerceAtLeast(1.0)
-        return txns.sortedByDescending { it.amount }
+        val expenseTxns = txns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+        val total = expenseTxns.sumOf { it.amount }.coerceAtLeast(1.0)
+        return expenseTxns.sortedByDescending { it.amount }
             .take(3)
             .map { BigDecision(it, (it.amount / total) * 100) }
     }
 
     private fun deriveStreak(allTxns: List<Transaction>, nowMillis: Long): StreakData {
         val cal = java.util.Calendar.getInstance().apply { timeInMillis = nowMillis }
-        val daysInMonth = cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+        val elapsed = cal.get(java.util.Calendar.DAY_OF_MONTH)
         val period = AnalyticsPeriod.currentMonth(nowMillis)
         val monthTxns = allTxns.filter { period.contains(it.date) }
         val daysShownUp = monthTxns.map { dayKey(it.date) }.distinct().size
-        val elapsed = cal.get(java.util.Calendar.DAY_OF_MONTH)
         return StreakData(daysShownUp, elapsed, elapsed - daysShownUp)
     }
 
     private fun deriveSpotlight(allTxns: List<Transaction>, nowMillis: Long): SpotlightData {
         val period = AnalyticsPeriod.currentMonth(nowMillis)
+        val prevPeriod = AnalyticsPeriod.previousMonth(nowMillis)
         val monthTxns = allTxns.filter { period.contains(it.date) }
+        val prevMonthTxns = allTxns.filter { prevPeriod.contains(it.date) }
         if (monthTxns.isEmpty()) return SpotlightData()
-        val top = monthTxns.maxByOrNull { it.amount } ?: return SpotlightData()
-        return SpotlightData(topExpenseName = top.title, topExpenseAmount = top.amount)
+
+        val expenseMonth = monthTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+        val expensePrev = prevMonthTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+        val top = expenseMonth.maxByOrNull { it.amount } ?: return SpotlightData()
+        val prevTotal = expensePrev.sumOf { it.amount }.coerceAtLeast(1.0)
+        val curTotal = expenseMonth.sumOf { it.amount }.coerceAtLeast(1.0)
+        val delta = ((curTotal - prevTotal) / prevTotal) * 100
+
+        return SpotlightData(
+            topExpenseName = top.title,
+            topExpenseAmount = top.amount,
+            expenseDeltaPct = delta
+        )
     }
 
     private fun deriveMood(allTxns: List<Transaction>, nowMillis: Long): MoodData? {
         if (allTxns.isEmpty()) return null
         val points = (0..5).map { i ->
-            val period = AnalyticsPeriod.trailingMonths(nowMillis, 6)
             val cal = java.util.Calendar.getInstance().apply {
-                timeInMillis = period.startMs
-                add(java.util.Calendar.MONTH, i)
+                timeInMillis = nowMillis
+                add(java.util.Calendar.MONTH, -5 + i)
             }
             val label = java.text.SimpleDateFormat("MMM", java.util.Locale.ENGLISH).format(cal.time)
             val monthPeriod = AnalyticsPeriod.currentMonth(cal.timeInMillis)
@@ -310,10 +773,49 @@ class InsightEngine @Inject constructor() {
     }
 
     private fun deriveNoticing(txns: List<Transaction>): Noticing? {
-        if (txns.isEmpty()) return null
-        val weekendRatio = txns.filter { isWeekend(it.date) }.sumOf { it.amount } / txns.sumOf { it.amount }.coerceAtLeast(1.0)
+        val expenseTxns = txns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+        if (expenseTxns.isEmpty()) return null
+        val weekendRatio = expenseTxns.filter { isWeekend(it.date) }.sumOf { it.amount } / expenseTxns.sumOf { it.amount }.coerceAtLeast(1.0)
         return if (weekendRatio > 0.5) Noticing("night-owl", "🌙", "A good slice of your spending happens on weekends — the days off add up more than they feel like.")
         else null
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    private fun calculateStreakDays(expenseTxns: List<Transaction>, nowMillis: Long): Int {
+        if (expenseTxns.isEmpty()) return 0
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = nowMillis }
+        var streak = 0
+        for (i in 0..6) {
+            val checkDate = (cal.clone() as java.util.Calendar).apply { add(java.util.Calendar.DAY_OF_YEAR, -i) }
+            val key = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(checkDate.time)
+            if (expenseTxns.any { dayKey(it.date) == key }) streak++ else break
+        }
+        return streak
+    }
+
+    private fun calculateHealthScore(balance: CashflowBalance, categories: List<CategoryRanking>): Int {
+        var score = 50
+        if (balance.isPositive) score += 20
+        if (balance.savingsRate > 0.2) score += 15
+        if (balance.savingsRate > 0.3) score += 10
+        if (categories.size <= 5) score += 5  // diversified
+        return score.coerceIn(0, 100)
+    }
+
+    private fun detectRecurring(txns: List<Transaction>): Double {
+        // Simple heuristic: group by category + rounded amount, find recurring patterns
+        return txns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
+            .groupBy { "${it.category}_${(it.amount / 1000).toInt() * 1000}" }
+            .filter { it.value.size >= 2 }
+            .values
+            .flatten()
+            .distinctBy { it.id }
+            .sumOf { it.amount }
+    }
+
+    private fun formatAmount(amount: Double): String {
+        return java.text.NumberFormat.getCurrencyInstance(java.util.Locale("id", "ID")).format(amount)
     }
 
     private fun isWeekend(timestamp: Long): Boolean {

@@ -96,23 +96,69 @@
     <string name="app_info_version">Version 1.0.0</string>
     <string name="app_info_made_with_love">Made with ❤️ for better financial management</string>
 
-    <!-- Auth -->
+    <!-- Auth - Login -->
+    <string name="login_title">Welcome back</string>
+    <string name="login_subtitle">Manage your finances with confidence</string>
     <string name="welcome_to_app">Welcome to %1$s</string>
     <string name="app_tagline">Unlock powerful insights for better decisions</string>
     <string name="email_label">Email</string>
-    <string name="email_placeholder">Enter your email</string>
+    <string name="email_placeholder">you@example.com</string>
     <string name="password_label">Password</string>
     <string name="password_placeholder">Enter your password</string>
     <string name="forgot_password_link">Forgot password?</string>
-    <string name="login_button">Login</string>
-    <string name="logging_in">Logging in...</string>
+    <string name="login_button">Sign In</string>
+    <string name="logging_in">Signing in…</string>
     <string name="or_continue_with">or continue with</string>
-    <string name="login_with_google">Login with Google</string>
+    <string name="login_with_google">Continue with Google</string>
     <string name="no_account_prompt">Don\'t have an account?</string>
-    <string name="signup_link">Sign up for %1$s</string>
+    <string name="signup_link">Create account</string>
     <string name="error_invalid_email">Please enter a valid email address</string>
     <string name="error_password_length">Password must be at least 6 characters</string>
     <string name="error_field_required">%1$s is required</string>
+
+    <!-- Auth - Sign Up -->
+    <string name="signup_title">Create your account</string>
+    <string name="signup_subtitle">Start your journey to smarter financial tracking</string>
+    <string name="signup_button">Create Account</string>
+    <string name="creating_account">Creating account…</string>
+    <string name="name_label">Full Name</string>
+    <string name="name_placeholder">Enter your full name</string>
+    <string name="confirm_password_label">Confirm Password</string>
+    <string name="confirm_password_placeholder">Re-enter your password</string>
+    <string name="has_account_prompt">Already have an account?</string>
+    <string name="login_link">Sign in</string>
+
+    <!-- Auth - Forgot Password -->
+    <string name="forgot_password_title">Forgot password?</string>
+    <string name="forgot_password_subtitle">No worries, we\'ll send you a reset link to get you back on track</string>
+    <string name="forgot_password_email_placeholder">you@example.com</string>
+    <string name="forgot_password_button">Send Reset Link</string>
+    <string name="sending_reset_link">Sending…</string>
+    <string name="reset_link_sent_title">Check your email</string>
+    <string name="reset_link_sent_subtitle">We\'ve sent a password reset link to\n%1$s</string>
+    <string name="back_to_sign_in">Back to Sign In</string>
+
+    <!-- Auth - Validation -->
+    <string name="error_name_empty">Name cannot be empty</string>
+    <string name="error_name_too_short">Name must be at least 2 characters</string>
+    <string name="error_name_invalid">Name can only contain letters and spaces</string>
+    <string name="error_email_empty">Email cannot be empty</string>
+    <string name="error_password_empty">Password cannot be empty</string>
+    <string name="error_password_weak">Password must contain at least 1 number and 1 letter</string>
+    <string name="error_confirm_password_empty">Please confirm your password</string>
+    <string name="error_passwords_mismatch">Passwords do not match</string>
+
+    <!-- Auth - Password Strength -->
+    <string name="password_strength_label">Password strength</string>
+    <string name="password_strength_weak">Weak</string>
+    <string name="password_strength_fair">Fair</string>
+    <string name="password_strength_good">Good</string>
+    <string name="password_strength_strong">Strong</string>
+    <string name="password_strength_excellent">Excellent</string>
+    <string name="password_req_length">At least 8 characters</string>
+    <string name="password_req_number">Contains a number</string>
+    <string name="password_req_letter">Contains a letter</string>
+    <string name="password_req_special">Contains a special character</string>
 
     <!-- Transactions -->
     <string name="add_transaction_title">Add Transaction</string>

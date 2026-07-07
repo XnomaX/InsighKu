@@ -62,4 +62,63 @@
     <string name="logout_message">Anda perlu masuk lagi untuk melihat riwayat keuangan Anda.</string>
     <string name="logout_confirm">Keluar</string>
     <string name="logout_stay">Tetap</string>
+
+    <!-- Auth - Login -->
+    <string name="login_title">Selamat datang kembali</string>
+    <string name="login_subtitle">Kelola keuangan Anda dengan percaya diri</string>
+    <string name="login_button">Masuk</string>
+    <string name="logging_in">Sedang masuk…</string>
+    <string name="email_label">Email</string>
+    <string name="email_placeholder">anda@contoh.com</string>
+    <string name="password_label">Kata Sandi</string>
+    <string name="password_placeholder">Masukkan kata sandi Anda</string>
+    <string name="forgot_password_link">Lupa kata sandi?</string>
+    <string name="or_continue_with">atau lanjutkan dengan</string>
+    <string name="login_with_google">Lanjutkan dengan Google</string>
+    <string name="no_account_prompt">Belum punya akun?</string>
+    <string name="signup_link">Buat akun</string>
+
+    <!-- Auth - Sign Up -->
+    <string name="signup_title">Buat akun Anda</string>
+    <string name="signup_subtitle">Mulai perjalanan Anda menuju pelacakan keuangan yang lebih cerdas</string>
+    <string name="signup_button">Buat Akun</string>
+    <string name="creating_account">Membuat akun…</string>
+    <string name="name_label">Nama Lengkap</string>
+    <string name="name_placeholder">Masukkan nama lengkap Anda</string>
+    <string name="confirm_password_label">Konfirmasi Kata Sandi</string>
+    <string name="confirm_password_placeholder">Masukkan ulang kata sandi Anda</string>
+    <string name="has_account_prompt">Sudah punya akun?</string>
+    <string name="login_link">Masuk</string>
+
+    <!-- Auth - Forgot Password -->
+    <string name="forgot_password_title">Lupa kata sandi?</string>
+    <string name="forgot_password_subtitle">Tenang, kami akan mengirimkan tautan reset untuk membantu Anda kembali</string>
+    <string name="forgot_password_email_placeholder">anda@contoh.com</string>
+    <string name="forgot_password_button">Kirim Tautan Reset</string>
+    <string name="sending_reset_link">Mengirim…</string>
+    <string name="reset_link_sent_title">Periksa email Anda</string>
+    <string name="reset_link_sent_subtitle">Kami telah mengirimkan tautan reset kata sandi ke\n%1$s</string>
+    <string name="back_to_sign_in">Kembali ke Masuk</string>
+
+    <!-- Auth - Validation -->
+    <string name="error_name_empty">Nama tidak boleh kosong</string>
+    <string name="error_name_too_short">Nama minimal 2 karakter</string>
+    <string name="error_name_invalid">Nama hanya boleh berisi huruf dan spasi</string>
+    <string name="error_email_empty">Email tidak boleh kosong</string>
+    <string name="error_password_empty">Kata sandi tidak boleh kosong</string>
+    <string name="error_password_weak">Kata sandi harus mengandung minimal 1 angka dan 1 huruf</string>
+    <string name="error_confirm_password_empty">Silakan konfirmasi kata sandi Anda</string>
+    <string name="error_passwords_mismatch">Kata sandi tidak cocok</string>
+
+    <!-- Auth - Password Strength -->
+    <string name="password_strength_label">Kekuatan kata sandi</string>
+    <string name="password_strength_weak">Lemah</string>
+    <string name="password_strength_fair">Cukup</string>
+    <string name="password_strength_good">Baik</string>
+    <string name="password_strength_strong">Kuat</string>
+    <string name="password_strength_excellent">Sangat Kuat</string>
+    <string name="password_req_length">Minimal 8 karakter</string>
+    <string name="password_req_number">Mengandung angka</string>
+    <string name="password_req_letter">Mengandung huruf</string>
+    <string name="password_req_special">Mengandung karakter khusus</string>
 </resources>
