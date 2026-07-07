@@ -1,6 +1,7 @@
 package com.example.insightku.feature.home.presentation
+import com.example.insightku.core.ui.components.TransactionCategoryIcon
 import com.example.insightku.core.ui.components.TransactionTypePresentation
-import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
+import com.example.insightku.core.ui.components.resolveCategoryIcon
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -134,11 +135,7 @@ private fun TxGroup.label(): String = when (this) {
 
 // --- Helpers ------------------------------------------------------------------
 
-private fun getCategoryIcon(category: String): ImageVector =
-    CategoryIconResolver.resolveIcon(category)
 
-private fun getCategoryColor(category: String): Color =
-    CategoryIconResolver.resolveColor(category)
 
 private fun formatDateClean(dateMillis: Long): String {
     val date      = Date(dateMillis)
@@ -770,16 +767,9 @@ fun PremiumTransactionCard(
     accountMap: Map<String, com.example.insightku.core.data.model.Account> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
-    // Resolve icon: try category.icon field first (most accurate), fall back to name fuzzy match
-    val matchedCat  = categoryMap[transaction.category.trim().lowercase()]
-    val iconKey     = matchedCat?.icon?.ifBlank { null } ?: transaction.category
-    val resolvedByIcon = CategoryIconResolver.resolve(iconKey)
-    val resolvedByName = CategoryIconResolver.resolve(transaction.category)
-    val resolved    = if (resolvedByIcon.name != "Others") resolvedByIcon else resolvedByName
-    val catColor    = if (!matchedCat?.color.isNullOrBlank()) {
-        runCatching { Color(android.graphics.Color.parseColor(matchedCat!!.color)) }.getOrDefault(resolved.color)
-    } else resolved.color
-    val catIcon     = resolved.icon
+    // Resolve category color for badge (icon is handled by shared TransactionCategoryIcon)
+    val resolved = resolveCategoryIcon(transaction.category, transaction.type, categoryMap)
+    val catColor = resolved.color
     val amountColor = txTypeColor(transaction.type)
     val prefix      = txAmountPrefix(transaction.type)
     val showCat     = txShowCategory(transaction.type)
@@ -810,16 +800,14 @@ fun PremiumTransactionCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Category icon
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(catColor.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(catIcon, null, tint = catColor, modifier = Modifier.size(22.dp))
-            }
+            // Category icon (shared composable — consistent with Home screen)
+            TransactionCategoryIcon(
+                categoryName = transaction.category,
+                transactionType = transaction.type,
+                categoryMap = categoryMap,
+                containerSize = 46.dp,
+                iconSize = 22.dp
+            )
 
             // Title + type badge + time
             Column(
@@ -985,16 +973,9 @@ fun TransactionDetailOverlay(
     val canEdit     = txAllowsEdit(txType)
     val canDelete   = txAllowsDelete(txType)
 
-    // Resolve icon: try category.icon field first, fall back to fuzzy name match
-    val matchedCat  = categoryMap[transaction.category.trim().lowercase()]
-    val iconKey     = matchedCat?.icon?.ifBlank { null } ?: transaction.category
-    val resolvedByIcon = CategoryIconResolver.resolve(iconKey)
-    val resolvedByName = CategoryIconResolver.resolve(transaction.category)
-    val resolved    = if (resolvedByIcon.name != "Others") resolvedByIcon else resolvedByName
-    val catColor    = if (!matchedCat?.color.isNullOrBlank()) {
-        runCatching { Color(android.graphics.Color.parseColor(matchedCat!!.color)) }.getOrDefault(resolved.color)
-    } else resolved.color
-    val catIcon     = resolved.icon
+    // Resolve category color for badge (icon is handled by shared TransactionCategoryIcon)
+    val resolved = resolveCategoryIcon(transaction.category, transaction.type, categoryMap)
+    val catColor = resolved.color
 
     val accent = TxAccent
     ModalBottomSheet(
@@ -1018,14 +999,16 @@ fun TransactionDetailOverlay(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Box(
-                    modifier = Modifier.size(68.dp).clip(RoundedCornerShape(20.dp))
-                        .background(catColor.copy(alpha = 0.12f))
-                        .border(1.dp, catColor.copy(alpha = 0.2f), RoundedCornerShape(20.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(catIcon, null, tint = catColor, modifier = Modifier.size(32.dp))
-                }
+                TransactionCategoryIcon(
+                    categoryName = transaction.category,
+                    transactionType = transaction.type,
+                    categoryMap = categoryMap,
+                    containerSize = 68.dp,
+                    iconSize = 32.dp,
+                    cornerRadius = 20.dp,
+                    borderColor = catColor.copy(alpha = 0.2f),
+                    borderWidth = 1.dp
+                )
                 Text(transaction.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TxTextPrimary, textAlign = TextAlign.Center)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     // Category badge (only for Income/Expense)

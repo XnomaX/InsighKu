@@ -22,7 +22,10 @@ import com.example.insightku.core.data.local.preferences.UserPreferencesDataStor
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.core.datastore.SessionManager
 import com.example.insightku.core.utils.TimeUtils
+import android.content.Context
+import com.example.insightku.core.worker.PaymentReminderHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,7 +53,8 @@ class DashboardViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val prefs: UserPreferencesDataStore,
     private val goalRepository: GoalRepository,
-    private val accountRepository: AccountRepository
+    private val accountRepository: AccountRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -261,6 +265,7 @@ class DashboardViewModel @Inject constructor(
                     lastProcessed = System.currentTimeMillis()
                 )
                 recurringBudgetRepository.updateRecurringBudget(updated, userId)
+                PaymentReminderHelper.cancelRemindersForPayment(context, "recurring_${budget.id}")
             } catch (e: Exception) {
                 val msg = e.message ?: "Gagal menandai pembayaran"
                 _uiState.update { it.copy(error = msg) }
@@ -292,12 +297,14 @@ class DashboardViewModel @Inject constructor(
                 val cal = Calendar.getInstance().apply { timeInMillis = installment.nextDueDate }
                 cal.add(Calendar.MONTH, 1)
                 val newPaid = (installment.paidMonths + 1).coerceAtMost(installment.totalMonths)
+                val isNowComplete = newPaid >= installment.totalMonths
                 val updated = installment.copy(
                     paidMonths = newPaid,
                     nextDueDate = cal.timeInMillis,
                     isActive = newPaid < installment.totalMonths
                 )
                 installmentRepository.updateInstallment(updated, userId)
+                if (isNowComplete) PaymentReminderHelper.cancelRemindersForPayment(context, "installment_${installment.id}")
             } catch (e: Exception) {
                 val msg = e.message ?: "Gagal menandai cicilan"
                 _uiState.update { it.copy(error = msg) }

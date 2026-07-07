@@ -1,5 +1,5 @@
 package com.example.insightku.feature.home.presentation
-import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
+import com.example.insightku.core.ui.components.resolveCategoryIcon
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -432,22 +432,11 @@ private fun EditCategoryPicker(
             .ifEmpty { listOf(selected).filter { it.isNotBlank() } }
     }
 
-    fun colorFor(name: String): Color {
-        val matched = categoryMap[name.trim().lowercase()]
-        val iconKey = matched?.icon?.ifBlank { null } ?: name
-        val byIcon = CategoryIconResolver.resolve(iconKey)
-        val resolved = if (byIcon.name != "Others") byIcon else CategoryIconResolver.resolve(name)
-        return if (!matched?.color.isNullOrBlank()) {
-            runCatching { Color(android.graphics.Color.parseColor(matched!!.color)) }.getOrDefault(resolved.color)
-        } else resolved.color
-    }
+    fun colorFor(name: String): Color =
+        resolveCategoryIcon(name, categoryMap = categoryMap).color
 
-    fun iconFor(name: String): ImageVector {
-        val matched = categoryMap[name.trim().lowercase()]
-        val iconKey = matched?.icon?.ifBlank { null } ?: name
-        val byIcon = CategoryIconResolver.resolve(iconKey)
-        return if (byIcon.name != "Others") byIcon.icon else CategoryIconResolver.resolve(name).icon
-    }
+    fun iconFor(name: String): ImageVector =
+        resolveCategoryIcon(name, categoryMap = categoryMap).icon
 
     val currentColor = colorFor(selected)
 

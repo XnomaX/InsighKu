@@ -17,6 +17,8 @@ data class Installment(
      * ID of the Account to use for transactions generated from this installment.
      */
     val accountId: String? = null,
+    val iconName: String? = null,
+    val color: String? = null,
     val totalAmount: Double = 0.0,
     val monthlyPayment: Double = 0.0,
     val totalMonths: Int = 0,

@@ -17,6 +17,10 @@ interface GoalDao {
     @Query("SELECT * FROM goals WHERE id = :id")
     suspend fun getGoalById(id: String): GoalEntity?
 
+    /** Get a goal only if it is active (not archived/deleted). */
+    @Query("SELECT * FROM goals WHERE id = :id AND isActive = 1")
+    suspend fun getGoalByIdActive(id: String): GoalEntity?
+
     @Query("SELECT * FROM goals WHERE id = :id")
     fun getGoalByIdFlow(id: String): Flow<GoalEntity?>
 

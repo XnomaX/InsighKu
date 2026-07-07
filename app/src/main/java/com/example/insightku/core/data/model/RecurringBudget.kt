@@ -21,6 +21,8 @@ data class RecurringBudget(
      * ID of the Account to use for transactions generated from this recurring budget.
      */
     val accountId: String? = null,
+    val iconName: String? = null,
+    val color: String? = null,
     val isActive: Boolean = true,
     val lastProcessed: Long? = null,
     val nextDue: Long = System.currentTimeMillis(),

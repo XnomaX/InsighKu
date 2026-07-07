@@ -13,8 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.ui.components.TransactionCategoryIcon
 import com.example.insightku.core.ui.components.TransactionTypePresentation
-import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.feature.home.presentation.TransactionItem
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
@@ -111,20 +111,6 @@ private fun TransactionItemRow(transaction: TransactionItem, onClick: () -> Unit
     val isSystemType = transaction.transactionType !in setOf(TransactionType.INCOME, TransactionType.EXPENSE)
     val presentation = TransactionTypePresentation.forType(transaction.transactionType)
     
-    // Use semantic icon/color for system types; category-based for Income/Expense
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
-    val color: androidx.compose.ui.graphics.Color
-    if (isSystemType) {
-        icon = presentation.icon
-        color = presentation.color
-    } else {
-        val resolved = CategoryIconResolver.resolve(
-            transaction.iconName.ifBlank { transaction.category }
-        )
-        icon = resolved.icon
-        color = resolved.color
-    }
-    
     // Determine amount color and prefix
     val amountColor = if (isSystemType) presentation.color else if (transaction.isIncome) IncomeGreen else AppPalette.textPrimary
     val amountPrefix = if (transaction.isIncome) "+" else if (isSystemType && presentation.color == IncomeGreen) "+" else ""
@@ -137,15 +123,10 @@ private fun TransactionItemRow(transaction: TransactionItem, onClick: () -> Unit
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(color.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
-        }
+        TransactionCategoryIcon(
+            categoryName = transaction.iconName.ifBlank { transaction.category },
+            transactionType = transaction.transactionType
+        )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = transaction.title,

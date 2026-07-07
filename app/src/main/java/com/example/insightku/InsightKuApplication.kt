@@ -8,6 +8,7 @@ import androidx.work.*
 import com.example.insightku.core.notification.BankNotificationListenerService
 import com.example.insightku.core.worker.AutoTransactionWorker
 import com.example.insightku.core.worker.DraftReminderWorker
+import com.example.insightku.core.worker.PaymentReminderHelper
 import com.example.insightku.core.worker.ScheduledAllocationWorker
 import com.example.insightku.core.worker.SyncGoalWorker
 import com.example.insightku.core.worker.SyncTransactionWorker
@@ -47,6 +48,7 @@ class InsightKuApplication : Application(), Configuration.Provider {
         scheduleScheduledAllocationWorker()
         scheduleAutoTransactionWorker()
         scheduleDraftReminderWorker()
+        PaymentReminderHelper.scheduleDailyCheck(this)
         NotificationListenerService.requestRebind(
             ComponentName(this, BankNotificationListenerService::class.java)
         )

@@ -109,7 +109,7 @@ class AccountAllocationRepository @Inject constructor(
         // Get per-goal allocation details
         val goalAllocations = contributionDao.getGoalAllocationsFromAccount(accountId)
         val goalDetails = goalAllocations.mapNotNull { allocation ->
-            val goalEntity = goalDao.getGoalById(allocation.goalId) ?: return@mapNotNull null
+            val goalEntity = goalDao.getGoalByIdActive(allocation.goalId) ?: return@mapNotNull null
             GoalAllocationDetail(
                 goalId = allocation.goalId,
                 goalName = goalEntity.name,
@@ -155,7 +155,7 @@ class AccountAllocationRepository @Inject constructor(
                 // Fetch goal allocations (suspend operation wrapped in flow)
                 val goalAllocList = contributionDao.getGoalAllocationsFromAccount(accountId)
                 val goalDetails = goalAllocList.mapNotNull { ga ->
-                    val goalEntity = goalDao.getGoalById(ga.goalId) ?: return@mapNotNull null
+                    val goalEntity = goalDao.getGoalByIdActive(ga.goalId) ?: return@mapNotNull null
                     GoalAllocationDetail(
                         goalId = ga.goalId,
                         goalName = goalEntity.name,
@@ -220,7 +220,7 @@ class AccountAllocationRepository @Inject constructor(
                 val totalAllocatedToGoals = contributionDao.getTotalAllocatedFromAccount(account.id)
                 val goalAllocList = contributionDao.getGoalAllocationsFromAccount(account.id)
                 val goalDetails = goalAllocList.mapNotNull { ga ->
-                    val goalEntity = goalDao.getGoalById(ga.goalId) ?: return@mapNotNull null
+                    val goalEntity = goalDao.getGoalByIdActive(ga.goalId) ?: return@mapNotNull null
                     GoalAllocationDetail(
                         goalId = ga.goalId,
                         goalName = goalEntity.name,
@@ -343,7 +343,7 @@ class AccountAllocationRepository @Inject constructor(
      * @return List of per-account allocations for this goal
      */
     suspend fun getGoalAllocationDetails(goalId: String): List<GoalAllocationDetail> {
-        val goalEntity = goalDao.getGoalById(goalId) ?: return emptyList()
+        val goalEntity = goalDao.getGoalByIdActive(goalId) ?: return emptyList()
 
         // Get all contributions for this goal and group by account
         val contributions = contributionDao.getContributionsByGoal(goalId).first()
@@ -353,7 +353,6 @@ class AccountAllocationRepository @Inject constructor(
             .groupBy { it.accountId }
             .mapNotNull { (accountId, accountContributions) ->
                 val totalAllocated = accountContributions.sumOf { it.amount }
-                val account = accountDao.getAccountById(accountId)
                 GoalAllocationDetail(
                     goalId = goalId,
                     goalName = goalEntity.name,

@@ -90,9 +90,6 @@ fun BudgetingScreen(
                 pagerState.animateScrollToPage(1)
                 onActionConsumed()
             }
-            is BudgetingAction.NavigateToBudgetDetail -> {
-                onActionConsumed()
-            }
             is BudgetingAction.OpenCreateBudget -> {
                 viewModel.onEvent(BudgetingEvent.ShowAddBudgetDialog(initialAction.categoryType))
                 onActionConsumed()
@@ -296,84 +293,84 @@ fun BudgetingScreenContent(
                     )
                 }
             }
+        }
 
-            // ── INCOME SOURCES SECTION ───────────────────────────────────────
+        // ── INCOME SOURCES SECTION ───────────────────────────────────────
+        item {
+            IncomeSectionLabel(
+                title = "Income Sources",
+                subtitle = if (uiState.incomeCategories.isEmpty()) "No income sources yet"
+                else "${uiState.incomeCategories.size} sources tracked",
+                onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
+                modifier = Modifier.padding(
+                    horizontal = Dimens.ScreenHorizontalPadding,
+                    vertical = 8.dp
+                )
+            )
+        }
+
+        if (uiState.incomeCategories.isEmpty()) {
             item {
-                IncomeSectionLabel(
-                    title = "Income Sources",
-                    subtitle = if (uiState.incomeCategories.isEmpty()) "No income sources yet"
-                    else "${uiState.incomeCategories.size} sources tracked",
+                EmptyIncomeState(
                     onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
+                    modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
+                )
+            }
+        } else {
+            items(
+                items = uiState.incomeCategories,
+                key = { "income-${it.id}" }
+            ) { category ->
+                IncomeCategoryCard(
+                    category = category,
+                    onEdit = { onEvent(BudgetingEvent.ShowEditBudgetDialog(category)) },
+                    onDelete = { onEvent(BudgetingEvent.ShowDeleteConfirmDialog(category)) },
                     modifier = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical = 8.dp
+                        vertical = 6.dp
                     )
                 )
             }
+        }
 
-            if (uiState.incomeCategories.isEmpty()) {
-                item {
-                    EmptyIncomeState(
-                        onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
-                        modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
-                    )
-                }
-            } else {
-                items(
-                    items = uiState.incomeCategories,
-                    key = { "income-${it.id}" }
-                ) { category ->
-                    IncomeCategoryCard(
-                        category = category,
-                        onEdit = { onEvent(BudgetingEvent.ShowEditBudgetDialog(category)) },
-                        onDelete = { onEvent(BudgetingEvent.ShowDeleteConfirmDialog(category)) },
-                        modifier = Modifier.padding(
-                            horizontal = Dimens.ScreenHorizontalPadding,
-                            vertical = 6.dp
-                        )
-                    )
-                }
-            }
-
-            // Recurring Payments section
-            item {
-                RecurringSection(
-                    recurringBudgets = uiState.recurringBudgets,
-                    onAdd = { onEvent(BudgetingEvent.ShowAddRecurringDialog) },
-                    onEdit = { onEvent(BudgetingEvent.ShowEditRecurringDialog(it)) },
-                    onDelete = { onEvent(BudgetingEvent.DeleteRecurringBudget(it)) },
-                    modifier = Modifier.padding(
-                        horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical = 4.dp
-                    )
+        // Recurring Payments section
+        item {
+            RecurringSection(
+                recurringBudgets = uiState.recurringBudgets,
+                onAdd = { onEvent(BudgetingEvent.ShowAddRecurringDialog) },
+                onEdit = { onEvent(BudgetingEvent.ShowEditRecurringDialog(it)) },
+                onDelete = { onEvent(BudgetingEvent.DeleteRecurringBudget(it)) },
+                modifier = Modifier.padding(
+                    horizontal = Dimens.ScreenHorizontalPadding,
+                    vertical = 4.dp
                 )
-            }
+            )
+        }
 
-            // Installments section
-            item {
-                InstallmentsSection(
-                    installments = uiState.installments,
-                    onAdd = { onEvent(BudgetingEvent.ShowAddInstallmentDialog) },
-                    onEdit = { onEvent(BudgetingEvent.ShowEditInstallmentDialog(it)) },
-                    onDelete = { onEvent(BudgetingEvent.DeleteInstallment(it.id)) },
-                    modifier = Modifier.padding(
-                        horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical = 4.dp
-                    )
+        // Installments section
+        item {
+            InstallmentsSection(
+                installments = uiState.installments,
+                onAdd = { onEvent(BudgetingEvent.ShowAddInstallmentDialog) },
+                onEdit = { onEvent(BudgetingEvent.ShowEditInstallmentDialog(it)) },
+                onDelete = { onEvent(BudgetingEvent.DeleteInstallment(it.id)) },
+                modifier = Modifier.padding(
+                    horizontal = Dimens.ScreenHorizontalPadding,
+                    vertical = 4.dp
                 )
-            }
+            )
+        }
 
-            // Loading indicator
-            item {
-                if (uiState.isLoading && uiState.budgetCategories.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = LocalAccent.current
-                        )
-                    }
+        // Loading indicator
+        item {
+            if (uiState.isLoading && uiState.budgetCategories.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = LocalAccent.current
+                    )
                 }
             }
         }
