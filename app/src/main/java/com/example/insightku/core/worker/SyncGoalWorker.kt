@@ -6,7 +6,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.insightku.feature.auth.data.AuthRepository
-import com.example.insightku.feature.budgeting.data.repository.GoalRepository
+import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 

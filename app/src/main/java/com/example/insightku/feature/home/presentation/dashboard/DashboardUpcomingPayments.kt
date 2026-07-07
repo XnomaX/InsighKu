@@ -211,10 +211,10 @@ private fun UpcomingInstallmentRow(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF4A90E2).copy(alpha = 0.08f)),
+                    .background(AppPalette.defaultBlue.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.CreditCard, null, tint = Color(0xFF4A90E2), modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.CreditCard, null, tint = AppPalette.defaultBlue, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
@@ -234,12 +234,12 @@ private fun UpcomingInstallmentRow(
                             color = dueBadgeColor
                         )
                     }
-                    Surface(shape = RoundedCornerShape(50.dp), color = Color(0xFF4A90E2).copy(alpha = 0.08f)) {
+                    Surface(shape = RoundedCornerShape(50.dp), color = AppPalette.defaultBlue.copy(alpha = 0.08f)) {
                         Text(
                             "${installment.paidMonths}/${installment.totalMonths} paid",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF4A90E2)
+                            color = AppPalette.defaultBlue
                         )
                     }
                 }

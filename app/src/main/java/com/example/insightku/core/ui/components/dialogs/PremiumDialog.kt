@@ -35,43 +35,36 @@ import kotlinx.coroutines.delay
 enum class PremiumDialogType(
     val icon: ImageVector,
     val accentColor: Color,
-    val backgroundColor: Color,
     val title: String
 ) {
     SUCCESS(
         icon = Icons.Outlined.CheckCircle,
-        accentColor = Color(0xFF10B981),
-        backgroundColor = Color(0xFFECFDF5),
+        accentColor = AppPalette.success,
         title = "Success"
     ),
     WARNING(
         icon = Icons.Outlined.Warning,
-        accentColor = Color(0xFFF59E0B),
-        backgroundColor = Color(0xFFFFFBEB),
+        accentColor = AppPalette.warning,
         title = "Warning"
     ),
     ERROR(
         icon = Icons.Outlined.Error,
-        accentColor = Color(0xFFEF4444),
-        backgroundColor = Color(0xFFFEF2F2),
+        accentColor = AppPalette.error,
         title = "Error"
     ),
     INFO(
         icon = Icons.Outlined.Info,
-        accentColor = Color(0xFF3B82F6),
-        backgroundColor = Color(0xFFEFF6FF),
+        accentColor = AppPalette.defaultBlue,
         title = "Information"
     ),
     DELETE(
         icon = Icons.Outlined.Delete,
-        accentColor = Color(0xFFEF4444),
-        backgroundColor = Color(0xFFFEF2F2),
+        accentColor = AppPalette.error,
         title = "Delete"
     ),
     ARCHIVE(
         icon = Icons.Outlined.Archive,
-        accentColor = Color(0xFFF59E0B),
-        backgroundColor = Color(0xFFFFFBEB),
+        accentColor = AppPalette.warning,
         title = "Archive"
     )
 }
@@ -323,13 +316,13 @@ fun PremiumSuccessOverlay(
                             .size(88.dp)
                             .scale(scale)
                             .clip(CircleShape)
-                            .background(Color(0xFF10B981).copy(alpha = 0.12f)),
+                            .background(AppPalette.success.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Outlined.CheckCircle,
                             contentDescription = "Success",
-                            tint = Color(0xFF10B981),
+                            tint = AppPalette.success,
                             modifier = Modifier
                                 .size(52.dp)
                                 .graphicsLayer { rotationZ = rotation }

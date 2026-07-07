@@ -4,7 +4,7 @@ import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.feature.budgeting.domain.model.Goal
+import com.example.insightku.feature.planning.goal.domain.model.Goal
 
 /**
  * Represents the entire state for the Dashboard screen.
@@ -90,6 +90,7 @@ data class TransactionItem(
 )
 
 data class BudgetSpendingItem(
+    val id: String = "",
     val categoryName: String,
     val iconName: String,
     val colorHex: String,

@@ -327,7 +327,7 @@ fun IconOption(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .background(if (isSelected) accentColor.copy(alpha = 0.12f) else Color.White)
+            .background(if (isSelected) accentColor.copy(alpha = 0.12f) else com.example.insightku.core.ui.theme.AppPalette.card)
             .border(
                 width = if (isSelected) 1.5.dp else 1.dp,
                 color = if (isSelected) accentColor else com.example.insightku.core.ui.theme.AppPalette.cardBorder,
@@ -370,7 +370,7 @@ internal fun CategoryTypeSelector(
         CategoryType.values().forEach { type ->
             val isSelected   = selected == type
             val activeColor  = if (type == CategoryType.EXPENSE) purple else green
-            val bgColor      = if (isSelected) activeColor else Color.White
+            val bgColor      = if (isSelected) activeColor else com.example.insightku.core.ui.theme.AppPalette.card
             val contentColor = if (isSelected) Color.White else com.example.insightku.core.ui.theme.AppPalette.textDialogMuted
             val borderColor  = if (isSelected) activeColor else border
 
@@ -414,7 +414,7 @@ fun RecurringPeriodSelector(
     ) {
         val noneSelected = selected == null
         val noneBg by animateColorAsState(
-            targetValue   = if (noneSelected) purple else Color.White,
+            targetValue   = if (noneSelected) purple else com.example.insightku.core.ui.theme.AppPalette.card,
             animationSpec = tween(180),
             label         = "none_bg"
         )
@@ -439,7 +439,7 @@ fun RecurringPeriodSelector(
         recurringPeriods.forEach { period ->
             val isSelected = selected == period
             val bg by animateColorAsState(
-                targetValue   = if (isSelected) purple else Color.White,
+                targetValue   = if (isSelected) purple else com.example.insightku.core.ui.theme.AppPalette.card,
                 animationSpec = tween(180),
                 label         = "period_bg_$period"
             )
@@ -479,7 +479,7 @@ fun BudgetLimitInput(
 
     Surface(
         shape  = RoundedCornerShape(14.dp),
-        color  = Color.White,
+        color  = com.example.insightku.core.ui.theme.AppPalette.card,
         border = BorderStroke(1.dp, border)
     ) {
         Column(
@@ -523,8 +523,8 @@ fun BudgetLimitInput(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor      = purple,
                     unfocusedBorderColor    = border,
-                    focusedContainerColor   = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedContainerColor   = com.example.insightku.core.ui.theme.AppPalette.card,
+                    unfocusedContainerColor = com.example.insightku.core.ui.theme.AppPalette.card
                 )
             )
         }
@@ -532,7 +532,7 @@ fun BudgetLimitInput(
 
     Surface(
         shape  = RoundedCornerShape(14.dp),
-        color  = Color.White,
+        color  = com.example.insightku.core.ui.theme.AppPalette.card,
         border = BorderStroke(1.dp, border)
     ) {
         Column(

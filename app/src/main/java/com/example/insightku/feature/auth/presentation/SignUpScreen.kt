@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.feature.auth.presentation.SignUpViewModel
 import com.example.insightku.core.data.model.UserData
+import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.adaptiveDp
 import com.example.insightku.core.ui.theme.rememberWindowSize
@@ -720,14 +721,14 @@ private fun PasswordRequirement(text: String, isMet: Boolean) {
         Icon(
             imageVector = if (isMet) Icons.Default.Check else Icons.Default.Close,
             contentDescription = null,
-            tint = if (isMet) Color(0xFF6D28D9) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            tint = if (isMet) AppPalette.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = if (isMet) Color(0xFF6D28D9) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            color = if (isMet) AppPalette.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
     }
 }
@@ -750,27 +751,27 @@ private fun calculatePasswordStrength(password: String): PasswordStrength {
     return when (score) {
         0, 1 -> PasswordStrength(
             progress = 0.2f,
-            color = Color(0xFFE11D48),   // rose-600 — tidak terlalu menyala
+            color = AppPalette.error,
             text = "Terlalu lemah"
         )
         2 -> PasswordStrength(
             progress = 0.4f,
-            color = Color(0xFFD97706),   // amber-600 — hangat, tidak norak
+            color = AppPalette.warning,
             text = "Lemah"
         )
         3 -> PasswordStrength(
             progress = 0.6f,
-            color = Color(0xFF7C3AED),   // violet-600 — warna primer app
+            color = AppPalette.accent,
             text = "Cukup"
         )
         4 -> PasswordStrength(
             progress = 0.8f,
-            color = Color(0xFF0D9488),   // teal-600 — calmer green
+            color = AppPalette.cyan,
             text = "Kuat"
         )
         else -> PasswordStrength(
             progress = 1.0f,
-            color = Color(0xFF059669),   // emerald-600 — bukan raw Green
+            color = AppPalette.success,
             text = "Sangat Kuat"
         )
     }

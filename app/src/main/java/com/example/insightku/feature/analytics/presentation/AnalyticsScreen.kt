@@ -13,9 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 
 /**
@@ -38,7 +38,7 @@ fun AnalyticsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFAF9FE))
+            .background(AppPalette.background)
     ) {
         Column(
             modifier = Modifier
@@ -78,7 +78,7 @@ private fun AnalyticsContentContainer(
         modifier = Modifier
             .fillMaxWidth()
             .height(400.dp)
-            .background(Color.Transparent)
+            .background(androidx.compose.ui.graphics.Color.Transparent)
     ) {
         // Future: Weekly, Monthly, Annual analytics content will be placed here
         // Each period can have its own independent analytics module

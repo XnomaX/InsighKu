@@ -12,8 +12,8 @@ import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.core.data.repository.InstallmentRepository
 import com.example.insightku.feature.auth.data.AuthRepository
-import com.example.insightku.feature.budgeting.data.repository.GoalRepository
-import com.example.insightku.feature.budgeting.domain.model.Goal
+import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
+import com.example.insightku.feature.planning.goal.domain.model.Goal
 import com.example.insightku.feature.home.domain.AddTransactionUseCase
 import com.example.insightku.feature.home.domain.BuildInsightMessagesUseCase
 import com.example.insightku.feature.home.domain.CalculateStreakUseCase
@@ -359,6 +359,7 @@ class DashboardViewModel @Inject constructor(
             .map { (cat, txs) ->
                 val matchedCategory = categoryMap[cat.trim().lowercase()]
                 BudgetSpendingItem(
+                    id = matchedCategory?.id ?: cat,
                     categoryName = cat,
                     iconName = matchedCategory?.icon ?: cat,
                     colorHex = matchedCategory?.color ?: "",
@@ -416,6 +417,7 @@ class DashboardViewModel @Inject constructor(
             .map { cat ->
                 val existing = budgetCategorySpending.find { it.categoryName.trim().lowercase() == cat.name.trim().lowercase() }
                 BudgetSpendingItem(
+                    id = cat.id,
                     categoryName = cat.name,
                     iconName = cat.icon ?: cat.name,
                     colorHex = cat.color ?: "",

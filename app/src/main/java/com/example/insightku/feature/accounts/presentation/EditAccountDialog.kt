@@ -450,7 +450,7 @@ private fun AccountFormFieldEdit(
                 unfocusedBorderColor = SheetBorder,
                 focusedContainerColor = AppPalette.card,
                 unfocusedContainerColor = AppPalette.card,
-                errorBorderColor = Color(0xFFEF4444)
+                errorBorderColor = AppPalette.error
             )
         )
     }

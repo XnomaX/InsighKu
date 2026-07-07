@@ -131,7 +131,7 @@ fun SettingsScreen(
                         Icon(
                             Icons.Default.BugReport,
                             contentDescription = null,
-                            tint     = Color(0xFF7C4DFF),
+                            tint     = SettingsPalette.Purple,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(Modifier.width(12.dp))
@@ -234,8 +234,8 @@ private fun AppearanceSection(uiState: SettingsUiState, onEvent: (SettingsEvent)
         }
         Spacer(Modifier.height(Dimens.PaddingLarge))
         // Live mini-preview — a tiny mock card that recolors with the toggle.
-        val previewBg by animateColorAsState(if (uiState.isDarkMode) Color(0xFF1A1030) else Color.White, label = "previewBg")
-        val previewText by animateColorAsState(if (uiState.isDarkMode) Color(0xFFEDE9FE) else Color(0xFF1A1A2E), label = "previewText")
+        val previewBg by animateColorAsState(SettingsPalette.card, label = "previewBg")
+        val previewText by animateColorAsState(SettingsPalette.textPrimary, label = "previewText")
         Surface(
             Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(Dimens.CornerRadiusMedium),

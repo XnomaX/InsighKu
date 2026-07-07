@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.ui.theme.AppPalette
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -156,20 +157,20 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(com.example.insightku.core.ui.theme.AppPalette.background)
+            .background(AppPalette.background)
             .padding(horizontal = 16.dp)
     ) {
         Spacer(Modifier.height(16.dp))
 
         // ── Header ────────────────────────────────────────────────────────────
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.BugReport, null, tint = com.example.insightku.core.ui.theme.AppPalette.accent, modifier = Modifier.size(22.dp))
+            Icon(Icons.Default.BugReport, null, tint = AppPalette.accent, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(8.dp))
             Text("Notification Debug", style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold, color = Color.White)
+                fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { refreshTick++ }) {
-                Icon(Icons.Default.Refresh, "Refresh", tint = com.example.insightku.core.ui.theme.AppPalette.textMuted)
+                Icon(Icons.Default.Refresh, "Refresh", tint = AppPalette.textMuted)
             }
         }
 
@@ -185,7 +186,7 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
         Spacer(Modifier.height(8.dp))
 
         // ── Diagnostics ───────────────────────────────────────────────────────
-        Surface(shape = RoundedCornerShape(10.dp), color = com.example.insightku.core.ui.theme.AppPalette.card) {
+        Surface(shape = RoundedCornerShape(10.dp), color = AppPalette.card) {
             Column(Modifier.fillMaxWidth().padding(10.dp)) {
                 DiagRow("ComponentName", componentNameStr)
                 DiagRow("Match",         if (isListenerEnabled) "YES ✓" else "NO ✗")
@@ -197,7 +198,7 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
             Spacer(Modifier.height(8.dp))
             Button(
                 onClick  = { BankNotificationListenerService.openSettings(context) },
-                colors   = ButtonDefaults.buttonColors(containerColor = com.example.insightku.core.ui.theme.AppPalette.accent),
+                colors   = ButtonDefaults.buttonColors(containerColor = AppPalette.accent),
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Buka Notification Access Settings") }
         } else {
@@ -206,11 +207,11 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
                 OutlinedButton(
                     onClick  = { BankNotificationListenerService.forceReconnect(context) },
                     modifier = Modifier.weight(1f)
-                ) { Text("Force Reconnect", color = com.example.insightku.core.ui.theme.AppPalette.textMuted, fontSize = 12.sp) }
+                ) { Text("Force Reconnect", color = AppPalette.textMuted, fontSize = 12.sp) }
                 OutlinedButton(
                     onClick  = { NotificationDebugLog.clearAll() },
                     modifier = Modifier.weight(1f)
-                ) { Text("Clear Log", color = com.example.insightku.core.ui.theme.AppPalette.textMuted, fontSize = 12.sp) }
+                ) { Text("Clear Log", color = AppPalette.textMuted, fontSize = 12.sp) }
             }
         }
 
@@ -219,23 +220,23 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
         // ── Tabs ──────────────────────────────────────────────────────────────
         TabRow(
             selectedTabIndex = selectedTab,
-            containerColor   = com.example.insightku.core.ui.theme.AppPalette.card,
-            contentColor     = com.example.insightku.core.ui.theme.AppPalette.accent
+            containerColor   = AppPalette.card,
+            contentColor     = AppPalette.accent
         ) {
             Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                Text("All (${rawEntries.size})", color = if (selectedTab == 0) com.example.insightku.core.ui.theme.AppPalette.accent else com.example.insightku.core.ui.theme.AppPalette.textMuted,
+                Text("All (${rawEntries.size})", color = if (selectedTab == 0) AppPalette.accent else AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
             Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                Text("Bank (${bankEntries.size})", color = if (selectedTab == 1) com.example.insightku.core.ui.theme.AppPalette.accent else com.example.insightku.core.ui.theme.AppPalette.textMuted,
+                Text("Bank (${bankEntries.size})", color = if (selectedTab == 1) AppPalette.accent else AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
             Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }) {
-                Text("Service", color = if (selectedTab == 2) com.example.insightku.core.ui.theme.AppPalette.accent else com.example.insightku.core.ui.theme.AppPalette.textMuted,
+                Text("Service", color = if (selectedTab == 2) AppPalette.accent else AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
             Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }) {
-                Text("Battery", color = if (selectedTab == 3) com.example.insightku.core.ui.theme.AppPalette.accent else com.example.insightku.core.ui.theme.AppPalette.textMuted,
+                Text("Battery", color = if (selectedTab == 3) AppPalette.accent else AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
         }
@@ -270,8 +271,8 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         items(serviceEvents) { event ->
-                            Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF1A1030)) {
-                                Text(event, color = Color(0xFFEDE9FE),
+                            Surface(shape = RoundedCornerShape(8.dp), color = AppPalette.card) {
+                                Text(event, color = AppPalette.textPrimary,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontFamily = FontFamily.Monospace,
                                     modifier = Modifier.fillMaxWidth().padding(10.dp))
@@ -322,32 +323,32 @@ private fun BatteryGuideTab(context: android.content.Context) {
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
-            Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFF2A1A1A)) {
+            Surface(shape = RoundedCornerShape(10.dp), color = AppPalette.errorChipBg.copy(alpha = 0.3f)) {
                 Column(Modifier.fillMaxWidth().padding(12.dp)) {
                     Text(
                         "⚠ Service restart loop terdeteksi",
-                        color = Color(0xFFEF4444),
+                        color = AppPalette.error,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         "Pola CONNECTED → DESTROYED dalam hitungan detik adalah tanda ROM membunuh service karena battery optimization. Ini bukan bug kode — ikuti langkah di bawah.",
-                        color = Color(0xFFAB8FD4),
+                        color = AppPalette.textMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
         }
         items(steps) { step ->
-            Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFF1A1030),
+            Surface(shape = RoundedCornerShape(10.dp), color = AppPalette.card,
                 modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
                     Text(step.title, color = Color.White,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
-                    Text(step.detail, color = Color(0xFFAB8FD4),
+                    Text(step.detail, color = AppPalette.textMuted,
                         style = MaterialTheme.typography.bodySmall)
                     if (step.action != null && step.intent != null) {
                         Spacer(Modifier.height(8.dp))
@@ -362,7 +363,7 @@ private fun BatteryGuideTab(context: android.content.Context) {
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(step.action, color = Color(0xFF7C4DFF), fontSize = 12.sp)
+                            Text(step.action, color = AppPalette.accent, fontSize = 12.sp)
                         }
                     }
                 }
@@ -382,16 +383,16 @@ private data class BatteryStep(
 private fun RawEntryCard(entry: RawNotificationEntry) {
     val timeFmt  = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
     val isBank   = BankNotificationParser.isSupportedPackage(entry.packageName)
-    val bgColor  = if (isBank) Color(0xFF1A2A1A) else Color(0xFF1A1A2A)
+    val bgColor  = if (isBank) AppPalette.successChipBg.copy(alpha = 0.3f) else AppPalette.card
     Surface(shape = RoundedCornerShape(10.dp), color = bgColor, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(10.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(entry.packageName, color = if (isBank) Color(0xFF10B981) else Color(0xFFAB8FD4),
+                Text(entry.packageName, color = if (isBank) AppPalette.success else AppPalette.textMuted,
                     style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace,
                     modifier = Modifier.weight(1f))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (isBank) StatusChip("BANK", true)
-                    Text(timeFmt.format(Date(entry.timestamp)), color = Color(0xFFAB8FD4),
+                    Text(timeFmt.format(Date(entry.timestamp)), color = AppPalette.textMuted,
                         style = MaterialTheme.typography.labelSmall)
                 }
             }
@@ -412,15 +413,15 @@ private fun RawEntryCard(entry: RawNotificationEntry) {
 @Composable
 private fun BankEntryCard(entry: NotificationDebugEntry) {
     val timeFmt = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
-    val bgColor = if (entry.parseSuccess) Color(0xFF1A2A1A) else Color(0xFF2A1A1A)
+    val bgColor = if (entry.parseSuccess) AppPalette.successChipBg.copy(alpha = 0.3f) else AppPalette.errorChipBg.copy(alpha = 0.3f)
     Surface(shape = RoundedCornerShape(10.dp), color = bgColor, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(10.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(entry.bankName.ifBlank { entry.packageName }, fontWeight = FontWeight.Bold,
-                    color = Color.White, style = MaterialTheme.typography.bodySmall)
+                    color = AppPalette.textPrimary, style = MaterialTheme.typography.bodySmall)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     StatusChip(if (entry.parseSuccess) "OK" else "FAIL", entry.parseSuccess)
-                    Text(timeFmt.format(Date(entry.timestamp)), color = Color(0xFFAB8FD4),
+                    Text(timeFmt.format(Date(entry.timestamp)), color = AppPalette.textMuted,
                         style = MaterialTheme.typography.labelSmall)
                 }
             }
@@ -428,7 +429,7 @@ private fun BankEntryCard(entry: NotificationDebugEntry) {
             DebugRow("title",   entry.rawTitle)
             DebugRow("content", entry.rawContent.take(100))
             if (entry.parseSuccess) {
-                HorizontalDivider(color = Color(0xFF2D2050), modifier = Modifier.padding(vertical = 4.dp))
+                HorizontalDivider(color = AppPalette.cardBorder, modifier = Modifier.padding(vertical = 4.dp))
                 DebugRow("amount",   entry.parsedAmount?.let { "Rp ${"%,.0f".format(it)}" } ?: "-")
                 DebugRow("merchant", entry.parsedMerchant ?: "-")
                 DebugRow("type",     entry.parsedType?.name ?: "-")
@@ -436,18 +437,18 @@ private fun BankEntryCard(entry: NotificationDebugEntry) {
                 if (entry.transactionCreated) {
                     Spacer(Modifier.height(3.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF10B981), modifier = Modifier.size(12.dp))
+                        Icon(Icons.Default.CheckCircle, null, tint = AppPalette.success, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Draft created", color = Color(0xFF10B981), style = MaterialTheme.typography.labelSmall)
+                        Text("Draft created", color = AppPalette.success, style = MaterialTheme.typography.labelSmall)
                     }
                 }
             } else {
                 entry.errorMessage?.let {
                     Spacer(Modifier.height(3.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Error, null, tint = Color(0xFFEF4444), modifier = Modifier.size(12.dp))
+                        Icon(Icons.Default.Error, null, tint = AppPalette.error, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text(it, color = Color(0xFFEF4444), style = MaterialTheme.typography.labelSmall)
+                        Text(it, color = AppPalette.error, style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
@@ -458,7 +459,7 @@ private fun BankEntryCard(entry: NotificationDebugEntry) {
 @Composable
 private fun EmptyState(text: String) {
     Box(Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
-        Text(text, color = Color(0xFFAB8FD4), style = MaterialTheme.typography.bodySmall,
+        Text(text, color = AppPalette.textMuted, style = MaterialTheme.typography.bodySmall,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
@@ -466,9 +467,9 @@ private fun EmptyState(text: String) {
 @Composable
 private fun DiagRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
-        Text("$label:", color = Color(0xFFAB8FD4), style = MaterialTheme.typography.labelSmall,
+        Text("$label:", color = AppPalette.textMuted, style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.width(100.dp))
-        Text(value, color = Color(0xFFEDE9FE), style = MaterialTheme.typography.labelSmall,
+        Text(value, color = AppPalette.textPrimary, style = MaterialTheme.typography.labelSmall,
             fontFamily = FontFamily.Monospace, fontSize = 10.sp)
     }
 }
@@ -476,9 +477,9 @@ private fun DiagRow(label: String, value: String) {
 @Composable
 private fun DebugRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
-        Text("$label: ", color = Color(0xFFAB8FD4), style = MaterialTheme.typography.labelSmall,
+        Text("$label: ", color = AppPalette.textMuted, style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.width(56.dp))
-        Text(value, color = Color(0xFFEDE9FE), style = MaterialTheme.typography.labelSmall,
+        Text(value, color = AppPalette.textPrimary, style = MaterialTheme.typography.labelSmall,
             fontFamily = FontFamily.Monospace, fontSize = 10.sp)
     }
 }
@@ -486,9 +487,9 @@ private fun DebugRow(label: String, value: String) {
 @Composable
 private fun StatusChip(label: String, ok: Boolean) {
     Surface(shape = RoundedCornerShape(50),
-        color = if (ok) Color(0xFF064E3B) else Color(0xFF450A0A)) {
+        color = if (ok) AppPalette.successChipBg else AppPalette.errorChipBg) {
         Text(label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            color = if (ok) Color(0xFF10B981) else Color(0xFFEF4444),
+            color = if (ok) AppPalette.success else AppPalette.error,
             style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
     }
 }

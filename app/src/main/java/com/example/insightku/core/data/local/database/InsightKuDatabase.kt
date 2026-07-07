@@ -312,12 +312,12 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
         Installment::class,
         DraftTransaction::class,
         Account::class,
-        com.example.insightku.feature.budgeting.data.model.GoalEntity::class,
-        com.example.insightku.feature.budgeting.data.model.ContributionEntity::class,
-        com.example.insightku.feature.budgeting.data.model.GoalAccountEntity::class,
-        com.example.insightku.feature.budgeting.data.model.ReservedBalanceEntity::class,
-        com.example.insightku.feature.budgeting.data.model.AutoAllocationRuleEntity::class,
-        com.example.insightku.feature.budgeting.data.model.DailyTargetEntity::class
+        com.example.insightku.feature.planning.goal.data.model.GoalEntity::class,
+        com.example.insightku.feature.planning.goal.data.model.ContributionEntity::class,
+        com.example.insightku.feature.planning.goal.data.model.GoalAccountEntity::class,
+        com.example.insightku.feature.planning.goal.data.model.ReservedBalanceEntity::class,
+        com.example.insightku.feature.planning.goal.data.model.AutoAllocationRuleEntity::class,
+        com.example.insightku.feature.planning.goal.data.model.DailyTargetEntity::class
     ],
     version = 16,
     exportSchema = false
@@ -334,12 +334,12 @@ abstract class InsightKuDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
 
     // Goals feature DAOs
-    abstract fun goalDao(): com.example.insightku.feature.budgeting.data.local.dao.GoalDao
-    abstract fun contributionDao(): com.example.insightku.feature.budgeting.data.local.dao.ContributionDao
-    abstract fun goalAccountDao(): com.example.insightku.feature.budgeting.data.local.dao.GoalAccountDao
-    abstract fun reservedBalanceDao(): com.example.insightku.feature.budgeting.data.local.dao.ReservedBalanceDao
-    abstract fun autoAllocationRuleDao(): com.example.insightku.feature.budgeting.data.local.dao.AutoAllocationRuleDao
-    abstract fun dailyTargetDao(): com.example.insightku.feature.budgeting.data.local.dao.DailyTargetDao
+    abstract fun goalDao(): com.example.insightku.feature.planning.goal.data.local.dao.GoalDao
+    abstract fun contributionDao(): com.example.insightku.feature.planning.goal.data.local.dao.ContributionDao
+    abstract fun goalAccountDao(): com.example.insightku.feature.planning.goal.data.local.dao.GoalAccountDao
+    abstract fun reservedBalanceDao(): com.example.insightku.feature.planning.goal.data.local.dao.ReservedBalanceDao
+    abstract fun autoAllocationRuleDao(): com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao
+    abstract fun dailyTargetDao(): com.example.insightku.feature.planning.goal.data.local.dao.DailyTargetDao
 
     // Budget allocation DAOs
     abstract fun budgetAllocationDao(): BudgetAllocationDao

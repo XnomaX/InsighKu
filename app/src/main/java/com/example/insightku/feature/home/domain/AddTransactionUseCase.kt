@@ -4,10 +4,10 @@ import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.data.repository.TransactionRepository
-import com.example.insightku.feature.budgeting.data.model.ContributionType
-import com.example.insightku.feature.budgeting.data.repository.GoalRepository
-import com.example.insightku.feature.budgeting.domain.engine.AutoAllocationEngine
-import com.example.insightku.feature.budgeting.domain.model.AutoAllocationResult
+import com.example.insightku.feature.planning.goal.data.model.ContributionType
+import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
+import com.example.insightku.feature.planning.goal.domain.engine.AutoAllocationEngine
+import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult
 import javax.inject.Inject
 
 /**
@@ -67,7 +67,7 @@ class AddTransactionUseCase @Inject constructor(
             }
 
             // Step 3: Execute AUTO-mode allocations immediately
-            val executedSuggestions = mutableListOf<com.example.insightku.feature.budgeting.domain.model.AllocationSuggestion>()
+            val executedSuggestions = mutableListOf<com.example.insightku.feature.planning.goal.domain.model.AllocationSuggestion>()
             for (suggestion in allocationResult.autoExecuted) {
                 try {
                     goalRepository.contribute(

@@ -8,8 +8,8 @@ import com.example.insightku.core.domain.model.AccountAllocation
 import com.example.insightku.core.domain.model.BudgetAllocationDetail
 import com.example.insightku.core.domain.model.ContributionDetail
 import com.example.insightku.core.domain.model.GoalAllocationDetail
-import com.example.insightku.feature.budgeting.data.local.dao.ContributionDao
-import com.example.insightku.feature.budgeting.data.local.dao.GoalDao
+import com.example.insightku.feature.planning.goal.data.local.dao.ContributionDao
+import com.example.insightku.feature.planning.goal.data.local.dao.GoalDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -32,7 +32,7 @@ import javax.inject.Singleton
 @Singleton
 class AccountAllocationRepository @Inject constructor(
     private val accountDao: AccountDao,
-    private val goalDao: com.example.insightku.feature.budgeting.data.local.dao.GoalDao,
+    private val goalDao: com.example.insightku.feature.planning.goal.data.local.dao.GoalDao,
     private val contributionDao: ContributionDao,
     private val budgetDao: BudgetDao,
     private val budgetAllocationDao: BudgetAllocationDao

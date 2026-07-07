@@ -64,6 +64,14 @@ object AppPalette {
     val successChipBg: Color = Color(0xFF064E3B)
     /** Error chip background. */
     val errorChipBg: Color = Color(0xFF450A0A)
+    /** Warning / amber tinted background. */
+    val warningBg: Color = Color(0xFFFFF8F0)
+    /** Insufficient funds background. */
+    val insufficientFundsBg: Color = Color(0xFFFFF3E0)
+    /** Insufficient funds text. */
+    val insufficientFundsText: Color = Color(0xFFE65100)
+    /** Insufficient funds detail. */
+    val insufficientFundsDetail: Color = Color(0xFF795548)
 
     // Semantic info-tile colors
     val notesPurple: Color = Color(0xFF8B5CF6)

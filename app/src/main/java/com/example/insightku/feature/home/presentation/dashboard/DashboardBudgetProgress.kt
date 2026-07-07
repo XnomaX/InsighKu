@@ -28,6 +28,8 @@ fun BudgetPreviewSection(
     totalCount: Int,
     isBalanceVisible: Boolean,
     onClickViewAll: () -> Unit,
+    onNavigateToBudgetDetail: (String) -> Unit = {},
+    onNavigateToBudgeting: () -> Unit = {},
     onCreateBudget: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -138,7 +140,14 @@ fun BudgetPreviewSection(
                     budgets.forEachIndexed { index, budget ->
                         BudgetPreviewItem(
                             budget = budget,
-                            isBalanceVisible = isBalanceVisible
+                            isBalanceVisible = isBalanceVisible,
+                            onClick = {
+                                if (totalCount == 1 && budget.id.isNotBlank()) {
+                                    onNavigateToBudgetDetail(budget.id)
+                                } else {
+                                    onNavigateToBudgeting()
+                                }
+                            }
                         )
                         if (index < budgets.lastIndex) {
                             HorizontalDivider(
@@ -168,7 +177,8 @@ fun BudgetPreviewSection(
 @Composable
 private fun BudgetPreviewItem(
     budget: BudgetSpendingItem,
-    isBalanceVisible: Boolean
+    isBalanceVisible: Boolean,
+    onClick: () -> Unit = {}
 ) {
     val resolved = CategoryIconResolver.resolve(budget.iconName)
     val icon = resolved.icon
@@ -184,6 +194,7 @@ private fun BudgetPreviewItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = Dimens.CardInnerPadding, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)

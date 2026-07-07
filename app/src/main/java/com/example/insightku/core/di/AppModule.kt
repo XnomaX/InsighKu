@@ -5,8 +5,8 @@ import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.core.datastore.SessionManager
 import com.example.insightku.feature.home.data.DataStoreStreakPreferences
 import com.example.insightku.feature.home.domain.StreakPreferences
-import com.example.insightku.feature.budgeting.data.repository.AutoAllocationDataSourceImpl
-import com.example.insightku.feature.budgeting.domain.engine.AutoAllocationDataSource
+import com.example.insightku.feature.planning.goal.data.repository.AutoAllocationDataSourceImpl
+import com.example.insightku.feature.planning.goal.domain.engine.AutoAllocationDataSource
 import dagger.Binds
 import dagger.Module
 import dagger.Provides

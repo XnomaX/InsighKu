@@ -38,17 +38,17 @@ import com.example.insightku.core.navigation.Route
 import com.example.insightku.feature.analytics.presentation.AnalyticsScreen
 import com.example.insightku.feature.accounts.presentation.AccountsScreen
 import com.example.insightku.feature.accounts.presentation.AccountsViewModel
-import com.example.insightku.feature.budgeting.presentation.BudgetingEvent
-import com.example.insightku.feature.budgeting.presentation.BudgetingScreen
+import com.example.insightku.feature.planning.budget.presentation.BudgetingEvent
+import com.example.insightku.feature.planning.budget.presentation.BudgetingScreen
 import com.example.insightku.feature.home.presentation.DashboardScreen
 import com.example.insightku.feature.settings.presentation.SettingsScreen
 import com.example.insightku.feature.home.presentation.AddTransactionDialog
-import com.example.insightku.feature.budgeting.presentation.BudgetingAction
-import com.example.insightku.feature.budgeting.presentation.DialogState
+import com.example.insightku.feature.planning.budget.presentation.BudgetingAction
+import com.example.insightku.feature.planning.budget.presentation.DialogState
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.feature.home.presentation.AddTransactionViewModel
-import com.example.insightku.feature.budgeting.presentation.BudgetingViewModel
+import com.example.insightku.feature.planning.budget.presentation.BudgetingViewModel
 import com.example.insightku.feature.home.presentation.DashboardViewModel
 import com.example.insightku.feature.home.presentation.TransactionDetailsViewModel
 import com.example.insightku.feature.home.presentation.TransactionDetailsScreen
@@ -58,14 +58,14 @@ import com.example.insightku.core.notification.NotificationTransactionData
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.home.presentation.DashboardEvent
-import com.example.insightku.feature.budgeting.presentation.screen.BudgetDetailScreenPlaceholder
-import com.example.insightku.feature.budgeting.presentation.screen.GoalDetailScreen
+import com.example.insightku.feature.planning.budget.presentation.BudgetDetailScreenPlaceholder
+import com.example.insightku.feature.planning.goal.presentation.GoalDetailScreen
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 private val NavBorder: Color  @Composable get() = AppPalette.cardBorder
 private val NavBg: Color      @Composable get() = AppPalette.card
-private val NavInactive = Color(0xFFB0AABF)
+private val NavInactive: Color @Composable get() = AppPalette.textMuted
 
 /** Konversi draft → NotificationTransactionData agar bisa pakai ulang AddTransactionDialog prefilled. */
 private fun DraftTransaction.toNotificationData(): NotificationTransactionData =
@@ -93,6 +93,40 @@ private val navItems = listOf(
     NavItem(Route.BUDGETING, "Planning",  Icons.Filled.Assignment),
     NavItem(Route.ACCOUNTS,  "Accounts",  Icons.Filled.Wallet)
 )
+
+// ─── Tab Route Mapping ───────────────────────────────────────────────────────
+
+/** Root routes for each bottom navigation tab. */
+private val tabRootRoutes = setOf(
+    Route.HOME,
+    Route.ANALYSIS,
+    Route.BUDGETING,
+    Route.ACCOUNTS
+)
+
+/** Nested routes that belong to the Home tab. */
+private val homeNestedRoutes = setOf(Route.TRANSACTION_DETAILS)
+
+/** Nested routes that belong to the Budgeting tab. */
+private val budgetingNestedRoutes = setOf(Route.GOAL_DETAIL, Route.BUDGET_DETAIL)
+
+/** Nested routes that belong to the Accounts tab. */
+private val accountsNestedRoutes = setOf(Route.SETTINGS, Route.BANK_WHITELIST, Route.AUTO_DETECTION_ONBOARDING)
+
+/**
+ * Returns the root route of the tab that the given route belongs to,
+ * or null if the route doesn't belong to any tab.
+ */
+private fun getTabForRoute(route: String?): String? {
+    return when {
+        route == null -> null
+        route == Route.HOME || route in homeNestedRoutes -> Route.HOME
+        route == Route.ANALYSIS -> Route.ANALYSIS
+        route == Route.BUDGETING || route in budgetingNestedRoutes -> Route.BUDGETING
+        route == Route.ACCOUNTS || route in accountsNestedRoutes -> Route.ACCOUNTS
+        else -> null
+    }
+}
 
 // ─── MainScreen ───────────────────────────────────────────────────────────────
 
@@ -209,55 +243,66 @@ fun MainScreen(
             containerColor      = Color.Transparent,
             bottomBar           = {}
         ) { innerPadding ->
-            MainNavHost(
-                navController                 = navController,
-                rootNavController             = rootNavController,
-                dashboardViewModel            = dashboardViewModel,
-                budgetingViewModel            = budgetingViewModel,
-                onNavigateToGoalDetail = { goalId ->
-                    navController.navigate(Route.goalDetailRoute(goalId))
-                },
-                onShowAddTransaction          = { showAddTransactionDialog = true },
-                onShowAddTransactionForStreak = {
-                    showAddTransactionDialog = true
-                    pendingStreakPopup        = true
-                },
-                onOpenDraft = { draft ->
-                    activeDraftData = draft.toNotificationData()
-                    showAddTransactionDialog = true
-                },
-                onDraftDismissed = { draft ->
-                    // Draft sudah ditandai DISMISSED oleh ViewModel (hilang dari Inbox).
-                    // Tawarkan undo 5 detik; jika tidak di-undo, hard-delete.
-                    scope.launch {
-                        val result = snackbarHostState.showSnackbar(
-                            message     = "Draft dihapus",
-                            actionLabel = "Urungkan",
-                            duration    = SnackbarDuration.Short
-                        )
-                        if (result == SnackbarResult.ActionPerformed) {
-                            dashboardViewModel.onEvent(DashboardEvent.UndoDismissDraft(draft.id))
-                        } else {
-                            dashboardViewModel.onEvent(DashboardEvent.CommitDismissDraft(draft.id))
-                        }
-                    }
-                },
-                onCreateGoal = {
-                    pendingBudgetingAction = BudgetingAction.OpenCreateGoal
-                    navController.navigate(Route.BUDGETING) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState    = true
-                    }
-                },
-                onCreateBudget = {
-                    pendingBudgetingAction = BudgetingAction.OpenCreateBudget()
-                    navController.navigate(Route.BUDGETING) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState    = true
-                    }
-                },
+    MainNavHost(
+        navController                 = navController,
+        rootNavController             = rootNavController,
+        dashboardViewModel            = dashboardViewModel,
+        budgetingViewModel            = budgetingViewModel,
+        onNavigateToGoalDetail = { goalId ->
+            navController.navigate(Route.goalDetailRoute(goalId))
+        },
+        onNavigateToBudgetDetail = { budgetId ->
+            navController.navigate(Route.budgetDetailRoute(budgetId))
+        },
+        onShowAddTransaction          = { showAddTransactionDialog = true },
+        onShowAddTransactionForStreak = {
+            showAddTransactionDialog = true
+            pendingStreakPopup        = true
+        },
+        onOpenDraft = { draft ->
+            activeDraftData = draft.toNotificationData()
+            showAddTransactionDialog = true
+        },
+        onDraftDismissed = { draft ->
+            // Draft sudah ditandai DISMISSED oleh ViewModel (hilang dari Inbox).
+            // Tawarkan undo 5 detik; jika tidak di-undo, hard-delete.
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message     = "Draft dihapus",
+                    actionLabel = "Urungkan",
+                    duration    = SnackbarDuration.Short
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    dashboardViewModel.onEvent(DashboardEvent.UndoDismissDraft(draft.id))
+                } else {
+                    dashboardViewModel.onEvent(DashboardEvent.CommitDismissDraft(draft.id))
+                }
+            }
+        },
+        onNavigateToGoals = {
+            pendingBudgetingAction = BudgetingAction.NavigateToGoals
+            navController.navigate(Route.BUDGETING) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState    = true
+            }
+        },
+        onCreateGoal = {
+            pendingBudgetingAction = BudgetingAction.OpenCreateGoal
+            navController.navigate(Route.BUDGETING) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState    = true
+            }
+        },
+        onCreateBudget = {
+            pendingBudgetingAction = BudgetingAction.OpenCreateBudget()
+            navController.navigate(Route.BUDGETING) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState    = true
+            }
+        },
                 pendingBudgetingAction   = pendingBudgetingAction,
                 onBudgetingActionConsumed = { pendingBudgetingAction = null },
                 modifier = Modifier
@@ -324,16 +369,30 @@ fun PremiumBottomNav(
     onAddClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val currentTab = getTabForRoute(currentRoute)
+    val isAtTabRoot = currentRoute in tabRootRoutes
 
-    fun navigateToTab(route: String) {
-        navController.navigate(route) {
+    fun navigateToTab(tabRoute: String) {
+        // Already on this tab's root → no-op (prevents redundant navigation)
+        if (currentTab == tabRoute && isAtTabRoot) {
+            return
+        }
+
+        // On a nested screen within this tab → pop back to root (preserves other tabs)
+        if (currentTab == tabRoute && !isAtTabRoot) {
+            navController.popBackStack(tabRoute, inclusive = false)
+            return
+        }
+
+        // Different tab → navigate with full state save/restore
+        navController.navigate(tabRoute) {
             popUpTo(navController.graph.findStartDestination().id) {
-                // Don't save HOME state — always return to clean root
-                saveState = route != Route.HOME
+                saveState = true
             }
             launchSingleTop = true
-            restoreState    = route != Route.HOME
+            restoreState = true
         }
     }
 
@@ -357,14 +416,14 @@ fun PremiumBottomNav(
                 // Home
                 BottomNavItem(
                     item       = navItems[0],
-                    isSelected = currentRoute == navItems[0].route,
+                    isSelected = currentTab == navItems[0].route,
                     onClick    = { navigateToTab(navItems[0].route) }
                 )
 
                 // Analytics
                 BottomNavItem(
                     item       = navItems[1],
-                    isSelected = currentRoute == navItems[1].route,
+                    isSelected = currentTab == navItems[1].route,
                     onClick    = { navigateToTab(navItems[1].route) }
                 )
 
@@ -374,14 +433,14 @@ fun PremiumBottomNav(
                 // Budgeting
                 BottomNavItem(
                     item       = navItems[2],
-                    isSelected = currentRoute == navItems[2].route,
+                    isSelected = currentTab == navItems[2].route,
                     onClick    = { navigateToTab(navItems[2].route) }
                 )
 
-                // Settings
+                // Accounts
                 BottomNavItem(
                     item       = navItems[3],
-                    isSelected = currentRoute == navItems[3].route,
+                    isSelected = currentTab == navItems[3].route,
                     onClick    = { navigateToTab(navItems[3].route) }
                 )
         }
@@ -527,10 +586,12 @@ private fun MainNavHost(
     dashboardViewModel: DashboardViewModel,
     budgetingViewModel: BudgetingViewModel,
     onNavigateToGoalDetail: (String) -> Unit = {},
+    onNavigateToBudgetDetail: (String) -> Unit = {},
     onShowAddTransaction: () -> Unit = {},
     onShowAddTransactionForStreak: () -> Unit = {},
     onOpenDraft: (DraftTransaction) -> Unit = {},
     onDraftDismissed: (DraftTransaction) -> Unit = {},
+    onNavigateToGoals: () -> Unit = {},
     onCreateGoal: () -> Unit = {},
     onCreateBudget: () -> Unit = {},
     pendingBudgetingAction: BudgetingAction? = null,
@@ -561,19 +622,16 @@ private fun MainNavHost(
                         launchSingleTop = true
                     }
                 },
-                onNavigateToGoals              = {
-                    navController.navigate(Route.BUDGETING) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState    = true
-                    }
-                },
+                onNavigateToGoals              = onNavigateToGoals,
                 onNavigateToBudgeting          = {
                     navController.navigate(Route.BUDGETING) {
                         popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                         launchSingleTop = true
                         restoreState    = true
                     }
+                },
+                onNavigateToBudgetDetail       = { budgetId ->
+                    navController.navigate(Route.budgetDetailRoute(budgetId))
                 },
                 onCreateGoal                   = onCreateGoal,
                 onCreateBudget                 = onCreateBudget
