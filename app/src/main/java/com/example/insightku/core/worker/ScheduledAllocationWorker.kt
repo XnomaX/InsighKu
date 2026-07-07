@@ -6,10 +6,10 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.insightku.core.notification.AutoAllocationNotificationHelper
-import com.example.insightku.feature.budgeting.data.local.dao.AutoAllocationRuleDao
-import com.example.insightku.feature.budgeting.data.model.ContributionType
-import com.example.insightku.feature.budgeting.data.repository.GoalRepository
-import com.example.insightku.feature.budgeting.domain.engine.AutoAllocationEngine
+import com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao
+import com.example.insightku.feature.planning.goal.data.model.ContributionType
+import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
+import com.example.insightku.feature.planning.goal.domain.engine.AutoAllocationEngine
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -59,7 +59,7 @@ class ScheduledAllocationWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processResult(result: com.example.insightku.feature.budgeting.domain.model.AutoAllocationResult) {
+    private suspend fun processResult(result: com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult) {
         // Auto-execute allocations via GoalRepository
         for (suggestion in result.autoExecuted) {
             try {

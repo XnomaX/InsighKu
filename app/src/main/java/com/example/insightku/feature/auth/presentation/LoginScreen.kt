@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.core.data.model.UserData
+import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.adaptiveDp
 import com.example.insightku.feature.auth.presentation.LoginViewModel
@@ -574,10 +575,10 @@ private fun GoogleLoginButton(onClick: () -> Unit, isLoading: Boolean = false) {
             .fillMaxWidth()
             .height(buttonHeight),
         shape = RoundedCornerShape(50.dp),
-        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+        border = BorderStroke(1.dp, AppPalette.cardBorder),
         colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = Color.White,
-            contentColor = Color.Black
+            containerColor = AppPalette.card,
+            contentColor = AppPalette.textPrimary
         )
     ) {
         if (isLoading) {

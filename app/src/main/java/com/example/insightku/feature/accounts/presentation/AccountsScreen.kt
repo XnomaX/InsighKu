@@ -64,12 +64,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.domain.model.AccountAllocation
-import com.example.insightku.core.domain.model.GoalAllocationDetail
+import com.example.insightku.core.ui.components.DetailRow
+import com.example.insightku.core.ui.components.SectionHeaderWithCount
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.LocalAccent
-import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.feature.accounts.presentation.components.AllocationItemCard
 
@@ -269,7 +269,7 @@ private fun AccountsList(
             val accountsOfType = groupedAccounts[accountType]
             if (!accountsOfType.isNullOrEmpty()) {
                 item(key = "header_${accountType.name}") {
-                    SectionHeader(
+                    SectionHeaderWithCount(
                         title = accountType.displayName,
                         count = accountsOfType.size
                     )
@@ -291,43 +291,6 @@ private fun AccountsList(
     }
 }
 
-// ── Section Header ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun SectionHeader(
-    title: String,
-    count: Int
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenHorizontalPadding)
-            .padding(top = 24.dp, bottom = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.5.sp,
-            color = AppPalette.textMuted
-        )
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(AppPalette.cardBorder)
-                .padding(horizontal = 7.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = count.toString(),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = AppPalette.textMuted
-            )
-        }
-    }
-}
 
 // ── Account Row ─────────────────────────────────────────────────────────────────
 
@@ -581,103 +544,27 @@ private fun AccountRow(
 }
 
 // ── Empty State ────────────────────────────────────────────────────────────────
-
+// Uses shared EmptyStateSection from core/ui/components/SharedComponents.kt
 @Composable
 private fun EmptyAccountsState(
     onAddAccountClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val accent = LocalAccent.current
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenHorizontalPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Layered circles for depth
-        Box(
-            modifier = Modifier.size(80.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(accent.copy(alpha = 0.06f))
-            )
-            Box(
-                modifier = Modifier
-                    .size(58.dp)
-                    .clip(CircleShape)
-                    .background(accent.copy(alpha = 0.10f))
-            )
-            Icon(
-                imageVector = Icons.Outlined.Wallet,
-                contentDescription = null,
-                tint = accent,
-                modifier = Modifier.size(30.dp)
+    com.example.insightku.core.ui.components.EmptyStateSection(
+        icon = Icons.Outlined.Wallet,
+        title = "No accounts yet",
+        description = "Add your bank accounts, e-wallets, credit cards, and cash to keep everything organized in one place.",
+        modifier = modifier,
+        actionLabel = "Add your first account",
+        onAction = onAddAccountClick,
+        trailingContent = {
+            Text(
+                text = "You can add as many accounts as you need",
+                style = MaterialTheme.typography.bodySmall,
+                color = AppPalette.textMuted.copy(alpha = 0.7f)
             )
         }
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        Text(
-            text = "No accounts yet",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = AppPalette.textPrimary
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Text(
-            text = "Add your bank accounts, e-wallets, credit cards, and cash to keep everything organized in one place.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = AppPalette.textMuted,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 20.dp),
-            lineHeight = 22.sp
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Surface(
-            modifier = Modifier
-                .clip(RoundedCornerShape(Dimens.ButtonRadiusSmall))
-                .clickable { onAddAccountClick() },
-            shape = RoundedCornerShape(Dimens.ButtonRadiusSmall),
-            color = accent
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Add,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = "Add your first account",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = "You can add as many accounts as you need",
-            style = MaterialTheme.typography.bodySmall,
-            color = AppPalette.textMuted.copy(alpha = 0.7f)
-        )
-    }
+    )
 }
 
 // ── Account Detail Bottom Sheet ─────────────────────────────────────────────────
@@ -1116,42 +1003,6 @@ private fun AllocationBreakdownSection(
     }
 }
 
-// ── Detail Row ─────────────────────────────────────────────────────────────────
-
-@Composable
-private fun DetailRow(
-    label: String,
-    value: String,
-    hint: String? = null,
-    isPlaceholder: Boolean = false
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
-    ) {
-        Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = AppPalette.textMuted
-            )
-            if (hint != null) {
-                Text(
-                    text = hint,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppPalette.textMuted.copy(alpha = 0.6f)
-                )
-            }
-        }
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = if (isPlaceholder) AppPalette.textMuted.copy(alpha = 0.5f) else AppPalette.textPrimary
-        )
-    }
-}
 
 // ── Date Formatter ──────────────────────────────────────────────────────────────
 

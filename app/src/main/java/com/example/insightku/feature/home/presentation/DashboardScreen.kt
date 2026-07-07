@@ -37,6 +37,7 @@ fun DashboardScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToGoals: () -> Unit = {},
     onNavigateToBudgeting: () -> Unit = {},
+    onNavigateToBudgetDetail: (String) -> Unit = {},
     onCreateGoal: () -> Unit = {},
     onCreateBudget: () -> Unit = {}
 ) {
@@ -92,6 +93,7 @@ fun DashboardScreen(
                 onNavigateToSettings = onNavigateToSettings,
                 onNavigateToGoals = onNavigateToGoals,
                 onNavigateToBudgeting = onNavigateToBudgeting,
+                onNavigateToBudgetDetail = onNavigateToBudgetDetail,
                 onCreateGoal = onCreateGoal,
                 onCreateBudget = onCreateBudget
             )
@@ -113,6 +115,7 @@ fun DashboardScreenContent(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToGoals: () -> Unit = {},
     onNavigateToBudgeting: () -> Unit = {},
+    onNavigateToBudgetDetail: (String) -> Unit = {},
     onCreateGoal: () -> Unit = {},
     onCreateBudget: () -> Unit = {}
 ) {
@@ -219,7 +222,7 @@ fun DashboardScreenContent(
                     isBalanceVisible = !LocalHideAmounts.current,
                     onClickGoal = { onNavigateToGoals() },
                     onClickViewAll = onNavigateToGoals,
-                    onCreateGoal = onCreateGoal,
+                    onCreateGoal = { onCreateGoal() },
                     modifier = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical = Dimens.CardSpacing
@@ -233,6 +236,8 @@ fun DashboardScreenContent(
                     totalCount = uiState.totalBudgetCount,
                     isBalanceVisible = !LocalHideAmounts.current,
                     onClickViewAll = onNavigateToBudgeting,
+                    onNavigateToBudgetDetail = onNavigateToBudgetDetail,
+                    onNavigateToBudgeting = onNavigateToBudgeting,
                     onCreateBudget = onCreateBudget,
                     modifier = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,

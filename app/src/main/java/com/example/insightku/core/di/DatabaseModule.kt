@@ -97,32 +97,32 @@ object DatabaseModule {
 
     // Goals feature DAOs
     @Provides
-    fun provideGoalDao(database: InsightKuDatabase): com.example.insightku.feature.budgeting.data.local.dao.GoalDao {
+    fun provideGoalDao(database: InsightKuDatabase): com.example.insightku.feature.planning.goal.data.local.dao.GoalDao {
         return database.goalDao()
     }
 
     @Provides
-    fun provideContributionDao(database: InsightKuDatabase): com.example.insightku.feature.budgeting.data.local.dao.ContributionDao {
+    fun provideContributionDao(database: InsightKuDatabase): com.example.insightku.feature.planning.goal.data.local.dao.ContributionDao {
         return database.contributionDao()
     }
 
     @Provides
-    fun provideGoalAccountDao(database: InsightKuDatabase): com.example.insightku.feature.budgeting.data.local.dao.GoalAccountDao {
+    fun provideGoalAccountDao(database: InsightKuDatabase): com.example.insightku.feature.planning.goal.data.local.dao.GoalAccountDao {
         return database.goalAccountDao()
     }
 
     @Provides
-    fun provideReservedBalanceDao(database: InsightKuDatabase): com.example.insightku.feature.budgeting.data.local.dao.ReservedBalanceDao {
+    fun provideReservedBalanceDao(database: InsightKuDatabase): com.example.insightku.feature.planning.goal.data.local.dao.ReservedBalanceDao {
         return database.reservedBalanceDao()
     }
 
     @Provides
-    fun provideAutoAllocationRuleDao(database: InsightKuDatabase): com.example.insightku.feature.budgeting.data.local.dao.AutoAllocationRuleDao {
+    fun provideAutoAllocationRuleDao(database: InsightKuDatabase): com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao {
         return database.autoAllocationRuleDao()
     }
 
     @Provides
-    fun provideDailyTargetDao(database: InsightKuDatabase): com.example.insightku.feature.budgeting.data.local.dao.DailyTargetDao {
+    fun provideDailyTargetDao(database: InsightKuDatabase): com.example.insightku.feature.planning.goal.data.local.dao.DailyTargetDao {
         return database.dailyTargetDao()
     }
 }

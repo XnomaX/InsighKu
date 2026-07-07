@@ -208,8 +208,8 @@ fun DailyStreakCard(
                     ) {
                         Icon(Icons.Default.CheckCircle, null, tint = IncomeGreen, modifier = Modifier.size(16.dp))
                         Column {
-                            Text("Habit intact.", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF065F46))
-                            Text("You've tracked today — streak is safe.", style = MaterialTheme.typography.labelSmall, color = Color(0xFF065F46).copy(alpha = 0.65f))
+                            Text("Habit intact.", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppPalette.successChipBg)
+                            Text("You've tracked today — streak is safe.", style = MaterialTheme.typography.labelSmall, color = AppPalette.successChipBg.copy(alpha = 0.65f))
                         }
                     }
                 }
@@ -426,7 +426,7 @@ fun StreakDetailSheet(
                             else "Log a transaction today to keep your streak.",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (hasTrackedToday) Color(0xFF065F46) else ExpenseRed
+                            color = if (hasTrackedToday) AppPalette.successChipBg else ExpenseRed
                         )
                     }
                 }

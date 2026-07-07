@@ -157,7 +157,7 @@ fun AiForecastCard(
 internal fun SegmentedControl(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
     Surface(
         shape = RoundedCornerShape(50.dp),
-        color = Color(0xFFF3EEFF),
+        color = AppPalette.cardElevated,
         border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Row(Modifier.padding(3.dp)) {

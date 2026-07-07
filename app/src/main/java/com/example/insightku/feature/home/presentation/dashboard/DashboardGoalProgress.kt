@@ -19,8 +19,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.core.ui.theme.*
-import com.example.insightku.feature.budgeting.domain.model.Goal
-import com.example.insightku.feature.budgeting.presentation.components.getGoalIcon
+import com.example.insightku.feature.planning.goal.domain.model.Goal
+import com.example.insightku.feature.planning.goal.presentation.getGoalIcon
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
 
 @Composable

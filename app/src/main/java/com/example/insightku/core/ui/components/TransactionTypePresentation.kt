@@ -3,9 +3,10 @@ package com.example.insightku.core.ui.components
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.insightku.core.data.model.TransactionType
+import androidx.compose.ui.graphics.Color
+import com.example.insightku.core.ui.theme.AppPalette
 
 /**
  * Semantic presentation for each [TransactionType].
@@ -24,7 +25,7 @@ enum class TransactionTypePresentation(
 ) {
     INCOME(
         icon = Icons.Default.TrendingUp,
-        color = Color(0xFF10B981),
+        color = AppPalette.success,
         label = "Income",
         showAmountPrefix = true,
         allowsEdit = true,
@@ -33,7 +34,7 @@ enum class TransactionTypePresentation(
     ),
     EXPENSE(
         icon = Icons.Default.TrendingDown,
-        color = Color(0xFFEF4444),
+        color = AppPalette.error,
         label = "Expense",
         showAmountPrefix = true,
         allowsEdit = true,
@@ -42,32 +43,32 @@ enum class TransactionTypePresentation(
     ),
     TRANSFER_OUT(
         icon = Icons.Default.SwapHoriz,
-        color = Color(0xFF3B82F6),
+        color = AppPalette.defaultBlue,
         label = "Transfer Out"
     ),
     TRANSFER_IN(
         icon = Icons.Default.SwapHoriz,
-        color = Color(0xFF3B82F6),
+        color = AppPalette.defaultBlue,
         label = "Transfer In"
     ),
     GOAL_CONTRIBUTION(
         icon = Icons.Default.Savings,
-        color = Color(0xFF8B5CF6),
+        color = AppPalette.notesPurple,
         label = "Goal Contribution"
     ),
     GOAL_WITHDRAWAL(
         icon = Icons.Default.Savings,
-        color = Color(0xFF0D9488),
+        color = AppPalette.cyan,
         label = "Goal Withdrawal"
     ),
     AUTO_ALLOCATION(
         icon = Icons.Default.AutoAwesome,
-        color = Color(0xFF6366F1),
+        color = AppPalette.indigo,
         label = "Auto Allocation"
     ),
     BALANCE_ADJUSTMENT(
         icon = Icons.Default.Tune,
-        color = Color(0xFFF59E0B),
+        color = AppPalette.warning,
         label = "Balance Adjustment",
         allowsEdit = true,
         allowsDelete = true
