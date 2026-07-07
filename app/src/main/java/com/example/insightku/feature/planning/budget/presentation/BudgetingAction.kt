@@ -9,7 +9,6 @@ import com.example.insightku.core.data.model.CategoryType
 sealed class BudgetingAction {
     data object OpenCreateGoal : BudgetingAction()
     data object NavigateToGoals : BudgetingAction()
-    data class NavigateToBudgetDetail(val budgetId: String) : BudgetingAction()
     data class OpenCreateBudget(
         val categoryType: CategoryType = CategoryType.EXPENSE
     ) : BudgetingAction()

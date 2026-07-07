@@ -1,5 +1,4 @@
 package com.example.insightku.feature.planning.budget.presentation
-import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -21,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -33,12 +33,87 @@ import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
-import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
+import androidx.compose.ui.graphics.toArgb
 import com.example.insightku.core.ui.components.PremiumDatePicker
+import com.example.insightku.core.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.*
+
+// ─── Curated Icon Set for Recurring Payments & Installments ───────────────────
+
+data class QuickIcon(val icon: ImageVector, val label: String, val color: Color)
+
+internal val recurringIcons = listOf(
+    QuickIcon(Icons.Default.Repeat, "General", Color(0xFF7C4DFF)),
+    QuickIcon(Icons.Default.Subscriptions, "Subscription", Color(0xFF8B5CF6)),
+    QuickIcon(Icons.Default.Home, "Rent", Color(0xFFEF4444)),
+    QuickIcon(Icons.Default.Wifi, "Internet", Color(0xFF3B82F6)),
+    QuickIcon(Icons.Default.ElectricBolt, "Electricity", Color(0xFFF59E0B)),
+    QuickIcon(Icons.Default.Water, "Water", Color(0xFF06B6D4)),
+    QuickIcon(Icons.Default.PhoneAndroid, "Phone", Color(0xFF8B5CF6)),
+    QuickIcon(Icons.Default.Security, "Insurance", Color(0xFF3B82F6)),
+    QuickIcon(Icons.Default.School, "Education", Color(0xFF3B82F6)),
+    QuickIcon(Icons.Default.FitnessCenter, "Fitness", Color(0xFF10B981)),
+    QuickIcon(Icons.Default.LocalGasStation, "Fuel", Color(0xFFEF4444)),
+    QuickIcon(Icons.Default.LocalParking, "Parking", Color(0xFF6366F1)),
+    QuickIcon(Icons.Default.CleaningServices, "Cleaning", Color(0xFF10B981)),
+    QuickIcon(Icons.Default.Pets, "Pet", Color(0xFFF59E0B)),
+    QuickIcon(Icons.Default.CreditCard, "Card Fee", Color(0xFFEF4444)),
+    QuickIcon(Icons.Default.AccountBalance, "Loan", Color(0xFFEF4444)),
+    QuickIcon(Icons.Default.MoreHoriz, "Other", Color(0xFF79747E))
+)
+
+internal val installmentIcons = listOf(
+    QuickIcon(Icons.Default.CreditScore, "General", Color(0xFF06B6D4)),
+    QuickIcon(Icons.Default.PhoneAndroid, "Phone", Color(0xFF8B5CF6)),
+    QuickIcon(Icons.Default.Laptop, "Laptop", Color(0xFF3B82F6)),
+    QuickIcon(Icons.Default.Devices, "Electronics", Color(0xFF3B82F6)),
+    QuickIcon(Icons.Default.DirectionsCar, "Car", Color(0xFFEF4444)),
+    QuickIcon(Icons.Default.TwoWheeler, "Motorcycle", Color(0xFF3B82F6)),
+    QuickIcon(Icons.Default.Flight, "Travel", Color(0xFF06B6D4)),
+    QuickIcon(Icons.Default.Hotel, "Hotel", Color(0xFF06B6D4)),
+    QuickIcon(Icons.Default.ShoppingBag, "Shopping", Color(0xFFEC4899)),
+    QuickIcon(Icons.Default.Checkroom, "Clothing", Color(0xFFDB2777)),
+    QuickIcon(Icons.Default.Home, "Furniture", Color(0xFFD97706)),
+    QuickIcon(Icons.Default.School, "Education", Color(0xFF3B82F6)),
+    QuickIcon(Icons.Default.AccountBalance, "Loan", Color(0xFFEF4444)),
+    QuickIcon(Icons.Default.MoreHoriz, "Other", Color(0xFF79747E))
+)
+
+// ─── Icon Picker (Shared) ────────────────────────────────────────────────────
+
+@Composable
+fun SheetIconPicker(
+    icons: List<QuickIcon>,
+    selectedLabel: String?,
+    onSelect: (QuickIcon) -> Unit,
+    accentColor: Color
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(icons) { qi ->
+            val isSelected = qi.label == selectedLabel
+            Surface(
+                modifier = Modifier.clickable { onSelect(qi) },
+                shape = RoundedCornerShape(12.dp),
+                color = if (isSelected) qi.color.copy(alpha = 0.15f) else AppPalette.card,
+                border = BorderStroke(1.5.dp, if (isSelected) qi.color else SheetBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(qi.icon, null, tint = if (isSelected) qi.color else AppPalette.textMuted, modifier = Modifier.size(20.dp))
+                    Text(qi.label, style = MaterialTheme.typography.labelSmall, color = if (isSelected) qi.color else AppPalette.textMuted, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
 
 private val SheetPurple: Color  @Composable get() = LocalAccent.current
 private val SheetCyan    = Color(0xFF06B6D4)
@@ -69,16 +144,22 @@ fun AddRecurringPaymentDialog(
     var nextDue     by remember(editing) { mutableLongStateOf(editing?.nextDue ?: System.currentTimeMillis()) }
     var selectedCategoryId by remember(editing) { mutableStateOf(editing?.categoryId) }
     var selectedAccountId by remember(editing) { mutableStateOf(editing?.accountId) }
+    var selectedIconLabel by remember(editing) {
+        mutableStateOf(
+            editing?.iconName?.let { label ->
+                recurringIcons.find { it.label == label }?.label
+            }
+        )
+    }
+    var selectedColorHex by remember(editing) { mutableStateOf(editing?.color) }
     var nameError   by remember { mutableStateOf<String?>(null) }
+    var amountError by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
         PremiumDatePicker(
             initialMillis = nextDue,
-            onDateSelected = { millis ->
-                nextDue = millis
-                showDatePicker = false
-            },
+            onDateSelected = { millis -> nextDue = millis; showDatePicker = false },
             onDismiss = { showDatePicker = false }
         )
     }
@@ -120,10 +201,25 @@ fun AddRecurringPaymentDialog(
                     placeholder = "e.g. Netflix, Spotify, Rent", error = nameError, accentColor = SheetPurple)
 
                 SheetFormField(label = "AMOUNT",
-                    value = com.example.insightku.core.utils.CurrencyUtils.formatInputThousands(amountText),
-                    onValueChange = { amountText = com.example.insightku.core.utils.CurrencyUtils.stripThousands(it) },
+                    value = CurrencyUtils.formatInputThousands(amountText),
+                    onValueChange = { amountText = CurrencyUtils.stripThousands(it); amountError = null },
                     placeholder = "e.g. 59.000", keyboardType = KeyboardType.Number,
-                    prefix = "Rp", accentColor = SheetPurple)
+                    prefix = "Rp", error = amountError, accentColor = SheetPurple)
+
+                // Icon picker
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("ICON", style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    SheetIconPicker(
+                        icons = recurringIcons,
+                        selectedLabel = selectedIconLabel,
+                        onSelect = { qi ->
+                            selectedIconLabel = qi.label
+                            selectedColorHex = String.format("#%06X", 0xFFFFFF and qi.color.toArgb())
+                        },
+                        accentColor = SheetPurple
+                    )
+                }
 
                 // Category selector
                 if (availableCategories.isNotEmpty()) {
@@ -190,17 +286,26 @@ fun AddRecurringPaymentDialog(
                     Box(
                         modifier = Modifier.weight(1f).height(50.dp).clip(RoundedCornerShape(14.dp))
                             .background(SheetPurple).clickable {
-                                if (name.trim().length < 2) { nameError = "Name must be at least 2 characters"; return@clickable }
+                                // Validate
+                                var hasError = false
+                                if (name.trim().length < 2) { nameError = "Name must be at least 2 characters"; hasError = true }
+                                val parsedAmount = amountText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0
+                                if (parsedAmount <= 0) { amountError = "Amount must be greater than zero"; hasError = true }
+                                if (hasError) return@clickable
+
                                 focusManager.clearFocus(); keyboardController?.hide()
+                                val selectedIcon = selectedIconLabel?.let { label -> recurringIcons.find { it.label == label } }
                                 onSave(RecurringBudget(
                                     id         = editing?.id ?: 0,
                                     name       = name.trim(),
-                                    amount     = amountText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0,
+                                    amount     = parsedAmount,
                                     frequency  = frequency,
                                     nextDue    = nextDue,
                                     isActive   = true,
                                     categoryId = selectedCategoryId,
-                                    accountId  = selectedAccountId ?: editing?.accountId
+                                    accountId  = selectedAccountId ?: editing?.accountId,
+                                    iconName   = selectedIcon?.label,
+                                    color      = selectedColorHex
                                 ))
                             },
                         contentAlignment = Alignment.Center
@@ -240,13 +345,52 @@ fun AddInstallmentDialog(
     var nextDue         by remember(editing) { mutableLongStateOf(editing?.nextDueDate ?: System.currentTimeMillis()) }
     var selectedCategoryId by remember(editing) { mutableStateOf(editing?.categoryId) }
     var selectedAccountId by remember(editing) { mutableStateOf(editing?.accountId) }
+    var selectedIconLabel by remember(editing) {
+        mutableStateOf(
+            editing?.iconName?.let { label ->
+                installmentIcons.find { it.label == label }?.label
+            }
+        )
+    }
+    var selectedColorHex by remember(editing) { mutableStateOf(editing?.color) }
     var nameError       by remember { mutableStateOf<String?>(null) }
+    var totalAmountError by remember { mutableStateOf<String?>(null) }
+    var monthlyError    by remember { mutableStateOf<String?>(null) }
+    var monthsError     by remember { mutableStateOf<String?>(null) }
     var showDatePicker  by remember { mutableStateOf(false) }
 
+    // Auto-calculation state
+    // Tracks which field was last edited to determine calculation direction
+    var lastEditedField by remember(editing) { mutableStateOf<String?>(null) }
+
+    val totalAmount = totalAmountText.filter { it.isDigit() }.toLongOrNull() ?: 0L
+    val monthly     = monthlyText.filter { it.isDigit() }.toLongOrNull() ?: 0L
     val totalMonths = totalMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
     val paidMonths  = paidMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
-    val monthly     = monthlyText.filter { it.isDigit() }.toLongOrNull() ?: 0L
-    val remaining   = ((totalMonths - paidMonths).coerceAtLeast(0) * monthly).toDouble()
+
+    // Auto-calculate: when totalAmount and monthly are set, compute totalMonths
+    LaunchedEffect(totalAmount, monthly, lastEditedField) {
+        if (lastEditedField == "monthly" && totalAmount > 0 && monthly > 0) {
+            val calculated = kotlin.math.ceil(totalAmount.toDouble() / monthly).toInt()
+            if (calculated > 0 && calculated != totalMonths) {
+                totalMonthsText = calculated.toString()
+            }
+        }
+    }
+
+    // Auto-calculate: when totalAmount and totalMonths are set, compute monthly
+    LaunchedEffect(totalAmount, totalMonths, lastEditedField) {
+        if (lastEditedField == "months" && totalAmount > 0 && totalMonths > 0) {
+            val calculated = kotlin.math.ceil(totalAmount.toDouble() / totalMonths).toLong()
+            if (calculated > 0 && calculated != monthly) {
+                monthlyText = calculated.toString()
+            }
+        }
+    }
+
+    val remainingMonths = (totalMonths - paidMonths).coerceAtLeast(0)
+    val remaining = remainingMonths * monthly
+    val progressPercent = if (totalMonths > 0) (paidMonths * 100 / totalMonths) else 0
 
     if (showDatePicker) {
         val state = rememberDatePickerState(initialSelectedDateMillis = nextDue)
@@ -296,22 +440,53 @@ fun AddInstallmentDialog(
                     placeholder = "e.g. MacBook, Phone, Car", error = nameError, accentColor = SheetCyan)
 
                 SheetFormField(label = "TOTAL AMOUNT",
-                    value = com.example.insightku.core.utils.CurrencyUtils.formatInputThousands(totalAmountText),
-                    onValueChange = { totalAmountText = com.example.insightku.core.utils.CurrencyUtils.stripThousands(it) },
+                    value = CurrencyUtils.formatInputThousands(totalAmountText),
+                    onValueChange = { totalAmountText = CurrencyUtils.stripThousands(it); totalAmountError = null },
                     placeholder = "e.g. 12.000.000", keyboardType = KeyboardType.Number,
-                    prefix = "Rp", accentColor = SheetCyan)
+                    prefix = "Rp", error = totalAmountError, accentColor = SheetCyan)
+
+                // Icon picker
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("ICON", style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    SheetIconPicker(
+                        icons = installmentIcons,
+                        selectedLabel = selectedIconLabel,
+                        onSelect = { qi ->
+                            selectedIconLabel = qi.label
+                            selectedColorHex = String.format("#%06X", 0xFFFFFF and qi.color.toArgb())
+                        },
+                        accentColor = SheetCyan
+                    )
+                }
+
+                // Smart Monthly Payment / Total Months fields
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("PAYMENT DETAILS", style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text("Enter any two values — the third will auto-calculate",
+                        style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted.copy(alpha = 0.7f))
+                }
 
                 SheetFormField(label = "MONTHLY PAYMENT",
-                    value = com.example.insightku.core.utils.CurrencyUtils.formatInputThousands(monthlyText),
-                    onValueChange = { monthlyText = com.example.insightku.core.utils.CurrencyUtils.stripThousands(it) },
+                    value = CurrencyUtils.formatInputThousands(monthlyText),
+                    onValueChange = {
+                        monthlyText = CurrencyUtils.stripThousands(it); monthlyError = null
+                        lastEditedField = "monthly"
+                    },
                     placeholder = "e.g. 1.000.000", keyboardType = KeyboardType.Number,
-                    prefix = "Rp", accentColor = SheetCyan)
+                    prefix = "Rp", error = monthlyError, accentColor = SheetCyan,
+                    description = if (totalAmount > 0 && totalMonths > 0 && monthly == 0L) "Auto-calculated from Total Amount ÷ Total Months" else null)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.weight(1f)) {
                         SheetFormField(label = "TOTAL MONTHS", value = totalMonthsText,
-                            onValueChange = { totalMonthsText = it.filter { c -> c.isDigit() } },
-                            placeholder = "12", keyboardType = KeyboardType.Number, accentColor = SheetCyan)
+                            onValueChange = {
+                                totalMonthsText = it.filter { c -> c.isDigit() }; monthsError = null
+                                lastEditedField = "months"
+                            },
+                            placeholder = "12", keyboardType = KeyboardType.Number, accentColor = SheetCyan,
+                            description = if (totalAmount > 0 && monthly > 0 && totalMonths == 0) "Auto-calculated" else null)
                     }
                     Column(Modifier.weight(1f)) {
                         SheetFormField(label = "PAID MONTHS", value = paidMonthsText,
@@ -354,17 +529,28 @@ fun AddInstallmentDialog(
                         color  = SheetCyan.copy(alpha = 0.06f),
                         border = BorderStroke(1.dp, SheetCyan.copy(alpha = 0.15f))
                     ) {
-                        Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("Remaining", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                                Text("Rp ${java.text.NumberFormat.getNumberInstance(java.util.Locale("id","ID")).format(remaining.toLong())}",
-                                    style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = SheetCyan)
+                        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text("Remaining", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                                    Text("Rp ${java.text.NumberFormat.getNumberInstance(java.util.Locale("id","ID")).format(remaining)}",
+                                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = SheetCyan)
+                                }
+                                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text("Progress", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                                    Text("$progressPercent%",
+                                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color(0xFF7C4DFF))
+                                }
                             }
-                            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("Progress", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                                Text("${if (totalMonths > 0) (paidMonths * 100 / totalMonths) else 0}%",
-                                    style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color(0xFF7C4DFF))
-                            }
+                            // Progress bar
+                            LinearProgressIndicator(
+                                progress = { if (totalMonths > 0) paidMonths.toFloat() / totalMonths else 0f },
+                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50.dp)),
+                                color = Color(0xFF7C4DFF),
+                                trackColor = SheetBorder
+                            )
+                            Text("$remainingMonths months remaining • ${paidMonths}/${totalMonths} paid",
+                                style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                         }
                     }
                 }
@@ -401,19 +587,35 @@ fun AddInstallmentDialog(
                     Box(
                         modifier = Modifier.weight(1f).height(50.dp).clip(RoundedCornerShape(14.dp))
                             .background(SheetCyan).clickable {
-                                if (name.trim().length < 2) { nameError = "Name must be at least 2 characters"; return@clickable }
+                                // Validate
+                                var hasError = false
+                                if (name.trim().length < 2) { nameError = "Name must be at least 2 characters"; hasError = true }
+                                val parsedTotal = totalAmountText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0
+                                val parsedMonthly = monthlyText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0
+                                val parsedMonths = totalMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
+                                val parsedPaid = paidMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
+
+                                if (parsedTotal <= 0) { totalAmountError = "Total amount is required"; hasError = true }
+                                if (parsedMonthly <= 0) { monthlyError = "Monthly payment is required"; hasError = true }
+                                if (parsedMonths <= 0) { monthsError = "Total months is required"; hasError = true }
+                                if (parsedPaid > parsedMonths && parsedMonths > 0) { monthsError = "Paid months cannot exceed total"; hasError = true }
+                                if (hasError) return@clickable
+
                                 focusManager.clearFocus(); keyboardController?.hide()
+                                val selectedIcon = selectedIconLabel?.let { label -> installmentIcons.find { it.label == label } }
                                 onSave(Installment(
                                     id          = editing?.id ?: java.util.UUID.randomUUID().toString(),
                                     name        = name.trim(),
-                                    totalAmount = totalAmountText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0,
-                                    monthlyPayment = monthlyText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0,
-                                    totalMonths = totalMonths,
-                                    paidMonths  = paidMonths,
+                                    totalAmount = parsedTotal,
+                                    monthlyPayment = parsedMonthly,
+                                    totalMonths = parsedMonths,
+                                    paidMonths  = parsedPaid,
                                     nextDueDate = nextDue,
                                     isActive    = true,
                                     categoryId  = selectedCategoryId,
-                                    accountId   = selectedAccountId ?: editing?.accountId
+                                    accountId   = selectedAccountId ?: editing?.accountId,
+                                    iconName    = selectedIcon?.label,
+                                    color       = selectedColorHex
                                 ))
                             },
                         contentAlignment = Alignment.Center
@@ -442,10 +644,9 @@ private fun SheetCategorySelector(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { cat ->
                     val isSelected = selectedId == cat.id
-                    val resolved   = CategoryIconResolver.resolve(cat.icon ?: cat.name)
-                    val catColor   = runCatching {
+                    val catColor = runCatching {
                         Color(android.graphics.Color.parseColor(cat.color.ifBlank { "#7C4DFF" }))
-                    }.getOrDefault(resolved.color)
+                    }.getOrDefault(accentColor)
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -462,7 +663,7 @@ private fun SheetCategorySelector(
                                 .background(catColor.copy(alpha = if (isSelected) 0.18f else 0.10f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(resolved.icon, null, tint = catColor, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Category, null, tint = catColor, modifier = Modifier.size(16.dp))
                         }
                         Text(cat.name,
                             style      = MaterialTheme.typography.labelSmall,
@@ -544,7 +745,8 @@ internal fun SheetFormField(
     accentColor: Color,
     error: String? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
-    prefix: String? = null
+    prefix: String? = null,
+    description: String? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(label, style = MaterialTheme.typography.labelSmall,
@@ -569,6 +771,9 @@ internal fun SheetFormField(
         )
         if (error != null) {
             Text(error, style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF4444))
+        }
+        if (description != null && error == null) {
+            Text(description, style = MaterialTheme.typography.labelSmall, color = accentColor.copy(alpha = 0.6f))
         }
     }
 }

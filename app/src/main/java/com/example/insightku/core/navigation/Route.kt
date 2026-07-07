@@ -25,7 +25,6 @@ object Route {
 
     // Detail routes for allocations
     const val GOAL_DETAIL = "goal_detail/{goalId}"
-    const val BUDGET_DETAIL = "budget_detail/{budgetId}"
 
     // Add transaction pre-filled from notification deep link
     const val ADD_FROM_NOTIFICATION = "add_from_notification?amount={amount}&title={title}&bankName={bankName}&type={type}&timestamp={timestamp}&description={description}"
@@ -39,5 +38,4 @@ object Route {
 
     // Helper functions for detail routes
     fun goalDetailRoute(goalId: String) = "goal_detail/$goalId"
-    fun budgetDetailRoute(budgetId: String) = "budget_detail/$budgetId"
 }

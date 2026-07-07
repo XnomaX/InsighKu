@@ -319,7 +319,7 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
         com.example.insightku.feature.planning.goal.data.model.AutoAllocationRuleEntity::class,
         com.example.insightku.feature.planning.goal.data.model.DailyTargetEntity::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

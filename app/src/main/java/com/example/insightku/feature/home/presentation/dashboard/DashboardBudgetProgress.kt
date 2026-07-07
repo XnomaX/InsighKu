@@ -28,7 +28,6 @@ fun BudgetPreviewSection(
     totalCount: Int,
     isBalanceVisible: Boolean,
     onClickViewAll: () -> Unit,
-    onNavigateToBudgetDetail: (String) -> Unit = {},
     onNavigateToBudgeting: () -> Unit = {},
     onCreateBudget: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -142,11 +141,7 @@ fun BudgetPreviewSection(
                             budget = budget,
                             isBalanceVisible = isBalanceVisible,
                             onClick = {
-                                if (totalCount == 1 && budget.id.isNotBlank()) {
-                                    onNavigateToBudgetDetail(budget.id)
-                                } else {
-                                    onNavigateToBudgeting()
-                                }
+                                onNavigateToBudgeting()
                             }
                         )
                         if (index < budgets.lastIndex) {

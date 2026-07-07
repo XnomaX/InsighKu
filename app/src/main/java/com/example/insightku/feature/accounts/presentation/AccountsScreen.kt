@@ -77,7 +77,7 @@ import com.example.insightku.feature.accounts.presentation.components.Allocation
 fun AccountsScreen(
     onNavigateToAddAccount: () -> Unit = {},
     onNavigateToGoalDetail: (String) -> Unit = {},
-    onNavigateToBudgetDetail: (String) -> Unit = {},
+    onNavigateToBudgeting: () -> Unit = {},
     viewModel: AccountsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -168,7 +168,7 @@ fun AccountsScreen(
                     accountToView = null
                 },
                 onGoalClick = onNavigateToGoalDetail,
-                onBudgetClick = onNavigateToBudgetDetail
+                onBudgetClick = onNavigateToBudgeting
             )
         }
     }
@@ -579,7 +579,7 @@ private fun AccountDetailSheet(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onGoalClick: (String) -> Unit = {},
-    onBudgetClick: (String) -> Unit = {}
+    onBudgetClick: () -> Unit = {}
 ) {
     if (!isOpen) return
 
@@ -870,7 +870,7 @@ private fun AllocationBreakdownSection(
     allocation: AccountAllocation,
     accountColor: Color,
     onGoalClick: (String) -> Unit = {},
-    onBudgetClick: (String) -> Unit = {}
+    onBudgetClick: () -> Unit = {}
 ) {
     val successGreen = com.example.insightku.core.ui.theme.SuccessColor
 
@@ -962,7 +962,7 @@ private fun AllocationBreakdownSection(
                         icon = budget.budgetIcon,
                         targetAmount = budget.budgetLimit,
                         isOverBudget = budget.isOverBudget,
-                        onClick = { onBudgetClick(budget.budgetId) }
+                        onClick = { onBudgetClick() }
                     )
                 }
             }

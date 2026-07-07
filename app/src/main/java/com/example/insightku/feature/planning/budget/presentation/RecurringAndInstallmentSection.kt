@@ -1,5 +1,7 @@
 package com.example.insightku.feature.planning.budget.presentation
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
+import com.example.insightku.feature.planning.budget.presentation.recurringIcons
+import com.example.insightku.feature.planning.budget.presentation.installmentIcons
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -114,7 +116,11 @@ fun RecurringPaymentCard(
     val daysUntilDue = ((budget.nextDue - System.currentTimeMillis()) /
             (1000 * 60 * 60 * 24)).toInt()
     val dueStatus = dueStatusFor(daysUntilDue)
-    val iconInfo = CategoryIconResolver.resolve(budget.name)
+    val iconInfo = budget.iconName?.let { label ->
+        recurringIcons.find { it.label == label }?.let { qi ->
+            com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(qi.label, qi.icon, qi.color)
+        }
+    } ?: CategoryIconResolver.resolve(budget.name)
 
     var pressed by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -324,7 +330,11 @@ fun InstallmentCard(
     val daysUntilDue = ((installment.nextDueDate - System.currentTimeMillis()) /
             (1000 * 60 * 60 * 24)).toInt()
     val dueStatus = dueStatusFor(daysUntilDue)
-    val iconInfo = CategoryIconResolver.resolve(installment.name)
+    val iconInfo = installment.iconName?.let { label ->
+        installmentIcons.find { it.label == label }?.let { qi ->
+            com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(qi.label, qi.icon, qi.color)
+        }
+    } ?: CategoryIconResolver.resolve(installment.name)
 
     var progressAnimated by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -511,11 +521,12 @@ private fun FrequencyChip(frequency: BudgetFrequency) {
     }
 }
 
-private enum class DueStatus { OVERDUE, TODAY, SOON, NORMAL }
+private enum class DueStatus { OVERDUE, TODAY, TOMORROW, SOON, NORMAL }
 
 private fun dueStatusFor(daysUntilDue: Int): DueStatus = when {
     daysUntilDue < 0  -> DueStatus.OVERDUE
     daysUntilDue == 0 -> DueStatus.TODAY
+    daysUntilDue == 1 -> DueStatus.TOMORROW
     daysUntilDue <= 3 -> DueStatus.SOON
     else              -> DueStatus.NORMAL
 }
@@ -523,8 +534,9 @@ private fun dueStatusFor(daysUntilDue: Int): DueStatus = when {
 @Composable
 private fun DueChip(daysUntilDue: Int, status: DueStatus) {
     val (label, bg, fg) = when (status) {
-        DueStatus.OVERDUE -> Triple("Overdue",          Red.copy(alpha = 0.12f),    Red)
+        DueStatus.OVERDUE -> Triple("Overdue by ${-daysUntilDue}d", Red.copy(alpha = 0.12f),    Red)
         DueStatus.TODAY   -> Triple("Due Today",        Orange.copy(alpha = 0.12f), Orange)
+        DueStatus.TOMORROW -> Triple("Due Tomorrow",    Orange.copy(alpha = 0.10f), Orange)
         DueStatus.SOON    -> Triple("Due in ${daysUntilDue}d", Orange.copy(alpha = 0.08f), Orange)
         DueStatus.NORMAL  -> Triple(
             SimpleDateFormat("d MMM", Locale.ENGLISH).format(Date(

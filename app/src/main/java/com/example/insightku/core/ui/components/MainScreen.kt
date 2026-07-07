@@ -58,7 +58,6 @@ import com.example.insightku.core.notification.NotificationTransactionData
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.home.presentation.DashboardEvent
-import com.example.insightku.feature.planning.budget.presentation.BudgetDetailScreenPlaceholder
 import com.example.insightku.feature.planning.goal.presentation.GoalDetailScreen
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -108,7 +107,7 @@ private val tabRootRoutes = setOf(
 private val homeNestedRoutes = setOf(Route.TRANSACTION_DETAILS)
 
 /** Nested routes that belong to the Budgeting tab. */
-private val budgetingNestedRoutes = setOf(Route.GOAL_DETAIL, Route.BUDGET_DETAIL)
+private val budgetingNestedRoutes = setOf(Route.GOAL_DETAIL)
 
 /** Nested routes that belong to the Accounts tab. */
 private val accountsNestedRoutes = setOf(Route.SETTINGS, Route.BANK_WHITELIST, Route.AUTO_DETECTION_ONBOARDING)
@@ -250,9 +249,6 @@ fun MainScreen(
         budgetingViewModel            = budgetingViewModel,
         onNavigateToGoalDetail = { goalId ->
             navController.navigate(Route.goalDetailRoute(goalId))
-        },
-        onNavigateToBudgetDetail = { budgetId ->
-            navController.navigate(Route.budgetDetailRoute(budgetId))
         },
         onShowAddTransaction          = { showAddTransactionDialog = true },
         onShowAddTransactionForStreak = {
@@ -586,7 +582,6 @@ private fun MainNavHost(
     dashboardViewModel: DashboardViewModel,
     budgetingViewModel: BudgetingViewModel,
     onNavigateToGoalDetail: (String) -> Unit = {},
-    onNavigateToBudgetDetail: (String) -> Unit = {},
     onShowAddTransaction: () -> Unit = {},
     onShowAddTransactionForStreak: () -> Unit = {},
     onOpenDraft: (DraftTransaction) -> Unit = {},
@@ -630,9 +625,7 @@ private fun MainNavHost(
                         restoreState    = true
                     }
                 },
-                onNavigateToBudgetDetail       = { budgetId ->
-                    navController.navigate(Route.budgetDetailRoute(budgetId))
-                },
+
                 onCreateGoal                   = onCreateGoal,
                 onCreateBudget                 = onCreateBudget
             )
@@ -668,8 +661,12 @@ private fun MainNavHost(
                 onNavigateToGoalDetail = { goalId ->
                     navController.navigate(Route.goalDetailRoute(goalId))
                 },
-                onNavigateToBudgetDetail = { budgetId ->
-                    navController.navigate(Route.budgetDetailRoute(budgetId))
+                onNavigateToBudgeting = {
+                    navController.navigate(Route.BUDGETING) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState    = true
+                    }
                 }
             )
         }
@@ -714,14 +711,7 @@ private fun MainNavHost(
             )
         }
 
-        // ── Budget Detail Route ───────────────────────────────────────────────
-        composable(Route.BUDGET_DETAIL) { backStackEntry ->
-            val budgetId = backStackEntry.arguments?.getString("budgetId") ?: return@composable
-            BudgetDetailScreenPlaceholder(
-                budgetId = budgetId,
-                onBack = { navController.popBackStack() }
-            )
-        }
+
     }
 }
 

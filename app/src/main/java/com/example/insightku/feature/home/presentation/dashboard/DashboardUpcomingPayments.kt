@@ -37,7 +37,13 @@ fun UpcomingPaymentsSection(
     val upcomingRecurring = recurringBudgets.filter { it.isActive && it.nextDue <= now + fourteenDays }.sortedBy { it.nextDue }
     val upcomingInstallments = installments.filter { it.isActive && !it.isCompleted }.sortedBy { it.nextDueDate }
 
-    val isEmpty = upcomingRecurring.isEmpty() && upcomingInstallments.isEmpty()
+    // Separate overdue from upcoming
+    val overdueRecurring = upcomingRecurring.filter { it.nextDue < now }
+    val overdueInstallments = upcomingInstallments.filter { it.nextDueDate < now }
+    val dueSoonRecurring = upcomingRecurring.filter { it.nextDue >= now }
+    val dueSoonInstallments = upcomingInstallments.filter { it.nextDueDate >= now }
+    val hasOverdue = overdueRecurring.isNotEmpty() || overdueInstallments.isNotEmpty()
+    val noPayments = overdueRecurring.isEmpty() && overdueInstallments.isEmpty() && dueSoonRecurring.isEmpty() && dueSoonInstallments.isEmpty()
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)) {
         Row(
@@ -53,15 +59,15 @@ fun UpcomingPaymentsSection(
                     color = AppPalette.textPrimary
                 )
                 Text(
-                    if (isEmpty) "No payments due soon"
-                    else "${upcomingRecurring.size + upcomingInstallments.size} payments due soon",
+                    if (noPayments) "No payments due soon"
+                    else "${dueSoonRecurring.size + dueSoonInstallments.size} payments due soon",
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
             }
         }
 
-        if (isEmpty) {
+        if (noPayments) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape    = RoundedCornerShape(Dimens.CardRadiusLarge),
@@ -84,12 +90,22 @@ fun UpcomingPaymentsSection(
                 }
             }
         } else {
-            upcomingRecurring.forEach { budget ->
+            if (hasOverdue) {
+            overdueRecurring.forEach { budget ->
                 UpcomingRecurringRow(budget = budget, now = now, onMarkPaid = { onMarkRecurringPaid(budget) })
             }
-            upcomingInstallments.take(3).forEach { inst ->
+            overdueInstallments.forEach { inst ->
                 UpcomingInstallmentRow(installment = inst, now = now, onMarkPaid = { onMarkInstallmentPaid(inst) })
             }
+        }
+        if (dueSoonRecurring.isNotEmpty() || dueSoonInstallments.isNotEmpty()) {
+            dueSoonRecurring.forEach { budget ->
+                UpcomingRecurringRow(budget = budget, now = now, onMarkPaid = { onMarkRecurringPaid(budget) })
+            }
+            dueSoonInstallments.take(3).forEach { inst ->
+                UpcomingInstallmentRow(installment = inst, now = now, onMarkPaid = { onMarkInstallmentPaid(inst) })
+            }
+        }
         }
     }
 }
@@ -100,11 +116,20 @@ private fun UpcomingRecurringRow(
     now: Long,
     onMarkPaid: () -> Unit
 ) {
-    val daysUntil = ((budget.nextDue - now) / 86400000L).toInt().coerceAtLeast(0)
+    val daysUntil = ((budget.nextDue - now) / 86400000L).toInt()
+    val isOverdue = daysUntil < 0
+    val dueBadgeLabel = when {
+        isOverdue && daysUntil == -1 -> "Yesterday"
+        isOverdue -> "Overdue by ${-daysUntil}d"
+        daysUntil == 0 -> "Today"
+        daysUntil == 1 -> "Tomorrow"
+        else -> "in ${daysUntil}d"
+    }
     val dueBadgeColor = when {
+        isOverdue -> ExpenseRed
         daysUntil <= 2 -> ExpenseRed
         daysUntil <= 7 -> WarningYellow
-        else           -> IncomeGreen
+        else -> IncomeGreen
     }
     Surface(
         modifier        = Modifier.fillMaxWidth(),
@@ -188,11 +213,20 @@ private fun UpcomingInstallmentRow(
     now: Long,
     onMarkPaid: () -> Unit
 ) {
-    val daysUntil = ((installment.nextDueDate - now) / 86400000L).toInt().coerceAtLeast(0)
+    val daysUntil = ((installment.nextDueDate - now) / 86400000L).toInt()
+    val isOverdue = daysUntil < 0
+    val dueBadgeLabel = when {
+        isOverdue && daysUntil == -1 -> "Yesterday"
+        isOverdue -> "Overdue by ${-daysUntil}d"
+        daysUntil == 0 -> "Today"
+        daysUntil == 1 -> "Tomorrow"
+        else -> "in ${daysUntil}d"
+    }
     val dueBadgeColor = when {
+        isOverdue -> ExpenseRed
         daysUntil <= 2 -> ExpenseRed
         daysUntil <= 7 -> WarningYellow
-        else           -> IncomeGreen
+        else -> IncomeGreen
     }
     Surface(
         modifier        = Modifier.fillMaxWidth(),
