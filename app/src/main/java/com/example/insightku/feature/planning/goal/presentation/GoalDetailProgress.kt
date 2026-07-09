@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.SuccessColor
-import com.example.insightku.core.ui.theme.formatCurrencyCompactIDR
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 
 @Composable
@@ -32,7 +32,7 @@ internal fun ProgressSection(goal: Goal, goalColor: Color, animatedProgress: Flo
                 Surface(shape = RoundedCornerShape(12.dp), color = barColor.copy(alpha = 0.12f)) {
                     Text("${goal.progressPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = barColor, modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp))
                 }
-                Text("${formatCurrencyCompactIDR(goal.currentAmount)} / ${formatCurrencyCompactIDR(goal.targetAmount)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                Text("${NumberFormatter.formatCurrencyCompact(goal.currentAmount)} / ${NumberFormatter.formatCurrencyCompact(goal.targetAmount)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
             }
             Spacer(Modifier.height(16.dp))
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -47,7 +47,7 @@ internal fun ProgressSection(goal: Goal, goalColor: Color, animatedProgress: Flo
             }
             Spacer(Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(if (goal.isCompleted) "Goal achieved!" else "${formatCurrencyCompactIDR(goal.remainingAmount)} remaining", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = if (goal.isCompleted) SuccessColor else AppPalette.textMuted)
+                Text(if (goal.isCompleted) "Goal achieved!" else "${NumberFormatter.formatCurrencyCompact(goal.remainingAmount)} remaining", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = if (goal.isCompleted) SuccessColor else AppPalette.textMuted)
                 if (goal.isCompleted) {
                     Surface(shape = RoundedCornerShape(8.dp), color = SuccessColor.copy(alpha = 0.12f)) {
                         Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {

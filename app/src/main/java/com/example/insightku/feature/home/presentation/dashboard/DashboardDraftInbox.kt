@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,7 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.insightku.core.data.model.DraftConfidence
 import com.example.insightku.core.data.model.DraftTransaction
+import com.example.insightku.core.data.model.DraftType
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.*
 
 @Composable
@@ -46,7 +49,7 @@ fun DraftInboxSection(
                 color = AppPalette.textPrimary
             )
             Text(
-                "${drafts.size} transaksi terdeteksi menunggu kamu cek",
+                "${drafts.size} item${if (drafts.size > 1) "s" else ""} menunggu kamu cek",
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted
             )
@@ -60,11 +63,19 @@ fun DraftInboxSection(
         ) {
             Column {
                 visible.forEachIndexed { index, draft ->
-                    DraftInboxRow(
-                        draft        = draft,
-                        onOpen       = { onOpenDraft(draft) },
-                        onDismiss    = { onDismissDraft(draft) }
-                    )
+                    if (draft.draftType == DraftType.AUTO_ALLOCATION) {
+                        AllocationDraftInboxRow(
+                            draft    = draft,
+                            onOpen   = { onOpenDraft(draft) },
+                            onDismiss = { onDismissDraft(draft) }
+                        )
+                    } else {
+                        DraftInboxRow(
+                            draft    = draft,
+                            onOpen   = { onOpenDraft(draft) },
+                            onDismiss = { onDismissDraft(draft) }
+                        )
+                    }
                     if (index < visible.lastIndex || hiddenCount > 0) {
                         HorizontalDivider(color = AppPalette.cardBorder, thickness = 1.dp)
                     }
@@ -86,6 +97,86 @@ fun DraftInboxSection(
                     }
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AllocationDraftInboxRow(
+    draft: DraftTransaction,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDismiss(); true
+            } else false
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(ExpenseRed.copy(alpha = 0.10f))
+                    .padding(horizontal = Dimens.CardInnerPadding),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = "Hapus draft", tint = ExpenseRed, modifier = Modifier.size(22.dp))
+            }
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AppPalette.card)
+                .clickable(onClick = onOpen)
+                .padding(Dimens.CardInnerPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Allocation icon
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(SuccessColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Savings,
+                    contentDescription = null,
+                    tint = SuccessColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "${NumberFormatter.formatCurrency(draft.allocationAmount ?: draft.amountGuess)} → ${draft.goalName ?: draft.merchantGuess}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppPalette.textPrimary,
+                    maxLines = 1
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = buildString {
+                            append(draft.sourceAccountName ?: "Account")
+                            append(" · ")
+                            append(draft.triggerDescription ?: "Auto allocation")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppPalette.textMuted,
+                        maxLines = 1
+                    )
+                }
+            }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = AppPalette.textMuted, modifier = Modifier.size(20.dp))
         }
     }
 }
@@ -132,7 +223,7 @@ private fun DraftInboxRow(
             ConfidenceRing(confidence = draft.confidence, isIncome = draft.typeGuess == TransactionType.INCOME)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "Rp ${"%,.0f".format(draft.amountGuess)} · ${draft.merchantGuess.ifBlank { draft.bankName }}",
+                    text = "${NumberFormatter.formatCurrency(draft.amountGuess)} · ${draft.merchantGuess.ifBlank { draft.bankName }}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textPrimary,

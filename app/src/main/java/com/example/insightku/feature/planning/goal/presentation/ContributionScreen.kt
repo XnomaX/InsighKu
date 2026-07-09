@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -341,7 +342,7 @@ private fun AmountInputCard(rawAmount: String, onAmountChange: (String) -> Unit,
             Text(text = "0", style = MaterialTheme.typography.displaySmall, color = AppPalette.textMuted.copy(alpha = 0.5f))
         },
         prefix = {
-            Text(text = "Rp ", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = goalColor)
+            Text(text = "${NumberFormatter.getCurrencySymbol()} ", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = goalColor)
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         singleLine = true,

@@ -228,21 +228,23 @@ fun BudgetingScreenContent(
             }
         }
 
-        // Overview card
-        item {
-            BudgetHealthCard(
-                percentage = uiState.budgetUtilizationPercentage,
-                totalBudget = uiState.totalBudget,
-                limitedSpent = uiState.limitedSpent,
-                remaining = uiState.remainingBudget,
-                riskyCount = uiState.budgetCategories.count { it.health == BudgetHealth.Warning },
-                overBudgetCount = uiState.overBudgetCategories.size,
-                safeCount = uiState.budgetCategories.count { it.health == BudgetHealth.Good },
-                modifier = Modifier.padding(
-                    horizontal = Dimens.ScreenHorizontalPadding,
-                    vertical = 12.dp
+        // Overview card (only when there are actual budget categories)
+        if (uiState.hasActualCategories) {
+            item {
+                BudgetHealthCard(
+                    percentage = uiState.budgetUtilizationPercentage,
+                    totalBudget = uiState.totalBudget,
+                    limitedSpent = uiState.limitedSpent,
+                    remaining = uiState.remainingBudget,
+                    riskyCount = uiState.budgetCategories.count { it.health == BudgetHealth.Warning },
+                    overBudgetCount = uiState.overBudgetCategories.size,
+                    safeCount = uiState.budgetCategories.count { it.health == BudgetHealth.Good },
+                    modifier = Modifier.padding(
+                        horizontal = Dimens.ScreenHorizontalPadding,
+                        vertical = 12.dp
+                    )
                 )
-            )
+            }
         }
 
         // ── EXPENSE BUDGETS SECTION ──────────────────────────────────────
@@ -258,7 +260,7 @@ fun BudgetingScreenContent(
             )
         }
 
-        if (!uiState.isLoading && uiState.budgetCategories.isEmpty()) {
+        if (!uiState.isLoading && !uiState.hasActualCategories) {
             item {
                 EmptyBudgetState(
                     onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
@@ -340,6 +342,7 @@ fun BudgetingScreenContent(
                 onAdd = { onEvent(BudgetingEvent.ShowAddRecurringDialog) },
                 onEdit = { onEvent(BudgetingEvent.ShowEditRecurringDialog(it)) },
                 onDelete = { onEvent(BudgetingEvent.DeleteRecurringBudget(it)) },
+                categories = uiState.rawCategories,
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,
                     vertical = 4.dp
@@ -354,6 +357,7 @@ fun BudgetingScreenContent(
                 onAdd = { onEvent(BudgetingEvent.ShowAddInstallmentDialog) },
                 onEdit = { onEvent(BudgetingEvent.ShowEditInstallmentDialog(it)) },
                 onDelete = { onEvent(BudgetingEvent.DeleteInstallment(it.id)) },
+                categories = uiState.rawCategories,
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,
                     vertical = 4.dp

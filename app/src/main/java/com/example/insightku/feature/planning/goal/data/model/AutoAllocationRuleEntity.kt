@@ -55,6 +55,17 @@ enum class ScheduledFrequency(val value: String) {
     }
 }
 
+enum class CategoryBasedExecutionMode(val value: String) {
+    EVERY_TRANSACTION("every_transaction"),
+    AFTER_DAILY_TOTAL("after_daily_total"),
+    AFTER_MONTHLY_TOTAL("after_monthly_total");
+
+    companion object {
+        fun fromString(value: String): CategoryBasedExecutionMode =
+            entries.find { it.value == value } ?: EVERY_TRANSACTION
+    }
+}
+
 @Entity(
     tableName = "auto_allocation_rules",
     foreignKeys = [
@@ -102,10 +113,24 @@ data class AutoAllocationRuleEntity(
     @ColumnInfo(defaultValue = "1")
     val scheduledDayOfMonth: Int = 1,
     @ColumnInfo(defaultValue = "0")
-    val lastExecutedAt: Long = 0L
+    val lastExecutedAt: Long = 0L,
+    // ── P1.1: Trigger-specific configuration ────────────────────────────────
+    @ColumnInfo(defaultValue = "8")
+    val executionHour: Int = 8,
+    @ColumnInfo(defaultValue = "0")
+    val executionMinute: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    val biweeklyStartDate: Long = 0,
+    @ColumnInfo(defaultValue = "0")
+    val minRemainingBalance: Double = 0.0,
+    @ColumnInfo(defaultValue = "'[]'")
+    val categoryBasedCategoryIds: String = "[]",
+    @ColumnInfo(defaultValue = "'every_transaction'")
+    val categoryBasedExecutionMode: String = "every_transaction"
 ) {
     val trigger: AllocationTriggerType get() = AllocationTriggerType.fromString(triggerType)
     val valueType: AllocationValueType get() = AllocationValueType.fromString(allocationType)
     val mode: ConfirmationMode get() = ConfirmationMode.fromString(confirmationMode)
     val frequency: ScheduledFrequency get() = ScheduledFrequency.fromString(scheduledFrequency)
+    val catExecMode: CategoryBasedExecutionMode get() = CategoryBasedExecutionMode.fromString(categoryBasedExecutionMode)
 }

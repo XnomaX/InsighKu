@@ -41,7 +41,25 @@ fun DashboardScreen(
     onCreateBudget: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.onEvent(DashboardEvent.ClearSnackbar)
+        }
+    }
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.onEvent(DashboardEvent.ClearError)
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = androidx.compose.ui.graphics.Color.Transparent
+    ) { padding ->
     when {
         uiState.isLoading && uiState.recentTransactions.isEmpty() -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -96,6 +114,7 @@ fun DashboardScreen(
                 onCreateBudget = onCreateBudget
             )
         }
+    }
     }
 }
 
@@ -304,5 +323,5 @@ fun DashboardScreenContent(
             hasTrackedToday = uiState.hasTrackedToday,
             onDismiss       = { showStreakDetail = false }
         )
-    }
+    } // Scaffold
 }

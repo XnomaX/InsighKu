@@ -33,12 +33,13 @@ import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.LocalAccent
 import androidx.compose.ui.graphics.toArgb
 import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.utils.CurrencyUtils
-import java.text.SimpleDateFormat
 import java.util.*
 
 // ─── Curated Icon Set for Recurring Payments & Installments ───────────────────
@@ -204,7 +205,7 @@ fun AddRecurringPaymentDialog(
                     value = CurrencyUtils.formatInputThousands(amountText),
                     onValueChange = { amountText = CurrencyUtils.stripThousands(it); amountError = null },
                     placeholder = "e.g. 59.000", keyboardType = KeyboardType.Number,
-                    prefix = "Rp", error = amountError, accentColor = SheetPurple)
+                    prefix = NumberFormatter.getCurrencySymbol(), error = amountError, accentColor = SheetPurple)
 
                 // Icon picker
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -265,7 +266,7 @@ fun AddRecurringPaymentDialog(
                     ) {
                         Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                             horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(SimpleDateFormat("d MMMM yyyy", Locale.ENGLISH).format(Date(nextDue)),
+                            Text(DateFormatter.formatFullDate(nextDue),
                                 style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                             Icon(Icons.Default.EditCalendar, null, tint = Color(0xFFB39DDB), modifier = Modifier.size(18.dp))
                         }
@@ -443,7 +444,7 @@ fun AddInstallmentDialog(
                     value = CurrencyUtils.formatInputThousands(totalAmountText),
                     onValueChange = { totalAmountText = CurrencyUtils.stripThousands(it); totalAmountError = null },
                     placeholder = "e.g. 12.000.000", keyboardType = KeyboardType.Number,
-                    prefix = "Rp", error = totalAmountError, accentColor = SheetCyan)
+                    prefix = NumberFormatter.getCurrencySymbol(), error = totalAmountError, accentColor = SheetCyan)
 
                 // Icon picker
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -475,7 +476,7 @@ fun AddInstallmentDialog(
                         lastEditedField = "monthly"
                     },
                     placeholder = "e.g. 1.000.000", keyboardType = KeyboardType.Number,
-                    prefix = "Rp", error = monthlyError, accentColor = SheetCyan,
+                    prefix = NumberFormatter.getCurrencySymbol(), error = monthlyError, accentColor = SheetCyan,
                     description = if (totalAmount > 0 && totalMonths > 0 && monthly == 0L) "Auto-calculated from Total Amount ÷ Total Months" else null)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -533,7 +534,7 @@ fun AddInstallmentDialog(
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text("Remaining", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                                    Text("Rp ${java.text.NumberFormat.getNumberInstance(java.util.Locale("id","ID")).format(remaining)}",
+                                    Text(NumberFormatter.formatCurrency(remaining.toDouble()),
                                         style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = SheetCyan)
                                 }
                                 Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -566,7 +567,7 @@ fun AddInstallmentDialog(
                     ) {
                         Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                             horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(SimpleDateFormat("d MMMM yyyy", Locale.ENGLISH).format(Date(nextDue)),
+                            Text(DateFormatter.formatFullDate(nextDue),
                                 style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                             Icon(Icons.Default.EditCalendar, null, tint = Color(0xFFB39DDB), modifier = Modifier.size(18.dp))
                         }

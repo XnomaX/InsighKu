@@ -40,17 +40,15 @@ import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.PremiumDatePicker
+import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 /** Epoch ms → "12 May 2026" */
 private fun Long.toDisplayDate(): String =
-    SimpleDateFormat("d MMM yyyy", Locale.ENGLISH).format(Date(this))
+    DateFormatter.formatShortDate(this)
 
 /** Epoch ms dari saat ini — dipakai sebagai default date untuk transaksi baru */
 private fun todayMillis(): Long = System.currentTimeMillis()
@@ -63,7 +61,7 @@ private fun todayMillis(): Long = System.currentTimeMillis()
 
 // Tetap expose getCurrentDateAsString() agar tidak break kode lain yang mungkin pakai
 fun getCurrentDateAsString(): String =
-    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    DateFormatter.formatNumericDate(System.currentTimeMillis())
 
 data class TransactionFormData(
     val merchant: String = "",

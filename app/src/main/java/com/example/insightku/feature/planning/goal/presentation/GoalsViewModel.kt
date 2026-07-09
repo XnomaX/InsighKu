@@ -3,13 +3,14 @@ package com.example.insightku.feature.planning.goal.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.repository.AccountAllocationRepository
 import com.example.insightku.core.data.repository.AccountRepository
+import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.model.GoalAccountEntity
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
-import com.example.insightku.feature.planning.goal.domain.model.AllocationSuggestion
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
 import com.example.insightku.feature.planning.goal.domain.model.DailyTarget
 import com.example.insightku.feature.planning.goal.domain.model.Goal
@@ -34,7 +35,8 @@ private data class CoreGoalsData(
 class GoalsViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
     private val accountRepository: AccountRepository,
-    private val accountAllocationRepository: AccountAllocationRepository
+    private val accountAllocationRepository: AccountAllocationRepository,
+    private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GoalsUiState.initial())
@@ -71,7 +73,6 @@ class GoalsViewModel @Inject constructor(
                 _uiState.update { current ->
                     state.copy(
                         selectedGoal = current.selectedGoal,
-                        pendingSuggestions = current.pendingSuggestions,
                         linkedAccounts = current.linkedAccounts,
                         dialogState = current.dialogState
                     )
@@ -87,6 +88,12 @@ class GoalsViewModel @Inject constructor(
                     }
                 }
                 _uiState.update { it.copy(linkedAccounts = linkedAccountsMap) }
+            }
+        }
+        viewModelScope.launch {
+            categoryRepository.getAllCategories().collect { categories ->
+                val expenseInfo = categories.filter { it.type == CategoryType.EXPENSE && !it.isSystemCategory }.map { CategoryInfo(id = it.id, name = it.name) }
+                _uiState.update { it.copy(expenseCategories = expenseInfo) }
             }
         }
     }
@@ -111,9 +118,6 @@ class GoalsViewModel @Inject constructor(
             is GoalsEvent.DeleteAutoAllocationRule -> deleteAutoAllocationRule(event.ruleId)
             is GoalsEvent.ToggleAutoAllocationRule -> toggleAutoAllocationRule(event.ruleId, event.enabled)
             is GoalsEvent.SetGoalAutoAllocate -> setGoalAutoAllocate(event.goalId, event.enabled)
-            is GoalsEvent.ConfirmSuggestion -> confirmSuggestion(event.suggestion)
-            is GoalsEvent.DismissSuggestion -> dismissSuggestion(event.suggestion)
-            is GoalsEvent.DismissAllSuggestions -> dismissAllSuggestions()
             is GoalsEvent.DismissDialog -> dismissDialog()
             is GoalsEvent.ShowAddGoalDialog -> showAddGoalDialog(event.prefillDeadline)
             is GoalsEvent.ShowEditGoalDialog -> showEditGoalDialog(event.goalId)
@@ -125,7 +129,6 @@ class GoalsViewModel @Inject constructor(
             is GoalsEvent.ShowSetDailyTargetDialog -> showSetDailyTargetDialog()
             is GoalsEvent.ShowAddAutoAllocationRuleDialog -> showAddAutoAllocationRuleDialog(event.goalId)
             is GoalsEvent.ShowEditAutoAllocationRuleDialog -> showEditAutoAllocationRuleDialog(event.rule)
-            is GoalsEvent.ShowPendingSuggestions -> showPendingSuggestions()
             is GoalsEvent.ShowGoalDetail -> showGoalDetail(event.goalId)
             is GoalsEvent.ClearError -> _uiState.update { it.copy(error = null) }
             is GoalsEvent.ClearSnackbar -> _uiState.update { it.copy(snackbarMessage = null) }
@@ -272,19 +275,6 @@ class GoalsViewModel @Inject constructor(
         viewModelScope.launch { goalRepository.setAutoAllocate(goalId, enabled) }
     }
 
-    private fun confirmSuggestion(suggestion: AllocationSuggestion) {
-        viewModelScope.launch {
-            goalRepository.contribute(goalId = suggestion.goalId, accountId = suggestion.sourceAccountId, amount = suggestion.amount, type = ContributionType.AUTO_ALLOCATION).onSuccess {
-                _uiState.update { state -> state.copy(pendingSuggestions = state.pendingSuggestions.filter { it.id != suggestion.id }, snackbarMessage = "$${"%.2f".format(suggestion.amount)} saved to ${suggestion.goalName}") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
-        }
-    }
-
-    private fun dismissSuggestion(suggestion: AllocationSuggestion) {
-        _uiState.update { state -> state.copy(pendingSuggestions = state.pendingSuggestions.filter { it.id != suggestion.id }) }
-    }
-
-    private fun dismissAllSuggestions() { _uiState.update { it.copy(pendingSuggestions = emptyList()) } }
     private fun dismissDialog() { _uiState.update { it.copy(dialogState = GoalsDialogState.None) } }
     private fun showAddGoalDialog(prefillDeadline: LocalDate?) { _uiState.update { it.copy(dialogState = GoalsDialogState.AddGoal(deadline = prefillDeadline)) } }
     private fun showEditGoalDialog(goalId: String) { val goal = _uiState.value.goals.find { it.id == goalId } ?: return; _uiState.update { it.copy(dialogState = GoalsDialogState.EditGoal(goal)) } }
@@ -296,7 +286,6 @@ class GoalsViewModel @Inject constructor(
     private fun showSetDailyTargetDialog() { val currentAmount = _uiState.value.dailyTarget.targetAmount; _uiState.update { it.copy(dialogState = GoalsDialogState.SetDailyTarget(if (currentAmount > 0) currentAmount.toString() else "")) } }
     private fun showAddAutoAllocationRuleDialog(goalId: String?) { _uiState.update { it.copy(dialogState = GoalsDialogState.AddAutoAllocationRule(goalId)) } }
     private fun showEditAutoAllocationRuleDialog(rule: AutoAllocationRule) { _uiState.update { it.copy(dialogState = GoalsDialogState.EditAutoAllocationRule(rule)) } }
-    private fun showPendingSuggestions() { _uiState.update { it.copy(dialogState = GoalsDialogState.PendingSuggestions) } }
     private fun showGoalDetail(goalId: String) {
         viewModelScope.launch {
             _uiState.update {

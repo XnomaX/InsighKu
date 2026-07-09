@@ -2,7 +2,6 @@ package com.example.insightku.feature.planning.goal.presentation
 
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
-import com.example.insightku.feature.planning.goal.domain.model.AllocationSuggestion
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import java.time.LocalDate
@@ -19,7 +18,6 @@ sealed class GoalsEvent {
     data object ShowSetDailyTargetDialog : GoalsEvent()
     data class ShowAddAutoAllocationRuleDialog(val goalId: String?) : GoalsEvent()
     data class ShowEditAutoAllocationRuleDialog(val rule: AutoAllocationRule) : GoalsEvent()
-    data object ShowPendingSuggestions : GoalsEvent()
     data class ShowGoalDetail(val goalId: String) : GoalsEvent()
     data object DismissDialog : GoalsEvent()
     data object ClearError : GoalsEvent()
@@ -59,9 +57,6 @@ sealed class GoalsEvent {
     data class DeleteAutoAllocationRule(val ruleId: String) : GoalsEvent()
     data class ToggleAutoAllocationRule(val ruleId: String, val enabled: Boolean) : GoalsEvent()
     data class SetGoalAutoAllocate(val goalId: String, val enabled: Boolean) : GoalsEvent()
-    data class ConfirmSuggestion(val suggestion: AllocationSuggestion) : GoalsEvent()
-    data class DismissSuggestion(val suggestion: AllocationSuggestion) : GoalsEvent()
-    data object DismissAllSuggestions : GoalsEvent()
     data class ShowAddBudgetDialog(val categoryType: CategoryType = CategoryType.EXPENSE) : GoalsEvent()
     data class SelectAccount(val accountId: String) : GoalsEvent()
 }

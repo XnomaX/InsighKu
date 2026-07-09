@@ -45,8 +45,7 @@ fun ReceiptScannerDialog(
             category = formData.category,
             amount = if (formData.isIncome) amount else -amount,
             description = formData.description,
-            date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                .format(java.util.Date(formData.dateMillis)),
+            date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date(formData.dateMillis)),
             isIncome = formData.isIncome
         )
         onTransactionConfirmed(transaction)
@@ -265,8 +264,7 @@ fun ScannedContent(
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                    .format(java.util.Date(formData.dateMillis)),
+                value = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(formData.dateMillis)),
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Date") },

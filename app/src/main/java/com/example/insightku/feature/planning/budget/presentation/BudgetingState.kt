@@ -19,6 +19,7 @@ data class BudgetingUiState(
     val installments: List<Installment> = emptyList(),
     val selectedPeriod: BudgetPeriod = BudgetPeriod.MONTHLY,
     val dialogState: DialogState = DialogState.None,
+    val hasActualCategories: Boolean = false,
     val rawCategories: List<Category> = emptyList(),
     val accounts: List<Account> = emptyList()
 ) {

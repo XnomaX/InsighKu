@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.repository.AccountRepository
+import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
@@ -24,6 +26,7 @@ private const val CONTRIBUTION_PAGE_SIZE = 20
 class GoalDetailViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
     private val accountRepository: AccountRepository,
+    private val categoryRepository: CategoryRepository,
     private val autoAllocationRuleDao: AutoAllocationRuleDao,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -77,6 +80,7 @@ class GoalDetailViewModel @Inject constructor(
                 val accountMap = accounts.associateBy { it.id }
                 launch { goalRepository.hasUnsyncedGoalsFlow().collect { hasUnsynced -> _uiState.update { it.copy(hasUnsyncedChanges = hasUnsynced) } } }
                 launch { autoAllocationRuleDao.getRulesByGoal(goalId).collect { entities -> val rules = entities.map { AutoAllocationRule.fromEntity(it) }; _uiState.update { it.copy(allocationRules = rules) } } }
+                launch { categoryRepository.getAllCategories().collect { categories -> val expenseInfo = categories.filter { it.type == CategoryType.EXPENSE && !it.isSystemCategory }.map { CategoryInfo(id = it.id, name = it.name) }; _uiState.update { it.copy(expenseCategories = expenseInfo) } } }
                 goalRepository.getGoalByIdFlow(goalId).combine(goalRepository.getContributionsByGoal(goalId)) { goal, contributions -> Pair(goal, contributions) }.combine(goalRepository.getLinkedAccounts(goalId)) { (goal, contributions), linkedAccounts -> Triple(goal, contributions, linkedAccounts) }.collect { (goal, contributions, linkedAccountEntities) ->
                     currentGoal = goal
                     if (goal == null) { _uiState.update { it.copy(isLoading = false, error = "Goal not found") }; return@collect }

@@ -50,7 +50,9 @@ data class DashboardUiState(
     val hasActiveBudgets: Boolean = false,
     // ── Account Balances ──────────────────────────────────────────────────────
     val totalAccountBalance: Double = 0.0,
-    val accountCount: Int = 0
+    val accountCount: Int = 0,
+    // ── Snackbar ──────────────────────────────────────────────────────────────
+    val snackbarMessage: String? = null
 ) {
     // Visual-only streak: shows 0 (dormant) until user logs a transaction today.
     // The real currentStreak is preserved — this never touches streak history.

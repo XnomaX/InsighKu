@@ -7,7 +7,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.PropertyName
-import java.text.SimpleDateFormat
+import com.example.insightku.core.i18n.DateFormatter
 import java.util.*
 
 /**
@@ -57,7 +57,7 @@ data class Transaction(
     val type: TransactionType = TransactionType.EXPENSE,
     val description: String? = null,
     val receiptPath: String? = null,
-    val time: String = SimpleDateFormat("h:mm a", Locale.ENGLISH).format(Date()),
+    val time: String = DateFormatter.formatTime12h(System.currentTimeMillis(), Locale.ENGLISH),
     val location: String? = null,
     /**
      * ID of the Account this transaction belongs to.

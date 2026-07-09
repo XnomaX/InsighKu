@@ -25,6 +25,7 @@ fun GoalDetailScreen(
     goalId: String,
     onBack: () -> Unit,
     onNavigateToEditGoal: (String) -> Unit,
+    onNavigateToAccounts: () -> Unit,
     onGoalArchived: () -> Unit,
     onGoalDeleted: () -> Unit,
     modifier: Modifier = Modifier,
@@ -50,7 +51,7 @@ fun GoalDetailScreen(
             if (uiState.showDeleteConfirmDialog) { GoalDeleteConfirmDialog(goalName = uiState.goal?.name ?: "", onConfirm = { viewModel.onEvent(GoalDetailEvent.ConfirmDelete) }, onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) }) }
             if (uiState.showArchiveConfirmDialog) { GoalArchiveConfirmDialog(goalName = uiState.goal?.name ?: "", onConfirm = { viewModel.onEvent(GoalDetailEvent.ConfirmArchive) }, onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) }) }
             if (uiState.showDeleteAutoAllocationRuleConfirm) { GoalDeleteAutoAllocationRuleConfirmDialog(onConfirm = { viewModel.onEvent(GoalDetailEvent.ConfirmDeleteAutoAllocationRule) }, onDismiss = { viewModel.onEvent(GoalDetailEvent.CancelDeleteAutoAllocationRule) }) }
-            if (uiState.showAutoAllocationDialog) { AutoAllocationDialog(rule = uiState.editingAutoAllocationRule, goal = uiState.goal, accounts = uiState.linkedAccounts, onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) }, onSave = { rule -> if (uiState.editingAutoAllocationRule != null) viewModel.onEvent(GoalDetailEvent.UpdateAutoAllocationRule(rule)) else viewModel.onEvent(GoalDetailEvent.AddAutoAllocationRule(rule)) }, onDelete = uiState.editingAutoAllocationRule?.let { rule -> { viewModel.onEvent(GoalDetailEvent.ShowDeleteAutoAllocationConfirm(rule.id)) } }) }
+            if (uiState.showAutoAllocationDialog) { AutoAllocationDialog(rule = uiState.editingAutoAllocationRule, goal = uiState.goal, accounts = uiState.accountMap.values.toList(), expenseCategories = uiState.expenseCategories, onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) }, onSave = { rule -> if (uiState.editingAutoAllocationRule != null) viewModel.onEvent(GoalDetailEvent.UpdateAutoAllocationRule(rule)) else viewModel.onEvent(GoalDetailEvent.AddAutoAllocationRule(rule)) }, onDelete = uiState.editingAutoAllocationRule?.let { rule -> { viewModel.onEvent(GoalDetailEvent.ShowDeleteAutoAllocationConfirm(rule.id)) } }, onNavigateToAccounts = onNavigateToAccounts) }
         }
     }
 }

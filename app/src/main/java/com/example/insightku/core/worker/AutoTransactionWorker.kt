@@ -14,6 +14,7 @@ import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.core.data.repository.InstallmentRepository
 import com.example.insightku.feature.auth.data.AuthRepository
+import com.example.insightku.core.i18n.DateFormatter
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -35,7 +36,7 @@ class AutoTransactionWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val now = System.currentTimeMillis()
         Log.d(TAG, "Worker started")
-        Log.d(TAG, "Current date = ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(now))}")
+        Log.d(TAG, "Current date = ${DateFormatter.formatDateTimeFull(now)}")
 
         val userId = authRepository.getCurrentUserId()
         if (userId == null) {
@@ -188,7 +189,7 @@ class AutoTransactionWorker @AssistedInject constructor(
 
     private fun alreadyProcessedToday(lastProcessed: Long?, now: Long): Boolean {
         if (lastProcessed == null) return false
-        val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
+        val fmt = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
         return fmt.format(java.util.Date(lastProcessed)) == fmt.format(java.util.Date(now))
     }
 

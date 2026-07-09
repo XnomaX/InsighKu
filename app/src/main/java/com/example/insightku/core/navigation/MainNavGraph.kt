@@ -9,7 +9,8 @@ import com.example.insightku.core.ui.components.MainScreen
 
 fun NavGraphBuilder.mainNavGraph(
     navController: NavHostController,
-    notificationData: NotificationTransactionData? = null
+    notificationData: NotificationTransactionData? = null,
+    allocationDraftId: String? = null
 ) {
     navigation(
         route            = Route.MAIN_GRAPH,
@@ -18,7 +19,8 @@ fun NavGraphBuilder.mainNavGraph(
         composable(Route.MAIN_SCREEN) {
             MainScreen(
                 rootNavController = navController,
-                notificationData  = notificationData
+                notificationData  = notificationData,
+                allocationDraftId = allocationDraftId
             )
         }
     }

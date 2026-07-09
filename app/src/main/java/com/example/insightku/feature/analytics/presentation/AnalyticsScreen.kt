@@ -11,11 +11,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
-import com.example.insightku.core.ui.theme.formatCurrency
+import com.example.insightku.core.i18n.AnalyticsStrings
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.utils.CategoryUtils
 import com.example.insightku.feature.analytics.domain.*
 import com.example.insightku.feature.analytics.presentation.components.*
@@ -63,14 +68,14 @@ fun AnalyticsScreen(
                     isLoading -> AnalyticsSkeleton()
                     uiState.error != null -> AnalyticsEmptyState(
                         emoji = "⚠️",
-                        title = "Something went wrong",
-                        subtitle = uiState.error ?: "Unknown error"
+                        title = stringResource(R.string.analytics_error_title),
+                        subtitle = uiState.error ?: stringResource(R.string.analytics_unknown_error)
                     )
-                    uiState.insights == null || uiState.insights?.heroInsight?.headline?.contains("Start logging") == true -> {
+                    uiState.insights == null || uiState.insights?.heroInsight?.headline?.contains(AnalyticsStrings.heroWeekStartLogging()) == true -> {
                         AnalyticsEmptyState(
                             emoji = "📊",
-                            title = "Your financial story awaits",
-                            subtitle = "Complete a few transactions to unlock insights about your spending habits"
+                            title = stringResource(R.string.analytics_empty_title),
+                            subtitle = stringResource(R.string.analytics_empty_subtitle)
                         )
                     }
                     else -> {
@@ -107,17 +112,14 @@ private fun WeeklyContent(insights: AnalyticsInsights) {
             item {
                 NarrativeCard(
                     emoji = if (wc.deltaPercent < 0) "📉" else "📈",
-                    title = "Week vs Last Week",
-                    body = if (wc.lastWeekTotal > 0) {
-                        val change = kotlin.math.abs(wc.deltaPercent).toInt()
-                        if (wc.deltaPercent < 0) {
-                            "You spent $change% less than last week (${formatCurrency(wc.thisWeekTotal)} vs ${formatCurrency(wc.lastWeekTotal)})"
-                        } else {
-                            "You spent $change% more than last week (${formatCurrency(wc.thisWeekTotal)} vs ${formatCurrency(wc.lastWeekTotal)})"
-                        }
-                    } else {
-                        "First week of tracking — ${formatCurrency(wc.thisWeekTotal)} total spent"
-                    }
+                    title = stringResource(R.string.analytics_week_vs_last),
+                    body = AnalyticsStrings.weekComparisonBody(
+                        deltaPercent = wc.deltaPercent,
+                        thisWeekTotal = NumberFormatter.formatCurrency(wc.thisWeekTotal),
+                        lastWeekTotal = NumberFormatter.formatCurrency(wc.lastWeekTotal),
+                        firstWeek = wc.lastWeekTotal <= 0,
+                        thisWeekAmount = NumberFormatter.formatCurrency(wc.thisWeekTotal)
+                    )
                 )
             }
         }
@@ -125,10 +127,11 @@ private fun WeeklyContent(insights: AnalyticsInsights) {
         // Daily Spending Bar Chart
         if (insights.dailySummaries.isNotEmpty()) {
             item {
-                AnalyticsSectionHeader(title = "This Week's Spending")
+                AnalyticsSectionHeader(title = stringResource(R.string.analytics_week_this_spending))
             }
             item {
-                DailyBarChart(summaries = insights.dailySummaries)
+                val dailyChartDesc = stringResource(R.string.analytics_chart_daily_accessibility)
+                DailyBarChart(summaries = insights.dailySummaries, modifier = Modifier.semantics { contentDescription = dailyChartDesc })
             }
         }
 
@@ -137,8 +140,14 @@ private fun WeeklyContent(insights: AnalyticsInsights) {
             item {
                 NarrativeCard(
                     emoji = "🎯",
-                    title = "Your Weekly Rhythm",
-                    body = "${habit.loudestDay}s are your biggest spending days at ${formatCurrency(habit.loudestAmount)}, while ${habit.quietestDay}s stay quiet at ${formatCurrency(habit.quietestAmount)}. Average daily spend: ${formatCurrency(habit.avgDailySpend)}."
+                    title = stringResource(R.string.analytics_weekly_rhythm),
+                    body = AnalyticsStrings.weeklyHabitBody(
+                        loudestDay = habit.loudestDay,
+                        loudestAmount = NumberFormatter.formatCurrency(habit.loudestAmount),
+                        quietestDay = habit.quietestDay,
+                        quietestAmount = NumberFormatter.formatCurrency(habit.quietestAmount),
+                        avgDailySpend = NumberFormatter.formatCurrency(habit.avgDailySpend)
+                    )
                 )
             }
         }
@@ -146,11 +155,11 @@ private fun WeeklyContent(insights: AnalyticsInsights) {
         // Category Breakdown
         if (insights.categorySlices.isNotEmpty()) {
             item {
-                AnalyticsSectionHeader(title = "Top Categories")
+                AnalyticsSectionHeader(title = stringResource(R.string.analytics_top_categories))
             }
             items(insights.categorySlices) { slice ->
                 CategoryBar(
-                    name = slice.name.ifBlank { "Uncategorized" },
+                    name = slice.name.ifBlank { stringResource(R.string.analytics_uncategorized) },
                     percentage = slice.proportion,
                     amount = "${(slice.proportion * 100).toInt()}%",
                     color = CategoryUtils.getColorForCategoryName(slice.name)
@@ -161,7 +170,7 @@ private fun WeeklyContent(insights: AnalyticsInsights) {
         // Patterns
         if (insights.patterns.isNotEmpty()) {
             item {
-                AnalyticsSectionHeader(title = "What We Noticed")
+                AnalyticsSectionHeader(title = stringResource(R.string.analytics_what_we_noticed))
             }
             items(insights.patterns) { pattern ->
                 InsightChip(emoji = pattern.emoji, text = pattern.description)
@@ -171,13 +180,13 @@ private fun WeeklyContent(insights: AnalyticsInsights) {
         // Big Decisions
         if (insights.bigDecisions.isNotEmpty()) {
             item {
-                AnalyticsSectionHeader(title = "Biggest Transactions")
+                AnalyticsSectionHeader(title = stringResource(R.string.analytics_biggest_transactions))
             }
             items(insights.bigDecisions) { decision ->
                 NarrativeCard(
                     emoji = "💰",
                     title = decision.transaction.title.ifBlank { decision.transaction.category },
-                    body = "${formatCurrency(decision.transaction.amount)} — ${decision.percentOfMonthlySpend.toInt()}% of total spending"
+                    body = stringResource(R.string.analytics_pct_of_total, NumberFormatter.formatCurrency(decision.transaction.amount), decision.percentOfMonthlySpend.toInt())
                 )
             }
         }
@@ -208,15 +217,14 @@ private fun MonthlyContent(insights: AnalyticsInsights) {
             item {
                 NarrativeCard(
                     emoji = if (health.balance.isPositive) "✅" else "⚠️",
-                    title = "Income vs Expenses",
-                    body = buildString {
-                        append("Earned ${formatCurrency(health.balance.totalIncome)}, spent ${formatCurrency(health.balance.totalExpenses)}. ")
-                        if (health.balance.isPositive) {
-                            append("You saved ${formatCurrency(health.balance.savingsAmount)} (${(health.balance.savingsRate * 100).toInt()}% savings rate).")
-                        } else {
-                            append("You spent ${formatCurrency(kotlin.math.abs(health.balance.savingsAmount))} more than you earned.")
-                        }
-                    }
+                    title = stringResource(R.string.analytics_income_vs_expenses),
+                    body = AnalyticsStrings.cashflowBody(
+                        earned = NumberFormatter.formatCurrency(health.balance.totalIncome),
+                        spent = NumberFormatter.formatCurrency(health.balance.totalExpenses),
+                        isPositive = health.balance.isPositive,
+                        savingsAmount = NumberFormatter.formatCurrency(kotlin.math.abs(health.balance.savingsAmount)),
+                        savingsRate = (health.balance.savingsRate * 100).toInt()
+                    )
                 )
             }
 
@@ -228,13 +236,13 @@ private fun MonthlyContent(insights: AnalyticsInsights) {
             // Category Ranking
             if (health.topCategories.isNotEmpty()) {
                 item {
-                    AnalyticsSectionHeader(title = "Where Your Money Went")
+                    AnalyticsSectionHeader(title = stringResource(R.string.analytics_where_money_went))
                 }
                 items(health.topCategories) { cat ->
                     CategoryBar(
-                        name = cat.name.ifBlank { "Uncategorized" },
+                        name = cat.name.ifBlank { stringResource(R.string.analytics_uncategorized) },
                         percentage = cat.percentage.toFloat(),
-                        amount = formatCurrency(cat.amount),
+                        amount = NumberFormatter.formatCurrency(cat.amount),
                         color = CategoryUtils.getColorForCategoryName(cat.name)
                     )
                 }
@@ -243,10 +251,11 @@ private fun MonthlyContent(insights: AnalyticsInsights) {
             // Trend
             if (health.trend.isNotEmpty()) {
                 item {
-                    AnalyticsSectionHeader(title = "6-Month Trend")
+                    AnalyticsSectionHeader(title = stringResource(R.string.analytics_6month_trend))
                 }
                 item {
-                    MiniTrendChart(points = health.trend)
+                    val trendChartDesc = stringResource(R.string.analytics_chart_trend_accessibility)
+                    MiniTrendChart(points = health.trend, modifier = Modifier.semantics { contentDescription = trendChartDesc })
                 }
             }
 
@@ -255,9 +264,34 @@ private fun MonthlyContent(insights: AnalyticsInsights) {
                 item {
                     NarrativeCard(
                         emoji = "🔄",
-                        title = "Recurring Payments",
-                        body = "About ${formatCurrency(health.recurringTotal)} of your spending appears to be recurring (subscriptions, bills, regular purchases)."
+                    title = stringResource(R.string.analytics_recurring_payments),
+                    body = stringResource(R.string.analytics_recurring_body, NumberFormatter.formatCurrency(health.recurringTotal))
                     )
+                }
+            }
+
+            // Trend Narrative
+            if (health.trend.size >= 2) {
+                val currentMonthExpenses = health.trend.last().expense
+                val prevMonthExpenses = health.trend[health.trend.size - 2].expense
+                if (prevMonthExpenses > 0) {
+                    val delta = ((currentMonthExpenses - prevMonthExpenses) / prevMonthExpenses * 100).toInt()
+                    item {
+                        val trendText = when {
+                            delta < -5 -> stringResource(R.string.analytics_trend_decreased, kotlin.math.abs(delta))
+                            delta > 5 -> stringResource(R.string.analytics_trend_increased, delta)
+                            else -> stringResource(R.string.analytics_trend_stable)
+                        }
+                        NarrativeCard(
+                            emoji = when {
+                                delta < -5 -> "📉"
+                                delta > 5 -> "📈"
+                                else -> "➡️"
+                            },
+                            title = stringResource(R.string.analytics_month_over_month),
+                            body = trendText
+                        )
+                    }
                 }
             }
         }
@@ -271,7 +305,7 @@ private fun MonthlyContent(insights: AnalyticsInsights) {
                         SpendingMood.STEADY -> "🌊"
                         SpendingMood.RESTLESS -> "🌧️"
                     },
-                    title = "Spending Mood",
+                    title = stringResource(R.string.analytics_spending_mood),
                     body = mood.summaryLine.ifBlank { mood.headline }
                 )
             }
@@ -280,7 +314,7 @@ private fun MonthlyContent(insights: AnalyticsInsights) {
         // Patterns
         if (insights.patterns.isNotEmpty()) {
             item {
-                AnalyticsSectionHeader(title = "Patterns We Found")
+                AnalyticsSectionHeader(title = stringResource(R.string.analytics_patterns_found))
             }
             items(insights.patterns) { pattern ->
                 InsightChip(emoji = pattern.emoji, text = pattern.description)
@@ -290,13 +324,13 @@ private fun MonthlyContent(insights: AnalyticsInsights) {
         // Big Decisions
         if (insights.bigDecisions.isNotEmpty()) {
             item {
-                AnalyticsSectionHeader(title = "Notable Transactions")
+                AnalyticsSectionHeader(title = stringResource(R.string.analytics_notable_transactions))
             }
             items(insights.bigDecisions) { decision ->
                 NarrativeCard(
                     emoji = "💡",
                     title = decision.transaction.title.ifBlank { decision.transaction.category },
-                    body = "${formatCurrency(decision.transaction.amount)} — ${decision.percentOfMonthlySpend.toInt()}% of this month's spending"
+                    body = stringResource(R.string.analytics_pct_of_month, NumberFormatter.formatCurrency(decision.transaction.amount), decision.percentOfMonthlySpend.toInt())
                 )
             }
         }
@@ -327,8 +361,8 @@ private fun AnnualContent(insights: AnalyticsInsights) {
             item {
                 NarrativeCard(
                     emoji = "📊",
-                    title = "Your Financial Year",
-                    body = "Total income: ${formatCurrency(growth.totalIncome)}. Total expenses: ${formatCurrency(growth.totalExpenses)}. Average monthly spending: ${formatCurrency(growth.avgMonthlyExpense)}."
+                    title = stringResource(R.string.analytics_your_financial_year),
+                    body = stringResource(R.string.analytics_year_totals, NumberFormatter.formatCurrency(growth.totalIncome), NumberFormatter.formatCurrency(growth.totalExpenses), NumberFormatter.formatCurrency(growth.avgMonthlyExpense))
                 )
             }
 
@@ -336,11 +370,11 @@ private fun AnnualContent(insights: AnalyticsInsights) {
             item {
                 NarrativeCard(
                     emoji = if (growth.savingsRate > 0.15) "🎉" else "💡",
-                    title = "Savings Rate",
+                    title = stringResource(R.string.analytics_savings_rate),
                     body = if (growth.savingsRate > 0) {
-                        "You saved ${(growth.savingsRate * 100).toInt()}% of your total income this year — ${formatCurrency(growth.totalSaved)} saved."
+                        stringResource(R.string.analytics_saved_pct_income, (growth.savingsRate * 100).toInt(), NumberFormatter.formatCurrency(growth.totalSaved))
                     } else {
-                        "No savings recorded yet. Track income to see your savings rate."
+                        stringResource(R.string.analytics_no_savings_yet)
                     }
                 )
             }
@@ -348,10 +382,11 @@ private fun AnnualContent(insights: AnalyticsInsights) {
             // Monthly Trend
             if (growth.monthlyPoints.isNotEmpty()) {
                 item {
-                    AnalyticsSectionHeader(title = "Monthly Journey")
+                    AnalyticsSectionHeader(title = stringResource(R.string.analytics_monthly_journey))
                 }
                 item {
-                    AnnualBarChart(points = growth.monthlyPoints)
+                    val annualChartDesc = stringResource(R.string.analytics_chart_annual_accessibility)
+                    AnnualBarChart(points = growth.monthlyPoints, modifier = Modifier.semantics { contentDescription = annualChartDesc })
                 }
             }
 
@@ -361,18 +396,17 @@ private fun AnnualContent(insights: AnalyticsInsights) {
                     item {
                         NarrativeCard(
                             emoji = "⭐",
-                            title = "Best Month: ${best.monthLabel}",
-                            body = "You saved ${formatCurrency(best.savings)} in ${best.monthLabel} — your strongest financial month."
+                            title = stringResource(R.string.analytics_best_month, best.monthLabel),
+                            body = stringResource(R.string.analytics_best_month_body, NumberFormatter.formatCurrency(best.savings), best.monthLabel)
                         )
                     }
                 }
             }
             growth.worstMonth?.let { worst ->
-                item {
-                    NarrativeCard(
-                        emoji = "💪",
-                        title = "Toughest Month: ${worst.monthLabel}",
-                        body = "You overspent by ${formatCurrency(kotlin.math.abs(worst.savings))} in ${worst.monthLabel}. Every month is a new opportunity."
+                item {                        NarrativeCard(
+                            emoji = "💪",
+                            title = stringResource(R.string.analytics_toughest_month, worst.monthLabel),
+                            body = stringResource(R.string.analytics_toughest_month_body, NumberFormatter.formatCurrency(kotlin.math.abs(worst.savings)), worst.monthLabel)
                     )
                 }
             }
@@ -383,11 +417,11 @@ private fun AnnualContent(insights: AnalyticsInsights) {
                     item {
                         NarrativeCard(
                             emoji = if (yc.deltaPercent < 0) "🏆" else "📈",
-                            title = "Year vs Last Year",
+                            title = stringResource(R.string.analytics_year_vs_last),
                             body = if (yc.deltaPercent < 0) {
-                                "Expenses dropped ${kotlin.math.abs(yc.deltaPercent).toInt()}% from last year. Great progress!"
+                                stringResource(R.string.analytics_expenses_dropped, kotlin.math.abs(yc.deltaPercent).toInt())
                             } else {
-                                "Expenses rose ${yc.deltaPercent.toInt()}% from last year. Review your spending patterns."
+                                stringResource(R.string.analytics_expenses_rose, yc.deltaPercent.toInt())
                             }
                         )
                     }
@@ -397,13 +431,13 @@ private fun AnnualContent(insights: AnalyticsInsights) {
             // Category Evolution
             if (growth.categoryEvolution.isNotEmpty()) {
                 item {
-                    AnalyticsSectionHeader(title = "Top Categories This Year")
+                    AnalyticsSectionHeader(title = stringResource(R.string.analytics_top_categories_year))
                 }
                 items(growth.categoryEvolution) { (name, amount) ->
                     NarrativeCard(
                         emoji = "📂",
-                        title = name.ifBlank { "Uncategorized" },
-                        body = formatCurrency(amount)
+                        title = name.ifBlank { stringResource(R.string.analytics_uncategorized) },
+                        body = NumberFormatter.formatCurrency(amount)
                     )
                 }
             }
@@ -413,7 +447,7 @@ private fun AnnualContent(insights: AnalyticsInsights) {
         item {
             NarrativeCard(
                 emoji = insights.personality.emoji,
-                title = "Your Money Personality",
+                title = stringResource(R.string.analytics_money_personality),
                 body = insights.personality.headline
             )
         }
@@ -425,11 +459,11 @@ private fun AnnualContent(insights: AnalyticsInsights) {
 // ─── Daily Bar Chart ──────────────────────────────────────────────────────────
 
 @Composable
-private fun DailyBarChart(summaries: List<DaySummary>) {
+private fun DailyBarChart(summaries: List<DaySummary>, modifier: Modifier = Modifier) {
     val maxAmount = summaries.maxOfOrNull { it.totalSpent }?.coerceAtLeast(1.0) ?: 1.0
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
         border = CardDefaults.outlinedCardBorder().copy(
@@ -456,7 +490,7 @@ private fun DailyBarChart(summaries: List<DaySummary>) {
                     // Amount label
                     if (day.totalSpent > 0) {
                         Text(
-                            text = "${(day.totalSpent / 1000).toInt()}K",
+                            text = NumberFormatter.formatCompact(day.totalSpent),
                             style = MaterialTheme.typography.labelSmall,
                             color = AppPalette.textMuted
                         )
@@ -512,8 +546,7 @@ private fun HealthScoreCard(score: Int) {
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Financial Health",
+            Text(                    text = stringResource(R.string.analytics_financial_health),
                 style = MaterialTheme.typography.titleSmall,
                 color = AppPalette.textMuted
             )
@@ -528,10 +561,10 @@ private fun HealthScoreCard(score: Int) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = when {
-                    score >= 80 -> "Excellent"
-                    score >= 60 -> "Good"
-                    score >= 40 -> "Fair"
-                    else -> "Needs Attention"
+                    score >= 80 -> stringResource(R.string.analytics_health_excellent)
+                    score >= 60 -> stringResource(R.string.analytics_health_good)
+                    score >= 40 -> stringResource(R.string.analytics_health_fair)
+                    else -> stringResource(R.string.analytics_health_needs_attention)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppPalette.textMuted
@@ -543,11 +576,11 @@ private fun HealthScoreCard(score: Int) {
 // ─── Mini Trend Chart ─────────────────────────────────────────────────────────
 
 @Composable
-private fun MiniTrendChart(points: List<TrendPoint>) {
+private fun MiniTrendChart(points: List<TrendPoint>, modifier: Modifier = Modifier) {
     val maxVal = points.maxOfOrNull { maxOf(it.income, it.expense) }?.coerceAtLeast(1.0) ?: 1.0
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
         border = CardDefaults.outlinedCardBorder().copy(
@@ -560,8 +593,8 @@ private fun MiniTrendChart(points: List<TrendPoint>) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                InsightChip(emoji = "💚", text = "Income")
-                InsightChip(emoji = "🔴", text = "Expenses")
+                InsightChip(emoji = "💚", text = stringResource(R.string.analytics_income_label))
+                InsightChip(emoji = "🔴", text = stringResource(R.string.analytics_expenses_label))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -616,11 +649,11 @@ private fun MiniTrendChart(points: List<TrendPoint>) {
 // ─── Annual Bar Chart ─────────────────────────────────────────────────────────
 
 @Composable
-private fun AnnualBarChart(points: List<com.example.insightku.feature.analytics.domain.AnnualMonthPoint>) {
+private fun AnnualBarChart(points: List<com.example.insightku.feature.analytics.domain.AnnualMonthPoint>, modifier: Modifier = Modifier) {
     val maxVal = points.maxOfOrNull { maxOf(it.income, it.expense) }?.coerceAtLeast(1.0) ?: 1.0
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
         border = CardDefaults.outlinedCardBorder().copy(
@@ -633,8 +666,8 @@ private fun AnnualBarChart(points: List<com.example.insightku.feature.analytics.
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                InsightChip(emoji = "💚", text = "Income")
-                InsightChip(emoji = "🔴", text = "Expenses")
+                InsightChip(emoji = "💚", text = stringResource(R.string.analytics_income_label))
+                InsightChip(emoji = "🔴", text = stringResource(R.string.analytics_expenses_label))
             }
 
             Spacer(modifier = Modifier.height(12.dp))

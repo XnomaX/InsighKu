@@ -11,8 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.example.insightku.core.ui.components.dialogs.PremiumSuccessOverlay
 import com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog
 import com.example.insightku.core.ui.components.dialogs.PremiumArchiveConfirmDialog
-import java.text.NumberFormat
-import java.util.Locale
+import com.example.insightku.core.i18n.NumberFormatter
 
 @Composable
 internal fun SectionHeader(title: String, subtitle: String) {
@@ -51,5 +50,5 @@ internal fun GoalDeleteAutoAllocationRuleConfirmDialog(onConfirm: () -> Unit, on
 }
 
 internal fun formatCurrencyFull(amount: Double): String {
-    return "Rp ${NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount.toLong())}"
+    return NumberFormatter.formatCurrency(amount)
 }

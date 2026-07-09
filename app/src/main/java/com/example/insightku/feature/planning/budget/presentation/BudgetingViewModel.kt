@@ -192,28 +192,26 @@ class BudgetingViewModel @Inject constructor(
                 }.collect { snapshot ->
                     cachedRecurringBudgets = snapshot.recurringBudgets
 
-                    val allEmpty = snapshot.budgetCategories.isEmpty() && snapshot.incomeCategories.isEmpty()
-                    if (allEmpty && isRefreshComplete) {
-                        val alreadySeeded = sessionManager.getHasSeededCategories()
-                        if (!alreadySeeded) {
-                            sessionManager.setHasSeededCategories(true)
-                            seedDefaultCategories(userId)
-                        }
-                    }
+                    // ── Count only repository-backed categories (exclude transaction-only rows)
+                    //    so that Empty State is shown when the user has no actual budget categories.
+                    val hasRealExpenseCategories = snapshot.budgetCategories.any { !it.id.startsWith("transaction-only-") }
+                    val hasRealIncomeCategories  = snapshot.incomeCategories.isNotEmpty()
+                    val hasActualCategories      = hasRealExpenseCategories || hasRealIncomeCategories
 
                     val totalBudget = snapshot.budgetCategories.filter { it.hasLimit }.sumOf { it.limitAmount }
                     val totalSpent  = snapshot.budgetCategories.sumOf { it.spentAmount }
                     _uiState.update {
                         it.copy(
-                            isLoading        = false,
-                            totalBudget      = totalBudget,
-                            totalSpent       = totalSpent,
-                            budgetCategories = snapshot.budgetCategories,
-                            incomeCategories = snapshot.incomeCategories,
-                            recurringBudgets = snapshot.recurringBudgets,
-                            installments     = snapshot.installments,
-                            rawCategories    = snapshot.rawCategories,
-                            accounts        = snapshot.accounts
+                            isLoading           = false,
+                            totalBudget         = totalBudget,
+                            totalSpent          = totalSpent,
+                            budgetCategories    = snapshot.budgetCategories,
+                            incomeCategories    = snapshot.incomeCategories,
+                            hasActualCategories = hasActualCategories,
+                            recurringBudgets    = snapshot.recurringBudgets,
+                            installments        = snapshot.installments,
+                            rawCategories       = snapshot.rawCategories,
+                            accounts            = snapshot.accounts
                         )
                     }
                 }
@@ -231,9 +229,20 @@ class BudgetingViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
+                val alreadySeeded = sessionManager.getHasSeededCategories()
                 val hasLocalCategories = categoryRepository.hasAnyCategories()
-                if (!hasLocalCategories) {
+
+                if (!hasLocalCategories && !alreadySeeded) {
+                    // Fresh install: fetch remote categories, then seed defaults if still empty
                     categoryRepository.refreshCategories(userId)
+                    val stillEmpty = !categoryRepository.hasAnyCategories()
+                    if (stillEmpty) {
+                        sessionManager.setHasSeededCategories(true)
+                        seedDefaultCategories(userId)
+                    } else {
+                        // Remote categories exist — mark as seeded so we never re-seed
+                        sessionManager.setHasSeededCategories(true)
+                    }
                 }
                 transactionRepository.refreshTransactions(userId)
                 recurringBudgetRepository.refreshRecurringBudgets(userId)

@@ -1007,6 +1007,5 @@ private fun AllocationBreakdownSection(
 // ── Date Formatter ──────────────────────────────────────────────────────────────
 
 private fun formatDate(timestamp: Long): String {
-    val sdf = java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault())
-    return sdf.format(java.util.Date(timestamp))
+    return com.example.insightku.core.i18n.DateFormatter.formatShortDate(timestamp)
 }

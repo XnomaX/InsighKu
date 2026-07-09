@@ -7,11 +7,11 @@ import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
+import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
@@ -59,11 +59,9 @@ internal fun categoryStatusText(category: BudgetCategory): String {
 internal fun formatCurrencyPlain(amount: Double): String {
     val absAmount = abs(amount)
     val sign = if (amount < 0) "-" else ""
-    return when {
-        absAmount >= 1_000_000 -> "${sign}Rp${String.format(Locale.getDefault(), "%.1f", absAmount / 1_000_000)}M"
-        absAmount >= 1_000 -> "${sign}Rp${String.format(Locale.getDefault(), "%.0f", absAmount / 1_000)}K"
-        else -> "${sign}Rp${absAmount.toInt()}"
-    }
+    val formatted = if (absAmount >= 1_000) NumberFormatter.formatCurrencyCompact(absAmount)
+        else "${NumberFormatter.getCurrencySymbol()}${absAmount.toInt()}"
+    return "$sign$formatted"
 }
 
 // ─── Category Helpers ─────────────────────────────────────────────────────────
@@ -76,7 +74,7 @@ internal fun categoryIcon(category: BudgetCategory): ImageVector =
     CategoryIconResolver.resolveIcon(category.icon.ifBlank { category.name })
 
 internal fun currentMonthLabel(): String {
-    return SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date())
+    return DateFormatter.formatMonthYear(System.currentTimeMillis())
 }
 
 // ─── Percentage Formatting ────────────────────────────────────────────────────

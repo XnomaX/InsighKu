@@ -31,11 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.core.utils.CurrencyUtils
+import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.feature.home.presentation.PremiumFlameIcon
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun DashboardHeader(
@@ -59,7 +57,7 @@ fun DashboardHeader(
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
-            text = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date()),
+            text = DateFormatter.formatMonthYear(System.currentTimeMillis()),
             style = MaterialTheme.typography.labelSmall,
             color = AppPalette.textMuted,
             letterSpacing = 0.5.sp

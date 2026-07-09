@@ -20,6 +20,11 @@ sealed class DashboardEvent {
     data class DismissDraft(val draftId: String) : DashboardEvent()
     data class UndoDismissDraft(val draftId: String) : DashboardEvent()
     data class CommitDismissDraft(val draftId: String) : DashboardEvent()
+
+    // Auto-allocation draft approval/rejection
+    data class ApproveAllocationDraft(val draftId: String) : DashboardEvent()
+    data class RejectAllocationDraft(val draftId: String) : DashboardEvent()
+    object ClearSnackbar : DashboardEvent()
 }
 
 

@@ -19,6 +19,7 @@ import com.example.insightku.feature.home.domain.BuildInsightMessagesUseCase
 import com.example.insightku.feature.home.domain.CalculateStreakUseCase
 import com.example.insightku.feature.home.domain.GetTransactionsUseCase
 import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.core.datastore.SessionManager
 import com.example.insightku.core.utils.TimeUtils
@@ -106,6 +107,9 @@ class DashboardViewModel @Inject constructor(
             is DashboardEvent.CommitDismissDraft -> viewModelScope.launch {
                 draftRepository.purgeDismissed(event.draftId)
             }
+            is DashboardEvent.ApproveAllocationDraft -> approveAllocationDraft(event.draftId)
+            is DashboardEvent.RejectAllocationDraft -> rejectAllocationDraft(event.draftId)
+            DashboardEvent.ClearSnackbar -> _uiState.update { it.copy(snackbarMessage = null) }
         }
     }
 
@@ -309,6 +313,76 @@ class DashboardViewModel @Inject constructor(
                 val msg = e.message ?: "Gagal menandai cicilan"
                 _uiState.update { it.copy(error = msg) }
                 errorBus.send(msg)
+            }
+        }
+    }
+
+    /** Called from MainScreen to fetch a draft by ID for deep-link / inbox tap. */
+    suspend fun getDraftById(draftId: String): com.example.insightku.core.data.model.DraftTransaction? {
+        return draftRepository.getById(draftId)
+    }
+
+    // ─── Auto-allocation draft handling ────────────────────────────────────
+
+    private fun approveAllocationDraft(draftId: String) {
+        viewModelScope.launch {
+            try {
+                val draft = draftRepository.getById(draftId)
+                if (draft == null || draft.draftType != com.example.insightku.core.data.model.DraftType.AUTO_ALLOCATION) {
+                    _uiState.update { it.copy(error = "Draft not found") }
+                    return@launch
+                }
+
+                val accountId = draft.sourceAccountId
+                val goalId = draft.goalId
+                val amount = draft.allocationAmount
+
+                if (accountId == null || goalId == null || amount == null || amount <= 0) {
+                    _uiState.update { it.copy(error = "Invalid allocation draft data") }
+                    draftRepository.confirmAndRemove(draftId)
+                    return@launch
+                }
+
+                // Validate account exists and has sufficient balance
+                val account = accountRepository.getAccountById(accountId)
+                if (account == null) {
+                    _uiState.update { it.copy(error = "Source account no longer exists") }
+                    draftRepository.confirmAndRemove(draftId)
+                    return@launch
+                }
+                if (account.balance < amount) {
+                    _uiState.update { it.copy(error = "Insufficient balance in ${account.name}") }
+                    draftRepository.confirmAndRemove(draftId)
+                    return@launch
+                }
+
+                // Execute the allocation via GoalRepository
+                val result = goalRepository.contribute(
+                    goalId = goalId,
+                    accountId = accountId,
+                    amount = amount,
+                    type = com.example.insightku.feature.planning.goal.data.model.ContributionType.AUTO_ALLOCATION
+                )
+
+                if (result.isSuccess) {
+                    draftRepository.confirmAndRemove(draftId)
+                    _uiState.update { it.copy(snackbarMessage = "${NumberFormatter.formatCurrency(amount)} allocated to ${draft.goalName ?: "goal"}") }
+                } else {
+                    _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to allocate") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "Failed to approve allocation") }
+            }
+        }
+    }
+
+    private fun rejectAllocationDraft(draftId: String) {
+        viewModelScope.launch {
+            try {
+                draftRepository.purgeDismissed(draftId)
+                _uiState.update { it.copy(snackbarMessage = "Allocation rejected") }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "Failed to reject allocation") }
             }
         }
     }
