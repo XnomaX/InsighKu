@@ -66,6 +66,8 @@
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_subtitle">Customize your app preferences</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_desc">Choose your preferred language</string>
     <string name="appearance">Appearance</string>
     <string name="dark_mode">Dark Mode</string>
     <string name="dark_mode_desc">Switch between light and dark themes</string>
@@ -195,4 +197,137 @@
     <!-- Currency -->
     <string name="currency_symbol">Rp</string>
     <string name="currency_format">Rp %1$s</string>
+
+    <!-- Analytics - Period Selector -->
+    <string name="period_weekly">Weekly</string>
+    <string name="period_monthly">Monthly</string>
+    <string name="period_annual">Annual</string>
+
+    <!-- Analytics - Empty & Error States -->
+    <string name="analytics_error_title">Something went wrong</string>
+    <string name="analytics_error_subtitle">Unknown error</string>
+    <string name="analytics_unknown_error">Unknown error</string>
+    <string name="analytics_empty_title">Your financial story awaits</string>
+    <string name="analytics_empty_subtitle">Complete a few transactions to unlock insights about your spending habits</string>
+    <string name="analytics_no_data">No data available yet.</string>
+
+    <!-- Analytics - Weekly -->
+    <string name="analytics_week_at_glance">Your week at a glance</string>
+    <string name="analytics_week_start_logging">Start logging transactions to see weekly insights</string>
+    <string name="analytics_week_this_spending">This Week\'s Spending</string>
+    <string name="analytics_week_vs_last">Week vs Last Week</string>
+    <string name="analytics_spent_less_week">You spent %1$d%% less than last week (%2$s vs %3$s)</string>
+    <string name="analytics_spent_more_week">You spent %1$d%% more than last week (%2$s vs %3$s)</string>
+    <string name="analytics_first_week">First week of tracking — %1$s total spent</string>
+    <string name="analytics_weekly_rhythm">Your Weekly Rhythm</string>
+    <string name="analytics_habit_body">%1$ss are your biggest spending days at %2$s, while %3$ss stay quiet at %4$s. Average daily spend: %5$s.</string>
+    <string name="analytics_top_categories">Top Categories</string>
+    <string name="analytics_what_we_noticed">What We Noticed</string>
+    <string name="analytics_biggest_transactions">Biggest Transactions</string>
+    <string name="analytics_pct_of_total">%1$s — %2$d%% of total spending</string>
+    <string name="analytics_uncategorized">Uncategorized</string>
+
+    <!-- Analytics - Monthly -->
+    <string name="analytics_month_at_glance">Your month at a glance</string>
+    <string name="analytics_month_start_logging">Start logging transactions to see financial health insights</string>
+    <string name="analytics_income_vs_expenses">Income vs Expenses</string>
+    <string name="analytics_earned_spent">Earned %1$s, spent %2$s.</string>
+    <string name="analytics_saved_pct">You saved %1$s (%2$d%% savings rate).</string>
+    <string name="analytics_spent_more_than_earned">You spent %1$s more than you earned.</string>
+    <string name="analytics_financial_health">Financial Health</string>
+    <string name="analytics_health_excellent">Excellent</string>
+    <string name="analytics_health_good">Good</string>
+    <string name="analytics_health_fair">Fair</string>
+    <string name="analytics_health_needs_attention">Needs Attention</string>
+    <string name="analytics_no_savings_yet">No savings recorded yet. Track income to see your savings rate.</string>
+    <string name="analytics_where_money_went">Where Your Money Went</string>
+    <string name="analytics_6month_trend">6-Month Trend</string>
+    <string name="analytics_income_label">Income</string>
+    <string name="analytics_expenses_label">Expenses</string>
+    <string name="analytics_recurring_payments">Recurring Payments</string>
+    <string name="analytics_recurring_body">About %1$s of your spending appears to be recurring (subscriptions, bills, regular purchases).</string>
+    <string name="analytics_spending_mood">Spending Mood</string>
+    <string name="analytics_patterns_found">Patterns We Found</string>
+    <string name="analytics_notable_transactions">Notable Transactions</string>
+    <string name="analytics_pct_of_month">%1$s — %2$d%% of this month\'s spending</string>
+
+    <!-- Analytics - Annual -->
+    <string name="analytics_year_at_glance">Your year in review</string>
+    <string name="analytics_year_start_logging">Start logging transactions to see your financial journey</string>
+    <string name="analytics_your_financial_year">Your Financial Year</string>
+    <string name="analytics_year_totals">Total income: %1$s. Total expenses: %2$s. Average monthly spending: %3$s.</string>
+    <string name="analytics_savings_rate">Savings Rate</string>
+    <string name="analytics_saved_pct_income">You saved %1$d%% of your total income this year — %2$s saved.</string>
+    <string name="analytics_monthly_journey">Monthly Journey</string>
+    <string name="analytics_best_month">Best Month: %1$s</string>
+    <string name="analytics_best_month_body">You saved %1$s in %2$s — your strongest financial month.</string>
+    <string name="analytics_toughest_month">Toughest Month: %1$s</string>
+    <string name="analytics_toughest_month_body">You overspent by %1$s in %2$s. Every month is a new opportunity.</string>
+    <string name="analytics_year_vs_last">Year vs Last Year</string>
+    <string name="analytics_expenses_dropped">Expenses dropped %1$d%% from last year. Great progress!</string>
+    <string name="analytics_expenses_rose">Expenses rose %1$d%% from last year. Review your spending patterns.</string>
+    <string name="analytics_top_categories_year">Top Categories This Year</string>
+    <string name="analytics_money_personality">Your Money Personality</string>
+
+    <!-- Analytics - Hero Insights -->
+    <string name="hero_stayed_under_avg">You stayed under your average for %1$d of 7 days</string>
+    <string name="hero_stayed_under_avg_sub">Consistent spending habits build long-term financial health</string>
+    <string name="hero_spent_less_week">You spent %1$d%% less than last week</string>
+    <string name="hero_spent_less_week_sub">Your spending habits are trending in a great direction</string>
+    <string name="hero_spending_picked_up">Spending picked up %1$d%% from last week</string>
+    <string name="hero_spending_picked_up_sub">Weekend spending continues to influence your total</string>
+    <string name="hero_steady_week">Steady week with %1$d transactions</string>
+    <string name="hero_steady_week_sub">You\'re maintaining a balanced spending rhythm</string>
+    <string name="hero_saved_pct_income">You saved %1$d%% of your income this month</string>
+    <string name="hero_saved_pct_income_sub">This was your most consistent saving month</string>
+    <string name="hero_positive_balance">Positive balance this month</string>
+    <string name="hero_positive_balance_sub">You earned more than you spent — keep it up</string>
+    <string name="hero_expenses_dropped_month">Expenses dropped %1$d%% from last month</string>
+    <string name="hero_expenses_dropped_month_sub">Your spending discipline is improving</string>
+    <string name="hero_spending_rose_month">Spending rose %1$d%% from last month</string>
+    <string name="hero_spending_rose_month_sub">Take a moment to review where it went</string>
+    <string name="hero_steady_month">Steady month with %1$d transactions</string>
+    <string name="hero_steady_month_sub">Your finances are staying balanced</string>
+    <string name="hero_expenses_dropped_year">Expenses dropped %1$d%% from last year</string>
+    <string name="hero_expenses_dropped_year_sub">This has been your strongest financial year so far</string>
+    <string name="hero_saved_pct_total">You saved %1$d%% of your total income</string>
+    <string name="hero_saved_pct_total_sub">Your financial discipline is paying off</string>
+    <string name="hero_best_month">%1$s was your best month</string>
+    <string name="hero_best_month_saved">You saved %1$s that month</string>
+    <string name="hero_year_tracked">A year of %1$d months tracked</string>
+    <string name="hero_year_tracked_sub">Your financial story is taking shape</string>
+
+    <!-- Analytics - Insight Engine Text -->
+    <string name="insight_personality_weekend">Weekends are where your money goes loud</string>
+    <string name="insight_personality_weekday">You spend in focused bursts during the week</string>
+    <string name="insight_personality_steady">You keep a steady, easy rhythm with your money</string>
+    <string name="insight_two_yous_diverge">Weekend You and Weekday You are basically two different people.</string>
+    <string name="insight_two_yous_same">Turns out you\'re pretty much the same person all week.</string>
+    <string name="insight_two_yous_gap">There\'s a gap between your weekday and weekend spending.</string>
+    <string name="insight_weekend_spending">About half your spending lands on weekends.</string>
+    <string name="insight_regular_category">%1$s has been a regular — it showed up on %2$d different days.</string>
+    <string name="insight_above_avg_days">%1$d days had spending 50%% above your daily average.</string>
+    <string name="insight_night_owl">A good slice of your spending happens on weekends — the days off add up more than they feel like.</string>
+    <string name="insight_mood_calm">Calmer lately 🌤️</string>
+    <string name="insight_mood_steady">Staying steady 🌊</string>
+    <string name="insight_mood_restless">A little restless 🌧️</string>
+    <string name="insight_rhythm_loudest">%1$ss are your loudest spending days</string>
+    <string name="insight_keep_logging">Keep logging — insights appear after a few transactions</string>
+
+    <!-- Analytics - Chart Labels -->
+    <string name="chart_income">💚 Income</string>
+    <string name="chart_expenses">🔴 Expenses</string>
+    <string name="chart_savings">💚 Savings</string>
+    <string name="chart_value_k">%1$dK</string>
+
+    <!-- Analytics - Chart Accessibility -->
+    <string name="analytics_chart_daily_accessibility">Daily spending bar chart for this week</string>
+    <string name="analytics_chart_trend_accessibility">6-month income and expense trend chart</string>
+    <string name="analytics_chart_annual_accessibility">Monthly income and expense comparison bar chart</string>
+
+    <!-- Analytics - Trend Narratives -->
+    <string name="analytics_month_over_month">Month-over-Month</string>
+    <string name="analytics_trend_decreased">Expenses decreased %1$d%% from last month</string>
+    <string name="analytics_trend_stable">Expenses remained stable from last month</string>
+    <string name="analytics_trend_increased">Expenses increased %1$d%% from last month</string>
 </resources>

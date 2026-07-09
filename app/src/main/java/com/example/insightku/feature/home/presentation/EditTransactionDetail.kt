@@ -48,10 +48,11 @@ import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.PremiumDatePicker
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
-import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
 
@@ -218,7 +219,7 @@ fun EditTransactionDetail(
                                 Icon(Icons.Default.CalendarMonth, null, tint = accentColor, modifier = Modifier.size(18.dp))
                             }
                             Text(
-                                SimpleDateFormat("EEEE, d MMMM yyyy", Locale.ENGLISH).format(Date(dateMillis)),
+                                DateFormatter.formatDateTime(dateMillis),
                                 style      = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
                                 color      = EditTextPrimary,
@@ -374,7 +375,7 @@ private fun EditAmountCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text("Rp $displayText", style = MaterialTheme.typography.headlineMedium,
+        Text("${NumberFormatter.getCurrencySymbol()} $displayText", style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold, color = accentColor, textAlign = TextAlign.Center)
         Text(if (isIncome) "Income amount" else "Expense amount",
             style = MaterialTheme.typography.labelSmall, color = accentColor.copy(alpha = 0.6f))
@@ -390,7 +391,7 @@ private fun EditAmountCard(
             placeholder   = { Text("0", color = accentColor.copy(alpha = 0.35f)) },
             label         = { Text("Amount (Rp)", color = accentColor.copy(alpha = 0.7f)) },
             leadingIcon   = {
-                Text("Rp", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold,
+                Text(NumberFormatter.getCurrencySymbol(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold,
                     color = accentColor, modifier = Modifier.padding(start = 4.dp))
             },
             modifier = Modifier.fillMaxWidth().onFocusChanged { isFocused = it.isFocused },

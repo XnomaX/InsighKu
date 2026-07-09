@@ -25,15 +25,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.utils.CurrencyUtils
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.util.Date
 import java.util.Locale
 
 private val GoalPurple: Color @Composable get() = LocalAccent.current
@@ -70,8 +70,8 @@ fun AddGoalDialog(initialDeadline: LocalDate? = null, onDismiss: () -> Unit, onC
             Box(Modifier.fillMaxWidth().height(1.dp).background(GoalBorder))
             Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).background(GoalBg).padding(24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 GoalFormField(label = "GOAL NAME", value = name, onValueChange = { name = it; nameError = null }, placeholder = "e.g. Emergency Fund, Vacation", error = nameError, accentColor = GoalPurple)
-                GoalFormField(label = "TARGET AMOUNT", value = CurrencyUtils.formatInputThousands(targetAmountText), onValueChange = { targetAmountText = CurrencyUtils.stripThousands(it) }, placeholder = "e.g. 5.000.000", keyboardType = KeyboardType.Number, prefix = "Rp", accentColor = GoalPurple)
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("TARGET DATE (OPTIONAL)", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); Surface(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }, shape = RoundedCornerShape(14.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) { Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(deadline?.let { SimpleDateFormat("d MMMM yyyy", Locale.ENGLISH).format(Date.from(it.atStartOfDay(ZoneId.systemDefault()).toInstant())) } ?: "No deadline set", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary); Icon(Icons.Default.EditCalendar, contentDescription = null, tint = AppPalette.accent, modifier = Modifier.size(18.dp)) } } }
+                GoalFormField(label = "TARGET AMOUNT", value = CurrencyUtils.formatInputThousands(targetAmountText), onValueChange = { targetAmountText = CurrencyUtils.stripThousands(it) }, placeholder = "e.g. 5.000.000", keyboardType = KeyboardType.Number, prefix = NumberFormatter.getCurrencySymbol(), accentColor = GoalPurple)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("TARGET DATE (OPTIONAL)", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); Surface(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }, shape = RoundedCornerShape(14.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) { Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {                    Text(deadline?.let { DateFormatter.formatFullDate(it.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()) } ?: "No deadline set", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary); Icon(Icons.Default.EditCalendar, contentDescription = null, tint = AppPalette.accent, modifier = Modifier.size(18.dp)) } } }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("ICON", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); GoalIconPicker(selectedIcon = selectedIcon, onIconSelected = { selectedIcon = it }, accentColor = GoalPurple) }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("COLOR", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); GoalColorPicker(selectedColor = selectedColor, onColorSelected = { selectedColor = it }) }
                 Spacer(Modifier.height(8.dp))

@@ -5,7 +5,9 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.core.notification.AutoAllocationNotificationHelper
+import com.example.insightku.core.notification.DraftTransactionManager
 import com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
@@ -31,7 +33,8 @@ class ScheduledAllocationWorker @AssistedInject constructor(
     private val autoAllocationEngine: AutoAllocationEngine,
     private val goalRepository: GoalRepository,
     private val autoAllocationRuleDao: AutoAllocationRuleDao,
-    private val notificationHelper: AutoAllocationNotificationHelper
+    private val notificationHelper: AutoAllocationNotificationHelper,
+    private val draftRepository: DraftTransactionRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
@@ -89,13 +92,25 @@ class ScheduledAllocationWorker @AssistedInject constructor(
             }
         }
 
-        // Notify about suggestions requiring confirmation
+        // Create DraftTransaction for suggestions requiring confirmation
         for (suggestion in result.suggestions) {
-            notificationHelper.showAllocationSuggestionNotification(
-                goalName = suggestion.goalName,
-                amount = suggestion.amount,
-                triggerDescription = suggestion.triggerDescription
-            )
+            try {
+                DraftTransactionManager.get().createAllocationDraft(
+                    context = applicationContext,
+                    ruleId = suggestion.id,
+                    goalId = suggestion.goalId,
+                    goalName = suggestion.goalName,
+                    sourceAccountId = suggestion.sourceAccountId,
+                    sourceAccountName = suggestion.sourceAccountName,
+                    allocationAmount = suggestion.amount,
+                    triggerType = "scheduled",
+                    triggerDescription = suggestion.triggerDescription,
+                    draftRepository = draftRepository
+                )
+                Log.d(TAG, "Created allocation draft for ${suggestion.goalName}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to create allocation draft: ${e.message}", e)
+            }
         }
     }
 

@@ -7,9 +7,4 @@ object AppConstants {
 
     // ── Colors ─────────────────────────────────────────────────────────────────
     const val ERROR_COLOR = 0xFFEF4444
-
-    // ── Date Formats ───────────────────────────────────────────────────────────
-    const val DATE_FORMAT_DISPLAY = "MMM dd, yyyy"
-    const val TIME_FORMAT_DISPLAY = "HH:mm"
-    const val DATETIME_FORMAT_DISPLAY = "MMM dd, yyyy HH:mm"
 }

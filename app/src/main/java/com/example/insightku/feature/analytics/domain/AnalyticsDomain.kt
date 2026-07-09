@@ -9,7 +9,7 @@ data class SpendingPersonality(val headline: String, val emoji: String) {
     val summaryLine: String get() = headline
     val sentence: String get() = headline
     companion object {
-        val ONBOARDING = SpendingPersonality("Keep logging — insights appear after a few transactions", "🌱")
+        val ONBOARDING get() = SpendingPersonality(com.example.insightku.core.i18n.AnalyticsStrings.personalityOnboarding(), "🌱")
     }
 }
 
@@ -101,9 +101,9 @@ data class MoodData(
     val caption: String
 ) {
     val headline: String get() = when (mood) {
-        SpendingMood.CALM -> "Calmer lately 🌤️"
-        SpendingMood.STEADY -> "Staying steady 🌊"
-        SpendingMood.RESTLESS -> "A little restless 🌧️"
+        SpendingMood.CALM -> com.example.insightku.core.i18n.AnalyticsStrings.moodCalm()
+        SpendingMood.STEADY -> com.example.insightku.core.i18n.AnalyticsStrings.moodSteady()
+        SpendingMood.RESTLESS -> com.example.insightku.core.i18n.AnalyticsStrings.moodRestless()
     }
     val summaryLine: String get() = caption.ifBlank { headline }
 }
@@ -271,7 +271,17 @@ class InsightEngine @Inject constructor() {
         val weekTxns = allTxns.filter { week.contains(it.date) }
         val prevWeekTxns = allTxns.filter { prevWeek.contains(it.date) }
 
-        val dayNames = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+        // Localized short day names using DateFormatter.getDayOfWeek and truncating
+        val baseCal = java.util.Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+            firstDayOfWeek = java.util.Calendar.MONDAY
+            set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
+        }
+        val dayNames = (0..6).map { dow ->
+            val cal = (baseCal.clone() as java.util.Calendar).apply { set(java.util.Calendar.DAY_OF_WEEK, dow + 1) }
+            val fullName = com.example.insightku.core.i18n.DateFormatter.getDayOfWeek(cal.timeInMillis)
+            fullName.take(3)
+        }.toTypedArray()
 
         // Daily summaries
         val dailySums = weekTxns.groupBy {
@@ -325,20 +335,25 @@ class InsightEngine @Inject constructor() {
 
         // Hero insight for weekly
         val heroInsight = if (weekTxns.isEmpty()) {
-            HeroInsight("📊", "Your week at a glance", "Start logging transactions to see weekly insights")
+            val (headline, subtext) = com.example.insightku.core.i18n.AnalyticsStrings.heroWeekAtGlance() to com.example.insightku.core.i18n.AnalyticsStrings.heroWeekStartLogging()
+            HeroInsight("📊", headline, subtext)
         } else {
             val daysBelowAvg = dailySums.count { (_, txns) ->
                 val dayTotal = txns.filter { t -> t.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
                 dayTotal < weeklyHabit.avgDailySpend && dayTotal > 0
             }
             if (daysBelowAvg >= 4) {
-                HeroInsight("🎯", "You stayed under your average for $daysBelowAvg of 7 days", "Consistent spending habits build long-term financial health")
+                val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroStayedUnderAvg(daysBelowAvg)
+                HeroInsight("🎯", h, s)
             } else if (deltaPct < -10) {
-                HeroInsight("📉", "You spent ${kotlin.math.abs(deltaPct).toInt()}% less than last week", "Your spending habits are trending in a great direction")
+                val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroSpentLessWeek(kotlin.math.abs(deltaPct).toInt())
+                HeroInsight("📉", h, s)
             } else if (deltaPct > 20) {
-                HeroInsight("📈", "Spending picked up ${deltaPct.toInt()}% from last week", "Weekend spending continues to influence your total")
+                val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroSpendingPickedUp(deltaPct.toInt())
+                HeroInsight("📈", h, s)
             } else {
-                HeroInsight("🌊", "Steady week with ${expenseTxns.size} transactions", "You're maintaining a balanced spending rhythm")
+                val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroSteadyWeek(expenseTxns.size)
+                HeroInsight("🌊", h, s)
             }
         }
 
@@ -359,7 +374,7 @@ class InsightEngine @Inject constructor() {
             patterns = patterns,
             noticing = noticing,
             heatmapCells = emptyList(),
-            rhythm = RhythmCaption(weeklyHabit.loudestDay + "s are your biggest spending days"),
+            rhythm = RhythmCaption(com.example.insightku.core.i18n.AnalyticsStrings.rhythmLoudest(weeklyHabit.loudestDay)),
             categorySlices = categorySlices,
             bigDecisions = bigDecisions,
             streak = streak,
@@ -412,7 +427,7 @@ class InsightEngine @Inject constructor() {
             val mp = AnalyticsPeriod.currentMonth(cal.timeInMillis)
             val mTxns = allTxns.filter { mp.contains(it.date) }
             TrendPoint(
-                label = java.text.SimpleDateFormat("MMM", java.util.Locale.getDefault()).format(cal.time),
+                label = com.example.insightku.core.i18n.DateFormatter.getShortMonthName(cal.timeInMillis),
                 income = mTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.INCOME }.sumOf { it.amount },
                 expense = mTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount },
                 savings = 0.0
@@ -435,16 +450,17 @@ class InsightEngine @Inject constructor() {
 
         // Hero insight for monthly
         val heroInsight = if (monthTxns.isEmpty()) {
-            HeroInsight("📊", "Your month at a glance", "Start logging transactions to see financial health insights")
+            val (headline, subtext) = com.example.insightku.core.i18n.AnalyticsStrings.heroMonthAtGlance() to com.example.insightku.core.i18n.AnalyticsStrings.heroMonthStartLogging()
+            HeroInsight("📊", headline, subtext)
         } else {
             val prevExpenses = prevMonthTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
             val expDelta = if (prevExpenses > 0) ((expenses - prevExpenses) / prevExpenses) * 100 else 0.0
             when {
-                savings > 0 && savingsRate > 0.2 -> HeroInsight("🎉", "You saved ${(savingsRate * 100).toInt()}% of your income this month", "This was your most consistent saving month")
-                savings > 0 -> HeroInsight("✅", "Positive balance this month", "You earned more than you spent — keep it up")
-                expDelta < -15 -> HeroInsight("📉", "Expenses dropped ${kotlin.math.abs(expDelta).toInt()}% from last month", "Your spending discipline is improving")
-                expDelta > 15 -> HeroInsight("📈", "Spending rose ${expDelta.toInt()}% from last month", "Take a moment to review where it went")
-                else -> HeroInsight("🌊", "Steady month with ${expenseTxns.size} transactions", "Your finances are staying balanced")
+                savings > 0 && savingsRate > 0.2 -> { val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroSavedPctIncome((savingsRate * 100).toInt()); HeroInsight("🎉", h, s) }
+                savings > 0 -> { val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroPositiveBalance(); HeroInsight("✅", h, s) }
+                expDelta < -15 -> { val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroExpensesDroppedMonth(kotlin.math.abs(expDelta).toInt()); HeroInsight("📉", h, s) }
+                expDelta > 15 -> { val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroSpendingRoseMonth(expDelta.toInt()); HeroInsight("📈", h, s) }
+                else -> { val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroSteadyMonth(expenseTxns.size); HeroInsight("🌊", h, s) }
             }
         }
 
@@ -483,8 +499,14 @@ class InsightEngine @Inject constructor() {
         val yearPeriod = AnalyticsPeriod.currentYear(nowMillis)
         val yearTxns = allTxns.filter { yearPeriod.contains(it.date) }
 
-        val monthLabels = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+        // Localized short month names using DateFormatter
+        val monthLabels = (0..11).map { m ->
+            val cal = java.util.Calendar.getInstance().apply {
+                timeInMillis = nowMillis
+                set(java.util.Calendar.MONTH, m)
+            }
+            com.example.insightku.core.i18n.DateFormatter.getShortMonthName(cal.timeInMillis)
+        }.toTypedArray()
 
         // Monthly points
         val monthlyPoints = (0..11).map { m ->
@@ -555,13 +577,14 @@ class InsightEngine @Inject constructor() {
 
         // Hero insight for annual
         val heroInsight = if (yearTxns.isEmpty()) {
-            HeroInsight("📊", "Your year in review", "Start logging transactions to see your financial journey")
+            val (headline, subtext) = com.example.insightku.core.i18n.AnalyticsStrings.heroYearAtGlance() to com.example.insightku.core.i18n.AnalyticsStrings.heroYearStartLogging()
+            HeroInsight("📊", headline, subtext)
         } else {
             when {
-                yearComparison != null && yearComparison.deltaPercent < -10 -> HeroInsight("🏆", "Expenses dropped ${kotlin.math.abs(yearComparison.deltaPercent).toInt()}% from last year", "This has been your strongest financial year so far")
-                totalSaved > 0 && savingsRate > 0.15 -> HeroInsight("🎉", "You saved ${(savingsRate * 100).toInt()}% of your total income", "Your financial discipline is paying off")
-                bestMonth != null && bestMonth.savings > 0 -> HeroInsight("⭐", "${bestMonth.monthLabel} was your best month", "You saved ${formatAmount(bestMonth.savings)} that month")
-                else -> HeroInsight("📈", "A year of ${activeMonths.size} months tracked", "Your financial story is taking shape")
+                yearComparison != null && yearComparison.deltaPercent < -10 -> { val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroExpensesDroppedYear(kotlin.math.abs(yearComparison.deltaPercent).toInt()); HeroInsight("🏆", h, s) }
+                totalSaved > 0 && savingsRate > 0.15 -> { val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroSavedPctTotal((savingsRate * 100).toInt()); HeroInsight("🎉", h, s) }
+                bestMonth != null && bestMonth.savings > 0 -> { val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroBestMonth(bestMonth.monthLabel, formatAmount(bestMonth.savings)); HeroInsight("⭐", h, s) }
+                else -> { val (h, s) = com.example.insightku.core.i18n.AnalyticsStrings.heroYearTracked(activeMonths.size); HeroInsight("📈", h, s) }
             }
         }
 
@@ -600,9 +623,9 @@ class InsightEngine @Inject constructor() {
         val weekendTxns = txns.filter { isWeekend(it.date) }
         val weekendRatio = weekendTxns.sumOf { it.amount } / txns.sumOf { it.amount }.coerceAtLeast(1.0)
         return when {
-            weekendRatio > 0.6 -> SpendingPersonality("Weekends are where your money goes loud", "🎧")
-            weekendRatio < 0.3 -> SpendingPersonality("You spend in focused bursts during the week", "🎯")
-            else -> SpendingPersonality("You keep a steady, easy rhythm with your money", "🌊")
+            weekendRatio > 0.6 -> SpendingPersonality(com.example.insightku.core.i18n.AnalyticsStrings.personalityWeekend(), "🎧")
+            weekendRatio < 0.3 -> SpendingPersonality(com.example.insightku.core.i18n.AnalyticsStrings.personalityWeekday(), "🎯")
+            else -> SpendingPersonality(com.example.insightku.core.i18n.AnalyticsStrings.personalitySteady(), "🌊")
         }
     }
 
@@ -624,9 +647,9 @@ class InsightEngine @Inject constructor() {
         val weekendCats = topCategorySlices(weekend)
 
         val headline = when {
-            divergence > 0.5 -> "Weekend You and Weekday You are basically two different people."
-            divergence < 0.15 -> "Turns out you're pretty much the same person all week."
-            else -> "There's a gap between your weekday and weekend spending."
+            divergence > 0.5 -> com.example.insightku.core.i18n.AnalyticsStrings.twoYousDiverge()
+            divergence < 0.15 -> com.example.insightku.core.i18n.AnalyticsStrings.twoYousSame()
+            else -> com.example.insightku.core.i18n.AnalyticsStrings.twoYousGap()
         }
 
         return TwoYousData(
@@ -656,19 +679,19 @@ class InsightEngine @Inject constructor() {
         if (expenseTxns.isEmpty()) return patterns
 
         val weekendRatio = expenseTxns.filter { isWeekend(it.date) }.sumOf { it.amount } / expenseTxns.sumOf { it.amount }
-        if (weekendRatio > 0.45) patterns.add(BehavioralPattern("🌙", "About half your spending lands on weekends."))
+        if (weekendRatio > 0.45) patterns.add(BehavioralPattern("🌙", com.example.insightku.core.i18n.AnalyticsStrings.patternWeekendSpending()))
 
         val topCat = expenseTxns.groupBy { it.category }.maxByOrNull { it.value.sumOf { t -> t.amount } }
         if (topCat != null) {
             val days = topCat.value.map { dayKey(it.date) }.distinct().size
-            if (days >= 4) patterns.add(BehavioralPattern("🔁", "${topCat.key} has been a regular — it showed up on $days different days."))
+            if (days >= 4) patterns.add(BehavioralPattern("🔁", com.example.insightku.core.i18n.AnalyticsStrings.patternRegularCategory(topCat.key, days)))
         }
 
         val avgDaily = expenseTxns.sumOf { it.amount } / expenseTxns.map { dayKey(it.date) }.distinct().size.coerceAtLeast(1)
         val aboveAvgDays = expenseTxns.groupBy { dayKey(it.date) }
             .count { (_, txns) -> txns.sumOf { it.amount } > avgDaily * 1.5 }
         if (aboveAvgDays >= 2) {
-            patterns.add(BehavioralPattern("⚡", "$aboveAvgDays days had spending 50% above your daily average."))
+            patterns.add(BehavioralPattern("⚡", com.example.insightku.core.i18n.AnalyticsStrings.patternAboveAvgDays(aboveAvgDays)))
         }
 
         return patterns.take(3)
@@ -703,11 +726,19 @@ class InsightEngine @Inject constructor() {
     private fun deriveRhythm(txns: List<Transaction>): RhythmCaption {
         val expenseTxns = txns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
         if (expenseTxns.isEmpty()) return RhythmCaption("")
-        val dayNames = arrayOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+        // Localized full day names using DateFormatter
+        val baseCal = java.util.Calendar.getInstance().apply {
+            timeInMillis = java.lang.System.currentTimeMillis()
+            firstDayOfWeek = java.util.Calendar.MONDAY
+        }
+        val dayNames = (0..6).map { dow ->
+            val cal = (baseCal.clone() as java.util.Calendar).apply { set(java.util.Calendar.DAY_OF_WEEK, dow + 1) }
+            com.example.insightku.core.i18n.DateFormatter.getDayOfWeek(cal.timeInMillis)
+        }.toTypedArray()
         val loudestDay = expenseTxns.groupBy {
             java.util.Calendar.getInstance().apply { timeInMillis = it.date }.get(java.util.Calendar.DAY_OF_WEEK) - 1
         }.maxByOrNull { it.value.sumOf { t -> t.amount } }?.key ?: return RhythmCaption("")
-        return RhythmCaption("${dayNames[loudestDay]}s are your loudest spending days")
+        return RhythmCaption(com.example.insightku.core.i18n.AnalyticsStrings.rhythmLoudest(dayNames[loudestDay]))
     }
 
     private fun deriveCategorySlices(txns: List<Transaction>): List<CategorySlice> = topCategorySlices(txns)
@@ -757,7 +788,7 @@ class InsightEngine @Inject constructor() {
                 timeInMillis = nowMillis
                 add(java.util.Calendar.MONTH, -5 + i)
             }
-            val label = java.text.SimpleDateFormat("MMM", java.util.Locale.ENGLISH).format(cal.time)
+            val label = com.example.insightku.core.i18n.DateFormatter.getShortMonthName(cal.timeInMillis)
             val monthPeriod = AnalyticsPeriod.currentMonth(cal.timeInMillis)
             val total = allTxns.filter { monthPeriod.contains(it.date) }.sumOf { it.amount }
             MonthPoint(label, total)
@@ -776,7 +807,7 @@ class InsightEngine @Inject constructor() {
         val expenseTxns = txns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }
         if (expenseTxns.isEmpty()) return null
         val weekendRatio = expenseTxns.filter { isWeekend(it.date) }.sumOf { it.amount } / expenseTxns.sumOf { it.amount }.coerceAtLeast(1.0)
-        return if (weekendRatio > 0.5) Noticing("night-owl", "🌙", "A good slice of your spending happens on weekends — the days off add up more than they feel like.")
+        return if (weekendRatio > 0.5) Noticing("night-owl", "🌙", com.example.insightku.core.i18n.AnalyticsStrings.noticingNightOwl())
         else null
     }
 
@@ -788,7 +819,7 @@ class InsightEngine @Inject constructor() {
         var streak = 0
         for (i in 0..6) {
             val checkDate = (cal.clone() as java.util.Calendar).apply { add(java.util.Calendar.DAY_OF_YEAR, -i) }
-            val key = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(checkDate.time)
+            val key = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(checkDate.time)
             if (expenseTxns.any { dayKey(it.date) == key }) streak++ else break
         }
         return streak
@@ -815,7 +846,7 @@ class InsightEngine @Inject constructor() {
     }
 
     private fun formatAmount(amount: Double): String {
-        return java.text.NumberFormat.getCurrencyInstance(java.util.Locale("id", "ID")).format(amount)
+        return com.example.insightku.core.i18n.NumberFormatter.formatCurrency(amount)
     }
 
     private fun isWeekend(timestamp: Long): Boolean {
@@ -824,5 +855,5 @@ class InsightEngine @Inject constructor() {
     }
 
     private fun dayKey(timestamp: Long): String =
-        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(timestamp))
+        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date(timestamp))
 }

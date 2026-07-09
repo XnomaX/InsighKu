@@ -5,6 +5,6 @@ import com.example.insightku.core.navigation.RootNavGraph
 import com.example.insightku.core.notification.NotificationTransactionData
 
 @Composable
-fun InsightKuApp(notificationData: NotificationTransactionData? = null) {
-    RootNavGraph(notificationData = notificationData)
+fun InsightKuApp(notificationData: NotificationTransactionData? = null, allocationDraftId: String? = null) {
+    RootNavGraph(notificationData = notificationData, allocationDraftId = allocationDraftId)
 }

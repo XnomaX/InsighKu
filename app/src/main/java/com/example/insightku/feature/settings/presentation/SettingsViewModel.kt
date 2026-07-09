@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.datastore.SessionManager
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.LogoutUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -133,7 +134,10 @@ class SettingsViewModel @Inject constructor(
 
     private fun saveLanguage(language: AppLanguage) {
         _uiState.update { it.copy(appLanguage = language) }
-        viewModelScope.launch { preferencesDataStore.setAppLanguage(language.code) }
+        viewModelScope.launch {
+            preferencesDataStore.setAppLanguage(language.code)
+            LocaleHelper.applyLocale(language.code)
+        }
     }
 
     private fun logout() {

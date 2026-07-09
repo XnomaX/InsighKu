@@ -35,7 +35,7 @@ import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.ui.theme.LocalComfortMode
 import com.example.insightku.core.ui.theme.LocalInsightTone
 import com.example.insightku.core.ui.theme.WarningYellow
-import com.example.insightku.core.ui.theme.formatCurrency
+import com.example.insightku.core.i18n.NumberFormatter
 
 // ─── Budget Health Card ───────────────────────────────────────────────────────
 
@@ -335,7 +335,7 @@ fun BudgetCategoryCard(
                         color = AppPalette.textMuted
                     )
                     Text(
-                        text = if (category.hasLimit) formatCurrency(category.remainingAmount) else "No limit",
+                        text = if (category.hasLimit) NumberFormatter.formatCurrency(category.remainingAmount) else "No limit",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (category.hasLimit) statusColor else LocalAccent.current,
@@ -469,7 +469,7 @@ internal fun IncomeCategoryCard(
                 )
                 Text(
                     text = if (category.spentAmount > 0)
-                        "${formatCurrency(category.spentAmount)} this month"
+                        "${NumberFormatter.formatCurrency(category.spentAmount)} this month"
                     else "No income recorded",
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
@@ -477,7 +477,7 @@ internal fun IncomeCategoryCard(
             }
             if (category.spentAmount > 0) {
                 Text(
-                    text = formatCurrency(category.spentAmount),
+                    text = NumberFormatter.formatCurrency(category.spentAmount),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.success

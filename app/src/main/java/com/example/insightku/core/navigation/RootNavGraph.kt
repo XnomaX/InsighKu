@@ -23,7 +23,7 @@ import com.example.insightku.core.ui.components.splash.SplashScreen
 import com.example.insightku.core.notification.NotificationTransactionData
 
 @Composable
-fun RootNavGraph(notificationData: NotificationTransactionData? = null) {
+fun RootNavGraph(notificationData: NotificationTransactionData? = null, allocationDraftId: String? = null) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -86,7 +86,7 @@ fun RootNavGraph(notificationData: NotificationTransactionData? = null) {
             authNavGraph(navController = navController)
 
             // Main Graph — untuk user yang sudah login
-            mainNavGraph(navController = navController, notificationData = notificationData)
+            mainNavGraph(navController = navController, notificationData = notificationData, allocationDraftId = allocationDraftId)
         }
     }
 }

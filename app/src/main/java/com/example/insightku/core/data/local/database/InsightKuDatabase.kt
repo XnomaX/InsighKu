@@ -319,7 +319,7 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
         com.example.insightku.feature.planning.goal.data.model.AutoAllocationRuleEntity::class,
         com.example.insightku.feature.planning.goal.data.model.DailyTargetEntity::class
     ],
-    version = 17,
+    version = 20,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -339,10 +339,17 @@ abstract class InsightKuDatabase : RoomDatabase() {
     abstract fun goalAccountDao(): com.example.insightku.feature.planning.goal.data.local.dao.GoalAccountDao
     abstract fun reservedBalanceDao(): com.example.insightku.feature.planning.goal.data.local.dao.ReservedBalanceDao
     abstract fun autoAllocationRuleDao(): com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao
-    abstract fun dailyTargetDao(): com.example.insightku.feature.planning.goal.data.local.dao.DailyTargetDao
-
-    // Budget allocation DAOs
+    abstract fun dailyTargetDao(): com.example.insightku.feature.planning.goal.data.local.dao.DailyTargetDao        // Budget allocation DAOs
     abstract fun budgetAllocationDao(): BudgetAllocationDao
+
+    companion object {
+        val ALL_MIGRATIONS = arrayOf(
+            MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
+            MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15,
+            MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20
+        )
+    }
 }
 
 

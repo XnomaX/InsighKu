@@ -72,6 +72,7 @@ import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
@@ -171,7 +172,7 @@ internal fun AmountHeroCard(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = "Rp $displayText",
+            text = "${NumberFormatter.getCurrencySymbol()} $displayText",
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.ExtraBold,
             color = accentColor,
@@ -201,7 +202,7 @@ internal fun AmountHeroCard(
             label = { Text("Amount (Rp)", color = accentColor.copy(alpha = 0.7f)) },
             leadingIcon = {
                 Text(
-                    "Rp",
+                    NumberFormatter.getCurrencySymbol(),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = accentColor,

@@ -38,7 +38,8 @@ data class GoalDetailUiState(
     val hasUnsyncedChanges: Boolean = false,
     val contributionPage: Int = 0,
     val isLoadingMore: Boolean = false,
-    val hasMoreContributions: Boolean = false
+    val hasMoreContributions: Boolean = false,
+    val expenseCategories: List<CategoryInfo> = emptyList()
 ) {
     companion object { fun initial() = GoalDetailUiState() }
 }

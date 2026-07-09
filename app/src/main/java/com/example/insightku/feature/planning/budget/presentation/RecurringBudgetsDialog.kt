@@ -32,11 +32,11 @@ import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.RecurringBudget
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.ui.components.PremiumDatePicker
-import java.text.NumberFormat
-import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -136,7 +136,7 @@ fun RecurringBudgetItem(budget: RecurringBudget, categoryName: String, onEdit: (
                     Text(categoryName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(text = "Rp ${formatAmount(budget.amount)}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(text = NumberFormatter.formatCurrency(budget.amount), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                         if (budget.isActive) { Icon(Icons.Default.Notifications, contentDescription = null, tint = AppPalette.accent, modifier = Modifier.size(14.dp)); Spacer(Modifier.width(4.dp)) }
                         Text(formatNextDue(budget.nextDue), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -148,7 +148,7 @@ fun RecurringBudgetItem(budget: RecurringBudget, categoryName: String, onEdit: (
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(4.dp))
-                    Text("Selanjutnya: ${SimpleDateFormat("dd MMM yyyy", Locale("in", "ID")).format(Date(budget.nextDue))}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Selanjutnya: ${DateFormatter.formatShortDate(budget.nextDue)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Edit, contentDescription = "Edit", tint = AppPalette.accent, modifier = Modifier.size(18.dp)) }
@@ -189,7 +189,7 @@ fun ColumnScope.AddEditBudgetForm(editingBudget: RecurringBudget?, onSave: (Recu
         HorizontalDivider(Modifier.padding(vertical = 16.dp))
         Text("Pengingat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(value = SimpleDateFormat("dd MMMM yyyy", Locale("in", "ID")).format(Date(nextDueDate)), onValueChange = {}, readOnly = true, label = { Text("Tanggal Mulai Pengingat") }, trailingIcon = { IconButton(onClick = { showDatePicker = true }) { Icon(Icons.Default.CalendarToday, contentDescription = "Select Date") } }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = DateFormatter.formatFullDate(nextDueDate), onValueChange = {}, readOnly = true, label = { Text("Tanggal Mulai Pengingat") }, trailingIcon = { IconButton(onClick = { showDatePicker = true }) { Icon(Icons.Default.CalendarToday, contentDescription = "Select Date") } }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(16.dp))
         DropdownField(label = "Waktu Pengingat", options = reminderOptions.toMap(), onValueSelected = { reminderDaysBefore = it }, displayValue = { reminderOptions.find { it.first == reminderDaysBefore }?.second ?: "Pilih Waktu" })
         Spacer(Modifier.height(16.dp))
@@ -241,8 +241,6 @@ private fun RecurringBudgetAccountSelector(accounts: List<Account>, selectedAcco
 fun DeleteConfirmationDialog(budgetName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog(itemName = budgetName, onDismiss = onDismiss, onConfirm = onConfirm, message = "Apakah Anda yakin ingin menghapus pembayaran berulang \"$budgetName\"? Tindakan ini tidak dapat dibatalkan.")
 }
-
-private fun formatAmount(amount: Double): String = NumberFormat.getNumberInstance(Locale("in", "ID")).format(amount)
 
 private fun formatNextDue(dateMillis: Long): String {
     val diff = dateMillis - System.currentTimeMillis()

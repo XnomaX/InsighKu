@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.example.insightku.core.i18n.NumberFormatter
 
 object AutoTransactionNotificationHelper {
 
@@ -38,7 +39,7 @@ object AutoTransactionNotificationHelper {
         )
 
         val typeLabel  = if (isRecurring) "Pembayaran rutin" else "Cicilan"
-        val amountText = "Rp ${"%,.0f".format(amount)}"
+        val amountText = NumberFormatter.formatCurrency(amount)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)

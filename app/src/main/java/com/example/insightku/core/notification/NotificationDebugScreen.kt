@@ -26,8 +26,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
-import java.text.SimpleDateFormat
 import java.util.*
 
 // ── Raw notification (all packages, no filter) ───────────────────────────────
@@ -381,7 +382,7 @@ private data class BatteryStep(
 
 @Composable
 private fun RawEntryCard(entry: RawNotificationEntry) {
-    val timeFmt  = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
+    val timeFmt: (Long) -> String = remember { { ts: Long -> DateFormatter.formatTimeFull(ts) } }
     val isBank   = BankNotificationParser.isSupportedPackage(entry.packageName)
     val bgColor  = if (isBank) AppPalette.successChipBg.copy(alpha = 0.3f) else AppPalette.card
     Surface(shape = RoundedCornerShape(10.dp), color = bgColor, modifier = Modifier.fillMaxWidth()) {
@@ -392,7 +393,7 @@ private fun RawEntryCard(entry: RawNotificationEntry) {
                     modifier = Modifier.weight(1f))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (isBank) StatusChip("BANK", true)
-                    Text(timeFmt.format(Date(entry.timestamp)), color = AppPalette.textMuted,
+                    Text(timeFmt(entry.timestamp), color = AppPalette.textMuted,
                         style = MaterialTheme.typography.labelSmall)
                 }
             }
@@ -412,7 +413,7 @@ private fun RawEntryCard(entry: RawNotificationEntry) {
 
 @Composable
 private fun BankEntryCard(entry: NotificationDebugEntry) {
-    val timeFmt = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
+    val timeFmt: (Long) -> String = remember { { ts: Long -> DateFormatter.formatTimeFull(ts) } }
     val bgColor = if (entry.parseSuccess) AppPalette.successChipBg.copy(alpha = 0.3f) else AppPalette.errorChipBg.copy(alpha = 0.3f)
     Surface(shape = RoundedCornerShape(10.dp), color = bgColor, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(10.dp)) {
@@ -421,7 +422,7 @@ private fun BankEntryCard(entry: NotificationDebugEntry) {
                     color = AppPalette.textPrimary, style = MaterialTheme.typography.bodySmall)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     StatusChip(if (entry.parseSuccess) "OK" else "FAIL", entry.parseSuccess)
-                    Text(timeFmt.format(Date(entry.timestamp)), color = AppPalette.textMuted,
+                    Text(timeFmt(entry.timestamp), color = AppPalette.textMuted,
                         style = MaterialTheme.typography.labelSmall)
                 }
             }
@@ -430,7 +431,7 @@ private fun BankEntryCard(entry: NotificationDebugEntry) {
             DebugRow("content", entry.rawContent.take(100))
             if (entry.parseSuccess) {
                 HorizontalDivider(color = AppPalette.cardBorder, modifier = Modifier.padding(vertical = 4.dp))
-                DebugRow("amount",   entry.parsedAmount?.let { "Rp ${"%,.0f".format(it)}" } ?: "-")
+                DebugRow("amount",   entry.parsedAmount?.let { NumberFormatter.formatCurrency(it) } ?: "-")
                 DebugRow("merchant", entry.parsedMerchant ?: "-")
                 DebugRow("type",     entry.parsedType?.name ?: "-")
                 DebugRow("category", entry.parsedCategory ?: "-")

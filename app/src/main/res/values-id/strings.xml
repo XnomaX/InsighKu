@@ -42,6 +42,7 @@
 
     <!-- Settings -->
     <string name="settings_language">Bahasa</string>
+    <string name="settings_language_desc">Pilih bahasa yang Anda inginkan</string>
     <string name="settings_language_english">Inggris</string>
     <string name="settings_language_indonesian">Indonesia</string>
     <string name="settings_theme">Tema</string>
@@ -121,4 +122,137 @@
     <string name="password_req_number">Mengandung angka</string>
     <string name="password_req_letter">Mengandung huruf</string>
     <string name="password_req_special">Mengandung karakter khusus</string>
+
+    <!-- Analytics - Period Selector -->
+    <string name="period_weekly">Mingguan</string>
+    <string name="period_monthly">Bulanan</string>
+    <string name="period_annual">Tahunan</string>
+
+    <!-- Analytics - Empty & Error States -->
+    <string name="analytics_error_title">Terjadi kesalahan</string>
+    <string name="analytics_error_subtitle">Kesalahan tidak diketahui</string>
+    <string name="analytics_empty_title">Cerita keuangan Anda menunggu</string>
+    <string name="analytics_empty_subtitle">Selesaikan beberapa transaksi untuk membuka wawasan tentang kebiasaan belanja Anda</string>
+    <string name="analytics_no_data">Belum ada data tersedia.</string>
+
+    <!-- Analytics - Weekly -->
+    <string name="analytics_week_at_glance">Minggu Anda sekilas</string>
+    <string name="analytics_week_start_logging">Mulai mencatat transaksi untuk melihat wawasan mingguan</string>
+    <string name="analytics_week_this_spending">Pengeluaran Minggu Ini</string>
+    <string name="analytics_week_vs_last">Minggu vs Minggu Lalu</string>
+    <string name="analytics_spent_less_week">Anda belanja %1$d%% lebih sedikit dari minggu lalu (%2$s vs %3$s)</string>
+    <string name="analytics_spent_more_week">Anda belanja %1$d%% lebih banyak dari minggu lalu (%2$s vs %3$s)</string>
+    <string name="analytics_first_week">Minggu pertama pencatatan — total pengeluaran %1$s</string>
+    <string name="analytics_weekly_rhythm">Ritme Mingguan Anda</string>
+    <string name="analytics_habit_body">Hari %1$ss adalah hari pengeluaran terbesar Anda sebesar %2$s, sementara hari %3$ss tetap sepi sebesar %4$s. Pengeluaran rata-rata harian: %5$s.</string>
+    <string name="analytics_top_categories">Kategori Teratas</string>
+    <string name="analytics_what_we_noticed">Yang Kami Perhatikan</string>
+    <string name="analytics_biggest_transactions">Transaksi Terbesar</string>
+    <string name="analytics_pct_of_total">%1$s — %2$d%% dari total pengeluaran</string>
+    <string name="analytics_uncategorized">Tak Berkategori</string>
+
+    <!-- Analytics - Monthly -->
+    <string name="analytics_month_at_glance">Bulan Anda sekilas</string>
+    <string name="analytics_month_start_logging">Mulai mencatat transaksi untuk melihat wawasan kesehatan keuangan</string>
+    <string name="analytics_income_vs_expenses">Pemasukan vs Pengeluaran</string>
+    <string name="analytics_earned_spent">Menghasilkan %1$s, belanja %2$s.</string>
+    <string name="analytics_saved_pct">Anda menghemat %1$s (tingkat penghematan %2$d%%).</string>
+    <string name="analytics_spent_more_than_earned">Anda belanja %1$s lebih dari yang Anda hasilkan.</string>
+    <string name="analytics_financial_health">Kesehatan Keuangan</string>
+    <string name="analytics_health_excellent">Sangat Baik</string>
+    <string name="analytics_health_good">Baik</string>
+    <string name="analytics_health_fair">Cukup</string>
+    <string name="analytics_health_needs_attention">Perlu Perhatian</string>
+    <string name="analytics_where_money_went">Ke Mana Uang Anda Pergi</string>
+    <string name="analytics_6month_trend">Tren 6 Bulan</string>
+    <string name="analytics_income_label">Pemasukan</string>
+    <string name="analytics_expenses_label">Pengeluaran</string>
+    <string name="analytics_recurring_payments">Pembayaran Berulang</string>
+    <string name="analytics_recurring_body">Sekitar %1$s pengeluaran Anda tampaknya bersifat berulang (langganan, tagihan, pembelian rutin).</string>
+    <string name="analytics_spending_mood">Suasana Pengeluaran</string>
+    <string name="analytics_patterns_found">Pola Yang Kami Temukan</string>
+    <string name="analytics_notable_transactions">Transaksi Tertentu</string>
+    <string name="analytics_pct_of_month">%1$s — %2$d%% dari pengeluaran bulan ini</string>
+
+    <!-- Analytics - Annual -->
+    <string name="analytics_year_at_glance">Tahun Anda sekilas</string>
+    <string name="analytics_year_start_logging">Mulai mencatat transaksi untuk melihat perjalanan keuangan Anda</string>
+    <string name="analytics_your_financial_year">Tahun Keuangan Anda</string>
+    <string name="analytics_year_totals">Total pemasukan: %1$s. Total pengeluaran: %2$s. Pengeluaran bulanan rata-rata: %3$s.</string>
+    <string name="analytics_savings_rate">Tingkat Penghematan</string>
+    <string name="analytics_saved_pct_income">Anda menghemat %1$d%% dari total pemasukan tahun ini — %2$s tersimpan.</string>
+    <string name="analytics_no_savings_yet">Belum ada penghematan tercatat. Lacak pemasukan untuk melihat tingkat penghematan Anda.</string>
+    <string name="analytics_monthly_journey">Perjalanan Bulanan</string>
+    <string name="analytics_best_month">Bulan Terbaik: %1$s</string>
+    <string name="analytics_best_month_body">Anda menghemat %1$s di %2$s — bulan keuangan terkuat Anda.</string>
+    <string name="analytics_toughest_month">Bulan Terberat: %1$s</string>
+    <string name="analytics_toughest_month_body">Anda kelebihan belanja %1$s di %2$s. Setiap bulan adalah kesempatan baru.</string>
+    <string name="analytics_year_vs_last">Tahun vs Tahun Lalu</string>
+    <string name="analytics_expenses_dropped">Pengeluaran turun %1$d%% dari tahun lalu. Kemajuan luar biasa!</string>
+    <string name="analytics_expenses_rose">Pengeluaran naik %1$d%% dari tahun lalu. Tinjau pola pengeluaran Anda.</string>
+    <string name="analytics_top_categories_year">Kategori Teratas Tahun Ini</string>
+    <string name="analytics_money_personality">Kepribadian Uang Anda</string>
+
+    <!-- Analytics - Hero Insights -->
+    <string name="hero_stayed_under_avg">Anda tetap di bawah rata-rata selama %1$d dari 7 hari</string>
+    <string name="hero_stayed_under_avg_sub">Kebiasaan belanja yang konsisten membangun kesehatan keuangan jangka panjang</string>
+    <string name="hero_spent_less_week">Anda belanja %1$d%% lebih sedikit dari minggu lalu</string>
+    <string name="hero_spent_less_week_sub">Kebiasaan belanja Anda bergerak ke arah yang tepat</string>
+    <string name="hero_spending_picked_up">Pengeluaran naik %1$d%% dari minggu lalu</string>
+    <string name="hero_spending_picked_up_sub">Pengeluaran akhir pekan terus mempengaruhi total Anda</string>
+    <string name="hero_steady_week">Minggu stabil dengan %1$d transaksi</string>
+    <string name="hero_steady_week_sub">Anda mempertahankan ritme belanja yang seimbang</string>
+    <string name="hero_saved_pct_income">Anda menghemat %1$d%% dari pemasukan bulan ini</string>
+    <string name="hero_saved_pct_income_sub">Ini adalah bulan penghematan paling konsisten Anda</string>
+    <string name="hero_positive_balance">Saldo positif bulan ini</string>
+    <string name="hero_positive_balance_sub">Anda menghasilkan lebih dari yang dibelanjakan — pertahankan</string>
+    <string name="hero_expenses_dropped_month">Pengeluaran turun %1$d%% dari bulan lalu</string>
+    <string name="hero_expenses_dropped_month_sub">Disiplin pengeluaran Anda meningkat</string>
+    <string name="hero_spending_rose_month">Pengeluaran naik %1$d%% dari bulan lalu</string>
+    <string name="hero_spending_rose_month_sub">Luangkan waktu untuk meninjau ke mana uang Anda pergi</string>
+    <string name="hero_steady_month">Bulan stabil dengan %1$d transaksi</string>
+    <string name="hero_steady_month_sub">Keuangan Anda tetap seimbang</string>
+    <string name="hero_expenses_dropped_year">Pengeluaran turun %1$d%% dari tahun lalu</string>
+    <string name="hero_expenses_dropped_year_sub">Ini adalah tahun keuangan terkuat Anda sejauh ini</string>
+    <string name="hero_saved_pct_total">Anda menghemat %1$d%% dari total pemasukan tahun ini</string>
+    <string name="hero_saved_pct_total_sub">Disiplin keuangan Anda membuahkan hasil</string>
+    <string name="hero_best_month">%1$s adalah bulan terbaik Anda</string>
+    <string name="hero_best_month_saved">Anda menghemat %1$s bulan itu</string>
+    <string name="hero_year_tracked">Tahun dengan %1$d bulan tercatat</string>
+    <string name="hero_year_tracked_sub">Cerita keuangan Anda mulai terbentuk</string>
+
+    <!-- Analytics - Insight Engine Text -->
+    <string name="insight_personality_weekend">Akhir pekan adalah tempat uang Anda paling keras</string>
+    <string name="insight_personality_weekday">Anda belanja dalam burst fokus selama seminggu</string>
+    <string name="insight_personality_steady">Anda menjaga ritme yang stabil dan mudah dengan uang Anda</string>
+    <string name="insight_two_yous_diverge">Akhir Pekan Anda dan Hari Kerja Anda pada dasarnya dua orang berbeda.</string>
+    <string name="insight_two_yous_same">Ternyata Anda hampir sama sepanjang minggu.</string>
+    <string name="insight_two_yous_gap">Ada kesenjangan antara pengeluaran hari kerja dan akhir pekan Anda.</string>
+    <string name="insight_weekend_spending">Sekitar setengah pengeluaran Anda terjadi di akhir pekan.</string>
+    <string name="insight_regular_category">%1$s sudah menjadi langganan — muncul di %2$d hari berbeda.</string>
+    <string name="insight_above_avg_days">%1$d hari memiliki pengeluaran 50%% di atas rata-rata harian Anda.</string>
+    <string name="insight_night_owl">Sebagian besar pengeluaran Anda terjadi di akhir pekan — hari libur bertambah lebih dari yang terasa.</string>
+    <string name="insight_mood_calm">Lebih tenang belakangan ini 🌤️</string>
+    <string name="insight_mood_steady">Tetap stabil 🌊</string>
+    <string name="insight_mood_restless">Sedikit gelisah 🌧️</string>
+    <string name="insight_rhythm_loudest">Hari %1$ss adalah hari pengeluaran paling keras Anda</string>
+    <string name="insight_keep_logging">Terus mencatat — wawasan muncul setelah beberapa transaksi</string>
+
+    <!-- Analytics - Chart Labels -->
+    <string name="chart_income">💚 Pemasukan</string>
+    <string name="chart_expenses">🔴 Pengeluaran</string>
+    <string name="chart_savings">💚 Tabungan</string>
+    <string name="chart_value_k">%1$dK</string>
+
+    <!-- Analytics - Chart Accessibility -->
+    <string name="analytics_chart_daily_accessibility">Grafik batang pengeluaran harian minggu ini</string>
+    <string name="analytics_chart_trend_accessibility">Grafik tren pemasukan dan pengeluaran 6 bulan</string>
+    <string name="analytics_chart_annual_accessibility">Grafik batang perbandingan pemasukan dan pengeluaran bulanan</string>
+    <string name="analytics_unknown_error">Kesalahan tidak diketahui</string>
+
+    <!-- Analytics - Trend Narratives -->
+    <string name="analytics_month_over_month">Bulan ke Bulan</string>
+    <string name="analytics_trend_decreased">Pengeluaran turun %1$d%% dari bulan lalu</string>
+    <string name="analytics_trend_stable">Pengeluaran tetap stabil dari bulan lalu</string>
+    <string name="analytics_trend_increased">Pengeluaran naik %1$d%% dari bulan lalu</string>
 </resources>

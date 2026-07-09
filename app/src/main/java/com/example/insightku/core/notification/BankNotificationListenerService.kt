@@ -16,9 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.example.insightku.core.i18n.DateFormatter
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
@@ -37,8 +35,7 @@ class BankNotificationListenerService : NotificationListenerService() {
     private val instanceId = instanceCounter.incrementAndGet()
     private val prefix get() = "[BankService #$instanceId]"
 
-    private val dateFmt = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
-    private fun ts() = dateFmt.format(Date())
+    private fun ts() = DateFormatter.formatTimeFull(System.currentTimeMillis())
     private fun thread() = Thread.currentThread().name
 
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
@@ -227,8 +224,7 @@ class BankNotificationListenerService : NotificationListenerService() {
             try {
                 requestRebind(cn)
                 Log.d(TAG, "forceReconnect: requestRebind($cn)")
-                NotificationDebugLog.recordServiceEvent("Manual requestRebind at ${
-                    SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())}")
+                NotificationDebugLog.recordServiceEvent("Manual requestRebind at ${DateFormatter.formatTimeFull(System.currentTimeMillis())}")
             } catch (e: Exception) {
                 Log.e(TAG, "forceReconnect error: ${e.message}")
             }

@@ -8,6 +8,7 @@ import androidx.work.WorkerParameters
 import com.example.insightku.core.data.repository.InstallmentRepository
 import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.feature.auth.data.AuthRepository
+import com.example.insightku.core.i18n.DateFormatter
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -50,7 +51,7 @@ class PaymentReminderWorker @AssistedInject constructor(
         val now = System.currentTimeMillis()
         val dayMs = 24 * 60 * 60 * 1000L
 
-        Log.d(TAG, "Worker started at ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(now))}")
+        Log.d(TAG, "Worker started at ${DateFormatter.formatDateTimeFull(now)}")
 
         try {
             // ── Recurring payments ──────────────────────────────────────────

@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import kotlin.math.roundToInt
 
@@ -235,9 +236,7 @@ fun AddCategoryDialog(
                             )
                             Text(
                                 text  = if (initialType == CategoryType.EXPENSE) {
-                                    if (budgetLimitText.isNotBlank()) "Rp ${budgetLimitText.filter { it.isDigit() }.toLongOrNull()?.let {
-                                        java.text.NumberFormat.getNumberInstance(java.util.Locale("id","ID")).format(it)
-                                    } ?: "0"} / month" else "No limit set"
+                                    if (budgetLimitText.isNotBlank()) "${NumberFormatter.formatCurrency(budgetLimitText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0)} / month" else "No limit set"
                                 } else "Income tracking",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppPalette.textMuted

@@ -23,8 +23,7 @@ import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.IncomeGreen
 import com.example.insightku.core.ui.theme.ExpenseRed
-import com.example.insightku.core.ui.theme.formatCurrency
-import java.util.Locale
+import com.example.insightku.core.i18n.NumberFormatter
 import kotlin.math.abs
 
 // --- Hero Balance Card --------------------------------------------------------
@@ -66,7 +65,7 @@ fun HeroBalanceCard(
                     label = "balance_visibility"
                 ) { visible ->
                     Text(
-                        text = if (visible) formatCurrency(accountBalance) else "\u2022\u2022\u2022\u2022\u2022",
+                        text = if (visible) NumberFormatter.formatCurrency(accountBalance) else "\u2022\u2022\u2022\u2022\u2022",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppPalette.textPrimary
@@ -196,10 +195,5 @@ internal fun HeroStatItem(
 }
 
 internal fun formatCurrencyShort(amount: Double): String {
-    return when {
-        amount >= 1_000_000_000 -> "Rp${String.format(Locale.getDefault(), "%.1f", amount / 1_000_000_000)}B"
-        amount >= 1_000_000     -> "Rp${String.format(Locale.getDefault(), "%.1f", amount / 1_000_000)}M"
-        amount >= 1_000         -> "Rp${String.format(Locale.getDefault(), "%.0f", amount / 1_000)}K"
-        else                    -> "Rp${amount.toInt()}"
-    }
+    return NumberFormatter.formatCurrencyCompact(amount)
 }

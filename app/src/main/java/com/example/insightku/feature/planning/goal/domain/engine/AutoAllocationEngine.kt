@@ -8,7 +8,9 @@ import com.example.insightku.feature.planning.goal.data.model.AllocationValueTyp
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.domain.model.AllocationSuggestion
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult
+import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
+import com.example.insightku.core.i18n.NumberFormatter
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,9 +29,13 @@ class AutoAllocationEngine @Inject constructor(
         }
 
         val categoryIdToName = mutableMapOf<String, String>()
+        val nameToCategoryId = mutableMapOf<String, String>()
         try {
             val categories = dataSource.getAllCategories().first()
-            categories.forEach { cat -> categoryIdToName[cat.id] = cat.name }
+            categories.forEach { cat ->
+                categoryIdToName[cat.id] = cat.name
+                nameToCategoryId[cat.name.trim().lowercase()] = cat.id
+            }
         } catch (_: Exception) {}
 
         val suggestions = mutableListOf<AllocationSuggestion>()
@@ -38,7 +44,7 @@ class AutoAllocationEngine @Inject constructor(
         for (entity in enabledRules) {
             val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal")
             try {
-                val result = evaluateRule(rule, transaction, categoryIdToName)
+                val result = evaluateRule(rule, transaction, categoryIdToName, nameToCategoryId)
                 if (result != null) {
                     when (rule.confirmationMode) {
                         com.example.insightku.feature.planning.goal.data.model.ConfirmationMode.AUTO -> autoExecuted.add(result)
@@ -101,7 +107,7 @@ class AutoAllocationEngine @Inject constructor(
         return AutoAllocationResult(suggestions, autoExecuted, null, null)
     }
 
-    private suspend fun evaluateRule(rule: AutoAllocationRule, transaction: Transaction, categoryIdToName: Map<String, String>): AllocationSuggestion? {
+    private suspend fun evaluateRule(rule: AutoAllocationRule, transaction: Transaction, categoryIdToName: Map<String, String>, nameToCategoryId: Map<String, String>): AllocationSuggestion? {
         val matches = when (rule.triggerType) {
             AllocationTriggerType.INCOME_RECEIVED -> transaction.type == TransactionType.INCOME
             AllocationTriggerType.ROUND_UP -> transaction.type == TransactionType.EXPENSE
@@ -112,7 +118,7 @@ class AutoAllocationEngine @Inject constructor(
         return when (rule.triggerType) {
             AllocationTriggerType.INCOME_RECEIVED -> evaluateIncomeRule(rule, transaction, categoryIdToName)
             AllocationTriggerType.ROUND_UP -> evaluateRoundUpRule(rule, transaction)
-            AllocationTriggerType.SPENDING_CATEGORY -> evaluateSpendingCategoryRule(rule, transaction)
+            AllocationTriggerType.SPENDING_CATEGORY -> evaluateSpendingCategoryRule(rule, transaction, nameToCategoryId)
             else -> null
         }
     }
@@ -135,7 +141,7 @@ class AutoAllocationEngine @Inject constructor(
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
         if (account.balance < actualAmount) return null
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Income detected: ${formatCurrency(transaction.amount)}", rule.description)
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Income detected: ${formatCurrency(transaction.amount)}", rule.description, ruleId = rule.id)
     }
 
     private suspend fun evaluateRoundUpRule(rule: AutoAllocationRule, transaction: Transaction): AllocationSuggestion? {
@@ -153,10 +159,19 @@ class AutoAllocationEngine @Inject constructor(
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(roundUpAmount, remainingToGoal)
         if (account.balance < actualAmount) return null
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Round-up: ${formatCurrency(transaction.amount)} → ${formatCurrency(roundedUp)}", rule.description)
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Round-up: ${formatCurrency(transaction.amount)} → ${formatCurrency(roundedUp)}", rule.description, ruleId = rule.id)
     }
 
-    private suspend fun evaluateSpendingCategoryRule(rule: AutoAllocationRule, transaction: Transaction): AllocationSuggestion? {
+    private suspend fun evaluateSpendingCategoryRule(rule: AutoAllocationRule, transaction: Transaction, nameToCategoryId: Map<String, String>): AllocationSuggestion? {
+        // ── Category matching: check if transaction belongs to one of the selected categories ──
+        if (rule.categoryBasedCategoryIds.isNotEmpty()) {
+            val transactionCategoryId = nameToCategoryId[transaction.category.trim().lowercase()]
+            if (transactionCategoryId == null || transactionCategoryId !in rule.categoryBasedCategoryIds) return null
+        }
+
+        // ── Execution mode gate: only EVERY_TRANSACTION fires in the per-transaction flow ──
+        if (rule.categoryBasedExecutionMode != CategoryBasedExecutionMode.EVERY_TRANSACTION) return null
+
         val goal = dataSource.getGoalById(rule.goalId) ?: return null
         if (goal.goalStatus != GoalStatus.ACTIVE) return null
         val currentAmount = dataSource.getTotalContributed(rule.goalId)
@@ -169,7 +184,7 @@ class AutoAllocationEngine @Inject constructor(
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
         if (account.balance < actualAmount) return null
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Spending in category: ${formatCurrency(transaction.amount)}", rule.description)
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Spending in ${transaction.category}: ${formatCurrency(transaction.amount)}", rule.description, ruleId = rule.id)
     }
 
     private suspend fun evaluateScheduledRule(rule: AutoAllocationRule): AllocationSuggestion? {
@@ -184,7 +199,7 @@ class AutoAllocationEngine @Inject constructor(
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
         if (account.balance < actualAmount) return null
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Scheduled ${rule.scheduledFrequency.value} allocation", rule.description)
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Scheduled ${rule.scheduledFrequency.value} allocation", rule.description, ruleId = rule.id)
     }
 
     private suspend fun evaluateBalanceAboveRule(rule: AutoAllocationRule): AllocationSuggestion? {
@@ -202,7 +217,7 @@ class AutoAllocationEngine @Inject constructor(
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
         if (account.balance < actualAmount) return null
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, accountId, account.name, "Balance ${formatCurrency(account.balance)} exceeds ${formatCurrency(threshold)}", rule.description)
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, accountId, account.name, "Balance ${formatCurrency(account.balance)} exceeds ${formatCurrency(threshold)}", rule.description, ruleId = rule.id)
     }
 
     private fun shouldExecuteScheduled(rule: AutoAllocationRule): Boolean {
@@ -232,5 +247,5 @@ class AutoAllocationEngine @Inject constructor(
         }
     }
 
-    private fun formatCurrency(amount: Double): String = "Rp ${"%,.0f".format(amount).replace(",", ".")}"
+    private fun formatCurrency(amount: Double): String = NumberFormatter.formatCurrency(amount)
 }

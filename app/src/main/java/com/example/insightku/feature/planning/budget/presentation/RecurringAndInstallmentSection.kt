@@ -25,13 +25,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.core.data.model.BudgetFrequency
+import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.LocalAccent
-import com.example.insightku.core.ui.theme.formatCurrency
-import java.text.SimpleDateFormat
-import java.util.*
+import com.example.insightku.core.i18n.NumberFormatter
 import java.util.concurrent.TimeUnit
 
 // ─── Design tokens (theme-aware — react to light/dark + accent from Settings) ───
@@ -50,6 +50,7 @@ fun RecurringSection(
     onAdd: () -> Unit,
     onEdit: (RecurringBudget) -> Unit,
     onDelete: (RecurringBudget) -> Unit,
+    categories: List<Category> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -68,7 +69,7 @@ fun RecurringSection(
                 )
                 Text(
                     text = if (recurringBudgets.isEmpty()) "No recurring payments"
-                           else "${recurringBudgets.size} active • ${formatCurrency(recurringBudgets.sumOf { it.amount })} / mo",
+                           else "${recurringBudgets.size} active • ${NumberFormatter.formatCurrency(recurringBudgets.sumOf { it.amount })} / mo",
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -93,12 +94,14 @@ fun RecurringSection(
         if (recurringBudgets.isEmpty()) {
             RecurringEmptyState(onAdd = onAdd)
         } else {
+            val categoryMap = remember(categories) { categories.associateBy { it.id } }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 recurringBudgets.forEach { budget ->
                     RecurringPaymentCard(
                         budget = budget,
                         onEdit = { onEdit(budget) },
-                        onDelete = { onDelete(budget) }
+                        onDelete = { onDelete(budget) },
+                        categoryMap = categoryMap
                     )
                 }
             }
@@ -111,16 +114,25 @@ fun RecurringPaymentCard(
     budget: RecurringBudget,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    categoryMap: Map<String, Category> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
     val daysUntilDue = ((budget.nextDue - System.currentTimeMillis()) /
             (1000 * 60 * 60 * 24)).toInt()
     val dueStatus = dueStatusFor(daysUntilDue)
-    val iconInfo = budget.iconName?.let { label ->
-        recurringIcons.find { it.label == label }?.let { qi ->
-            com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(qi.label, qi.icon, qi.color)
-        }
-    } ?: CategoryIconResolver.resolve(budget.name)
+    // ── P1.2: Resolve icon from categoryId via Category repository (single source of truth) ──
+    val matchedCategory = budget.categoryId?.let { categoryMap[it] }
+    val iconInfo = if (matchedCategory != null) {
+        val resolved = CategoryIconResolver.resolve(matchedCategory.icon ?: matchedCategory.name)
+        val catColor = runCatching { Color(android.graphics.Color.parseColor(matchedCategory.color)) }.getOrDefault(resolved.color)
+        com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(matchedCategory.name, resolved.icon, catColor)
+    } else {
+        budget.iconName?.let { label ->
+            recurringIcons.find { it.label == label }?.let { qi ->
+                com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(qi.label, qi.icon, qi.color)
+            }
+        } ?: CategoryIconResolver.resolve(budget.name)
+    }
 
     var pressed by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -198,7 +210,7 @@ fun RecurringPaymentCard(
             // Amount + actions
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = formatCurrency(budget.amount),
+                    text = NumberFormatter.formatCurrency(budget.amount),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.textPrimary
@@ -264,6 +276,7 @@ fun InstallmentsSection(
     onAdd: () -> Unit,
     onEdit: (Installment) -> Unit,
     onDelete: (Installment) -> Unit,
+    categories: List<Category> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -282,7 +295,7 @@ fun InstallmentsSection(
                 )
                 Text(
                     text = if (installments.isEmpty()) "No active installments"
-                           else "${installments.size} active • ${formatCurrency(installments.sumOf { it.remainingBalance })} remaining",
+                           else "${installments.size} active • ${NumberFormatter.formatCurrency(installments.sumOf { it.remainingBalance })} remaining",
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -307,12 +320,14 @@ fun InstallmentsSection(
         if (installments.isEmpty()) {
             InstallmentEmptyState(onAdd = onAdd)
         } else {
+            val categoryMap = remember(categories) { categories.associateBy { it.id } }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 installments.forEach { installment ->
                     InstallmentCard(
                         installment = installment,
                         onEdit = { onEdit(installment) },
-                        onDelete = { onDelete(installment) }
+                        onDelete = { onDelete(installment) },
+                        categoryMap = categoryMap
                     )
                 }
             }
@@ -325,16 +340,25 @@ fun InstallmentCard(
     installment: Installment,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    categoryMap: Map<String, Category> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
     val daysUntilDue = ((installment.nextDueDate - System.currentTimeMillis()) /
             (1000 * 60 * 60 * 24)).toInt()
     val dueStatus = dueStatusFor(daysUntilDue)
-    val iconInfo = installment.iconName?.let { label ->
-        installmentIcons.find { it.label == label }?.let { qi ->
-            com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(qi.label, qi.icon, qi.color)
-        }
-    } ?: CategoryIconResolver.resolve(installment.name)
+    // ── P1.2: Resolve icon from categoryId via Category repository (single source of truth) ──
+    val matchedCategory = installment.categoryId?.let { categoryMap[it] }
+    val iconInfo = if (matchedCategory != null) {
+        val resolved = CategoryIconResolver.resolve(matchedCategory.icon ?: matchedCategory.name)
+        val catColor = runCatching { Color(android.graphics.Color.parseColor(matchedCategory.color)) }.getOrDefault(resolved.color)
+        com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(matchedCategory.name, resolved.icon, catColor)
+    } else {
+        installment.iconName?.let { label ->
+            installmentIcons.find { it.label == label }?.let { qi ->
+                com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(qi.label, qi.icon, qi.color)
+            }
+        } ?: CategoryIconResolver.resolve(installment.name)
+    }
 
     var progressAnimated by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -396,7 +420,7 @@ fun InstallmentCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "${formatCurrency(installment.monthlyPayment)} / month",
+                        text = "${NumberFormatter.formatCurrency(installment.monthlyPayment)} / month",
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
@@ -447,7 +471,7 @@ fun InstallmentCard(
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text("Remaining", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                     Text(
-                        text = formatCurrency(installment.remainingBalance),
+                        text = NumberFormatter.formatCurrency(installment.remainingBalance),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = AppPalette.textPrimary
@@ -539,9 +563,9 @@ private fun DueChip(daysUntilDue: Int, status: DueStatus) {
         DueStatus.TOMORROW -> Triple("Due Tomorrow",    Orange.copy(alpha = 0.10f), Orange)
         DueStatus.SOON    -> Triple("Due in ${daysUntilDue}d", Orange.copy(alpha = 0.08f), Orange)
         DueStatus.NORMAL  -> Triple(
-            SimpleDateFormat("d MMM", Locale.ENGLISH).format(Date(
+            DateFormatter.formatShortDate(
                 System.currentTimeMillis() + TimeUnit.DAYS.toMillis(daysUntilDue.toLong())
-            )),
+            ),
             AppPalette.cardBorder, AppPalette.textMuted
         )
     }

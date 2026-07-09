@@ -48,4 +48,22 @@ interface DraftTransactionDao {
     /** Bersihkan semua draft — dipakai saat logout. */
     @Query("DELETE FROM draft_transactions")
     suspend fun deleteAll()
+
+    // ─── Auto-allocation draft queries ──────────────────────────────────────
+
+    /** Pending allocation drafts for Draft Inbox. */
+    @Query("SELECT * FROM draft_transactions WHERE status = 'PENDING' AND draftType = 'AUTO_ALLOCATION' ORDER BY detectedAt DESC")
+    fun getPendingAllocationDrafts(): Flow<List<DraftTransaction>>
+
+    /** Count pending allocation drafts. */
+    @Query("SELECT COUNT(*) FROM draft_transactions WHERE status = 'PENDING' AND draftType = 'AUTO_ALLOCATION'")
+    fun getPendingAllocationDraftCount(): Flow<Int>
+
+    /** Get allocation draft by rule ID (for dedup). */
+    @Query("SELECT * FROM draft_transactions WHERE ruleId = :ruleId AND status = 'PENDING' AND draftType = 'AUTO_ALLOCATION' LIMIT 1")
+    suspend fun getPendingAllocationDraftByRule(ruleId: String): DraftTransaction?
+
+    /** Delete all allocation drafts for a specific rule (when rule is deleted). */
+    @Query("DELETE FROM draft_transactions WHERE ruleId = :ruleId AND draftType = 'AUTO_ALLOCATION'")
+    suspend fun deleteAllocationDraftsByRule(ruleId: String)
 }

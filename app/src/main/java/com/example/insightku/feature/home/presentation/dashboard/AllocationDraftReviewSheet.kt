@@ -1,0 +1,255 @@
+package com.example.insightku.feature.home.presentation.dashboard
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.example.insightku.core.data.model.DraftTransaction
+import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.theme.*
+
+/**
+ * AllocationDraftReviewSheet — Bottom sheet for reviewing auto-allocation drafts.
+ *
+ * Shows allocation details and allows user to approve or reject.
+ * Reuses the Draft Transaction infrastructure as required by P0.2.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AllocationDraftReviewSheet(
+    draft: DraftTransaction,
+    onApprove: (DraftTransaction) -> Unit,
+    onReject: (DraftTransaction) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = AppPalette.card
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Auto Allocation Review",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Review and confirm this allocation",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppPalette.textMuted
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Allocation Details Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = AppPalette.cardElevated),
+                border = BorderStroke(1.dp, AppPalette.cardBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Amount
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Allocation Amount",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppPalette.textMuted
+                        )
+                        Text(
+                            text = NumberFormatter.formatCurrency(draft.allocationAmount ?: 0.0),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = SuccessColor
+                        )
+                    }
+
+                    HorizontalDivider(color = AppPalette.cardBorder)
+
+                    // Source Account
+                    DetailRow(
+                        icon = Icons.Outlined.AccountBalance,
+                        label = "Source Account",
+                        value = draft.sourceAccountName ?: "Unknown"
+                    )
+
+                    // Destination Goal
+                    DetailRow(
+                        icon = Icons.Outlined.Savings,
+                        label = "Destination Goal",
+                        value = draft.goalName ?: "Unknown Goal"
+                    )
+
+                    // Trigger
+                    DetailRow(
+                        icon = Icons.Outlined.AutoAwesome,
+                        label = "Trigger",
+                        value = draft.triggerDescription ?: draft.triggerType ?: "Unknown"
+                    )
+
+                    // Remaining Balance
+                    if (draft.allocationAmount != null) {
+                        HorizontalDivider(color = AppPalette.cardBorder)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "After Allocation",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppPalette.textMuted
+                            )
+                            Text(
+                                text = "Balance will decrease by ${NumberFormatter.formatCurrency(draft.allocationAmount)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppPalette.textMuted
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Execution Preview
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = SuccessColor.copy(alpha = 0.08f)),
+                border = BorderStroke(1.dp, SuccessColor.copy(alpha = 0.2f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        tint = SuccessColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "When approved, this amount will be transferred from your account to the goal.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppPalette.textMuted
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Action Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Reject Button
+                OutlinedButton(
+                    onClick = { onReject(draft) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, AppPalette.cardBorder)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reject")
+                }
+
+                // Approve Button
+                Button(
+                    onClick = { onApprove(draft) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = SuccessColor)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Approve")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(SuccessColor.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = SuccessColor,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = AppPalette.textMuted
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = AppPalette.textPrimary
+            )
+        }
+    }
+}

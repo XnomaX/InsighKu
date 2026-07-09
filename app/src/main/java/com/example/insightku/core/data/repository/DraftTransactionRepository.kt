@@ -64,9 +64,43 @@ class DraftTransactionRepository @Inject constructor(
     /** Bersihkan semua draft saat logout. */
     suspend fun deleteAll() = draftDao.deleteAll()
 
+    // ─── Auto-allocation draft methods ──────────────────────────────────────
+
+    /** Observe pending allocation drafts for Draft Inbox. */
+    fun observePendingAllocationDrafts(): Flow<List<DraftTransaction>> =
+        draftDao.getPendingAllocationDrafts()
+
+    /** Count pending allocation drafts. */
+    fun observePendingAllocationDraftCount(): Flow<Int> =
+        draftDao.getPendingAllocationDraftCount()
+
+    /**
+     * Create an auto-allocation draft. Returns true if created, false if duplicate.
+     * Dedup is based on ruleId — only one pending draft per rule at a time.
+     */
+    suspend fun createAllocationDraft(draft: DraftTransaction): Boolean {
+        // Check if there's already a pending draft for this rule
+        val existing = draft.ruleId?.let { draftDao.getPendingAllocationDraftByRule(it) }
+        if (existing != null) {
+            // Update existing draft with latest data instead of creating duplicate
+            draftDao.update(draft.copy(id = existing.id, detectedAt = existing.detectedAt))
+            return true
+        }
+        val rowId = draftDao.insert(draft)
+        return rowId != -1L
+    }
+
+    /** Delete allocation drafts for a specific rule (when rule is deleted). */
+    suspend fun deleteAllocationDraftsByRule(ruleId: String) =
+        draftDao.deleteAllocationDraftsByRule(ruleId)
+
     companion object {
         /** Kunci dedup stabil dari hasil parser. */
         fun dedupHashOf(amount: Double, merchant: String, bankName: String): String =
             "${amount.toLong()}|${merchant.trim().lowercase()}|${bankName.trim().lowercase()}"
+
+        /** Generate dedup hash for auto-allocation drafts. */
+        fun allocationDedupHash(ruleId: String, goalId: String, amount: Double): String =
+            "alloc|${ruleId}|${goalId}|${amount.toLong()}"
     }
 }

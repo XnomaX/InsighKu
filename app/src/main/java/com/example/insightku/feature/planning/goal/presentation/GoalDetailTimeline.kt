@@ -19,9 +19,9 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.core.ui.theme.SuccessColor
-import com.example.insightku.core.ui.theme.formatCurrencyCompactIDR
+import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.NumberFormatter
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @Composable
 internal fun TimelineSection(events: List<GoalTimelineEvent>, goalColor: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
@@ -67,10 +67,10 @@ internal fun TimelineEventItem(event: GoalTimelineEvent, goalColor: androidx.com
         Column(modifier = Modifier.weight(1f)) {
             Text(event.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
             Text(event.description, style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-            Text(event.date.atZone(ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ofPattern("d MMM yyyy")), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+            Text(DateFormatter.formatShortDate(event.date.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
         }
         event.amount?.let { amount ->
-            Text("${if (amount > 0) "+" else ""}${formatCurrencyCompactIDR(kotlin.math.abs(amount))}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = if (amount > 0) SuccessColor else ExpenseRed)
+            Text("${if (amount > 0) "+" else ""}${NumberFormatter.formatCurrencyCompact(kotlin.math.abs(amount))}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = if (amount > 0) SuccessColor else ExpenseRed)
         }
     }
     if (!isLast) Spacer(Modifier.height(12.dp))

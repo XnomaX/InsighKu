@@ -28,7 +28,7 @@ class CalculateStreakUseCase @Inject constructor(
      * @return StreakResult containing streak values and any preference updates needed
      */
     suspend operator fun invoke(transactions: List<Transaction>): StreakResult {
-        val dayFmt = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+        val dayFmt = SimpleDateFormat("yyyyMMdd", Locale.US)
         val trackedDayKeys: Set<String> = transactions.map { dayFmt.format(Date(it.date)) }.toSet()
 
         fun dayKey(cal: Calendar): String = dayFmt.format(cal.time)
@@ -53,7 +53,7 @@ class CalculateStreakUseCase @Inject constructor(
         var prevCal: Calendar? = null
         for (key in sortedDays) {
             val cal = Calendar.getInstance().apply {
-                time = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).parse(key) ?: return@apply
+                time = SimpleDateFormat("yyyyMMdd", Locale.US).parse(key) ?: return@apply
             }
             if (prevCal == null) {
                 runStreak = 1

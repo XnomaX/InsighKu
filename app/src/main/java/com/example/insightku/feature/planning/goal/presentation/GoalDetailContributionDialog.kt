@@ -26,12 +26,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.core.ui.theme.WarningYellow
-import com.example.insightku.core.ui.theme.formatCurrencyCompactIDR
 import com.example.insightku.core.utils.CurrencyUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,13 +65,13 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
             Column {
                 Text("Amount", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(value = uiState.contributionAmount, onValueChange = { val filtered = it.filter { c -> c.isDigit() || c == '.' }; if (filtered.count { c -> c == '.' } <= 1) onEvent(GoalDetailEvent.UpdateAmount(filtered)) }, placeholder = { Text("0", color = AppPalette.textMuted.copy(alpha = 0.5f)) }, prefix = { Text("Rp", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = goalColor) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = goalColor, unfocusedBorderColor = AppPalette.cardBorder, focusedContainerColor = goalColor.copy(alpha = 0.04f), unfocusedContainerColor = AppPalette.cardElevated), textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, color = AppPalette.textPrimary))
-                if (exceedsTarget) { Spacer(Modifier.height(6.dp)); Text("Amount exceeds remaining target (${formatCurrencyCompactIDR(goal.remainingAmount)})", style = MaterialTheme.typography.labelSmall, color = WarningYellow) }
+                OutlinedTextField(value = uiState.contributionAmount, onValueChange = { val filtered = it.filter { c -> c.isDigit() || c == '.' }; if (filtered.count { c -> c == '.' } <= 1) onEvent(GoalDetailEvent.UpdateAmount(filtered)) }, placeholder = { Text("0", color = AppPalette.textMuted.copy(alpha = 0.5f)) }, prefix = { Text(NumberFormatter.getCurrencySymbol(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = goalColor) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = goalColor, unfocusedBorderColor = AppPalette.cardBorder, focusedContainerColor = goalColor.copy(alpha = 0.04f), unfocusedContainerColor = AppPalette.cardElevated), textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, color = AppPalette.textPrimary))
+                if (exceedsTarget) { Spacer(Modifier.height(6.dp)); Text("Amount exceeds remaining target (${NumberFormatter.formatCurrencyCompact(goal.remainingAmount, "IDR")})", style = MaterialTheme.typography.labelSmall, color = WarningYellow) }
             }
             Spacer(Modifier.height(16.dp))
             if (!isWithdraw) {
                 val quickAmounts = listOf(50_000.0, 100_000.0, 250_000.0, 500_000.0, 1_000_000.0)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { items(quickAmounts.size) { index -> val chipAmount = quickAmounts[index]; val isSelected = uiState.contributionAmount.toDoubleOrNull() == chipAmount; Surface(onClick = { onEvent(GoalDetailEvent.UpdateAmount(chipAmount.toLong().toString())) }, shape = RoundedCornerShape(12.dp), color = if (isSelected) goalColor.copy(alpha = 0.15f) else AppPalette.cardElevated, border = BorderStroke(1.dp, if (isSelected) goalColor.copy(alpha = 0.4f) else AppPalette.cardBorder)) { Text("+${formatCurrencyCompactIDR(chipAmount).removePrefix("Rp")}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = if (isSelected) goalColor else AppPalette.textMuted, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) } } }
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { items(quickAmounts.size) { index -> val chipAmount = quickAmounts[index]; val isSelected = uiState.contributionAmount.toDoubleOrNull() == chipAmount; Surface(onClick = { onEvent(GoalDetailEvent.UpdateAmount(chipAmount.toLong().toString())) }, shape = RoundedCornerShape(12.dp), color = if (isSelected) goalColor.copy(alpha = 0.15f) else AppPalette.cardElevated, border = BorderStroke(1.dp, if (isSelected) goalColor.copy(alpha = 0.4f) else AppPalette.cardBorder)) { Text("+${NumberFormatter.formatCurrencyCompact(chipAmount)}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = if (isSelected) goalColor else AppPalette.textMuted, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) } } }
                 Spacer(Modifier.height(16.dp))
             }
             val displayAccounts = uiState.linkedAccounts.ifEmpty { uiState.accountMap.values.toList() }

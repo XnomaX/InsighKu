@@ -4,7 +4,7 @@ import com.example.insightku.core.ui.components.dialogs.BudgetLimitInput
 import com.example.insightku.core.ui.components.dialogs.RecurringPeriodSelector
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 import com.example.insightku.core.ui.components.dialogs.CategoryIconInfo
-import com.example.insightku.core.ui.theme.formatCurrency
+import com.example.insightku.core.i18n.NumberFormatter
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -17,6 +17,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.AssignmentReturn
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -31,8 +35,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.utils.CurrencyUtils
-import java.text.NumberFormat
-import java.util.Locale
 import kotlin.math.roundToInt
 
 // ─── Icon Data ────────────────────────────────────────────────────────────────
@@ -103,7 +105,7 @@ val expenseCategoryIcons = listOf(
     CategoryIconInfo("Reading",         Icons.Default.AutoStories,          Color(0xFF2563EB)),
     // Education
     CategoryIconInfo("Education",       Icons.Default.School,               Color(0xFF3B82F6)),
-    CategoryIconInfo("Books",           Icons.Default.MenuBook,             Color(0xFF2563EB)),
+    CategoryIconInfo("Books", Icons.AutoMirrored.Filled.MenuBook,             Color(0xFF2563EB)),
     CategoryIconInfo("Online Course",   Icons.Default.OndemandVideo,        Color(0xFF7C3AED)),
     CategoryIconInfo("Stationery",      Icons.Default.Edit,                 Color(0xFF6366F1)),
     // Subscriptions & Finance
@@ -143,8 +145,8 @@ val incomeCategoryIcons = listOf(
     CategoryIconInfo("Teaching",        Icons.Default.CastForEducation,     Color(0xFF3B82F6)),
     CategoryIconInfo("Service",         Icons.Default.MiscellaneousServices,Color(0xFF6366F1)),
     // Investment & Finance
-    CategoryIconInfo("Investment",      Icons.Default.TrendingUp,           Color(0xFF06B6D4)),
-    CategoryIconInfo("Dividends",       Icons.Default.ShowChart,            Color(0xFF0891B2)),
+    CategoryIconInfo("Investment", Icons.AutoMirrored.Filled.TrendingUp,           Color(0xFF06B6D4)),
+    CategoryIconInfo("Dividends", Icons.AutoMirrored.Filled.ShowChart,            Color(0xFF0891B2)),
     CategoryIconInfo("Stock",           Icons.Default.BarChart,             Color(0xFF059669)),
     CategoryIconInfo("Crypto",          Icons.Default.CurrencyBitcoin,      Color(0xFFF59E0B)),
     CategoryIconInfo("Mutual Fund",     Icons.Default.PieChart,             Color(0xFF3B82F6)),
@@ -159,7 +161,7 @@ val incomeCategoryIcons = listOf(
     // Transfers & Misc
     CategoryIconInfo("Cashback",        Icons.Default.Redeem,               Color(0xFF10B981)),
     CategoryIconInfo("Gift / Transfer", Icons.Default.CardGiftcard,         Color(0xFFEC4899)),
-    CategoryIconInfo("Refund",          Icons.Default.AssignmentReturn,     Color(0xFF06B6D4)),
+    CategoryIconInfo("Refund", Icons.AutoMirrored.Filled.AssignmentReturn,     Color(0xFF06B6D4)),
     CategoryIconInfo("Grant",           Icons.Default.Stars,                Color(0xFFF59E0B)),
     CategoryIconInfo("Scholarship",     Icons.Default.School,               Color(0xFF3B82F6)),
     CategoryIconInfo("Pension",         Icons.Default.Elderly,              Color(0xFF6366F1)),
@@ -367,7 +369,7 @@ internal fun CategoryTypeSelector(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        CategoryType.values().forEach { type ->
+        CategoryType.entries.forEach { type ->
             val isSelected   = selected == type
             val activeColor  = if (type == CategoryType.EXPENSE) purple else green
             val bgColor      = if (isSelected) activeColor else com.example.insightku.core.ui.theme.AppPalette.card
@@ -500,7 +502,7 @@ fun BudgetLimitInput(
                 )
                 if (parsedLimit > 0) {
                     Text(
-                        text       = "Rp ${parsedLimit.formatCurrencyLong()}",
+                        text       = NumberFormatter.formatCurrency(parsedLimit.toDouble()),
                         style      = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
                         color      = purple
@@ -516,7 +518,7 @@ fun BudgetLimitInput(
                     Text("e.g. 2.000.000", color = com.example.insightku.core.ui.theme.AppPalette.placeholder, style = MaterialTheme.typography.bodyMedium)
                 },
                 leadingIcon   = {
-                    Text("Rp", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = purple)
+                    Text(NumberFormatter.getCurrencySymbol(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = purple)
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape  = RoundedCornerShape(10.dp),
@@ -556,7 +558,7 @@ fun BudgetLimitInput(
             }
             if (parsedLimit > 0) {
                 Text(
-                    "≈ Rp ${(parsedLimit * alertThreshold / 100).toLong().formatCurrencyLong()}",
+                    "≈ ${NumberFormatter.formatCurrency((parsedLimit * alertThreshold / 100).toDouble())}",
                     style = MaterialTheme.typography.labelSmall,
                     color = com.example.insightku.core.ui.theme.AppPalette.textMuted
                 )
@@ -583,10 +585,7 @@ fun BudgetLimitInput(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 internal fun Int.formatCurrency(): String =
-    NumberFormat.getNumberInstance(Locale("id", "ID")).format(this)
-
-private fun Long.formatCurrencyLong(): String =
-    NumberFormat.getNumberInstance(Locale("id", "ID")).format(this)
+    NumberFormatter.formatInteger(this.toLong())
 
 
 

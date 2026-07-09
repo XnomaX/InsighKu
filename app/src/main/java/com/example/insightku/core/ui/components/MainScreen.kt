@@ -59,6 +59,8 @@ import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.home.presentation.DashboardEvent
 import com.example.insightku.feature.planning.goal.presentation.GoalDetailScreen
+import com.example.insightku.feature.home.presentation.dashboard.AllocationDraftReviewSheet
+import com.example.insightku.core.data.model.DraftType
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -133,7 +135,8 @@ private fun getTabForRoute(route: String?): String? {
 fun MainScreen(
     modifier: Modifier = Modifier,
     rootNavController: NavHostController,
-    notificationData: NotificationTransactionData? = null
+    notificationData: NotificationTransactionData? = null,
+    allocationDraftId: String? = null
 ) {
     val navController                = rememberNavController()
     val dashboardViewModel: DashboardViewModel           = hiltViewModel()
@@ -152,11 +155,26 @@ fun MainScreen(
     // Prefill source for AddTransaction: either the launch deep link, or a tapped draft.
     var activeDraftData            by remember { mutableStateOf<NotificationTransactionData?>(null) }
 
+    // Allocation draft review sheet state
+    var showAllocationReviewSheet  by remember { mutableStateOf(false) }
+    var activeAllocationDraft      by remember { mutableStateOf<DraftTransaction?>(null) }
+
     // Auto-open AddTransaction when app is launched from bank notification deep link
     LaunchedEffect(notificationData) {
         if (notificationData != null) {
             activeDraftData = notificationData
             showAddTransactionDialog = true
+        }
+    }
+
+    // Auto-open AllocationDraftReviewSheet when app is launched from allocation draft deep link
+    LaunchedEffect(allocationDraftId) {
+        if (allocationDraftId != null) {
+            val draft = dashboardViewModel.getDraftById(allocationDraftId)
+            if (draft != null && draft.draftType == DraftType.AUTO_ALLOCATION) {
+                activeAllocationDraft = draft
+                showAllocationReviewSheet = true
+            }
         }
     }
 
@@ -256,8 +274,13 @@ fun MainScreen(
             pendingStreakPopup        = true
         },
         onOpenDraft = { draft ->
-            activeDraftData = draft.toNotificationData()
-            showAddTransactionDialog = true
+            if (draft.draftType == DraftType.AUTO_ALLOCATION) {
+                activeAllocationDraft = draft
+                showAllocationReviewSheet = true
+            } else {
+                activeDraftData = draft.toNotificationData()
+                showAddTransactionDialog = true
+            }
         },
         onDraftDismissed = { draft ->
             // Draft sudah ditandai DISMISSED oleh ViewModel (hilang dari Inbox).
@@ -352,6 +375,27 @@ fun MainScreen(
                     restoreState    = true
                 }
                 showAddTransactionDialog = false
+            }
+        )
+    }
+
+    // Allocation Draft Review Sheet overlay
+    if (showAllocationReviewSheet && activeAllocationDraft != null) {
+        AllocationDraftReviewSheet(
+            draft = activeAllocationDraft!!,
+            onApprove = { draft ->
+                dashboardViewModel.onEvent(DashboardEvent.ApproveAllocationDraft(draft.id))
+                showAllocationReviewSheet = false
+                activeAllocationDraft = null
+            },
+            onReject = { draft ->
+                dashboardViewModel.onEvent(DashboardEvent.RejectAllocationDraft(draft.id))
+                showAllocationReviewSheet = false
+                activeAllocationDraft = null
+            },
+            onDismiss = {
+                showAllocationReviewSheet = false
+                activeAllocationDraft = null
             }
         )
     }
@@ -705,6 +749,13 @@ private fun MainNavHost(
                 onNavigateToEditGoal = { id ->
                     // Navigate to edit - will be implemented when EditGoalDialog is available
                     navController.popBackStack()
+                },
+                onNavigateToAccounts = {
+                    navController.navigate(Route.ACCOUNTS) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 },
                 onGoalArchived = { navController.popBackStack() },
                 onGoalDeleted = { navController.popBackStack() }

@@ -25,10 +25,10 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.core.ui.theme.SuccessColor
-import com.example.insightku.core.ui.theme.formatCurrencyCompactIDR
+import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.domain.model.Contribution
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @Composable
 internal fun ContributionSummarySection(uiState: GoalDetailUiState, goalColor: Color, modifier: Modifier = Modifier) {
@@ -39,15 +39,15 @@ internal fun ContributionSummarySection(uiState: GoalDetailUiState, goalColor: C
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ContributionMiniCard(label = "Deposits", value = "${uiState.totalContributions}", subtitle = "total deposits", icon = Icons.Outlined.Savings, color = goalColor, modifier = Modifier.weight(1f))
                 uiState.latestContribution?.let { latest ->
-                    ContributionMiniCard(label = "Latest", value = formatCurrencyCompactIDR(kotlin.math.abs(latest.amount)), subtitle = "last deposit", icon = Icons.Outlined.TrendingDown, color = SuccessColor, modifier = Modifier.weight(1f))
+                    ContributionMiniCard(label = "Latest", value = NumberFormatter.formatCurrencyCompact(kotlin.math.abs(latest.amount)), subtitle = "last deposit", icon = Icons.Outlined.TrendingDown, color = SuccessColor, modifier = Modifier.weight(1f))
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (uiState.averageContribution > 0) {
-                    ContributionMiniCard(label = "Average", value = formatCurrencyCompactIDR(uiState.averageContribution), subtitle = "per deposit", icon = Icons.Outlined.Equalizer, color = PurpleViolet, modifier = Modifier.weight(1f))
+                    ContributionMiniCard(label = "Average", value = NumberFormatter.formatCurrencyCompact(uiState.averageContribution), subtitle = "per deposit", icon = Icons.Outlined.Equalizer, color = PurpleViolet, modifier = Modifier.weight(1f))
                 }
                 uiState.lastActivityDate?.let { date ->
-                    ContributionMiniCard(label = "Last Deposit", value = date.atZone(ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ofPattern("d MMM")), subtitle = "most recent", icon = Icons.Outlined.Event, color = AppPalette.textMuted, modifier = Modifier.weight(1f))
+                    ContributionMiniCard(label = "Last Deposit", value = DateFormatter.formatShortDate(date.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()), subtitle = "most recent", icon = Icons.Outlined.Event, color = AppPalette.textMuted, modifier = Modifier.weight(1f))
                 }
             }
         }

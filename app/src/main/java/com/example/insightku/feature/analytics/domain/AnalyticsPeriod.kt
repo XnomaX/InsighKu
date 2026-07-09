@@ -1,15 +1,24 @@
 package com.example.insightku.feature.analytics.domain
 
+import com.example.insightku.core.i18n.AnalyticsStrings
 import java.util.Calendar
 
 /**
  * Represents the selectable period type for analytics view.
  * These are user-selectable time scopes for viewing analytics.
  */
-enum class AnalyticsPeriodType(val displayName: String) {
-    WEEKLY("Weekly"),
-    MONTHLY("Monthly"),
-    ANNUAL("Annual")
+enum class AnalyticsPeriodType {
+    WEEKLY,
+    MONTHLY,
+    ANNUAL;
+
+    /** Locale-aware display name resolved at call time. */
+    val displayName: String
+        get() = when (this) {
+            WEEKLY -> AnalyticsStrings.periodWeekly()
+            MONTHLY -> AnalyticsStrings.periodMonthly()
+            ANNUAL -> AnalyticsStrings.periodAnnual()
+        }
 }
 
 /**

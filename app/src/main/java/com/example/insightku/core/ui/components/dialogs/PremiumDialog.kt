@@ -29,51 +29,140 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.insightku.core.ui.theme.AppPalette
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-// ─── Dialog Types ──────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// CONTEXT-AWARE DIALOG TYPE SYSTEM
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// Every dialog type has a unique:
+//   - Icon (vector drawable)
+//   - Accent color (semantic color from AppPalette)
+//   - Background tint (subtle alpha for the icon container)
+//   - Button style (destructive = filled red, positive = filled accent, neutral = outlined)
+//   - Animation behavior (unique spring/delay per type)
+//
+// The InsightDialog composable automatically selects the right visual identity
+// based on the DialogType, so feature code only specifies:
+//   DialogType, Title, Description, Actions
+// ══════════════════════════════════════════════════════════════════════════════
 
-enum class PremiumDialogType(
+/**
+ * Button style determines how the primary and secondary actions are rendered.
+ */
+enum class DialogButtonStyle {
+    /** Destructive: filled red primary + outlined secondary. Used by Delete. */
+    DESTRUCTIVE,
+    /** Positive: filled accent primary + outlined secondary. Used by Success, Goal, Allocation, Budget. */
+    POSITIVE,
+    /** Neutral: filled primary + text-button secondary. Used by Info, Warning. */
+    NEUTRAL,
+    /** Warning: filled amber primary + outlined secondary. Used by Warning, Archive. */
+    WARNING_STYLE
+}
+
+/**
+ * Visual identity for each context-aware dialog type.
+ *
+ * @param icon          Unique icon vector for this dialog type
+ * @param accentColor   Primary accent color applied to icon tint + button fill
+ * @param iconTint      Override tint for the icon (defaults to accentColor)
+ * @param buttonStyle   Controls primary/secondary button rendering
+ * @param defaultTitle  Fallback title when caller doesn't provide one
+ */
+enum class DialogType(
     val icon: ImageVector,
     val accentColor: Color,
-    val title: String
+    val buttonStyle: DialogButtonStyle,
+    val defaultTitle: String
 ) {
+    // NOTE: Raw Color values must be used here — AppPalette colors are @Composable
+    // and cannot be referenced in enum constructors.
     SUCCESS(
         icon = Icons.Outlined.CheckCircle,
-        accentColor = AppPalette.success,
-        title = "Success"
+        accentColor = Color(0xFF10B981),   // AppPalette.success
+        buttonStyle = DialogButtonStyle.POSITIVE,
+        defaultTitle = "Success"
     ),
     WARNING(
         icon = Icons.Outlined.Warning,
-        accentColor = AppPalette.warning,
-        title = "Warning"
+        accentColor = Color(0xFFF59E0B),   // AppPalette.warning
+        buttonStyle = DialogButtonStyle.WARNING_STYLE,
+        defaultTitle = "Warning"
     ),
     ERROR(
-        icon = Icons.Outlined.Error,
-        accentColor = AppPalette.error,
-        title = "Error"
-    ),
-    INFO(
-        icon = Icons.Outlined.Info,
-        accentColor = AppPalette.defaultBlue,
-        title = "Information"
+        icon = Icons.Outlined.ErrorOutline,
+        accentColor = Color(0xFFEF4444),   // AppPalette.error
+        buttonStyle = DialogButtonStyle.POSITIVE,
+        defaultTitle = "Error"
     ),
     DELETE(
         icon = Icons.Outlined.Delete,
-        accentColor = AppPalette.error,
-        title = "Delete"
+        accentColor = Color(0xFFEF4444),   // AppPalette.error
+        buttonStyle = DialogButtonStyle.DESTRUCTIVE,
+        defaultTitle = "Delete"
     ),
     ARCHIVE(
         icon = Icons.Outlined.Archive,
-        accentColor = AppPalette.warning,
-        title = "Archive"
+        accentColor = Color(0xFFF59E0B),   // AppPalette.warning
+        buttonStyle = DialogButtonStyle.WARNING_STYLE,
+        defaultTitle = "Archive"
+    ),
+    ALLOCATION(
+        icon = Icons.Outlined.AccountBalance,
+        accentColor = Color(0xFF06B6D4),   // AppPalette.cyan
+        buttonStyle = DialogButtonStyle.POSITIVE,
+        defaultTitle = "Allocation"
+    ),
+    GOAL(
+        icon = Icons.Outlined.Flag,
+        accentColor = Color(0xFF7C4DFF),   // AppPalette.accent
+        buttonStyle = DialogButtonStyle.POSITIVE,
+        defaultTitle = "Goal"
+    ),
+    BUDGET(
+        icon = Icons.Outlined.Savings,
+        accentColor = Color(0xFF8B5CF6),   // violet
+        buttonStyle = DialogButtonStyle.POSITIVE,
+        defaultTitle = "Budget"
+    ),
+    ACCOUNT(
+        icon = Icons.Outlined.CreditCard,
+        accentColor = Color(0xFF3B82F6),   // AppPalette.defaultBlue
+        buttonStyle = DialogButtonStyle.POSITIVE,
+        defaultTitle = "Account"
+    ),
+    INFORMATION(
+        icon = Icons.Outlined.Lightbulb,
+        accentColor = Color(0xFF3B82F6),   // AppPalette.defaultBlue
+        buttonStyle = DialogButtonStyle.NEUTRAL,
+        defaultTitle = "Information"
     )
 }
 
-// ─── Premium Dialog ────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// LEGACY TYPE ALIAS (backward compat — keeps existing PremiumDialogType usages)
+// ══════════════════════════════════════════════════════════════════════════════
 
+typealias PremiumDialogType = DialogType
+
+// ══════════════════════════════════════════════════════════════════════════════
+// InsightDialog — THE REUSABLE CORE
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Premium, context-aware alert dialog that automatically selects:
+ *   - Unique icon per [type]
+ *   - Unique accent color per [type]
+ *   - Unique button styling per [type]
+ *   - Smooth entrance animations (scale + fade + slide)
+ *
+ * Feature code only specifies: type, title, description, actions.
+ * Everything else is handled automatically.
+ */
 @Composable
-fun PremiumDialog(
-    type: PremiumDialogType,
+fun InsightDialog(
+    type: DialogType,
     title: String,
     message: String,
     onDismiss: () -> Unit,
@@ -83,8 +172,12 @@ fun PremiumDialog(
     showDismissButton: Boolean = true,
     customIcon: ImageVector? = null,
     customAccentColor: Color? = null,
+    supportingContent: @Composable (() -> Unit)? = null,
     properties: DialogProperties = DialogProperties()
 ) {
+    val accentColor = customAccentColor ?: type.accentColor
+    val icon = customIcon ?: type.icon
+
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
 
@@ -112,135 +205,553 @@ fun PremiumDialog(
                     verticalArrangement = Arrangement.Center
                 ) {
                     // ── Animated Icon Container ──
-                    var iconVisible by remember { mutableStateOf(false) }
-                    LaunchedEffect(Unit) { iconVisible = true }
-
-                    val iconScale by animateFloatAsState(
-                        targetValue = if (iconVisible) 1f else 0f,
-                        animationSpec = spring(
-                            dampingRatio = 0.6f,
-                            stiffness = 200f
-                        ),
-                        label = "iconScale"
+                    InsightDialogAnimatedIcon(
+                        icon = icon,
+                        accentColor = accentColor,
+                        type = type
                     )
-                    val iconRotation by animateFloatAsState(
-                        targetValue = if (iconVisible) 0f else -90f,
-                        animationSpec = spring(
-                            dampingRatio = 0.8f,
-                            stiffness = 150f
-                        ),
-                        label = "iconRotation"
-                    )
-
-                    val accentColor = customAccentColor ?: type.accentColor
-                    val icon = customIcon ?: type.icon
-
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .scale(iconScale)
-                            .clip(CircleShape)
-                            .background(accentColor.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = accentColor,
-                            modifier = Modifier
-                                .size(44.dp)
-                                .graphicsLayer { rotationZ = iconRotation }
-                        )
-                    }
 
                     Spacer(Modifier.height(24.dp))
 
                     // ── Text Content with fade-in ──
-                    var textVisible by remember { mutableStateOf(false) }
-                    LaunchedEffect(Unit) {
-                        delay(200)
-                        textVisible = true
-                    }
+                    InsightDialogTextContent(
+                        title = title,
+                        message = message
+                    )
 
-                    AnimatedVisibility(
-                        visible = textVisible,
-                        enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 })
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = AppPalette.textPrimary,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = message,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = AppPalette.textMuted,
-                                textAlign = TextAlign.Center,
-                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
-                            )
-                        }
+                    // ── Optional supporting content (e.g. extra info cards) ──
+                    if (supportingContent != null) {
+                        Spacer(Modifier.height(16.dp))
+                        supportingContent()
                     }
 
                     Spacer(Modifier.height(28.dp))
 
-                    // ── Buttons ──
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        // Primary button
-                        Button(
-                            onClick = {
-                                onConfirm()
-                                onDismiss()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = accentColor,
-                                contentColor = Color.White
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(
-                                defaultElevation = 0.dp,
-                                pressedElevation = 4.dp
-                            )
-                        ) {
-                            Text(
-                                text = confirmText,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                    // ── Buttons styled per dialog type ──
+                    InsightDialogButtons(
+                        type = type,
+                        accentColor = accentColor,
+                        confirmText = confirmText,
+                        dismissText = dismissText,
+                        showDismissButton = showDismissButton,
+                        onConfirm = { onConfirm(); onDismiss() },
+                        onDismiss = onDismiss
+                    )
+                }
+            }
+        }
+    }
+}
 
-                        // Secondary button
-                        if (showDismissButton) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .clickable { onDismiss() },
-                                shape = RoundedCornerShape(14.dp),
-                                color = AppPalette.card,
-                                border = BorderStroke(1.dp, AppPalette.cardBorder)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = dismissText,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Medium,
-                                        color = AppPalette.textMuted
-                                    )
-                                }
-                            }
+// ══════════════════════════════════════════════════════════════════════════════
+// ANIMATED ICON — unique spring per dialog type
+// ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun InsightDialogAnimatedIcon(
+    icon: ImageVector,
+    accentColor: Color,
+    type: DialogType
+) {
+    var iconVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { iconVisible = true }
+
+    // ── Visually distinct Animatable + keyframes per dialog type ──
+    when (type) {
+        DialogType.SUCCESS -> {
+            // Smooth settle: gentle bounce, no rotation
+            val scale = remember { Animatable(0f) }
+            val rotation = remember { Animatable(0f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    scale.animateTo(1f, keyframes {
+                        durationMillis = 300
+                        0f at 0 with LinearEasing
+                        1.1f at 150  // overshoot
+                        0.95f at 220 // settle back
+                        1f at 300    // final
+                    })
+                }
+            }
+            IconContainer(icon, accentColor, scale.value, rotation.value)
+        }
+        DialogType.DELETE -> {
+            // Sharp snap: aggressive bounce + quick rotation
+            val scale = remember { Animatable(0f) }
+            val rotation = remember { Animatable(-45f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    launch { scale.animateTo(1f, keyframes {
+                        durationMillis = 250
+                        0f at 0
+                        1.3f at 100  // aggressive overshoot
+                        0.85f at 170 // bounce back
+                        1f at 250
+                    }) }
+                    launch { rotation.animateTo(0f, keyframes {
+                        durationMillis = 200
+                        -45f at 0
+                        5f at 120    // slight overshoot past 0
+                        0f at 200
+                    }) }
+                }
+            }
+            IconContainer(icon, accentColor, scale.value, rotation.value)
+        }
+        DialogType.ERROR -> {
+            // Tense shake: scale up with horizontal wobble via Animatable + keyframes
+            val scale = remember { Animatable(0f) }
+            val shakeOffset = remember { Animatable(0f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    launch { scale.animateTo(1f, keyframes {
+                        durationMillis = 250
+                        0f at 0
+                        1.2f at 80   // tense overshoot
+                        0.9f at 160  // bounce back
+                        1f at 250
+                    }) }
+                    launch {
+                        delay(150)
+                        shakeOffset.animateTo(0f, keyframes {
+                            durationMillis = 240
+                            0f at 0
+                            6f at 40    // right
+                            -6f at 80   // left
+                            4f at 120   // right (smaller)
+                            -3f at 160  // left (smaller)
+                            2f at 200   // right (dampening)
+                            0f at 240   // settle
+                        })
+                    }
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .scale(scale.value)
+                    .offset(x = shakeOffset.value.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(44.dp)
+                )
+            }
+        }
+        DialogType.WARNING -> {
+            // Moderate pulse: scale with rotation
+            val scale = remember { Animatable(0f) }
+            val rotation = remember { Animatable(15f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    launch { scale.animateTo(1f, keyframes {
+                        durationMillis = 300
+                        0f at 0
+                        1.15f at 120 // overshoot
+                        0.97f at 200 // settle back
+                        1f at 300
+                    }) }
+                    launch { rotation.animateTo(0f, keyframes {
+                        durationMillis = 350
+                        15f at 0
+                        -5f at 180   // slight counter-overshoot
+                        0f at 350
+                    }) }
+                }
+            }
+            IconContainer(icon, accentColor, scale.value, rotation.value)
+        }
+        DialogType.GOAL -> {
+            // Celebratory: large bounce with full rotation
+            val scale = remember { Animatable(0f) }
+            val rotation = remember { Animatable(0f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    launch { scale.animateTo(1f, keyframes {
+                        durationMillis = 400
+                        0f at 0
+                        1.4f at 150  // big overshoot
+                        0.8f at 250  // deep bounce back
+                        1.1f at 320  // recover
+                        1f at 400
+                    }) }
+                    launch { rotation.animateTo(360f, keyframes {
+                        durationMillis = 500
+                        0f at 0 with LinearEasing
+                        360f at 500
+                    }) }
+                }
+            }
+            IconContainer(icon, accentColor, scale.value, rotation.value)
+        }
+        DialogType.ALLOCATION -> {
+            // Precise: smooth scale from 0.5, no rotation
+            val scale = remember { Animatable(0.5f) }
+            val rotation = remember { Animatable(0f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    scale.animateTo(1f, keyframes {
+                        durationMillis = 280
+                        0.5f at 0
+                        1.08f at 120 // subtle overshoot
+                        0.98f at 200 // settle
+                        1f at 280
+                    })
+                }
+            }
+            IconContainer(icon, accentColor, scale.value, rotation.value)
+        }
+        DialogType.BUDGET -> {
+            // Balanced: moderate bounce with slight rotation
+            val scale = remember { Animatable(0f) }
+            val rotation = remember { Animatable(-20f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    launch { scale.animateTo(1f, keyframes {
+                        durationMillis = 320
+                        0f at 0
+                        1.2f at 130  // overshoot
+                        0.95f at 220 // settle back
+                        1f at 320
+                    }) }
+                    launch { rotation.animateTo(0f, keyframes {
+                        durationMillis = 300
+                        -20f at 0
+                        3f at 180    // slight counter-overshoot
+                        0f at 300
+                    }) }
+                }
+            }
+            IconContainer(icon, accentColor, scale.value, rotation.value)
+        }
+        DialogType.ACCOUNT -> {
+            // Stable: smooth settle, minimal rotation
+            val scale = remember { Animatable(0f) }
+            val rotation = remember { Animatable(10f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    launch { scale.animateTo(1f, keyframes {
+                        durationMillis = 300
+                        0f at 0
+                        1.1f at 140  // gentle overshoot
+                        1f at 300
+                    }) }
+                    launch { rotation.animateTo(0f, keyframes {
+                        durationMillis = 250
+                        10f at 0
+                        0f at 250
+                    }) }
+                }
+            }
+            IconContainer(icon, accentColor, scale.value, rotation.value)
+        }
+        DialogType.ARCHIVE -> {
+            // Gentle: slow settle from 0.8, downward rotation hint
+            val scale = remember { Animatable(0.8f) }
+            val rotation = remember { Animatable(30f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    launch { scale.animateTo(1f, keyframes {
+                        durationMillis = 400
+                        0.8f at 0
+                        1.05f at 200 // subtle overshoot
+                        1f at 400
+                    }) }
+                    launch { rotation.animateTo(0f, keyframes {
+                        durationMillis = 450
+                        30f at 0
+                        -3f at 300   // slight settle-back
+                        0f at 450
+                    }) }
+                }
+            }
+            IconContainer(icon, accentColor, scale.value, rotation.value)
+        }
+        DialogType.INFORMATION -> {
+            // Calm: gentle scale from 0.9, no rotation
+            val scale = remember { Animatable(0.9f) }
+            val rotation = remember { Animatable(0f) }
+            LaunchedEffect(Unit) {
+                if (iconVisible) {
+                    scale.animateTo(1f, keyframes {
+                        durationMillis = 350
+                        0.9f at 0
+                        1.03f at 180 // very subtle overshoot
+                        1f at 350
+                    })
+                }
+            }
+            IconContainer(icon, accentColor, scale.value, rotation.value)
+        }
+    }
+}
+
+@Composable
+private fun IconContainer(
+    icon: ImageVector,
+    accentColor: Color,
+    scale: Float,
+    rotation: Float
+) {
+    Box(
+        modifier = Modifier
+            .size(80.dp)
+            .scale(scale)
+            .clip(CircleShape)
+            .background(accentColor.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = accentColor,
+            modifier = Modifier
+                .size(44.dp)
+                .graphicsLayer { rotationZ = rotation }
+        )
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TEXT CONTENT — staggered fade-in
+// ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun InsightDialogTextContent(
+    title: String,
+    message: String
+) {
+    var textVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(200)
+        textVisible = true
+    }
+
+    AnimatedVisibility(
+        visible = textVisible,
+        enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 })
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = AppPalette.textPrimary,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppPalette.textMuted,
+                textAlign = TextAlign.Center,
+                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+            )
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BUTTONS — styled per [DialogButtonStyle]
+// ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun InsightDialogButtons(
+    type: DialogType,
+    accentColor: Color,
+    confirmText: String,
+    dismissText: String,
+    showDismissButton: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        when (type.buttonStyle) {
+            DialogButtonStyle.DESTRUCTIVE -> {
+                // Primary: filled red
+                Button(
+                    onClick = onConfirm,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppPalette.error,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 4.dp
+                    )
+                ) {
+                    Text(
+                        text = confirmText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                // Secondary: outlined
+                if (showDismissButton) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clickable { onDismiss() },
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color.Transparent,
+                        border = BorderStroke(1.dp, AppPalette.cardBorder)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = dismissText,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = AppPalette.textMuted
+                            )
                         }
+                    }
+                }
+            }
+
+            DialogButtonStyle.POSITIVE -> {
+                // Primary: filled accent
+                Button(
+                    onClick = onConfirm,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = accentColor,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 4.dp
+                    )
+                ) {
+                    Text(
+                        text = confirmText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                // Secondary: outlined
+                if (showDismissButton) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clickable { onDismiss() },
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color.Transparent,
+                        border = BorderStroke(1.dp, AppPalette.cardBorder)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = dismissText,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = AppPalette.textMuted
+                            )
+                        }
+                    }
+                }
+            }
+
+            DialogButtonStyle.WARNING_STYLE -> {
+                // Primary: filled amber/warning
+                Button(
+                    onClick = onConfirm,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = accentColor,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 4.dp
+                    )
+                ) {
+                    Text(
+                        text = confirmText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                // Secondary: outlined
+                if (showDismissButton) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clickable { onDismiss() },
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color.Transparent,
+                        border = BorderStroke(1.dp, AppPalette.cardBorder)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = dismissText,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = AppPalette.textMuted
+                            )
+                        }
+                    }
+                }
+            }
+
+            DialogButtonStyle.NEUTRAL -> {
+                // Primary: filled accent
+                Button(
+                    onClick = onConfirm,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = accentColor,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 4.dp
+                    )
+                ) {
+                    Text(
+                        text = confirmText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                // Secondary: text button (no border)
+                if (showDismissButton) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                    ) {
+                        Text(
+                            text = dismissText,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = AppPalette.textMuted
+                        )
                     }
                 }
             }
@@ -248,7 +759,356 @@ fun PremiumDialog(
     }
 }
 
-// ─── Premium Success Overlay ───────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// LEGACY ALIAS — PremiumDialog (delegates to InsightDialog)
+// ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+fun PremiumDialog(
+    type: PremiumDialogType,
+    title: String,
+    message: String,
+    onDismiss: () -> Unit,
+    confirmText: String = "Confirm",
+    onConfirm: () -> Unit,
+    dismissText: String = "Cancel",
+    showDismissButton: Boolean = true,
+    customIcon: ImageVector? = null,
+    customAccentColor: Color? = null,
+    properties: DialogProperties = DialogProperties()
+) {
+    InsightDialog(
+        type = type,
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = confirmText,
+        onConfirm = onConfirm,
+        dismissText = dismissText,
+        showDismissButton = showDismissButton,
+        customIcon = customIcon,
+        customAccentColor = customAccentColor,
+        properties = properties
+    )
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SPECIALIZED DIALOG COMPOSABLES
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ─── Success ──────────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightSuccessDialog(
+    title: String = "Success",
+    message: String,
+    onDismiss: () -> Unit,
+    confirmText: String = "OK"
+) {
+    InsightDialog(
+        type = DialogType.SUCCESS,
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = confirmText,
+        onConfirm = { },
+        showDismissButton = false
+    )
+}
+
+// ─── Warning ──────────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightWarningDialog(
+    title: String = "Warning",
+    message: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    confirmText: String = "Continue",
+    dismissText: String = "Cancel"
+) {
+    InsightDialog(
+        type = DialogType.WARNING,
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = confirmText,
+        onConfirm = onConfirm,
+        dismissText = dismissText
+    )
+}
+
+// ─── Error ────────────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightErrorDialog(
+    title: String = "Error",
+    message: String,
+    onDismiss: () -> Unit,
+    onRetry: (() -> Unit)? = null,
+    retryText: String = "Retry"
+) {
+    InsightDialog(
+        type = DialogType.ERROR,
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = if (onRetry != null) retryText else "OK",
+        onConfirm = { onRetry?.invoke() },
+        showDismissButton = onRetry != null
+    )
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightDeleteDialog(
+    itemName: String,
+    message: String? = null,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    confirmText: String = "Delete"
+) {
+    InsightDialog(
+        type = DialogType.DELETE,
+        title = "Delete $itemName?",
+        message = message ?: "This action cannot be undone. The item will be permanently removed.",
+        onDismiss = onDismiss,
+        confirmText = confirmText,
+        onConfirm = onConfirm,
+        dismissText = "Cancel"
+    )
+}
+
+// ─── Archive ──────────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightArchiveDialog(
+    itemName: String,
+    message: String? = null,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    InsightDialog(
+        type = DialogType.ARCHIVE,
+        title = "Archive $itemName?",
+        message = message ?: "You can view archived items in settings.",
+        onDismiss = onDismiss,
+        confirmText = "Archive",
+        onConfirm = onConfirm,
+        dismissText = "Cancel"
+    )
+}
+
+// ─── Allocation ───────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightAllocationDialog(
+    title: String = "Confirm Allocation",
+    message: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    confirmText: String = "Allocate"
+) {
+    InsightDialog(
+        type = DialogType.ALLOCATION,
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = confirmText,
+        onConfirm = onConfirm,
+        dismissText = "Cancel"
+    )
+}
+
+// ─── Goal ─────────────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightGoalDialog(
+    title: String = "Goal",
+    message: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    confirmText: String = "Confirm",
+    dismissText: String = "Cancel"
+) {
+    InsightDialog(
+        type = DialogType.GOAL,
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = confirmText,
+        onConfirm = onConfirm,
+        dismissText = dismissText
+    )
+}
+
+// ─── Budget ───────────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightBudgetDialog(
+    title: String = "Budget",
+    message: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    confirmText: String = "Confirm"
+) {
+    InsightDialog(
+        type = DialogType.BUDGET,
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = confirmText,
+        onConfirm = onConfirm,
+        dismissText = "Cancel"
+    )
+}
+
+// ─── Account ──────────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightAccountDialog(
+    title: String = "Account",
+    message: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    confirmText: String = "Confirm"
+) {
+    InsightDialog(
+        type = DialogType.ACCOUNT,
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = confirmText,
+        onConfirm = onConfirm,
+        dismissText = "Cancel"
+    )
+}
+
+// ─── Information ──────────────────────────────────────────────────────────────
+
+@Composable
+fun InsightInfoDialog(
+    title: String = "Information",
+    message: String,
+    onDismiss: () -> Unit,
+    confirmText: String = "Got it"
+) {
+    InsightDialog(
+        type = DialogType.INFORMATION,
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = confirmText,
+        onConfirm = { },
+        showDismissButton = false
+    )
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LEGACY SPECIALIZED COMPOSABLES (backward compat wrappers)
+// ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+fun PremiumDeleteConfirmDialog(
+    itemName: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    message: String? = null
+) {
+    InsightDeleteDialog(
+        itemName = itemName,
+        message = message,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm
+    )
+}
+
+@Composable
+fun PremiumArchiveConfirmDialog(
+    itemName: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    message: String? = null
+) {
+    InsightArchiveDialog(
+        itemName = itemName,
+        message = message,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm
+    )
+}
+
+@Composable
+fun PremiumWarningDialog(
+    title: String,
+    message: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    confirmText: String = "Confirm",
+    dismissText: String = "Cancel"
+) {
+    InsightWarningDialog(
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        confirmText = confirmText,
+        dismissText = dismissText
+    )
+}
+
+@Composable
+fun PremiumErrorDialog(
+    title: String = "Error",
+    message: String,
+    onDismiss: () -> Unit,
+    onRetry: (() -> Unit)? = null,
+    retryText: String = "Retry"
+) {
+    InsightErrorDialog(
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        onRetry = onRetry,
+        retryText = retryText
+    )
+}
+
+@Composable
+fun PremiumInfoDialog(
+    title: String = "Information",
+    message: String,
+    onDismiss: () -> Unit,
+    confirmText: String = "Got it"
+) {
+    InsightInfoDialog(
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = confirmText
+    )
+}
+
+@Composable
+fun PremiumLogoutDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    InsightDialog(
+        type = DialogType.DELETE,
+        title = "Log Out?",
+        message = "Are you sure you want to log out? You'll need to sign in again to access your account.",
+        onDismiss = onDismiss,
+        confirmText = "Log Out",
+        onConfirm = onConfirm,
+        dismissText = "Stay"
+    )
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PREMIUM SUCCESS OVERLAY (auto-dismiss variant)
+// ══════════════════════════════════════════════════════════════════════════════
 
 @Composable
 fun PremiumSuccessOverlay(
@@ -372,125 +1232,4 @@ fun PremiumSuccessOverlay(
             }
         }
     }
-}
-
-// ─── Premium Delete Confirmation ───────────────────────────────────────────────
-
-@Composable
-fun PremiumDeleteConfirmDialog(
-    itemName: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    message: String? = null
-) {
-    PremiumDialog(
-        type = PremiumDialogType.DELETE,
-        title = "Delete $itemName?",
-        message = message ?: "This action cannot be undone. The item will be permanently removed.",
-        onDismiss = onDismiss,
-        confirmText = "Delete",
-        onConfirm = onConfirm,
-        dismissText = "Cancel"
-    )
-}
-
-// ─── Premium Archive Confirmation ──────────────────────────────────────────────
-
-@Composable
-fun PremiumArchiveConfirmDialog(
-    itemName: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    message: String? = null
-) {
-    PremiumDialog(
-        type = PremiumDialogType.ARCHIVE,
-        title = "Archive $itemName?",
-        message = message ?: "You can view archived items in settings.",
-        onDismiss = onDismiss,
-        confirmText = "Archive",
-        onConfirm = onConfirm,
-        dismissText = "Cancel"
-    )
-}
-
-// ─── Premium Warning Dialog ────────────────────────────────────────────────────
-
-@Composable
-fun PremiumWarningDialog(
-    title: String,
-    message: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    confirmText: String = "Confirm",
-    dismissText: String = "Cancel"
-) {
-    PremiumDialog(
-        type = PremiumDialogType.WARNING,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText,
-        onConfirm = onConfirm,
-        dismissText = dismissText
-    )
-}
-
-// ─── Premium Error Dialog ──────────────────────────────────────────────────────
-
-@Composable
-fun PremiumErrorDialog(
-    title: String = "Error",
-    message: String,
-    onDismiss: () -> Unit,
-    onRetry: (() -> Unit)? = null,
-    retryText: String = "Retry"
-) {
-    PremiumDialog(
-        type = PremiumDialogType.ERROR,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = if (onRetry != null) retryText else "OK",
-        onConfirm = { onRetry?.invoke() },
-        showDismissButton = onRetry != null
-    )
-}
-
-// ─── Premium Info Dialog ───────────────────────────────────────────────────────
-
-@Composable
-fun PremiumInfoDialog(
-    title: String = "Information",
-    message: String,
-    onDismiss: () -> Unit,
-    confirmText: String = "Got it"
-) {
-    PremiumDialog(
-        type = PremiumDialogType.INFO,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText,
-        onConfirm = { },
-        showDismissButton = false
-    )
-}
-
-// ─── Premium Logout Confirmation ───────────────────────────────────────────────
-
-@Composable
-fun PremiumLogoutDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    PremiumDialog(
-        type = PremiumDialogType.DELETE,
-        title = "Log Out?",
-        message = "Are you sure you want to log out? You'll need to sign in again to access your account.",
-        onDismiss = onDismiss,
-        confirmText = "Log Out",
-        onConfirm = onConfirm,
-        dismissText = "Stay"
-    )
 }

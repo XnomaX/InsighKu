@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Spa
 import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.Button
@@ -66,13 +67,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.R
 import com.example.insightku.feature.home.domain.MerchantMemory
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.LocalResponsiveDimens
 import com.example.insightku.core.ui.theme.VisualDensity
+import com.example.insightku.core.i18n.LocaleHelper
+import com.example.insightku.core.i18n.SupportedLocale
 import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.feature.settings.presentation.SettingsViewModel
 
@@ -114,6 +119,7 @@ fun SettingsScreen(
     ) {
         item { IdentityHeader(uiState) }
         item { AppearanceSection(uiState, onEvent) }
+        item { LanguageSection(uiState, onEvent) }
         item { AccentSection(uiState, onEvent) }
         item { ComfortSection(uiState, onEvent) }
         item { VisualDensitySection(uiState, onEvent) }
@@ -215,6 +221,148 @@ private fun IdentityHeader(uiState: SettingsUiState) {
             style = MaterialTheme.typography.bodyMedium,
             color = SettingsPalette.textMuted
         )
+    }
+}
+
+// ── 1b. Language picker ─────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    var showSheet by remember { mutableStateOf(false) }
+    val currentLang = uiState.appLanguage
+
+    SettingsSurface {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showSheet = true },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionLabel(
+                Icons.Default.Language,
+                stringResource(R.string.settings_language),
+                stringResource(R.string.settings_language_desc)
+            )
+            Spacer(Modifier.weight(1f))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)
+            ) {
+                Text(
+                    text = when (currentLang) {
+                        AppLanguage.ID -> "🇮🇩 Indonesia"
+                        AppLanguage.EN -> "🇺🇸 English"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SettingsPalette.Purple
+                )
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = SettingsPalette.textMuted,
+                    modifier = Modifier.size(Dimens.IconSizeMedium)
+                )
+            }
+        }
+    }
+
+    if (showSheet) {
+        LanguageBottomSheet(
+            currentLanguage = currentLang,                onSelect = { lang ->
+                onEvent(SettingsEvent.OnLanguageChange(lang))
+                showSheet = false
+            },
+            onDismiss = { showSheet = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageBottomSheet(
+    currentLanguage: AppLanguage,
+    onSelect: (AppLanguage) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val Purple = SettingsPalette.Purple
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = Dimens.BottomSheetRadius, topEnd = Dimens.BottomSheetRadius),
+        containerColor = SettingsPalette.card,
+        tonalElevation = 0.dp,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = Dimens.PaddingMedium, bottom = Dimens.PaddingSmall)
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(SettingsPalette.cardBorder)
+            )
+        }
+    ) {
+        Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
+            Text(
+                text = stringResource(R.string.settings_language),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = SettingsPalette.textPrimary,
+                modifier = Modifier.padding(
+                    horizontal = Dimens.CardInnerPaddingLarge,
+                    vertical = Dimens.PaddingLarge
+                )
+            )
+
+            AppLanguage.entries.forEach { language ->
+                val isSelected = language == currentLanguage
+                val rowBg = if (isSelected) SettingsPalette.tint(Purple) else Color.Transparent
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(rowBg)
+                        .clickable { onSelect(language) }
+                        .padding(
+                            horizontal = Dimens.CardInnerPaddingLarge,
+                            vertical = Dimens.PaddingLarge
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
+                ) {
+                    Text(
+                        text = when (language) {
+                            AppLanguage.ID -> "🇮🇩"
+                            AppLanguage.EN -> "🇺🇸"
+                        },
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = when (language) {
+                                AppLanguage.ID -> "Bahasa Indonesia"
+                                AppLanguage.EN -> "English"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isSelected) Purple else SettingsPalette.textPrimary
+                        )
+                    }
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Purple,
+                            modifier = Modifier.size(Dimens.IconSizeMedium)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

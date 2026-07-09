@@ -52,10 +52,11 @@ import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.LocalAccent
+import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.utils.TimeUtils
 import com.example.insightku.feature.home.presentation.TransactionDetailsViewModel
-import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
 
@@ -138,30 +139,19 @@ private fun TxGroup.label(): String = when (this) {
 
 
 private fun formatDateClean(dateMillis: Long): String {
-    val date      = Date(dateMillis)
-    val today     = Calendar.getInstance()
-    val yesterday = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }
-    val txCal     = Calendar.getInstance().apply { time = date }
-    val timeFmt   = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val time = DateFormatter.formatTime(dateMillis)
     return when {
-        today.get(Calendar.YEAR) == txCal.get(Calendar.YEAR) &&
-        today.get(Calendar.DAY_OF_YEAR) == txCal.get(Calendar.DAY_OF_YEAR) ->
-            "Today, ${timeFmt.format(date)}"
-        yesterday.get(Calendar.YEAR) == txCal.get(Calendar.YEAR) &&
-        yesterday.get(Calendar.DAY_OF_YEAR) == txCal.get(Calendar.DAY_OF_YEAR) ->
-            "Yesterday, ${timeFmt.format(date)}"
-        today.get(Calendar.YEAR) == txCal.get(Calendar.YEAR) ->
-            SimpleDateFormat("d MMM", Locale.ENGLISH).format(date)
-        else ->
-            SimpleDateFormat("d MMM yyyy", Locale.ENGLISH).format(date)
+        DateFormatter.isToday(dateMillis) -> "${DateFormatter.getTodayLabel()}, $time"
+        DateFormatter.isYesterday(dateMillis) -> "${DateFormatter.getYesterdayLabel()}, $time"
+        else -> DateFormatter.formatShortDate(dateMillis)
     }
 }
 
 private fun formatFullDate(dateMillis: Long): String =
-    SimpleDateFormat("EEEE, d MMMM yyyy", Locale.ENGLISH).format(Date(dateMillis))
+    DateFormatter.formatDateTime(dateMillis)
 
 private fun formatCurrencyRp(amount: Double): String =
-    "Rp " + String.format(Locale.getDefault(), "%,.0f", abs(amount))
+    NumberFormatter.formatCurrency(abs(amount))
 
 // --- Main Screen --------------------------------------------------------------
 
