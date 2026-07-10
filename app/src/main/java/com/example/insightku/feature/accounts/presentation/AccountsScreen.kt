@@ -602,13 +602,8 @@ private fun AccountDetailSheet(
         accent
     }
 
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
-
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
         containerColor = AppPalette.card,
         dragHandle = {
             Box(

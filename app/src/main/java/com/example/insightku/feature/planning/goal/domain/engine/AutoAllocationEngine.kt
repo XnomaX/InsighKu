@@ -228,12 +228,23 @@ class AutoAllocationEngine @Inject constructor(
         val accountId = rule.triggerParams.accountId ?: rule.sourceAccountId ?: return null
         val account = accountRepository.getAccountById(accountId) ?: return null
         if (account.balance <= threshold) return null
+        
         val excess = account.balance - threshold
         val allocationAmount = calculateAllocationAmount(rule, excess)
         if (allocationAmount <= 0) return null
+        
+        // Respect minRemainingBalance: ensure account balance doesn't fall below this amount
+        val minRemaining = rule.minRemainingBalance
+        val maxAllocatable = if (minRemaining > 0) {
+            (account.balance - minRemaining).coerceAtLeast(0.0)
+        } else {
+            account.balance
+        }
+        
         val remainingToGoal = goal.targetAmount - currentAmount
-        val actualAmount = min(allocationAmount, remainingToGoal)
-        if (account.balance < actualAmount) return null
+        val actualAmount = min(min(allocationAmount, remainingToGoal), maxAllocatable)
+        if (actualAmount <= 0) return null
+        
         return AllocationSuggestion(rule.goalId, goal.name, actualAmount, accountId, account.name, "Balance ${formatCurrency(account.balance)} exceeds ${formatCurrency(threshold)}", rule.description, ruleId = rule.id)
     }
 
@@ -250,11 +261,141 @@ class AutoAllocationEngine @Inject constructor(
                 com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency.MONTHLY -> if (lastExecuted.toLocalDate().plusMonths(1).isAfter(now.toLocalDate())) return false
             }
         }
-        return when (rule.scheduledFrequency) {
+        // Check day match first
+        val dayMatches = when (rule.scheduledFrequency) {
             com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency.DAILY -> true
             com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency.WEEKLY, com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency.BIWEEKLY -> now.dayOfWeek.value == rule.scheduledDayOfWeek
             com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency.MONTHLY -> now.dayOfMonth == rule.scheduledDayOfMonth
         }
+        if (!dayMatches) return false
+        // Check execution time: worker runs every 6 hours, so allow execution if current hour is within [scheduledHour, scheduledHour + 6)
+        val scheduledHour = rule.executionHour
+        val currentHour = now.hour
+        val hoursSinceScheduledHour = (currentHour - scheduledHour + 24) % 24
+        return hoursSinceScheduledHour < 6
+    }
+
+    /**
+     * Process Category Based rules with AFTER_DAILY_TOTAL or AFTER_MONTHLY_TOTAL execution modes.
+     * These modes aggregate spending in selected categories over a period, then allocate a percentage/fixed amount.
+     */
+    suspend fun processCategoryBasedPeriodicRules(): AutoAllocationResult {
+        val enabledRules = dataSource.getEnabledRules()
+        val categoryRules = enabledRules.filter { rule ->
+            val trigger = AllocationTriggerType.fromString(rule.triggerType)
+            trigger == AllocationTriggerType.SPENDING_CATEGORY &&
+            CategoryBasedExecutionMode.fromString(rule.categoryBasedExecutionMode) != CategoryBasedExecutionMode.EVERY_TRANSACTION
+        }
+
+        Log.d(TAG, "processCategoryBasedPeriodicRules: ${categoryRules.size} periodic category rules")
+
+        if (categoryRules.isEmpty()) return AutoAllocationResult(emptyList(), emptyList(), null, null)
+
+        val suggestions = mutableListOf<AllocationSuggestion>()
+        val autoExecuted = mutableListOf<AllocationSuggestion>()
+
+        for (entity in categoryRules) {
+            val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal")
+            try {
+                val result = evaluatePeriodicCategoryRule(rule)
+                if (result != null) {
+                    Log.d(TAG, "[PeriodicCategoryEval] Rule=${rule.id} Goal=${rule.goalName} mode=${rule.categoryBasedExecutionMode.value} → ${result.amount}")
+                    when (rule.confirmationMode) {
+                        com.example.insightku.feature.planning.goal.data.model.ConfirmationMode.AUTO -> autoExecuted.add(result)
+                        com.example.insightku.feature.planning.goal.data.model.ConfirmationMode.CONFIRMATION_REQUIRED -> suggestions.add(result)
+                    }
+                } else {
+                    Log.d(TAG, "[PeriodicCategoryEval] Rule=${rule.id} Goal=${rule.goalName} → returned null (no spending or validation failed)")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "[PeriodicCategoryEval] Rule=${rule.id} EXCEPTION — ${e.message}", e)
+            }
+        }
+
+        Log.d(TAG, "processCategoryBasedPeriodicRules complete: ${autoExecuted.size} auto, ${suggestions.size} confirm-first")
+        return AutoAllocationResult(suggestions, autoExecuted, null, null)
+    }
+
+    /**
+     * Evaluate a Category Based rule with AFTER_DAILY_TOTAL or AFTER_MONTHLY_TOTAL mode.
+     * Calculates total spending in selected categories over the period, then allocates.
+     */
+    private suspend fun evaluatePeriodicCategoryRule(rule: AutoAllocationRule): AllocationSuggestion? {
+        // Only process AFTER_DAILY_TOTAL and AFTER_MONTHLY_TOTAL modes
+        val execMode = rule.categoryBasedExecutionMode
+        if (execMode == CategoryBasedExecutionMode.EVERY_TRANSACTION) return null
+
+        val goal = dataSource.getGoalById(rule.goalId) ?: return null
+        if (goal.goalStatus != GoalStatus.ACTIVE) return null
+        val currentAmount = dataSource.getTotalContributed(rule.goalId)
+        if (currentAmount >= goal.targetAmount) return null
+
+        // Calculate spending total for the selected categories over the period
+        val totalSpending = calculateCategorySpendingTotal(rule, execMode)
+        if (totalSpending <= 0) {
+            Log.d(TAG, "[PeriodicCategoryEval] Rule=${rule.id} — no spending in selected categories")
+            return null
+        }
+
+        // Calculate allocation amount based on the total spending
+        val allocationAmount = calculateAllocationAmount(rule, totalSpending)
+        if (allocationAmount <= 0) return null
+
+        val sourceAccountId = rule.sourceAccountId ?: return null
+        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
+
+        val remainingToGoal = goal.targetAmount - currentAmount
+        val actualAmount = min(allocationAmount, remainingToGoal)
+        if (account.balance < actualAmount) return null
+
+        val periodLabel = if (execMode == CategoryBasedExecutionMode.AFTER_DAILY_TOTAL) "today" else "this month"
+        return AllocationSuggestion(
+            rule.goalId, goal.name, actualAmount, sourceAccountId, account.name,
+            "Total spending $periodLabel: ${formatCurrency(totalSpending)}",
+            rule.description, ruleId = rule.id
+        )
+    }
+
+    /**
+     * Calculate total spending in selected categories for the specified period.
+     */
+    private suspend fun calculateCategorySpendingTotal(
+        rule: AutoAllocationRule,
+        execMode: CategoryBasedExecutionMode
+    ): Double {
+        val now = java.time.LocalDateTime.now()
+        val categoryIds = rule.categoryBasedCategoryIds
+        if (categoryIds.isEmpty()) return 0.0
+
+        // Calculate date range for the period
+        val (startTime, endTime) = when (execMode) {
+            CategoryBasedExecutionMode.AFTER_DAILY_TOTAL -> {
+                val dayStart = now.toLocalDate().atStartOfDay(java.time.ZoneId.systemDefault())
+                val dayEnd = dayStart.plusDays(1)
+                Pair(dayStart.toInstant().toEpochMilli(), dayEnd.toInstant().toEpochMilli())
+            }
+            CategoryBasedExecutionMode.AFTER_MONTHLY_TOTAL -> {
+                val monthStart = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0)
+                val monthEnd = monthStart.plusMonths(1)
+                Pair(monthStart.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(), monthEnd.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+            }
+            else -> return 0.0
+        }
+
+        // Get transactions for the period
+        val transactions = dataSource.getTransactionsByDateRange(startTime, endTime)
+        
+        // Load categories once and build lookup map for efficiency
+        val categoryMap = try {
+            dataSource.getAllCategories().first().associateBy { it.name.trim().lowercase() }
+        } catch (e: Exception) { emptyMap() }
+        
+        // Filter by categories and sum expenses
+        return transactions.filter { tx ->
+            tx.type == TransactionType.EXPENSE && categoryIds.contains(
+                categoryMap[tx.category.trim().lowercase()]?.id
+            )
+        }.sumOf { it.amount }
     }
 
     private fun calculateAllocationAmount(rule: AutoAllocationRule, sourceAmount: Double): Double {

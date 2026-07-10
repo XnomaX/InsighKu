@@ -100,13 +100,10 @@ fun EditTransactionDetail(
     val accentColor = if (isIncome) EditIncomeGreen else EditPurple
     val amountColor = if (isIncome) EditIncomeGreen else EditExpenseRed
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
     BackHandler { onDismiss() }
 
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState       = sheetState,
         containerColor   = EditSurface,
         dragHandle = {
             Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {

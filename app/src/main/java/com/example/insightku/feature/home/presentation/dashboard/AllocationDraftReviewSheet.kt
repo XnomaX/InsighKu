@@ -36,7 +36,7 @@ fun AllocationDraftReviewSheet(
     onReject: (DraftTransaction) -> Unit,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         containerColor = AppPalette.card

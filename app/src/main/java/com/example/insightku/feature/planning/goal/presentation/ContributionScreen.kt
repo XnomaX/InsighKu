@@ -537,7 +537,7 @@ private fun AccountPickerDialog(
     onDismiss: () -> Unit,
     goalColor: Color
 ) {
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),

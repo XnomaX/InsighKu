@@ -54,6 +54,10 @@ class ScheduledAllocationWorker @AssistedInject constructor(
             val balanceResult = autoAllocationEngine.processBalanceAboveRules()
             processResult(balanceResult)
 
+            // Process category-based periodic rules (after_daily_total, after_monthly_total)
+            val categoryPeriodicResult = autoAllocationEngine.processCategoryBasedPeriodicRules()
+            processResult(categoryPeriodicResult)
+
             Log.d(TAG, "Scheduled allocation processing complete")
             Result.success()
         } catch (e: Exception) {
@@ -81,8 +85,8 @@ class ScheduledAllocationWorker @AssistedInject constructor(
                         goalName = suggestion.goalName,
                         amount = suggestion.amount
                     )
-                    // Update lastExecutedAt on matching scheduled rules to prevent duplicate fires
-                    updateLastExecutedForGoal(suggestion.goalId)
+                    // Update lastExecutedAt on the fired rule to prevent duplicate fires
+                    updateLastExecutedForRule(suggestion.ruleId)
                 } else {
                     Log.e(TAG, "[AutoExec] FAILED — ${contributionResult.exceptionOrNull()?.message}")
                     notificationHelper.showAllocationSkippedNotification(
@@ -117,7 +121,7 @@ class ScheduledAllocationWorker @AssistedInject constructor(
                     Log.w(TAG, "[ConfirmFirst] DRAFT DUPLICATE — already pending for rule ${suggestion.ruleId}")
                 }
                 // Update lastExecutedAt to prevent duplicate fires even for confirmation rules
-                updateLastExecutedForGoal(suggestion.goalId)
+                updateLastExecutedForRule(suggestion.ruleId)
             } catch (e: Exception) {
                 Log.e(TAG, "[ConfirmFirst] EXCEPTION creating draft — ${e.message}", e)
             }
@@ -125,19 +129,15 @@ class ScheduledAllocationWorker @AssistedInject constructor(
     }
 
     /**
-     * Update lastExecutedAt on all scheduled rules for a goal to prevent duplicate fires.
+     * Update lastExecutedAt on a specific rule to prevent duplicate fires.
      */
-    private suspend fun updateLastExecutedForGoal(goalId: String) {
+    private suspend fun updateLastExecutedForRule(ruleId: String?) {
+        if (ruleId == null) return
         try {
             val now = System.currentTimeMillis()
-            val rules = autoAllocationRuleDao.getEnabledRulesSync().filter {
-                it.goalId == goalId
-            }
-            for (rule in rules) {
-                autoAllocationRuleDao.setLastExecutedAt(rule.id, now)
-            }
+            autoAllocationRuleDao.setLastExecutedAt(ruleId, now)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update lastExecutedAt: ${e.message}")
+            Log.e(TAG, "Failed to update lastExecutedAt for rule $ruleId: ${e.message}")
         }
     }
 }

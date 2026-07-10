@@ -96,9 +96,8 @@ fun AddCategoryDialog(
         onDismiss()
     }
 
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = { handleDismiss() },
-        sheetState       = sheetState,
         containerColor   = AppPalette.card,
         dragHandle       = {
             Box(

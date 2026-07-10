@@ -38,6 +38,8 @@ import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Money
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
@@ -51,10 +53,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -115,8 +118,6 @@ private fun accountTypeIcon(type: AccountType): ImageVector = when (type) {
     AccountType.CREDIT_CARD -> Icons.Outlined.CreditCard
 }
 
-
-
 // ─── Form State ───────────────────────────────────────────────────────────────
 
 data class AutoAllocationRuleForm(
@@ -138,7 +139,6 @@ data class AutoAllocationRuleForm(
     val categoryId: String? = null,
     val accountId: String? = null,
     val threshold: String? = null,
-    // ── P1.1: Trigger-specific configuration fields ──────────────────────────
     val executionHour: Int = 8,
     val executionMinute: Int = 0,
     val biweeklyStartDate: Long = 0,
@@ -146,29 +146,29 @@ data class AutoAllocationRuleForm(
     val categoryBasedCategoryIds: List<String> = emptyList(),
     val categoryBasedExecutionMode: String = "every_transaction"
 ) {
-    /** Per-trigger-type validation */
     val isValid: Boolean
         get() {
             if (goalId.isBlank()) return false
-            if (allocationValue.toDoubleOrNull() == null || allocationValue.toDoubleOrNull()!! <= 0) return false
+            // ROUND_UP uses rounding logic, not a user-specified allocation value
+            if (triggerType != AllocationTriggerType.ROUND_UP) {
+                if (allocationValue.toDoubleOrNull() == null || allocationValue.toDoubleOrNull()!! <= 0) return false
+            }
             if (sourceAccountId.isNullOrBlank()) return false
-
-            // Trigger-specific validation
             return when (triggerType) {
                 AllocationTriggerType.DAILY,
                 AllocationTriggerType.WEEKLY,
-                AllocationTriggerType.BIWEEKLY,
                 AllocationTriggerType.MONTHLY -> {
-                    // Scheduled rules require valid execution time
                     executionHour in 0..23 && executionMinute in 0..59
                 }
+                AllocationTriggerType.BIWEEKLY -> {
+                    biweeklyStartDate > 0 && executionHour in 0..23 && executionMinute in 0..59
+                }
                 AllocationTriggerType.BALANCE_ABOVE -> {
-                    // Threshold must be > 0
                     val t = threshold?.toDoubleOrNull() ?: 0.0
-                    t > 0
+                    val minRem = minRemainingBalance.toDoubleOrNull() ?: 0.0
+                    t > 0 && (minRem <= 0 || minRem < t)
                 }
                 AllocationTriggerType.SPENDING_CATEGORY -> {
-                    // At least one category selected
                     categoryBasedCategoryIds.isNotEmpty()
                 }
                 AllocationTriggerType.INCOME_RECEIVED -> true
@@ -177,7 +177,12 @@ data class AutoAllocationRuleForm(
         }
 
     fun toRule(): AutoAllocationRule? {
-        val value = allocationValue.toDoubleOrNull() ?: return null
+        // ROUND_UP uses rounding logic, not a user-specified allocation value
+        val value = if (triggerType == AllocationTriggerType.ROUND_UP) {
+            1.0 // Default value - not used by round-up engine
+        } else {
+            allocationValue.toDoubleOrNull() ?: return null
+        }
         val thresholdVal = threshold?.toDoubleOrNull()
         val minRemainingVal = minRemainingBalance.toDoubleOrNull() ?: 0.0
         return AutoAllocationRule(
@@ -204,13 +209,12 @@ data class AutoAllocationRuleForm(
             scheduledFrequency = scheduledFrequency,
             scheduledDayOfWeek = scheduledDayOfWeek,
             scheduledDayOfMonth = scheduledDayOfMonth,
-            // ── P1.1: Trigger-specific fields ──────────────────────────────
             executionHour = executionHour,
             executionMinute = executionMinute,
             biweeklyStartDate = biweeklyStartDate,
             minRemainingBalance = minRemainingVal,
             categoryBasedCategoryIds = categoryBasedCategoryIds,
-            categoryBasedExecutionMode = com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode.fromString(categoryBasedExecutionMode)
+            categoryBasedExecutionMode = CategoryBasedExecutionMode.fromString(categoryBasedExecutionMode)
         )
     }
 }
@@ -239,10 +243,8 @@ fun AutoAllocationDialog(
     val keyboardController = LocalSoftwareKeyboardController.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Filter to active accounts only
     val activeAccounts = remember(accounts) { accounts.filter { it.isActive } }
 
-    // Check if the previously selected account still exists
     val previousAccountStillExists = remember(rule?.sourceAccountId, activeAccounts) {
         val prevId = rule?.sourceAccountId
         prevId != null && activeAccounts.any { it.id == prevId }
@@ -269,7 +271,6 @@ fun AutoAllocationDialog(
                 categoryId = rule.triggerParams?.categoryId,
                 accountId = rule.triggerParams?.accountId,
                 threshold = rule.triggerParams?.threshold?.let { if (it > 0) it.toLong().toString() else "" } ?: "",
-                // ── P1.1: Restore trigger-specific fields ─────────────────────
                 executionHour = rule.executionHour,
                 executionMinute = rule.executionMinute,
                 biweeklyStartDate = rule.biweeklyStartDate,
@@ -283,14 +284,12 @@ fun AutoAllocationDialog(
         )
     }
 
-    // Auto-select if only one account exists and no previous selection
     LaunchedEffect(activeAccounts.size) {
         if (form.sourceAccountId == null && activeAccounts.size == 1) {
             form = form.copy(sourceAccountId = activeAccounts.first().id)
         }
     }
 
-    // Clear invalid selection if account was deleted
     LaunchedEffect(activeAccounts) {
         val selected = form.sourceAccountId
         if (selected != null && activeAccounts.none { it.id == selected }) {
@@ -306,9 +305,8 @@ fun AutoAllocationDialog(
         onDismiss()
     }
 
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = { handleDismiss() },
-        sheetState = sheetState,
         containerColor = AppPalette.card,
         shape = RoundedCornerShape(
             topStart = Dimens.BottomSheetRadius,
@@ -380,27 +378,22 @@ fun AutoAllocationDialog(
 
         HorizontalDivider(color = AppPalette.cardBorder)
 
-        // ── Scrollable Content ──────────────────────────────────────────
+        // ── Compact Scrollable Content ──────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .background(AppPalette.background)
-                .padding(24.dp)
+                .padding(horizontal = 24.dp)
+                .padding(vertical = 16.dp)
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Goal Summary Card
-            if (goal != null) {
-                GoalSummaryCard(goal = goal, goalColor = goalColor)
-            }
 
-            // Trigger
-            FormSectionLabel(stringResource(R.string.auto_alloc_trigger))
-            TriggerTypeSelector(
+            // ── 1. Trigger: compact horizontal chips ────────────────────
+            CompactTriggerSelector(
                 selected = form.triggerType,
                 onSelect = { newTrigger ->
-                    // Sync scheduledFrequency with the selected trigger type
                     val newFreq = when (newTrigger) {
                         AllocationTriggerType.DAILY -> ScheduledFrequency.DAILY
                         AllocationTriggerType.WEEKLY -> ScheduledFrequency.WEEKLY
@@ -408,13 +401,18 @@ fun AutoAllocationDialog(
                         AllocationTriggerType.MONTHLY -> ScheduledFrequency.MONTHLY
                         else -> form.scheduledFrequency
                     }
-                    form = form.copy(triggerType = newTrigger, scheduledFrequency = newFreq)
+                    // Auto-set roundUpEnabled when ROUND_UP trigger is selected
+                    val newRoundUp = newTrigger == AllocationTriggerType.ROUND_UP
+                    form = form.copy(
+                        triggerType = newTrigger,
+                        scheduledFrequency = newFreq,
+                        roundUpEnabled = newRoundUp
+                    )
                 },
                 accentColor = goalColor
             )
 
-            // Source Account
-            FormSectionLabel(stringResource(R.string.auto_alloc_source_account))
+            // ── 2. Source Account: horizontal scrollable chips ──────────
             AccountSelector(
                 accounts = activeAccounts,
                 selectedAccountId = form.sourceAccountId,
@@ -425,271 +423,145 @@ fun AutoAllocationDialog(
                 accentColor = goalColor
             )
 
-            // Allocation Amount
-            FormSectionLabel(stringResource(R.string.auto_alloc_amount))
-            AllocationValueSelector(
-                allocationType = form.allocationType,
-                allocationValue = form.allocationValue,
-                onTypeChange = { form = form.copy(allocationType = it) },
-                onValueChange = { form = form.copy(allocationValue = it) },
-                accentColor = goalColor
-            )
+            // ── 3. Allocation Amount: inline section ────────────────────
+            // Hide for ROUND_UP trigger - amount is determined by rounding logic
+            AnimatedVisibility(
+                visible = form.triggerType != AllocationTriggerType.ROUND_UP,
+                enter = expandVertically(), exit = shrinkVertically()
+            ) {
+                AllocationValueSelector(
+                    allocationType = form.allocationType,
+                    allocationValue = form.allocationValue,
+                    onTypeChange = { form = form.copy(allocationType = it) },
+                    onValueChange = { form = form.copy(allocationValue = it) },
+                    accentColor = goalColor
+                )
+            }
 
-            // Income Settings (conditional)
+            // ── 4. Dynamic Trigger-Specific Config ──────────────────────
             AnimatedVisibility(
                 visible = form.triggerType == AllocationTriggerType.INCOME_RECEIVED,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+                enter = expandVertically(), exit = shrinkVertically()
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FormSectionLabel(stringResource(R.string.auto_alloc_min_income))
-                    OutlinedTextField(
-                        value = if (form.minIncomeAmount.isEmpty()) ""
-                            else CurrencyUtils.formatInputThousands(form.minIncomeAmount),
-                        onValueChange = {
-                            form = form.copy(minIncomeAmount = CurrencyUtils.stripThousands(it))
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        placeholder = {
-                            Text("e.g. 5.000.000", color = AppPalette.placeholder)
-                        },
-                        prefix = {
-                            Text(NumberFormatter.getCurrencySymbol(), fontWeight = FontWeight.Bold, color = goalColor)
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = goalColor,
-                            unfocusedBorderColor = AppPalette.cardBorder,
-                            focusedContainerColor = AppPalette.card,
-                            unfocusedContainerColor = AppPalette.card
-                        )
-                    )
-                }
+                InlineField(
+                    label = stringResource(R.string.auto_alloc_min_income),
+                    value = if (form.minIncomeAmount.isEmpty()) ""
+                    else CurrencyUtils.formatInputThousands(form.minIncomeAmount),
+                    onValueChange = { form = form.copy(minIncomeAmount = CurrencyUtils.stripThousands(it)) },
+                    placeholder = "e.g. 5.000.000",
+                    prefix = NumberFormatter.getCurrencySymbol(),
+                    accentColor = goalColor
+                )
             }
 
-            // ── BALANCE ABOVE: Threshold + Min Remaining Balance ──────────────
             AnimatedVisibility(
                 visible = form.triggerType == AllocationTriggerType.BALANCE_ABOVE,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+                enter = expandVertically(), exit = shrinkVertically()
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    FormSectionLabel(stringResource(R.string.auto_alloc_balance_threshold))
-                    OutlinedTextField(
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    InlineField(
+                        label = stringResource(R.string.auto_alloc_balance_threshold),
                         value = if (form.threshold.isNullOrEmpty()) ""
-                            else CurrencyUtils.formatInputThousands(form.threshold!!),
-                        onValueChange = {
-                            form = form.copy(threshold = CurrencyUtils.stripThousands(it))
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        placeholder = {
-                            Text("e.g. 10.000.000", color = AppPalette.placeholder)
-                        },
-                        prefix = {
-                            Text(NumberFormatter.getCurrencySymbol(), fontWeight = FontWeight.Bold, color = goalColor)
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = goalColor,
-                            unfocusedBorderColor = AppPalette.cardBorder,
-                            focusedContainerColor = AppPalette.card,
-                            unfocusedContainerColor = AppPalette.card
-                        )
+                        else CurrencyUtils.formatInputThousands(form.threshold!!),
+                        onValueChange = { form = form.copy(threshold = CurrencyUtils.stripThousands(it)) },
+                        placeholder = "e.g. 10.000.000",
+                        prefix = NumberFormatter.getCurrencySymbol(),
+                        accentColor = goalColor,
+                        hint = stringResource(R.string.auto_alloc_balance_desc)
                     )
-                    Text(
-                        text = stringResource(R.string.auto_alloc_balance_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted
-                    )
-
-                    FormSectionLabel(stringResource(R.string.auto_alloc_min_remaining))
-                    OutlinedTextField(
+                    InlineField(
+                        label = stringResource(R.string.auto_alloc_min_remaining),
                         value = if (form.minRemainingBalance.isEmpty()) ""
-                            else CurrencyUtils.formatInputThousands(form.minRemainingBalance),
-                        onValueChange = {
-                            form = form.copy(minRemainingBalance = CurrencyUtils.stripThousands(it))
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        placeholder = {
-                            Text("e.g. 1.000.000", color = AppPalette.placeholder)
-                        },
-                        prefix = {
-                            Text(NumberFormatter.getCurrencySymbol(), fontWeight = FontWeight.Bold, color = goalColor)
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = goalColor,
-                            unfocusedBorderColor = AppPalette.cardBorder,
-                            focusedContainerColor = AppPalette.card,
-                            unfocusedContainerColor = AppPalette.card
-                        )
-                    )
-                    Text(
-                        text = stringResource(R.string.auto_alloc_min_remaining_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted
+                        else CurrencyUtils.formatInputThousands(form.minRemainingBalance),
+                        onValueChange = { form = form.copy(minRemainingBalance = CurrencyUtils.stripThousands(it)) },
+                        placeholder = "e.g. 1.000.000",
+                        prefix = NumberFormatter.getCurrencySymbol(),
+                        accentColor = goalColor,
+                        hint = stringResource(R.string.auto_alloc_min_remaining_desc)
                     )
                 }
             }
 
-            // ── DAILY: Time Picker ───────────────────────────────────────────
+            // ── Scheduled Triggers: compact time picker ─────────────────
             AnimatedVisibility(
                 visible = form.triggerType == AllocationTriggerType.DAILY,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+                enter = expandVertically(), exit = shrinkVertically()
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_time))
-                    TimePickerRow(
-                        hour = form.executionHour,
-                        minute = form.executionMinute,
-                        onHourChange = { h -> form = form.copy(executionHour = h) },
-                        onMinuteChange = { m -> form = form.copy(executionMinute = m) },
-                        accentColor = goalColor,
-                        frequencyLabel = stringResource(R.string.auto_alloc_time_every_day)
-                    )
-                }
+                CompactTimePicker(
+                    hour = form.executionHour,
+                    minute = form.executionMinute,
+                    onHourChange = { h -> form = form.copy(executionHour = h) },
+                    onMinuteChange = { m -> form = form.copy(executionMinute = m) },
+                    accentColor = goalColor
+                )
             }
 
-            // ── WEEKLY: Day Picker + Time Picker ─────────────────────────────
             AnimatedVisibility(
                 visible = form.triggerType == AllocationTriggerType.WEEKLY,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+                enter = expandVertically(), exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_day))
                     WeekDayPicker(
                         selectedDay = form.scheduledDayOfWeek,
                         onDaySelected = { d -> form = form.copy(scheduledDayOfWeek = d) },
                         accentColor = goalColor
                     )
-                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_time))
-                    val dayRes = when (form.scheduledDayOfWeek) { 1->R.string.auto_alloc_day_monday;2->R.string.auto_alloc_day_tuesday;3->R.string.auto_alloc_day_wednesday;4->R.string.auto_alloc_day_thursday;5->R.string.auto_alloc_day_friday;6->R.string.auto_alloc_day_saturday;7->R.string.auto_alloc_day_sunday;else->R.string.auto_alloc_day_monday }
-                    TimePickerRow(
+                    CompactTimePicker(
                         hour = form.executionHour,
                         minute = form.executionMinute,
                         onHourChange = { h -> form = form.copy(executionHour = h) },
                         onMinuteChange = { m -> form = form.copy(executionMinute = m) },
-                        accentColor = goalColor,
-                        frequencyLabel = stringResource(R.string.auto_alloc_time_every_week, stringResource(dayRes))
+                        accentColor = goalColor
                     )
                 }
             }
 
-            // ── BIWEEKLY: Start Date + Time Picker ───────────────────────────
             AnimatedVisibility(
                 visible = form.triggerType == AllocationTriggerType.BIWEEKLY,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+                enter = expandVertically(), exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel(stringResource(R.string.auto_alloc_start_date))
-                    val startDateText = if (form.biweeklyStartDate > 0) {
-                        DateFormatter.formatFullDate(form.biweeklyStartDate)
-                    } else stringResource(R.string.auto_alloc_select_start_date)
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-                        border = BorderStroke(1.dp, if (form.biweeklyStartDate > 0) goalColor else AppPalette.cardBorder)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = stringResource(R.string.auto_alloc_month_label),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = AppPalette.textMuted
-                            )
-                            Text(
-                                text = startDateText,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (form.biweeklyStartDate > 0) goalColor else AppPalette.textMuted
-                            )
-                            // Simple date picker using day/month chips
-                            val today = LocalDate.now()
-                            val todayMillis = today.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                val nextMonday = if (today.dayOfWeek.value == 1) {
-                                    today.plusDays(7)
-                                } else {
-                                    val daysUntilMonday = (8 - today.dayOfWeek.value) % 7
-                                    today.plusDays(daysUntilMonday.toLong().coerceAtLeast(1))
-                                }
-                                listOf(stringResource(R.string.auto_alloc_today) to todayMillis, stringResource(R.string.auto_alloc_tomorrow) to (todayMillis + 86400000L), stringResource(R.string.auto_alloc_next_monday) to nextMonday.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()).forEach { (label, millis) ->
-                                    val ts = millis as Long
-                                    val isSel = form.biweeklyStartDate == ts
-                                    FilterChip(
-                                        selected = isSel,
-                                        onClick = { form = form.copy(biweeklyStartDate = ts) },
-                                        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = goalColor.copy(alpha = 0.12f),
-                                            selectedLabelColor = goalColor
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Text(
-                        text = stringResource(R.string.auto_alloc_repeats_biweekly),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted
+                    CompactBiweeklyDatePicker(
+                        selectedDate = form.biweeklyStartDate,
+                        onDateSelected = { ts -> form = form.copy(biweeklyStartDate = ts) },
+                        accentColor = goalColor
                     )
-                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_time))
-                    TimePickerRow(
+                    CompactTimePicker(
                         hour = form.executionHour,
                         minute = form.executionMinute,
                         onHourChange = { h -> form = form.copy(executionHour = h) },
                         onMinuteChange = { m -> form = form.copy(executionMinute = m) },
-                        accentColor = goalColor,
-                        frequencyLabel = stringResource(R.string.auto_alloc_time_every_2weeks)
+                        accentColor = goalColor
                     )
                 }
             }
 
-            // ── MONTHLY: Day of Month + Time Picker ──────────────────────────
             AnimatedVisibility(
                 visible = form.triggerType == AllocationTriggerType.MONTHLY,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+                enter = expandVertically(), exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel(stringResource(R.string.auto_alloc_day_of_month))
-                    MonthDayPicker(
+                    MonthDayPickerCompact(
                         selectedDay = form.scheduledDayOfMonth,
                         onDaySelected = { d -> form = form.copy(scheduledDayOfMonth = d) },
                         accentColor = goalColor
                     )
-                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_time))
-                    val dayText = if (form.scheduledDayOfMonth == -1) stringResource(R.string.auto_alloc_time_last_day)
-                    else "${form.scheduledDayOfMonth}${when(form.scheduledDayOfMonth%10){1->"st";2->"nd";3->"rd";else->"th"}}"
-                    TimePickerRow(
+                    CompactTimePicker(
                         hour = form.executionHour,
                         minute = form.executionMinute,
                         onHourChange = { h -> form = form.copy(executionHour = h) },
                         onMinuteChange = { m -> form = form.copy(executionMinute = m) },
-                        accentColor = goalColor,
-                        frequencyLabel = stringResource(R.string.auto_alloc_time_every_month, dayText)
+                        accentColor = goalColor
                     )
                 }
             }
 
-            // ── SPENDING CATEGORY: Category Selector + Execution Mode ─────────
+            // ── Spending Category ───────────────────────────────────────
             AnimatedVisibility(
                 visible = form.triggerType == AllocationTriggerType.SPENDING_CATEGORY,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+                enter = expandVertically(), exit = shrinkVertically()
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel(stringResource(R.string.auto_alloc_categories))
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     val categoriesToShow = remember(expenseCategories) {
                         if (expenseCategories.isNotEmpty()) expenseCategories
                         else listOf(
@@ -699,115 +571,113 @@ fun AutoAllocationDialog(
                             CategoryInfo("fallback-education", "Education"), CategoryInfo("fallback-other", "Other")
                         )
                     }
+                    Text(
+                        text = stringResource(R.string.auto_alloc_categories),
+                        style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 1.2.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppPalette.textMuted
+                    )
+                    // Compact chip grid
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        categoriesToShow.forEach { cat ->
-                            val isSelected = form.categoryBasedCategoryIds.contains(cat.id)
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        val updated = if (isSelected) form.categoryBasedCategoryIds - cat.id
-                                        else form.categoryBasedCategoryIds + cat.id
-                                        form = form.copy(categoryBasedCategoryIds = updated)
-                                    },
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) goalColor.copy(alpha = 0.08f) else AppPalette.card,
-                                border = BorderStroke(1.dp, if (isSelected) goalColor else AppPalette.cardBorder)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Box(
+                        categoriesToShow.chunked(2).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                row.forEach { cat ->
+                                    val isSelected = form.categoryBasedCategoryIds.contains(cat.id)
+                                    Surface(
                                         modifier = Modifier
-                                            .size(22.dp)
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(if (isSelected) goalColor else Color.Transparent)
-                                            .then(if (!isSelected) Modifier.border(1.dp, AppPalette.cardBorder, RoundedCornerShape(6.dp)) else Modifier),
-                                        contentAlignment = Alignment.Center
+                                            .weight(1f)
+                                            .clickable {
+                                                val updated = if (isSelected) form.categoryBasedCategoryIds - cat.id
+                                                else form.categoryBasedCategoryIds + cat.id
+                                                form = form.copy(categoryBasedCategoryIds = updated)
+                                            },
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (isSelected) goalColor.copy(alpha = 0.08f) else AppPalette.card,
+                                        border = BorderStroke(1.dp, if (isSelected) goalColor else AppPalette.cardBorder)
                                     ) {
-                                        if (isSelected) {
-                                            Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(18.dp)
+                                                    .clip(RoundedCornerShape(5.dp))
+                                                    .background(if (isSelected) goalColor else Color.Transparent)
+                                                    .then(if (!isSelected) Modifier.border(1.dp, AppPalette.cardBorder, RoundedCornerShape(5.dp)) else Modifier),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                if (isSelected) Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(12.dp))
+                                            }
+                                            Text(
+                                                text = cat.name,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                                color = AppPalette.textPrimary,
+                                                maxLines = 1
+                                            )
                                         }
                                     }
-                                    Text(
-                                        text = cat.name,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = AppPalette.textPrimary
-                                    )
                                 }
+                                if (row.size == 1) Spacer(Modifier.weight(1f))
                             }
                         }
                     }
-
-                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_mode))
+                    // Execution mode - compact inline
+                    Text(
+                        text = stringResource(R.string.auto_alloc_execution_mode),
+                        style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 1.2.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppPalette.textMuted
+                    )
                     val modes = listOf(
                         "every_transaction" to stringResource(R.string.auto_alloc_every_transaction),
                         "after_daily_total" to stringResource(R.string.auto_alloc_after_daily_total),
                         "after_monthly_total" to stringResource(R.string.auto_alloc_after_monthly_total)
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         modes.forEach { (value, label) ->
                             val isSel = form.categoryBasedExecutionMode == value
                             Surface(
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .weight(1f)
                                     .clickable { form = form.copy(categoryBasedExecutionMode = value) },
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(10.dp),
                                 color = if (isSel) goalColor.copy(alpha = 0.08f) else AppPalette.card,
                                 border = BorderStroke(1.dp, if (isSel) goalColor else AppPalette.cardBorder)
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(18.dp)
-                                            .clip(RoundedCornerShape(9.dp))
-                                            .background(if (isSel) goalColor else Color.Transparent)
-                                            .then(if (!isSel) Modifier.border(1.5.dp, AppPalette.cardBorder, RoundedCornerShape(9.dp)) else Modifier),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (isSel) {
-                                            Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(Color.White))
-                                        }
-                                    }
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (isSel) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = AppPalette.textPrimary
-                                    )
-                                }
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (isSel) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (isSel) goalColor else AppPalette.textMuted,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                    maxLines = 1
+                                )
                             }
                         }
                     }
                 }
             }
 
-            // Confirmation Mode
-            FormSectionLabel(stringResource(R.string.auto_alloc_confirmation))
-            ConfirmationModeSelector(
+            // ── 5. Confirmation Mode: inline toggle ─────────────────────
+            InlineConfirmationToggle(
                 selected = form.confirmationMode,
                 onSelect = { form = form.copy(confirmationMode = it) },
                 accentColor = goalColor
             )
 
-            // Preview Card
-            PreviewCard(form = form, accentColor = goalColor)
-
             Spacer(Modifier.height(4.dp))
 
-            // ── Action Buttons ──────────────────────────────────────────
+            // ── 6. Action Buttons ──────────────────────────────────────
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Surface(
                     modifier = Modifier
                         .weight(1f)
-                        .height(50.dp)
+                        .height(48.dp)
                         .clickable { handleDismiss() },
                     shape = RoundedCornerShape(14.dp),
                     color = AppPalette.card,
@@ -825,7 +695,7 @@ fun AutoAllocationDialog(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(50.dp)
+                        .height(48.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(if (form.isValid) goalColor else AppPalette.textMuted)
                         .clickable(enabled = form.isValid) {
@@ -859,10 +729,7 @@ fun AutoAllocationDialog(
                 Text(stringResource(R.string.auto_alloc_delete_rule), fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
             },
             text = {
-                Text(
-                    stringResource(R.string.auto_alloc_delete_rule_desc),
-                    color = AppPalette.textMuted
-                )
+                Text(stringResource(R.string.auto_alloc_delete_rule_desc), color = AppPalette.textMuted)
             },
             confirmButton = {
                 TextButton(
@@ -870,9 +737,7 @@ fun AutoAllocationDialog(
                         onDelete(rule!!.id)
                         showDeleteConfirm = false
                     },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
                     Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
                 }
@@ -888,94 +753,15 @@ fun AutoAllocationDialog(
     }
 }
 
-// ─── Section Label ────────────────────────────────────────────────────────────
-
-@Composable
-private fun FormSectionLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        letterSpacing = 1.2.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = AppPalette.textMuted
-    )
-}
-
-// ─── Goal Summary Card ────────────────────────────────────────────────────────
-
-@Composable
-private fun GoalSummaryCard(goal: Goal, goalColor: Color) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = goalColor.copy(alpha = 0.08f)),
-        border = BorderStroke(1.dp, goalColor.copy(alpha = 0.2f))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(goalColor.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = getGoalIcon(goal.iconName),
-                    contentDescription = null,
-                    tint = goalColor,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.auto_alloc_for),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = AppPalette.textMuted
-                )
-                Text(
-                    text = goal.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AppPalette.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (goal.targetAmount > 0) {
-                    Text(
-                        text = "${CurrencyUtils.formatAmountCompact(goal.currentAmount)} / ${CurrencyUtils.formatAmountCompact(goal.targetAmount)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted
-                    )
-                }
-            }
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = goalColor.copy(alpha = 0.12f)
-            ) {
-                Text(
-                    text = "${goal.progressPercent.toInt()}%",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = goalColor,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
-        }
-    }
-}
-
-// ─── Trigger Type Selector ────────────────────────────────────────────────────
+// ─── Trigger Selector (expandable selection field) ───────────────────────────
+// DESIGN RATIONALE: Compact expandable field that shows only the selected trigger
+// in collapsed state, with a vertical list of all options when expanded.
+// Feels like an expandable preference selector, not a dropdown or chip grid.
 
 private data class TriggerOption(
     val type: AllocationTriggerType,
-    val title: String,
-    val subtitle: String,
+    val label: String,
+    val description: String,
     val icon: ImageVector
 )
 
@@ -992,70 +778,180 @@ private fun getTriggerOptions(): List<TriggerOption> = listOf(
 )
 
 @Composable
-private fun TriggerTypeSelector(
+private fun CompactTriggerSelector(
     selected: AllocationTriggerType,
     onSelect: (AllocationTriggerType) -> Unit,
     accentColor: Color
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        getTriggerOptions().forEach { option ->
-            val isSelected = option.type == selected
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onSelect(option.type) },
-                shape = RoundedCornerShape(14.dp),
-                color = if (isSelected) accentColor.copy(alpha = 0.08f) else AppPalette.card,
-                border = BorderStroke(
-                    1.dp,
-                    if (isSelected) accentColor else AppPalette.cardBorder
-                )
+    var isExpanded by remember { mutableStateOf(false) }
+    val options = getTriggerOptions()
+    val selectedOption = options.first { it.type == selected }
+    val cornerRadius = 12.dp
+
+    Column {
+        Text(
+            text = stringResource(R.string.auto_alloc_trigger),
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 1.2.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted
+        )
+        Spacer(Modifier.height(8.dp))
+        
+        // Collapsed state: shows selected trigger
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(cornerRadius),
+            color = AppPalette.card,
+            border = BorderStroke(1.dp, if (isExpanded) accentColor else AppPalette.cardBorder),
+            onClick = { isExpanded = !isExpanded }
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                if (isSelected) accentColor.copy(alpha = 0.15f)
-                                else AppPalette.cardElevated
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = option.icon,
-                            contentDescription = null,
-                            tint = if (isSelected) accentColor else AppPalette.textMuted,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = option.title,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AppPalette.textPrimary
-                        )
-                        Text(
-                            text = option.subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppPalette.textMuted
-                        )
-                    }
-                    if (isSelected) {
-                        Icon(
-                            imageVector = Icons.Outlined.Check,
-                            contentDescription = null,
-                            tint = accentColor,
-                            modifier = Modifier.size(20.dp)
-                        )
+                Icon(
+                    imageVector = selectedOption.icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(22.dp)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = selectedOption.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppPalette.textPrimary
+                    )
+                    Text(
+                        text = selectedOption.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppPalette.textMuted,
+                        maxLines = 1
+                    )
+                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = AppPalette.textMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        
+        // Expanded state: shows all options
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = expandVertically(tween(200)),
+            exit = shrinkVertically(tween(200))
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                shape = RoundedCornerShape(cornerRadius),
+                color = AppPalette.card,
+                border = BorderStroke(1.dp, accentColor)
+            ) {
+                Column {
+                    options.forEachIndexed { index, option ->
+                        val isSelected = option.type == selected
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = if (isSelected) accentColor.copy(alpha = 0.08f) else Color.Transparent,
+                            onClick = {
+                                onSelect(option.type)
+                                isExpanded = false
+                            }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = option.icon,
+                                    contentDescription = null,
+                                    tint = if (isSelected) accentColor else AppPalette.textMuted,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = option.label,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                        color = if (isSelected) accentColor else AppPalette.textPrimary
+                                    )
+                                    Text(
+                                        text = option.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppPalette.textMuted,
+                                        maxLines = 1
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Check,
+                                        contentDescription = null,
+                                        tint = accentColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                        // Divider between options (except last)
+                        if (index < options.lastIndex) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = AppPalette.cardBorder
+                            )
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+// ─── NEW: Inline Field (replaces FormSectionLabel + OutlinedTextField pattern) ─
+// DESIGN RATIONALE: The original pattern used a separate label + large text field.
+// InlineField combines them into a compact single-unit reducing visual noise.
+
+@Composable
+private fun InlineField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    prefix: String,
+    accentColor: Color,
+    hint: String? = null
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 1.2.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            placeholder = { Text(placeholder, color = AppPalette.placeholder) },
+            prefix = { Text(prefix, fontWeight = FontWeight.Bold, color = accentColor) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = accentColor,
+                unfocusedBorderColor = AppPalette.cardBorder,
+                focusedContainerColor = AppPalette.card,
+                unfocusedContainerColor = AppPalette.card
+            )
+        )
+        if (hint != null) {
+            Text(text = hint, style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
         }
     }
 }
@@ -1072,135 +968,65 @@ private fun AccountSelector(
     onNavigateToAccounts: (() -> Unit)?,
     accentColor: Color
 ) {
-    when {
-        // Empty state — no accounts exist
-        accounts.isEmpty() -> {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-                border = BorderStroke(1.dp, AppPalette.cardBorder)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.auto_alloc_source_account),
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 1.2.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted
+        )
+        when {
+            accounts.isEmpty() -> {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+                    border = BorderStroke(1.dp, AppPalette.cardBorder)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.08f)),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.AccountBalance,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-                    Text(
-                        text = stringResource(R.string.auto_alloc_create_account_first),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppPalette.textPrimary
-                    )
-                    Text(
-                        text = stringResource(R.string.auto_alloc_need_account),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted
-                    )
-                    if (onNavigateToAccounts != null) {
-                        Surface(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    onNavigateToAccounts()
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            color = accentColor.copy(alpha = 0.10f),
-                            border = BorderStroke(1.dp, accentColor.copy(alpha = 0.25f))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Icon(Icons.Outlined.AccountBalance, null, tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.auto_alloc_create_account_first), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+                            Text(stringResource(R.string.auto_alloc_need_account), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+                        }
+                        if (onNavigateToAccounts != null) {
+                            Surface(
+                                modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onNavigateToAccounts() },
+                                shape = RoundedCornerShape(8.dp),
+                                color = accentColor.copy(alpha = 0.10f),
+                                border = BorderStroke(1.dp, accentColor.copy(alpha = 0.25f))
                             ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Add,
-                                    contentDescription = null,
-                                    tint = accentColor,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Text(
-                                    text = stringResource(R.string.auto_alloc_create_account),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = accentColor
-                                )
+                                Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Icon(Icons.Outlined.Add, null, tint = accentColor, modifier = Modifier.size(14.dp))
+                                    Text(stringResource(R.string.auto_alloc_create_account), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = accentColor)
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-
-        // Editing mode — previously selected account no longer exists
-        isEditing && selectedAccountId == null && !previousAccountStillExists -> {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.04f)),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+            isEditing && selectedAccountId == null && !previousAccountStillExists -> {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.04f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f))
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.auto_alloc_account_unavailable),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Text(
-                            text = stringResource(R.string.auto_alloc_account_deleted),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppPalette.textMuted
-                        )
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Outlined.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.auto_alloc_account_unavailable), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
+                AccountPickerChips(accounts, selectedAccountId, onSelect, accentColor)
             }
-            // Show account picker below so user can select a new one
-            AccountPickerChips(
-                accounts = accounts,
-                selectedAccountId = selectedAccountId,
-                onSelect = onSelect,
-                accentColor = accentColor
-            )
-        }
-
-        // Accounts exist — show the account picker
-        else -> {
-            AccountPickerChips(
-                accounts = accounts,
-                selectedAccountId = selectedAccountId,
-                onSelect = onSelect,
-                accentColor = accentColor
-            )
+            else -> AccountPickerChips(accounts, selectedAccountId, onSelect, accentColor)
         }
     }
 }
@@ -1212,122 +1038,33 @@ private fun AccountPickerChips(
     onSelect: (Account) -> Unit,
     accentColor: Color
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
         accounts.forEach { account ->
             val isSelected = account.id == selectedAccountId
-            val borderColor by animateColorAsState(
-                targetValue = if (isSelected) accentColor else AppPalette.cardBorder,
-                animationSpec = tween(durationMillis = 200),
-                label = "accountBorder"
-            )
-            val bgColor by animateColorAsState(
-                targetValue = if (isSelected) accentColor.copy(alpha = 0.08f) else AppPalette.card,
-                animationSpec = tween(durationMillis = 200),
-                label = "accountBg"
-            )
+            val borderColor by animateColorAsState(targetValue = if (isSelected) accentColor else AppPalette.cardBorder, animationSpec = tween(200), label = "ab")
+            val bgColor by animateColorAsState(targetValue = if (isSelected) accentColor.copy(alpha = 0.08f) else AppPalette.card, animationSpec = tween(200), label = "bg")
 
             Surface(
-                modifier = Modifier
-                    .width(150.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable { onSelect(account) },
-                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.width(140.dp).clip(RoundedCornerShape(12.dp)).clickable { onSelect(account) },
+                shape = RoundedCornerShape(12.dp),
                 color = bgColor,
                 border = BorderStroke(1.5.dp, borderColor)
             ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Account icon
+                Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                try {
-                                    Color(android.graphics.Color.parseColor(account.color))
-                                        .copy(alpha = 0.12f)
-                                } catch (_: Exception) {
-                                    accentColor.copy(alpha = 0.12f)
-                                }
-                            ),
+                        modifier = Modifier.size(32.dp).clip(RoundedCornerShape(10.dp))
+                            .background(try { Color(android.graphics.Color.parseColor(account.color)).copy(alpha = 0.12f) } catch (_: Exception) { accentColor.copy(alpha = 0.12f) }),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = accountTypeIcon(account.type),
-                            contentDescription = null,
-                            tint = try {
-                                Color(android.graphics.Color.parseColor(account.color))
-                            } catch (_: Exception) {
-                                accentColor
-                            },
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Icon(accountTypeIcon(account.type), null, tint = try { Color(android.graphics.Color.parseColor(account.color)) } catch (_: Exception) { accentColor }, modifier = Modifier.size(16.dp))
                     }
-
-                    // Account info
                     Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = account.name,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = AppPalette.textPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                            // Type badge
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = try {
-                                    Color(android.graphics.Color.parseColor(account.color))
-                                        .copy(alpha = 0.10f)
-                                } catch (_: Exception) {
-                                    accentColor.copy(alpha = 0.10f)
-                                }
-                            ) {
-                    Text(
-                        text = stringResource(accountTypeLabelRes(account.type)),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = try {
-                                        Color(android.graphics.Color.parseColor(account.color))
-                                    } catch (_: Exception) {
-                                        accentColor
-                                    },
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = CurrencyUtils.formatAmountCompact(account.balance),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppPalette.textMuted,
-                            maxLines = 1
-                        )
+                        Text(account.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(CurrencyUtils.formatAmountCompact(account.balance), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, maxLines = 1)
                     }
-
-                    // Selected indicator
                     if (isSelected) {
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .clip(RoundedCornerShape(7.dp))
-                                .background(accentColor),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Check,
-                                contentDescription = stringResource(R.string.cd_selected),
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
-                            )
+                        Box(modifier = Modifier.size(18.dp).clip(RoundedCornerShape(6.dp)).background(accentColor), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(12.dp))
                         }
                     }
                 }
@@ -1346,7 +1083,14 @@ private fun AllocationValueSelector(
     onValueChange: (String) -> Unit,
     accentColor: Color
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.auto_alloc_amount),
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 1.2.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = allocationType == AllocationValueType.PERCENT,
@@ -1369,11 +1113,8 @@ private fun AllocationValueSelector(
         }
         OutlinedTextField(
             value = if (allocationType == AllocationValueType.FIXED) {
-                if (allocationValue.isEmpty()) ""
-                else CurrencyUtils.formatInputThousands(allocationValue)
-            } else {
-                allocationValue
-            },
+                if (allocationValue.isEmpty()) "" else CurrencyUtils.formatInputThousands(allocationValue)
+            } else allocationValue,
             onValueChange = { newValue ->
                 if (allocationType == AllocationValueType.FIXED) {
                     onValueChange(CurrencyUtils.stripThousands(newValue))
@@ -1385,8 +1126,7 @@ private fun AllocationValueSelector(
             singleLine = true,
             placeholder = {
                 Text(
-                    if (allocationType == AllocationValueType.PERCENT) "e.g. 10"
-                    else "e.g. 500.000",
+                    if (allocationType == AllocationValueType.PERCENT) "e.g. 10" else "e.g. 500.000",
                     color = AppPalette.placeholder
                 )
             },
@@ -1397,7 +1137,7 @@ private fun AllocationValueSelector(
                 { Text("%", fontWeight = FontWeight.Bold, color = accentColor) }
             } else null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = accentColor,
                 unfocusedBorderColor = AppPalette.cardBorder,
@@ -1408,274 +1148,135 @@ private fun AllocationValueSelector(
     }
 }
 
-// ─── Execution Mode Selector (P2.1: Reusable, Premium Segmented Selection) ─────
-
-private data class ExecutionModeOption(
-    val mode: ConfirmationMode,
-    val title: String,
-    val description: String,
-    val icon: ImageVector
-)
+// ─── NEW: Inline Confirmation Toggle ─────────────────────────────────────────
+// DESIGN RATIONALE: The original ConfirmationModeSelector used two large cards
+// with icons, titles, and descriptions consuming ~200dp. An inline switch+label
+// reduces this to ~56dp while preserving clarity.
 
 @Composable
-private fun getExecutionModeOptions(): List<ExecutionModeOption> = listOf(
-    ExecutionModeOption(
-        mode = ConfirmationMode.AUTO,
-        title = stringResource(R.string.auto_alloc_automatic),
-        description = stringResource(R.string.auto_alloc_automatic_desc),
-        icon = Icons.Outlined.AutoAwesome
-    ),
-    ExecutionModeOption(
-        mode = ConfirmationMode.CONFIRMATION_REQUIRED,
-        title = stringResource(R.string.auto_alloc_confirm_first),
-        description = stringResource(R.string.auto_alloc_confirm_first_desc),
-        icon = Icons.Outlined.Warning
-    )
-)
-
-@Composable
-private fun ConfirmationModeSelector(
+private fun InlineConfirmationToggle(
     selected: ConfirmationMode,
     onSelect: (ConfirmationMode) -> Unit,
     accentColor: Color
 ) {
-    Row(
+    val isAuto = selected == ConfirmationMode.AUTO
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        color = AppPalette.card,
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
-        getExecutionModeOptions().forEach { option ->
-            val isSelected = selected == option.mode
-            val borderColor by animateColorAsState(
-                targetValue = if (isSelected) accentColor else AppPalette.cardBorder,
-                animationSpec = tween(durationMillis = 250),
-                label = "execMode_border"
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = if (isAuto) Icons.Outlined.AutoAwesome else Icons.Outlined.Warning,
+                contentDescription = null,
+                tint = if (isAuto) accentColor else MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(20.dp)
             )
-            val bgColor by animateColorAsState(
-                targetValue = if (isSelected) accentColor.copy(alpha = 0.08f) else AppPalette.card,
-                animationSpec = tween(durationMillis = 250),
-                label = "execMode_bg"
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.auto_alloc_confirmation),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppPalette.textPrimary
+                )
+                Text(
+                    text = if (isAuto) stringResource(R.string.auto_alloc_automatic_desc)
+                    else stringResource(R.string.auto_alloc_confirm_first_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppPalette.textMuted
+                )
+            }
+            Switch(
+                checked = !isAuto,
+                onCheckedChange = {
+                    onSelect(if (it) ConfirmationMode.CONFIRMATION_REQUIRED else ConfirmationMode.AUTO)
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = accentColor,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = AppPalette.textMuted.copy(alpha = 0.4f)
+                )
             )
-            val iconBgColor by animateColorAsState(
-                targetValue = if (isSelected) accentColor.copy(alpha = 0.15f) else AppPalette.cardElevated,
-                animationSpec = tween(durationMillis = 250),
-                label = "execMode_iconBg"
-            )
+        }
+    }
+}
 
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { onSelect(option.mode) },
-                shape = RoundedCornerShape(16.dp),
-                color = bgColor,
-                border = BorderStroke(1.5.dp, borderColor)
+// ─── NEW: Compact Time Picker ────────────────────────────────────────────────
+// DESIGN RATIONALE: The original TimePickerRow had hour/minute cards with
+// FilterChip grids + custom increment/decrement buttons = ~300dp height.
+// CompactTimePicker uses a single row with +/- buttons = ~80dp.
+
+@Composable
+private fun CompactTimePicker(
+    hour: Int,
+    minute: Int,
+    onHourChange: (Int) -> Unit,
+    onMinuteChange: (Int) -> Unit,
+    accentColor: Color
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.auto_alloc_execution_time),
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 1.2.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted
+        )
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = AppPalette.card,
+            border = BorderStroke(1.dp, AppPalette.cardBorder)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // ── Top Row: Icon + Title + Indicator ──
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // Icon container
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(iconBgColor),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = option.icon,
-                                contentDescription = null,
-                                tint = if (isSelected) accentColor else AppPalette.textMuted,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        // Title
-                        Text(
-                            text = option.title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) accentColor else AppPalette.textPrimary,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        // Selection indicator
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .clip(RoundedCornerShape(11.dp))
-                                .background(if (isSelected) accentColor else Color.Transparent)
-                                .then(
-                                    if (!isSelected) Modifier.border(1.5.dp, AppPalette.cardBorder, RoundedCornerShape(11.dp))
-                                    else Modifier
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (isSelected) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Check,
-                                    contentDescription = stringResource(R.string.cd_selected),
-                                    tint = Color.White,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // ── Bottom Section: Description ──
-                    Text(
-                        text = option.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isSelected) accentColor.copy(alpha = 0.8f) else AppPalette.textMuted,
-                        modifier = Modifier.padding(start = 46.dp)
-                    )
-                }
+                // Hour
+                TimeAdjuster(value = hour, onDecrement = { onHourChange((hour - 1 + 24) % 24) }, onIncrement = { onHourChange((hour + 1) % 24) }, accentColor = accentColor)
+                Text(" : ", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                // Minute
+                TimeAdjuster(value = minute, onDecrement = { onMinuteChange((minute - 15 + 60) % 60) }, onIncrement = { onMinuteChange((minute + 15) % 60) }, accentColor = accentColor)
             }
         }
     }
 }
 
-// ─── Time Picker Row ─────────────────────────────────────────────────────────
-
 @Composable
-private fun TimePickerRow(
-    hour: Int,
-    minute: Int,
-    onHourChange: (Int) -> Unit,
-    onMinuteChange: (Int) -> Unit,
-    accentColor: Color,
-    frequencyLabel: String = "every day"
-) {
-    val minutes = listOf(0, 15, 30, 45)
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Hour selector
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {            Text(
-                    text = stringResource(R.string.auto_alloc_hour),
-                style = MaterialTheme.typography.labelSmall,
-                color = AppPalette.textMuted
-            )
-            Card(
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-                border = BorderStroke(1.dp, AppPalette.cardBorder)
-            ) {
-                Column(modifier = Modifier.padding(8.dp)) {
-                    // Quick-select row for common hours
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf(8, 12, 18, 21).forEach { h ->
-                            FilterChip(
-                                selected = hour == h,
-                                onClick = { onHourChange(h) },
-                                label = { Text("$h", style = MaterialTheme.typography.labelSmall) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = accentColor.copy(alpha = 0.12f),
-                                    selectedLabelColor = accentColor
-                                )
-                            )
-                        }
-                    }
-                    // Custom hour input
-                    Row(
-                        modifier = Modifier.padding(top = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(stringResource(R.string.auto_alloc_custom), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                        // Decrease button
-                        Surface(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onHourChange((hour - 1 + 24) % 24) },
-                            shape = RoundedCornerShape(8.dp),
-                            color = AppPalette.cardElevated
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("−", fontWeight = FontWeight.Bold, color = accentColor)
-                            }
-                        }
-                        Text(
-                            text = hour.toString().padStart(2, '0'),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = accentColor,
-                            modifier = Modifier.width(28.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        // Increase button
-                        Surface(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onHourChange((hour + 1) % 24) },
-                            shape = RoundedCornerShape(8.dp),
-                            color = AppPalette.cardElevated
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("+", fontWeight = FontWeight.Bold, color = accentColor)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Minute selector
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(R.string.auto_alloc_minute),
-                style = MaterialTheme.typography.labelSmall,
-                color = AppPalette.textMuted
-            )
-            Card(
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-                border = BorderStroke(1.dp, AppPalette.cardBorder)
-            ) {
-                Column(modifier = Modifier.padding(8.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        minutes.forEach { m ->
-                            FilterChip(
-                                selected = minute == m,
-                                onClick = { onMinuteChange(m) },
-                                label = { Text(":${m.toString().padStart(2, '0')}", style = MaterialTheme.typography.labelSmall) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = accentColor.copy(alpha = 0.12f),
-                                    selectedLabelColor = accentColor
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }            // Formatted time display
-    val timeStr = "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = accentColor.copy(alpha = 0.06f)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+private fun TimeAdjuster(value: Int, onDecrement: () -> Unit, onIncrement: () -> Unit, accentColor: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Surface(
+            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).clickable { onDecrement() },
+            shape = RoundedCornerShape(8.dp),
+            color = AppPalette.cardElevated
         ) {
-            Icon(Icons.Outlined.Schedule, null, tint = accentColor, modifier = Modifier.size(16.dp))
-            Text(
-                text = stringResource(R.string.auto_alloc_time_execute, frequencyLabel, timeStr),
-                style = MaterialTheme.typography.bodySmall,
-                color = accentColor
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Text("-", fontWeight = FontWeight.Bold, color = accentColor)
+            }
+        }
+        Text(
+            text = value.toString().padStart(2, '0'),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = accentColor,
+            modifier = Modifier.width(36.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        Surface(
+            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).clickable { onIncrement() },
+            shape = RoundedCornerShape(8.dp),
+            color = AppPalette.cardElevated
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text("+", fontWeight = FontWeight.Bold, color = accentColor)
+            }
         }
     }
 }
@@ -1697,273 +1298,121 @@ private fun WeekDayPicker(
         6 to stringResource(R.string.auto_alloc_day_sat),
         7 to stringResource(R.string.auto_alloc_day_sun)
     )
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        days.forEach { (dayNum, dayLabel) ->
-            val isSelected = selectedDay == dayNum
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onDaySelected(dayNum) },
-                shape = RoundedCornerShape(10.dp),
-                color = if (isSelected) accentColor else AppPalette.card,
-                border = BorderStroke(1.dp, if (isSelected) accentColor else AppPalette.cardBorder)
-            ) {
-                Box(
-                    modifier = Modifier.padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.auto_alloc_execution_day),
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 1.2.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            days.forEach { (dayNum, dayLabel) ->
+                val isSelected = selectedDay == dayNum
+                Surface(
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable { onDaySelected(dayNum) },
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isSelected) accentColor else AppPalette.card,
+                    border = BorderStroke(1.dp, if (isSelected) accentColor else AppPalette.cardBorder)
                 ) {
-                    Text(
-                        text = dayLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color.White else AppPalette.textMuted
-                    )
+                    Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                        Text(dayLabel, style = MaterialTheme.typography.labelSmall, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, color = if (isSelected) Color.White else AppPalette.textMuted)
+                    }
                 }
             }
         }
     }
 }
 
-// ─── Month Day Picker ─────────────────────────────────────────────────────────
+// ─── NEW: Compact Month Day Picker ───────────────────────────────────────────
+// DESIGN RATIONALE: The original MonthDayPicker showed a 28-day grid + extra row
+// of 29, 30, 31, Last = huge vertical footprint. Compact version uses horizontal
+// scroll with common presets + "Last Day" option.
 
 @Composable
-private fun MonthDayPicker(
+private fun MonthDayPickerCompact(
     selectedDay: Int,
     onDaySelected: (Int) -> Unit,
     accentColor: Color
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Grid of days 1–28
-        val rows = (1..28).chunked(7)
-        rows.forEach { rowDays ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                rowDays.forEach { day ->
-                    val isSelected = selectedDay == day
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onDaySelected(day) },
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isSelected) accentColor else AppPalette.card,
-                        border = BorderStroke(1.dp, if (isSelected) accentColor else AppPalette.cardBorder)
-                    ) {
-                        Box(
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.auto_alloc_day_of_month),
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 1.2.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted
+        )
+        // Common day presets in a grid
+        val commonDays = listOf(1, 5, 10, 15, 20, 25, -1)
+        val lastDayLabel = stringResource(R.string.auto_alloc_day_last)
+        val dayLabels = mapOf(1 to "1", 5 to "5", 10 to "10", 15 to "15", 20 to "20", 25 to "25", -1 to lastDayLabel)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            commonDays.chunked(4).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    row.forEach { day ->
+                        val isSelected = selectedDay == day
+                        Surface(
+                            modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable { onDaySelected(day) },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) accentColor else AppPalette.card,
+                            border = BorderStroke(1.dp, if (isSelected) accentColor else AppPalette.cardBorder)
                         ) {
-                            Text(
-                                text = "$day",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else AppPalette.textMuted
-                            )
+                            Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                                Text(dayLabels[day] ?: "$day", style = MaterialTheme.typography.labelSmall, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, color = if (isSelected) Color.White else AppPalette.textMuted)
+                            }
                         }
                     }
                 }
             }
         }
-        // Extra options: 29, 30, 31, Last Day
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            listOf(29, 30, 31).forEach { day ->
-                val isSelected = selectedDay == day
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onDaySelected(day) },
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (isSelected) accentColor else AppPalette.card,
-                    border = BorderStroke(1.dp, if (isSelected) accentColor else AppPalette.cardBorder)
-                ) {
-                    Box(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "$day",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) Color.White else AppPalette.textMuted
-                        )
-                    }
-                }
-            }
-            // Last Day of Month
-            val isLastDay = selectedDay == -1
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onDaySelected(-1) },
-                shape = RoundedCornerShape(8.dp),
-                color = if (isLastDay) accentColor else AppPalette.card,
-                border = BorderStroke(1.dp, if (isLastDay) accentColor else AppPalette.cardBorder)
-            ) {
-                Box(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.auto_alloc_day_last),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (isLastDay) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isLastDay) Color.White else AppPalette.textMuted
-                    )
-                }
-            }
-        }
     }
 }
 
-// ─── Preview Card ─────────────────────────────────────────────────────────────
+// ─── NEW: Compact Biweekly Date Picker ───────────────────────────────────────
 
 @Composable
-private fun PreviewCard(form: AutoAllocationRuleForm, accentColor: Color) {
-    val timeStr = "${form.executionHour.toString().padStart(2, '0')}:${form.executionMinute.toString().padStart(2, '0')}"
-    val summary = when (form.triggerType) {
-        AllocationTriggerType.DAILY -> stringResource(R.string.auto_alloc_preview_daily, timeStr)
-        AllocationTriggerType.WEEKLY -> {
-            val dayNameRes = when (form.scheduledDayOfWeek) { 1->R.string.auto_alloc_day_monday;2->R.string.auto_alloc_day_tuesday;3->R.string.auto_alloc_day_wednesday;4->R.string.auto_alloc_day_thursday;5->R.string.auto_alloc_day_friday;6->R.string.auto_alloc_day_saturday;7->R.string.auto_alloc_day_sunday;else->R.string.auto_alloc_day_monday }
-            stringResource(R.string.auto_alloc_preview_weekly, stringResource(dayNameRes), timeStr)
-        }
-        AllocationTriggerType.BIWEEKLY -> {
-            val dateText = if (form.biweeklyStartDate > 0) {
-                DateFormatter.formatShortDate(form.biweeklyStartDate)
-            } else stringResource(R.string.auto_alloc_not_set)
-            stringResource(R.string.auto_alloc_preview_biweekly, dateText, timeStr)
-        }
-        AllocationTriggerType.MONTHLY -> {
-            val dayText = if (form.scheduledDayOfMonth == -1) stringResource(R.string.auto_alloc_last_day)
-            else "${form.scheduledDayOfMonth}${when(form.scheduledDayOfMonth%10){1->"st";2->"nd";3->"rd";else->"th"}}"
-            stringResource(R.string.auto_alloc_preview_monthly, dayText, timeStr)
-        }
-        AllocationTriggerType.BALANCE_ABOVE -> {
-            val thresh = form.threshold?.toDoubleOrNull() ?: 0.0
-            val base = stringResource(R.string.auto_alloc_preview_balance, "Rp ${"%,.0f".format(thresh).replace(",", ".")}")
-            val minRem = form.minRemainingBalance.toDoubleOrNull() ?: 0.0
-            if (minRem > 0) stringResource(R.string.auto_alloc_preview_balance_keep, base, "Rp ${"%,.0f".format(minRem).replace(",", ".")}") else base
-        }
-        AllocationTriggerType.SPENDING_CATEGORY -> {
-            val modeText = when (form.categoryBasedExecutionMode) {
-                "every_transaction" -> stringResource(R.string.auto_alloc_preview_every_day)
-                "after_daily_total" -> stringResource(R.string.auto_alloc_preview_after_daily)
-                "after_monthly_total" -> stringResource(R.string.auto_alloc_preview_after_monthly)
-                else -> stringResource(R.string.auto_alloc_preview_every_day)
-            }
-            "$modeText in ${form.categoryBasedCategoryIds.size} categories"
-        }
-        AllocationTriggerType.INCOME_RECEIVED -> stringResource(R.string.auto_alloc_preview_income)
-        AllocationTriggerType.ROUND_UP -> stringResource(R.string.auto_alloc_preview_roundup)
-    }
+private fun CompactBiweeklyDatePicker(
+    selectedDate: Long,
+    onDateSelected: (Long) -> Unit,
+    accentColor: Color
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.auto_alloc_start_date),
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 1.2.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppPalette.textMuted
+        )
+        val today = LocalDate.now()
+        val todayMillis = today.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val nextMonday = if (today.dayOfWeek.value == 1) today.plusDays(7)
+        else today.plusDays(((8 - today.dayOfWeek.value) % 7).toLong().coerceAtLeast(1))
+        val nextMondayMillis = nextMonday.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = accentColor.copy(alpha = 0.06f)),
-        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.2f))
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Surface(shape = RoundedCornerShape(50), color = accentColor.copy(alpha = 0.12f)) {
-                Text(
-                    text = stringResource(R.string.auto_alloc_configuration_summary),
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = accentColor
-                )
-            }
-
-            val goalName = form.goalName.ifBlank { "Goal" }
-
-            // Live summary
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.AutoAwesome,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = accentColor
-                )
-            }
-
-            // Destination row
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "\u2192",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = accentColor
-                )
-                Text(
-                    text = goalName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppPalette.textPrimary
-                )
-            }
-
-            // Amount row
-            val amountText = when {
-                form.allocationType == AllocationValueType.PERCENT ->
-                    stringResource(R.string.auto_alloc_of_amount, form.allocationValue)
-                form.allocationType == AllocationValueType.FIXED -> {
-                    val raw = form.allocationValue.toLongOrNull() ?: 0L
-                    "${NumberFormatter.getCurrencySymbol()} ${CurrencyUtils.formatInputThousands(raw.toString())}"
-                }
-                else -> ""
-            }
-            Text(
-                text = amountText,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
-                color = accentColor
-            )
-
-            // Confirmation warning
-            if (form.confirmationMode == ConfirmationMode.CONFIRMATION_REQUIRED) {
-                HorizontalDivider(color = AppPalette.cardBorder)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(14.dp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                stringResource(R.string.auto_alloc_today) to todayMillis,
+                stringResource(R.string.auto_alloc_tomorrow) to (todayMillis + 86400000L),
+                stringResource(R.string.auto_alloc_next_monday) to nextMondayMillis
+            ).forEach { (label, millis) ->
+                val isSel = selectedDate == millis
+                FilterChip(
+                    selected = isSel,
+                    onClick = { onDateSelected(millis) },
+                    label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = accentColor.copy(alpha = 0.12f),
+                        selectedLabelColor = accentColor
                     )
-                    Text(
-                        text = stringResource(R.string.auto_alloc_requires_confirmation),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                )
             }
         }
+        Text(
+            text = stringResource(R.string.auto_alloc_repeats_biweekly),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppPalette.textMuted
+        )
     }
 }

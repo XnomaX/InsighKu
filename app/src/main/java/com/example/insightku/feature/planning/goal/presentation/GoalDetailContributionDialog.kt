@@ -54,7 +54,7 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
     val exceedsTarget = !isWithdraw && newTotal > target
     val animatedNewPercent by animateFloatAsState(targetValue = newPercent.toFloat() / 100f, animationSpec = spring(dampingRatio = 0.7f, stiffness = 200f), label = "previewProgress")
 
-    ModalBottomSheet(onDismissRequest = { onEvent(GoalDetailEvent.DismissDialog) }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = AppPalette.card, shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp), dragHandle = { Box(modifier = Modifier.padding(top = 12.dp).size(40.dp, 4.dp).clip(RoundedCornerShape(2.dp)).background(AppPalette.cardBorder)) }) {
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(onDismissRequest = { onEvent(GoalDetailEvent.DismissDialog) }, containerColor = AppPalette.card, shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp), dragHandle = { Box(modifier = Modifier.padding(top = 12.dp).size(40.dp, 4.dp).clip(RoundedCornerShape(2.dp)).background(AppPalette.cardBorder)) }) {
         Column(modifier = Modifier.fillMaxWidth().safeDrawingPadding().padding(horizontal = 24.dp).navigationBarsPadding().padding(bottom = 32.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(goalColor.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) { Icon(getGoalIcon(goal.iconName), contentDescription = null, tint = goalColor, modifier = Modifier.size(24.dp)) }
