@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.insightku.core.data.model.Account
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
@@ -33,21 +35,21 @@ import java.time.ZoneId
 @Composable
 internal fun ContributionSummarySection(uiState: GoalDetailUiState, goalColor: Color, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
-        SectionHeader(title = "Savings Overview", subtitle = "Track your progress towards this goal")
+        SectionHeader(title = stringResource(R.string.goal_savings_overview), subtitle = stringResource(R.string.goal_savings_overview_desc))
         Spacer(Modifier.height(12.dp))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ContributionMiniCard(label = "Deposits", value = "${uiState.totalContributions}", subtitle = "total deposits", icon = Icons.Outlined.Savings, color = goalColor, modifier = Modifier.weight(1f))
+                ContributionMiniCard(label = stringResource(R.string.goal_deposits), value = "${uiState.totalContributions}", subtitle = stringResource(R.string.goal_contrib_total_deposits), icon = Icons.Outlined.Savings, color = goalColor, modifier = Modifier.weight(1f))
                 uiState.latestContribution?.let { latest ->
-                    ContributionMiniCard(label = "Latest", value = NumberFormatter.formatCurrencyCompact(kotlin.math.abs(latest.amount)), subtitle = "last deposit", icon = Icons.Outlined.TrendingDown, color = SuccessColor, modifier = Modifier.weight(1f))
+                    ContributionMiniCard(label = stringResource(R.string.goal_latest), value = NumberFormatter.formatCurrencyCompact(kotlin.math.abs(latest.amount)), subtitle = stringResource(R.string.goal_contrib_last_deposit), icon = Icons.Outlined.TrendingDown, color = SuccessColor, modifier = Modifier.weight(1f))
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (uiState.averageContribution > 0) {
-                    ContributionMiniCard(label = "Average", value = NumberFormatter.formatCurrencyCompact(uiState.averageContribution), subtitle = "per deposit", icon = Icons.Outlined.Equalizer, color = PurpleViolet, modifier = Modifier.weight(1f))
+                    ContributionMiniCard(label = stringResource(R.string.goal_average), value = NumberFormatter.formatCurrencyCompact(uiState.averageContribution), subtitle = stringResource(R.string.goal_contrib_per_deposit), icon = Icons.Outlined.Equalizer, color = PurpleViolet, modifier = Modifier.weight(1f))
                 }
                 uiState.lastActivityDate?.let { date ->
-                    ContributionMiniCard(label = "Last Deposit", value = DateFormatter.formatShortDate(date.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()), subtitle = "most recent", icon = Icons.Outlined.Event, color = AppPalette.textMuted, modifier = Modifier.weight(1f))
+                    ContributionMiniCard(label = stringResource(R.string.goal_last_deposit_date), value = DateFormatter.formatShortDate(date.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()), subtitle = stringResource(R.string.goal_contrib_most_recent), icon = Icons.Outlined.Event, color = AppPalette.textMuted, modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -73,7 +75,7 @@ internal fun ContributionMiniCard(label: String, value: String, subtitle: String
 @Composable
 internal fun ContributionHistorySection(contributions: List<Contribution>, accountMap: Map<String, Account>, goalColor: Color, isLoadingMore: Boolean, hasMore: Boolean, onLoadMore: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
-        SectionHeader(title = "Savings Activity", subtitle = "All deposits and withdrawals")
+        SectionHeader(title = stringResource(R.string.goal_savings_activity), subtitle = stringResource(R.string.goal_savings_activity_desc))
         Spacer(Modifier.height(12.dp))
         if (contributions.isEmpty()) {
             EmptyContributionsCard(goalColor)
@@ -89,8 +91,8 @@ internal fun ContributionHistorySection(contributions: List<Contribution>, accou
                                 Icon(if (isWithdrawal) Icons.Outlined.ArrowUpward else Icons.Outlined.Add, null, tint = itemColor, modifier = Modifier.size(20.dp))
                             }
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(if (isWithdrawal) "Withdrawal" else "Deposit", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
-                                Text(account?.name ?: "Unknown Account", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                                Text(if (isWithdrawal) stringResource(R.string.goal_contrib_withdrawal) else stringResource(R.string.goal_contrib_deposit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
+                                Text(account?.name ?: stringResource(R.string.goal_contrib_unknown_account), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                                 val date = contribution.createdAt.atZone(ZoneId.systemDefault()).toLocalDateTime()
                                 Text("${date.dayOfMonth} ${date.month.name.take(3)} · ${date.hour.toString().padStart(2, '0')}:${date.minute.toString().padStart(2, '0')}", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                             }
@@ -104,7 +106,7 @@ internal fun ContributionHistorySection(contributions: List<Contribution>, accou
                     if (hasMore) {
                         Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
                             if (isLoadingMore) { CircularProgressIndicator(modifier = Modifier.size(24.dp), color = goalColor, strokeWidth = 2.dp) }
-                            else { TextButton(onClick = onLoadMore) { Text("Load More", color = goalColor) } }
+                            else { TextButton(onClick = onLoadMore) { Text(stringResource(R.string.goal_load_more), color = goalColor) } }
                         }
                     }
                 }
@@ -121,8 +123,8 @@ internal fun EmptyContributionsCard(goalColor: Color) {
                 Icon(Icons.Outlined.Savings, null, tint = goalColor.copy(alpha = 0.5f), modifier = Modifier.size(28.dp))
             }
             Spacer(Modifier.height(12.dp))
-            Text("No deposits yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, textAlign = TextAlign.Center)
-            Text("Make your first deposit to start building this goal", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.goal_no_deposits), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.goal_no_deposits_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, textAlign = TextAlign.Center)
         }
     }
 }

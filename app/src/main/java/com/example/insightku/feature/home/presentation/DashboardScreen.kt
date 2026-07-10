@@ -19,6 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalHideAmounts
@@ -78,13 +80,13 @@ fun DashboardScreen(
                         style = MaterialTheme.typography.displayMedium
                     )
                     Text(
-                        text = "Tidak dapat memuat data",
+                        text = stringResource(R.string.cannot_load_data),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = uiState.error ?: "Periksa koneksi internet dan coba lagi.",
+                        text = uiState.error ?: stringResource(R.string.check_connection),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -93,7 +95,7 @@ fun DashboardScreen(
                         onClick = { viewModel.onEvent(DashboardEvent.RefreshData) },
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Coba Lagi", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.try_again), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

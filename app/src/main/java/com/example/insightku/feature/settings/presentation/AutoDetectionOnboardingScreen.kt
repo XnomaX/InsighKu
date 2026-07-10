@@ -23,9 +23,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.example.insightku.R
 import com.example.insightku.core.data.repository.MonitorableApp
 import com.example.insightku.core.notification.BankNotificationListenerService
 import com.example.insightku.core.ui.theme.Dimens
@@ -79,12 +81,12 @@ fun AutoDetectionOnboardingScreen(
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = { back() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.onboarding_back))
                     }
                 },
                 actions = {
                     TextButton(onClick = onFinish) {
-                        Text("Lewati", color = SettingsPalette.textMuted)
+                        Text(stringResource(R.string.onboarding_skip), color = SettingsPalette.textMuted)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -143,16 +145,16 @@ private fun PrimaryButton(text: String, onClick: () -> Unit) {
 @Composable
 private fun StepValue(onNext: () -> Unit) {
     StepHeader(
-        "Belanja, langsung siap dicatat",
-        "Saat ada notifikasi transaksi dari aplikasi bank-mu, InsighKu menyiapkan draft yang tinggal kamu cek. Kamu tetap yang memutuskan apa yang disimpan."
+        stringResource(R.string.onboarding_value_title),
+        stringResource(R.string.onboarding_value_desc)
     )
     Spacer(Modifier.height(Dimens.PaddingMedium))
-    PrimaryButton("Mulai", onNext)
+    PrimaryButton(stringResource(R.string.onboarding_start), onNext)
 }
 
 @Composable
 private fun StepTransparency(onNext: () -> Unit) {
-    StepHeader("Apa yang kami lakukan — dan tidak", "Transparansi penuh sebelum kamu memberi izin apa pun.")
+    StepHeader(stringResource(R.string.onboarding_transparency_title), stringResource(R.string.onboarding_transparency_desc))
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimens.CardRadius),
@@ -160,17 +162,17 @@ private fun StepTransparency(onNext: () -> Unit) {
         border = BorderStroke(1.dp, SettingsPalette.cardBorder)
     ) {
         Column(Modifier.padding(Dimens.CardInnerPaddingLarge), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            TransparencyRow(true,  "Membaca notifikasi dari aplikasi yang kamu pilih")
-            TransparencyRow(true,  "Mengambil nominal & nama toko untuk draft")
-            TransparencyRow(true,  "Memproses semuanya di HP-mu saja")
-            TransparencyRow(false, "Membaca SMS, chat, atau aplikasi lain")
-            TransparencyRow(false, "Mengakses rekening atau saldo bank")
-            TransparencyRow(false, "Mengirim isi notifikasi ke server")
-            TransparencyRow(false, "Menyimpan transaksi tanpa izinmu")
+            TransparencyRow(true,  stringResource(R.string.onboarding_trans_read_notifications))
+            TransparencyRow(true,  stringResource(R.string.onboarding_trans_extract_amount))
+            TransparencyRow(true,  stringResource(R.string.onboarding_trans_local_processing))
+            TransparencyRow(false, stringResource(R.string.onboarding_trans_no_sms))
+            TransparencyRow(false, stringResource(R.string.onboarding_trans_no_bank_access))
+            TransparencyRow(false, stringResource(R.string.onboarding_trans_no_server))
+            TransparencyRow(false, stringResource(R.string.onboarding_trans_no_saving))
         }
     }
     Spacer(Modifier.height(Dimens.PaddingMedium))
-    PrimaryButton("Saya mengerti", onNext)
+    PrimaryButton(stringResource(R.string.onboarding_i_understand), onNext)
 }
 
 @Composable
@@ -195,11 +197,11 @@ private fun StepPickApps(
 ) {
     val installed = apps.filter { it.isInstalled }
     StepHeader(
-        "Pilih aplikasi yang dipantau",
+        stringResource(R.string.onboarding_pick_apps_title),
         if (installed.isEmpty())
-            "Kami belum mendeteksi aplikasi keuangan yang didukung di HP-mu. Kamu bisa mengatur ini nanti di Pengaturan."
+            stringResource(R.string.onboarding_pick_apps_empty)
         else
-            "Ini aplikasi keuangan yang terpasang di HP-mu. Nyalakan yang ingin dipantau."
+            stringResource(R.string.onboarding_pick_apps_desc)
     )
     installed.forEach { app ->
         Surface(
@@ -227,7 +229,7 @@ private fun StepPickApps(
         }
     }
     Spacer(Modifier.height(Dimens.PaddingMedium))
-    PrimaryButton("Lanjut", onNext)
+    PrimaryButton(stringResource(R.string.onboarding_next), onNext)
 }
 
 @Composable
@@ -238,8 +240,8 @@ private fun StepPermission(
 ) {
     IconBadge(Icons.Default.NotificationsActive)
     StepHeader(
-        "Satu izin terakhir",
-        "Android akan menampilkan daftar panjang dengan bahasa teknis. Cari InsighKu, lalu nyalakan. Itu saja."
+        stringResource(R.string.onboarding_permission_title),
+        stringResource(R.string.onboarding_permission_desc)
     )
     if (granted) {
         Surface(
@@ -249,15 +251,15 @@ private fun StepPermission(
         ) {
             Row(Modifier.padding(Dimens.CardInnerPadding), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Check, null, tint = SettingsPalette.IncomeGreen, modifier = Modifier.size(18.dp))
-                Text("Izin sudah diberikan", color = SettingsPalette.textPrimary, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.onboarding_permission_granted), color = SettingsPalette.textPrimary, fontWeight = FontWeight.Medium)
             }
         }
         Spacer(Modifier.height(Dimens.PaddingMedium))
-        PrimaryButton("Lanjut", onNext)
+        PrimaryButton(stringResource(R.string.onboarding_next), onNext)
     } else {
-        PrimaryButton("Buka pengaturan izin", onOpenSettings)
+        PrimaryButton(stringResource(R.string.onboarding_permission_open_settings), onOpenSettings)
         TextButton(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
-            Text("Nanti saja", color = SettingsPalette.textMuted)
+            Text(stringResource(R.string.onboarding_permission_later), color = SettingsPalette.textMuted)
         }
     }
 }
@@ -266,11 +268,11 @@ private fun StepPermission(
 private fun StepBattery(onDone: () -> Unit) {
     IconBadge(Icons.Default.Shield)
     StepHeader(
-        "Agar deteksi tetap berjalan",
-        "Beberapa HP mematikan aplikasi di latar belakang untuk menghemat baterai. Kalau deteksi sering meleset, mengizinkan InsighKu berjalan di latar membantu. Fitur tetap jalan tanpa ini — yang terlewat selalu bisa kamu catat manual."
+        stringResource(R.string.onboarding_battery_title),
+        stringResource(R.string.onboarding_battery_desc)
     )
     Spacer(Modifier.height(Dimens.PaddingMedium))
-    PrimaryButton("Selesai", onDone)
+    PrimaryButton(stringResource(R.string.onboarding_finish), onDone)
 }
 
 @Composable

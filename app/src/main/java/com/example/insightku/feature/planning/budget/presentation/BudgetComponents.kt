@@ -34,6 +34,8 @@ import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.ui.theme.LocalComfortMode
 import com.example.insightku.core.ui.theme.LocalInsightTone
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.WarningYellow
 import com.example.insightku.core.i18n.NumberFormatter
 
@@ -74,10 +76,10 @@ fun BudgetHealthCard(
     )
 
     val healthLabel = when {
-        totalBudget <= 0.0 -> "No limits set"
-        percentage >= 100.0 -> if (soften) "A little past plan" else "Over budget"
-        percentage >= 70.0 -> if (soften) "Getting close" else "Watch spending"
-        else -> if (tone == InsightTone.DIRECT) "Within budget" else "On track"
+        totalBudget <= 0.0 -> stringResource(R.string.health_no_limits)
+        percentage >= 100.0 -> if (soften) stringResource(R.string.health_over_budget_gentle) else stringResource(R.string.health_over_budget)
+        percentage >= 70.0 -> if (soften) stringResource(R.string.health_getting_close) else stringResource(R.string.health_watch_spending)
+        else -> if (tone == InsightTone.DIRECT) stringResource(R.string.health_within_budget) else stringResource(R.string.health_on_track)
     }
 
     Surface(
@@ -98,7 +100,7 @@ fun BudgetHealthCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Monthly Overview",
+                    text = stringResource(R.string.monthly_overview),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textPrimary
@@ -108,7 +110,7 @@ fun BudgetHealthCard(
                     color = progressColor.copy(alpha = 0.10f)
                 ) {
                     Text(
-                        text = "${percentage.toInt()}% used",
+                        text = stringResource(R.string.percent_used, percentage.toInt()),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = progressColor,
@@ -144,7 +146,7 @@ fun BudgetHealthCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 BudgetHeroStat(
-                    label = "Budget",
+                    label = stringResource(R.string.budget_stat_label),
                     value = formatCurrencyPlain(totalBudget),
                     color = AppPalette.textPrimary,
                     modifier = Modifier.weight(1f)
@@ -157,7 +159,7 @@ fun BudgetHealthCard(
                         .align(Alignment.CenterVertically)
                 )
                 BudgetHeroStat(
-                    label = "Spent",
+                    label = stringResource(R.string.spent_stat_label),
                     value = formatCurrencyPlain(limitedSpent),
                     color = progressColor,
                     modifier = Modifier.weight(1f)
@@ -170,7 +172,7 @@ fun BudgetHealthCard(
                         .align(Alignment.CenterVertically)
                 )
                 BudgetHeroStat(
-                    label = "Remaining",
+                    label = stringResource(R.string.remaining_stat_label),
                     value = if (totalBudget > 0) formatCurrencyPlain(remaining.coerceAtLeast(0.0)) else "—",
                     color = if (remaining < 0) ExpenseRed else IncomeGreen,
                     modifier = Modifier.weight(1f)
@@ -183,13 +185,13 @@ fun BudgetHealthCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (safeCount > 0) {
-                        CompactStatDot(label = "$safeCount safe", color = IncomeGreen)
+                        CompactStatDot(label = stringResource(R.string.budget_safe, safeCount), color = IncomeGreen)
                     }
                     if (riskyCount > 0) {
-                        CompactStatDot(label = "$riskyCount warning", color = WarningYellow)
+                        CompactStatDot(label = stringResource(R.string.budget_warning, riskyCount), color = WarningYellow)
                     }
                     if (overBudgetCount > 0) {
-                        CompactStatDot(label = "$overBudgetCount over", color = ExpenseRed)
+                        CompactStatDot(label = stringResource(R.string.budget_over, overBudgetCount), color = ExpenseRed)
                     }
                 }
             }
@@ -330,12 +332,12 @@ fun BudgetCategoryCard(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = if (category.hasLimit) "Remaining" else "Tracked",
+                        text = if (category.hasLimit) stringResource(R.string.remaining_stat_label) else stringResource(R.string.category_tracked),
                         style = MaterialTheme.typography.labelSmall,
                         color = AppPalette.textMuted
                     )
                     Text(
-                        text = if (category.hasLimit) NumberFormatter.formatCurrency(category.remainingAmount) else "No limit",
+                        text = if (category.hasLimit) NumberFormatter.formatCurrency(category.remainingAmount) else stringResource(R.string.category_no_limit),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (category.hasLimit) statusColor else LocalAccent.current,
@@ -347,7 +349,7 @@ fun BudgetCategoryCard(
                 IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                     Icon(
                         Icons.Default.Edit,
-                        contentDescription = "Edit ${category.name}",
+                        contentDescription = stringResource(R.string.cd_edit_item, category.name),
                         modifier = Modifier.size(16.dp),
                         tint = AppPalette.accent
                     )
@@ -357,7 +359,7 @@ fun BudgetCategoryCard(
                     IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                         Icon(
                             Icons.Default.DeleteOutline,
-                            contentDescription = "Delete ${category.name}",
+                            contentDescription = stringResource(R.string.cd_delete_item, category.name),
                             modifier = Modifier.size(16.dp),
                             tint = AppPalette.deleteRed.copy(alpha = 0.7f)
                         )
@@ -469,8 +471,8 @@ internal fun IncomeCategoryCard(
                 )
                 Text(
                     text = if (category.spentAmount > 0)
-                        "${NumberFormatter.formatCurrency(category.spentAmount)} this month"
-                    else "No income recorded",
+                        stringResource(R.string.income_this_month, NumberFormatter.formatCurrency(category.spentAmount))
+                    else stringResource(R.string.no_income_recorded),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -486,7 +488,7 @@ internal fun IncomeCategoryCard(
             IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                 Icon(
                     Icons.Default.Edit,
-                    contentDescription = "Edit",
+                    contentDescription = stringResource(R.string.cd_edit),
                     modifier = Modifier.size(16.dp),
                     tint = AppPalette.accent
                 )
@@ -495,7 +497,7 @@ internal fun IncomeCategoryCard(
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                     Icon(
                         Icons.Default.DeleteOutline,
-                        contentDescription = "Delete",
+                        contentDescription = stringResource(R.string.cd_delete),
                         modifier = Modifier.size(16.dp),
                         tint = AppPalette.deleteRed.copy(alpha = 0.7f)
                     )
@@ -536,7 +538,7 @@ internal fun BudgetErrorCard(
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Dismiss",
+                text = stringResource(R.string.dismiss),
                 modifier = Modifier.clickable(onClick = onDismiss),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
@@ -581,14 +583,14 @@ internal fun EmptyBudgetState(
                 )
             }
             Text(
-                text = "No budget categories yet",
+                text = stringResource(R.string.empty_budget_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = AppPalette.textPrimary,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Start with a few monthly limits. Categories without limits still track spending.",
+                text = stringResource(R.string.empty_budget_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppPalette.textMuted,
                 textAlign = TextAlign.Center
@@ -611,7 +613,7 @@ internal fun EmptyBudgetState(
                         tint = LocalAccent.current
                     )
                     Text(
-                        "Add Category",
+                        stringResource(R.string.add_category),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = LocalAccent.current
@@ -657,14 +659,14 @@ internal fun EmptyIncomeState(
                 )
             }
             Text(
-                text = "No income sources yet",
+                text = stringResource(R.string.empty_income_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = AppPalette.textPrimary,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Track where your money comes from.",
+                text = stringResource(R.string.empty_income_desc),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted,
                 textAlign = TextAlign.Center
@@ -687,7 +689,7 @@ internal fun EmptyIncomeState(
                         tint = AppPalette.success
                     )
                     Text(
-                        "Add Income Source",
+                        stringResource(R.string.add_income_source),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AppPalette.success
@@ -745,7 +747,7 @@ internal fun BudgetInsightsSection(
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
-            text = "Budget Insights",
+            text = stringResource(R.string.budget_insights_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = AppPalette.textPrimary

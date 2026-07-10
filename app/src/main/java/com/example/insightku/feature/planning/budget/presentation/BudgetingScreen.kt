@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,7 +44,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.ui.theme.AppPalette
@@ -57,9 +60,9 @@ import kotlinx.coroutines.launch
 
 // ─── Tab Enum ─────────────────────────────────────────────────────────────────
 
-private enum class PlanningTab(val title: String, val icon: ImageVector) {
-    BUDGETING("Budgeting", Icons.Outlined.AccountBalanceWallet),
-    GOALS("Goals", Icons.Outlined.Savings)
+private enum class PlanningTab {
+    BUDGETING,
+    GOALS
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -115,12 +118,12 @@ fun BudgetingScreen(
         ) { pageIndex ->
             when (tabs.getOrNull(pageIndex)) {
                 PlanningTab.BUDGETING -> PlanningHeader(
-                    title = "Budgeting",
-                    subtitle = "Spending control center"
+                    title = stringResource(R.string.budgeting_title),
+                    subtitle = stringResource(R.string.budgeting_subtitle)
                 )
                 PlanningTab.GOALS -> PlanningHeader(
-                    title = "Goals",
-                    subtitle = "Track your savings goals",
+                    title = stringResource(R.string.goals_title),
+                    subtitle = stringResource(R.string.goals_subtitle),
                     onAddClick = { goalsViewModel.onEvent(GoalsEvent.ShowAddGoalDialog()) }
                 )
                 null -> Box(modifier = Modifier.fillMaxWidth())
@@ -151,19 +154,26 @@ fun BudgetingScreen(
                             pagerState.animateScrollToPage(index)
                         }
                     },
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
+                    text = {                val tabLabel = stringResource(when (tab) {
+                    PlanningTab.BUDGETING -> R.string.budgeting_title
+                    PlanningTab.GOALS -> R.string.goals_title
+                })
+                val tabIcon = when (tab) {
+                    PlanningTab.BUDGETING -> Icons.Outlined.AccountBalanceWallet
+                    PlanningTab.GOALS -> Icons.Outlined.Savings
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                             Icon(
-                                imageVector = tab.icon,
+                                imageVector = tabIcon,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
                                 tint = if (selected) LocalAccent.current else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = tab.title,
+                                text = tabLabel,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                                 color = if (selected) LocalAccent.current else MaterialTheme.colorScheme.onSurfaceVariant
@@ -229,7 +239,7 @@ fun BudgetingScreenContent(
         }
 
         // Overview card (only when there are actual budget categories)
-        if (uiState.hasActualCategories) {
+        if (uiState.hasExpenseCategories || uiState.hasIncomeCategories) {
             item {
                 BudgetHealthCard(
                     percentage = uiState.budgetUtilizationPercentage,
@@ -250,7 +260,7 @@ fun BudgetingScreenContent(
         // ── EXPENSE BUDGETS SECTION ──────────────────────────────────────
         item {
             BudgetSectionLabel(
-                title = "Expense Budgets",
+                title = stringResource(R.string.budget_expense_budgets),
                 subtitle = categoryListSubtitle(uiState),
                 onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
                 modifier = Modifier.padding(
@@ -260,7 +270,7 @@ fun BudgetingScreenContent(
             )
         }
 
-        if (!uiState.isLoading && !uiState.hasActualCategories) {
+        if (!uiState.isLoading && !uiState.hasExpenseCategories) {
             item {
                 EmptyBudgetState(
                     onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
@@ -300,9 +310,9 @@ fun BudgetingScreenContent(
         // ── INCOME SOURCES SECTION ───────────────────────────────────────
         item {
             IncomeSectionLabel(
-                title = "Income Sources",
-                subtitle = if (uiState.incomeCategories.isEmpty()) "No income sources yet"
-                else "${uiState.incomeCategories.size} sources tracked",
+                title = stringResource(R.string.budget_income_sources),
+                subtitle = if (uiState.incomeCategories.isEmpty()) stringResource(R.string.no_income_sources)
+                else stringResource(R.string.income_sources_count, uiState.incomeCategories.size),
                 onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,
@@ -411,7 +421,7 @@ private fun BudgetSectionLabel(
             }
             if (onAddCategory != null) {
                 Surface(
-                    modifier = Modifier,
+                    modifier = Modifier.clickable { onAddCategory?.invoke() },
                     shape = RoundedCornerShape(50.dp),
                     color = AppPalette.card,
                     border = androidx.compose.foundation.BorderStroke(1.dp, LocalAccent.current)
@@ -423,12 +433,12 @@ private fun BudgetSectionLabel(
                     ) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "Add category",
+                            contentDescription = stringResource(R.string.cd_add_category),
                             modifier = Modifier.size(14.dp),
                             tint = LocalAccent.current
                         )
                         Text(
-                            text = "Add Category",
+                            text = stringResource(R.string.add_category),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = LocalAccent.current
@@ -468,7 +478,7 @@ private fun IncomeSectionLabel(
             }
             if (onAddCategory != null) {
                 Surface(
-                    modifier = Modifier,
+                    modifier = Modifier.clickable { onAddCategory?.invoke() },
                     shape = RoundedCornerShape(50.dp),
                     color = AppPalette.card,
                     border = androidx.compose.foundation.BorderStroke(1.dp, AppPalette.success)
@@ -485,7 +495,7 @@ private fun IncomeSectionLabel(
                             tint = AppPalette.success
                         )
                         Text(
-                            text = "Add Source",
+                            text = stringResource(R.string.add_source),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = AppPalette.success
@@ -602,6 +612,6 @@ private fun DeleteCategoryDialog(
         itemName = categoryName,
         onDismiss = onDismiss,
         onConfirm = onConfirm,
-        message = "\"$categoryName\" will be removed. Its transactions will be unlinked."
+        message = stringResource(R.string.budget_category_will_be_removed, categoryName)
     )
 }

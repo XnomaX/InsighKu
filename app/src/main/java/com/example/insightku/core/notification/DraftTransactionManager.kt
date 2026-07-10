@@ -18,6 +18,8 @@ import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.DraftType
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.data.repository.DraftTransactionRepository
+import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.NumberFormatter
 private const val TAG = "NotificationDebug"
 private const val CHANNEL_ID   = "bank_notification_channel"
@@ -107,10 +109,11 @@ class DraftTransactionManager {
 
         val notifId    = draftId.hashCode()
         val amountText = NumberFormatter.formatCurrency(parsed.amount)
+        val ctx = LocaleHelper.wrapContext(context)
         val typeLabel  = when (parsed.type) {
-            TransactionType.INCOME  -> "Dana Masuk"
-            TransactionType.EXPENSE -> "Pembayaran"
-            else -> "Transaksi" // Transfers, goals, etc. are never created by notification parsing
+            TransactionType.INCOME  -> ctx.getString(R.string.draft_type_income)
+            TransactionType.EXPENSE -> ctx.getString(R.string.draft_type_expense)
+            else -> ctx.getString(R.string.draft_type_other)
         }
 
         // Deep link URI: opens AddTransaction with pre-filled data + draftId so the
@@ -144,11 +147,11 @@ class DraftTransactionManager {
         )
 
         val bodyText = buildString {
-            append("$amountText dari ${parsed.bankName}")
+            append(ctx.getString(R.string.draft_alloc_save_to, amountText, parsed.bankName))
             if (parsed.rawContent.isNotBlank()) {
                 append("\n${parsed.rawContent.take(100)}")
             }
-            append("\n\nKetuk untuk memilih kategori dan menyimpan.")
+            append("\n\n${ctx.getString(R.string.draft_notif_tap_to_save)}")
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -159,8 +162,8 @@ class DraftTransactionManager {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(openPending)
-            .addAction(android.R.drawable.ic_input_add, "Catat Transaksi", openPending)
-            .addAction(android.R.drawable.ic_delete, "Abaikan", dismissPending)
+            .addAction(android.R.drawable.ic_input_add, ctx.getString(R.string.draft_notif_add_action), openPending)
+            .addAction(android.R.drawable.ic_delete, ctx.getString(R.string.draft_notif_dismiss_action), dismissPending)
             .build()
 
         try {
@@ -276,16 +279,17 @@ class DraftTransactionManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val ctx = LocaleHelper.wrapContext(context)
         val bodyText = buildString {
-            append("Save $amountText to $goalName")
+            append(ctx.getString(R.string.draft_alloc_save_to, amountText, goalName))
             append("\n$triggerDescription")
-            append("\nFrom: $sourceAccountName")
-            append("\n\nTap to review and confirm.")
+            append("\n${ctx.getString(R.string.draft_alloc_from, sourceAccountName)}")
+            append("\n\n${ctx.getString(R.string.draft_alloc_tap_to_review)}")
         }
 
-        val notification = NotificationCompat.Builder(context, ALLOCATION_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(ctx, ALLOCATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Auto-Allocation Review")
+            .setContentTitle(ctx.getString(R.string.draft_alloc_review_title))
             .setContentText("$amountText → $goalName")
             .setStyle(NotificationCompat.BigTextStyle().bigText(bodyText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -314,10 +318,11 @@ class DraftTransactionManager {
 
     private fun createAllocationChannelIfNeeded(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ctx = LocaleHelper.wrapContext(context)
             val channel = NotificationChannel(
-                ALLOCATION_CHANNEL_ID, ALLOCATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
+                ALLOCATION_CHANNEL_ID, ctx.getString(R.string.draft_alloc_channel_name), NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Auto-allocation confirmations requiring review"
+                description = ctx.getString(R.string.draft_alloc_channel_desc)
             }
             (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
                 .createNotificationChannel(channel)
@@ -326,10 +331,11 @@ class DraftTransactionManager {
 
     private fun createChannelIfNeeded(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ctx = LocaleHelper.wrapContext(context)
             val channel = NotificationChannel(
-                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
+                CHANNEL_ID, ctx.getString(R.string.draft_channel_name), NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Transaksi terdeteksi dari notifikasi bank/e-wallet"
+                description = ctx.getString(R.string.draft_channel_desc)
             }
             (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
                 .createNotificationChannel(channel)

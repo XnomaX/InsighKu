@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -64,6 +65,8 @@ import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 
 private val SheetPurple: Color @Composable get() = LocalAccent.current
 private val SheetBorder: Color @Composable get() = AppPalette.cardBorder
@@ -116,6 +119,7 @@ fun AddAccountDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .safeDrawingPadding()
                 .background(SheetBg)
                 .padding(24.dp)
                 .navigationBarsPadding()
@@ -127,7 +131,7 @@ fun AddAccountDialog(
                     color = SheetPurple.copy(alpha = 0.10f)
                 ) {
                     Text(
-                        text = "New Account",
+                        text = stringResource(R.string.account_new),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
@@ -136,13 +140,13 @@ fun AddAccountDialog(
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "Add Account",
+                    text = stringResource(R.string.account_add_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.textPrimary
                 )
                 Text(
-                    text = "Track your money, cards, and assets",
+                    text = stringResource(R.string.account_add_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -155,7 +159,7 @@ fun AddAccountDialog(
             // Account Type
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "ACCOUNT TYPE",
+                    text = stringResource(R.string.account_type_label),
                     style = MaterialTheme.typography.labelSmall,
                     letterSpacing = 1.2.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -180,10 +184,10 @@ fun AddAccountDialog(
 
             // Account Name
             AccountFormField(
-                label = "ACCOUNT NAME",
+                label = stringResource(R.string.account_name_label),
                 value = uiState.accountName,
                 onValueChange = { viewModel.onEvent(AddAccountEvent.UpdateAccountName(it)) },
-                placeholder = "e.g., BCA Savings, GoPay",
+                placeholder = stringResource(R.string.account_name_placeholder),
                 error = uiState.nameError,
                 accentColor = SheetPurple
             )
@@ -192,7 +196,7 @@ fun AddAccountDialog(
 
             // Initial Balance — live currency formatting
             CurrencyTextField(
-                label = "INITIAL BALANCE (OPTIONAL)",
+                label = stringResource(R.string.account_initial_balance),
                 rawValue = uiState.balance,
                 onValueChange = { viewModel.onEvent(AddAccountEvent.UpdateBalance(it)) },
                 error = uiState.balanceError,
@@ -204,7 +208,7 @@ fun AddAccountDialog(
             // Color
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "COLOR (OPTIONAL)",
+                    text = stringResource(R.string.account_color_label),
                     style = MaterialTheme.typography.labelSmall,
                     letterSpacing = 1.2.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -231,7 +235,7 @@ fun AddAccountDialog(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Cancel",
+                            text = stringResource(R.string.cancel),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = AppPalette.textDialogMuted
@@ -259,7 +263,7 @@ fun AddAccountDialog(
                         )
                     } else {
                         Text(
-                            text = "Add Account",
+                            text = stringResource(R.string.account_add_title),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -467,10 +471,10 @@ private fun AccountTypeChip(
         Spacer(Modifier.height(4.dp))
         Text(
             text = when (type) {
-                AccountType.CASH -> "Cash"
-                AccountType.BANK_ACCOUNT -> "Bank"
-                AccountType.E_WALLET -> "E-Wallet"
-                AccountType.CREDIT_CARD -> "Card"
+                AccountType.CASH -> stringResource(R.string.account_type_cash)
+                AccountType.BANK_ACCOUNT -> stringResource(R.string.account_type_bank)
+                AccountType.E_WALLET -> stringResource(R.string.account_type_ewallet)
+                AccountType.CREDIT_CARD -> stringResource(R.string.account_type_card)
             },
             style = MaterialTheme.typography.labelSmall,
             color = textColor,

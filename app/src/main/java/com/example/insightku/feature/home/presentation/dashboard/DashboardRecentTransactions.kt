@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.TransactionCategoryIcon
 import com.example.insightku.core.ui.components.TransactionTypePresentation
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.feature.home.presentation.TransactionItem
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
@@ -34,13 +36,13 @@ fun RecentTransactionsPreview(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    "Recent",
+                    stringResource(R.string.dashboard_recent),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.textPrimary
                 )
                 Text(
-                    "Latest financial activity",
+                    stringResource(R.string.dashboard_latest_activity),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -52,7 +54,7 @@ fun RecentTransactionsPreview(
                 border   = BorderStroke(1.dp, NavPurple)
             ) {
                 Text(
-                    "View All",
+                    stringResource(R.string.dashboard_view_all),
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -72,7 +74,7 @@ fun RecentTransactionsPreview(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "No recent transactions",
+                        stringResource(R.string.no_recent_transactions),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
@@ -136,7 +138,7 @@ private fun TransactionItemRow(transaction: TransactionItem, onClick: () -> Unit
                 maxLines = 1
             )
             Text(
-                text = if (isSystemType) presentation.label else transaction.category,
+                text = if (isSystemType) stringResource(presentation.labelRes) else transaction.category,
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted
             )

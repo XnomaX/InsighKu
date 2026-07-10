@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -31,9 +33,10 @@ fun PlanningHeader(
     subtitle: String,
     modifier: Modifier = Modifier,
     onAddClick: (() -> Unit)? = null,
-    addLabel: String = "Add"
+    addLabel: String = ""
 ) {
     val accent = LocalAccent.current
+    val displayLabel = addLabel.ifEmpty { stringResource(R.string.add) }
     Row(
         modifier = modifier.fillMaxWidth().background(AppPalette.background).padding(horizontal = Dimens.ScreenHorizontalPadding).padding(top = 16.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -47,7 +50,7 @@ fun PlanningHeader(
             Surface(modifier = Modifier.clip(RoundedCornerShape(50)).clickable { onAddClick() }, shape = RoundedCornerShape(50), color = accent.copy(alpha = 0.10f)) {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(imageVector = Icons.Outlined.Add, contentDescription = null, tint = accent, modifier = Modifier.size(17.dp))
-                    Text(text = addLabel, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = accent)
+                    Text(text = displayLabel, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = accent)
                 }
             }
         }

@@ -15,6 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 
@@ -101,7 +103,7 @@ fun SplashScreen(
                 ) {
                     Icon(
                         Icons.Default.Lightbulb,
-                        contentDescription = "InsightKu logo",
+                        contentDescription = stringResource(R.string.splash_logo_desc),
                         modifier = Modifier.size(40.dp),
                         tint = AppPalette.accent
                     )
@@ -112,7 +114,7 @@ fun SplashScreen(
 
             // App Title
             Text(
-                text = "InsightKu",
+                text = stringResource(R.string.splash_app_name),
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -123,7 +125,7 @@ fun SplashScreen(
 
             // Tagline
             Text(
-                text = "Unlock powerful insights for better decisions",
+                text = stringResource(R.string.splash_tagline),
                 style = MaterialTheme.typography.bodyLarge,
                 color = AppPalette.textMuted,
                 textAlign = TextAlign.Center,
@@ -144,7 +146,7 @@ fun SplashScreen(
 
         // Version info at bottom
         Text(
-            text = "Version 1.0.0",
+            text = stringResource(R.string.splash_version),
             style = MaterialTheme.typography.bodySmall,
             color = AppPalette.textMuted.copy(alpha = 0.4f),
             modifier = Modifier

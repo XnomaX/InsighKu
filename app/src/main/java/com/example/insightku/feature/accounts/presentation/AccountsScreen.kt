@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -71,6 +72,8 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
+import com.example.insightku.R
+import androidx.compose.ui.res.stringResource
 import com.example.insightku.feature.accounts.presentation.components.AllocationItemCard
 
 @Composable
@@ -201,14 +204,14 @@ private fun AccountsHeader(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Accounts",
+                        text = stringResource(R.string.accounts_title),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppPalette.textPrimary
                     )
                     if (accountCount > 0) {
                         Text(
-                            text = "$accountCount account${if (accountCount > 1) "s" else ""}",
+                            text = stringResource(R.string.accounts_count, accountCount),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppPalette.textMuted
                         )
@@ -235,7 +238,7 @@ private fun AccountsHeader(
                             modifier = Modifier.size(17.dp)
                         )
                         Text(
-                            text = "Add",
+                            text = stringResource(R.string.accounts_add),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = accent
@@ -374,7 +377,7 @@ private fun AccountRow(
                                 color = LocalAccent.current.copy(alpha = 0.10f)
                             ) {
                                 Text(
-                                    text = "Default",
+                                    text = stringResource(R.string.account_default_badge),
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.SemiBold,
@@ -410,7 +413,7 @@ private fun AccountRow(
                     )
                     if (account.isLiability) {
                         Text(
-                            text = "Liability",
+                            text = stringResource(R.string.account_liability),
                             style = MaterialTheme.typography.labelSmall,
                             color = ExpenseRed.copy(alpha = 0.7f)
                         )
@@ -425,7 +428,7 @@ private fun AccountRow(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.MoreVert,
-                            contentDescription = "More options",
+                            contentDescription = stringResource(R.string.more_options),
                             tint = AppPalette.textMuted,
                             modifier = Modifier.size(20.dp)
                         )
@@ -444,11 +447,11 @@ private fun AccountRow(
                         // Edit
                         DropdownMenuItem(
                             text = {
-                                Text(
-                                    text = "Edit",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = AppPalette.textPrimary
+                    Text(
+                        text = stringResource(R.string.edit),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = AppPalette.textPrimary
                                 )
                             },
                             leadingIcon = {
@@ -459,25 +462,25 @@ private fun AccountRow(
                                         .background(LocalAccent.current.copy(alpha = 0.08f)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Edit,
-                                        contentDescription = null,
-                                        tint = LocalAccent.current,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            },
-                            onClick = {
-                                showMenu = false
-                                onEdit()
-                            },
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                            modifier = Modifier
-                                .height(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                        )
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = null,
+                                tint = LocalAccent.current,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    },
+                    onClick = {
+                        showMenu = false
+                        onEdit()
+                    },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
 
-                        // ── Danger zone separator ──
+                // ── Danger zone separator ──
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -492,11 +495,11 @@ private fun AccountRow(
                         // Delete (destructive)
                         DropdownMenuItem(
                             text = {
-                                Text(
-                                    text = "Delete",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = ExpenseRed
+                    Text(
+                        text = stringResource(R.string.delete),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = ExpenseRed
                                 )
                             },
                             leadingIcon = {
@@ -506,24 +509,23 @@ private fun AccountRow(
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(ExpenseRed.copy(alpha = 0.10f)),
                                     contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Delete,
-                                        contentDescription = null,
-                                        tint = ExpenseRed,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            },
-                            onClick = {
-                                showMenu = false
-                                showDeleteConfirm = true
-                            },
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                            modifier = Modifier
-                                .height(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                        )
+                                ) {                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = null,
+                                tint = ExpenseRed,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    },
+                    onClick = {
+                        showMenu = false
+                        showDeleteConfirm = true
+                    },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
                     }
                 }
             }
@@ -552,14 +554,14 @@ private fun EmptyAccountsState(
 ) {
     com.example.insightku.core.ui.components.EmptyStateSection(
         icon = Icons.Outlined.Wallet,
-        title = "No accounts yet",
-        description = "Add your bank accounts, e-wallets, credit cards, and cash to keep everything organized in one place.",
+        title = stringResource(R.string.accounts_empty_title),
+        description = stringResource(R.string.accounts_empty_desc),
         modifier = modifier,
-        actionLabel = "Add your first account",
+        actionLabel = stringResource(R.string.accounts_add_first),
         onAction = onAddAccountClick,
         trailingContent = {
             Text(
-                text = "You can add as many accounts as you need",
+                text = stringResource(R.string.accounts_add_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted.copy(alpha = 0.7f)
             )
@@ -628,7 +630,7 @@ private fun AccountDetailSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
+                .safeDrawingPadding()
         ) {
             // ── Hero Section ──────────────────────────────────────────────────
             Column(
@@ -689,7 +691,7 @@ private fun AccountDetailSheet(
                         color = ExpenseRed.copy(alpha = 0.10f)
                     ) {
                         Text(
-                            text = "Outstanding Liability",
+                            text = stringResource(R.string.account_outstanding_liability),
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
@@ -734,7 +736,7 @@ private fun AccountDetailSheet(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(
-                    text = "DETAILS",
+                    text = stringResource(R.string.account_detail_details),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.5.sp,
@@ -743,26 +745,26 @@ private fun AccountDetailSheet(
 
                 // Created
                 DetailRow(
-                    label = "Created",
+                    label = stringResource(R.string.account_detail_created),
                     value = formatDate(account.createdAt)
                 )
 
                 // Last Activity
                 DetailRow(
-                    label = "Last activity",
+                    label = stringResource(R.string.account_detail_last_activity),
                     value = formatDate(account.updatedAt)
                 )
 
                 // Account Type
                 DetailRow(
-                    label = "Account type",
+                    label = stringResource(R.string.account_detail_account_type),
                     value = account.type.displayName
                 )
 
                 // Notes (if present)
                 if (account.notes.isNotBlank()) {
                     DetailRow(
-                        label = "Notes",
+                        label = stringResource(R.string.account_detail_notes),
                         value = account.notes
                     )
                 }
@@ -807,7 +809,7 @@ private fun AccountDetailSheet(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Edit Account",
+                            text = stringResource(R.string.account_edit),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
@@ -840,7 +842,7 @@ private fun AccountDetailSheet(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Delete Account",
+                            text = stringResource(R.string.account_delete),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = ExpenseRed
@@ -882,7 +884,7 @@ private fun AllocationBreakdownSection(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "ALLOCATION BREAKDOWN",
+            text = stringResource(R.string.account_allocation_breakdown),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.5.sp,
@@ -895,7 +897,7 @@ private fun AllocationBreakdownSection(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Current Balance",
+                text = stringResource(R.string.account_current_balance),
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppPalette.textMuted
             )
@@ -911,7 +913,7 @@ private fun AllocationBreakdownSection(
         if (allocation.goalAllocations.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Goal Allocations",
+                    text = stringResource(R.string.account_goal_allocations),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textMuted
@@ -941,7 +943,7 @@ private fun AllocationBreakdownSection(
         if (allocation.budgetAllocations.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Budget Allocations",
+                    text = stringResource(R.string.account_budget_allocations),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textMuted
@@ -986,7 +988,7 @@ private fun AllocationBreakdownSection(
                             .background(successGreen)
                     )
                     Text(
-                        text = "Available Cash",
+                        text = stringResource(R.string.account_available_cash),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = AppPalette.textPrimary

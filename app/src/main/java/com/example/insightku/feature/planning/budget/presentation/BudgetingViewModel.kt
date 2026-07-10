@@ -194,9 +194,8 @@ class BudgetingViewModel @Inject constructor(
 
                     // ── Count only repository-backed categories (exclude transaction-only rows)
                     //    so that Empty State is shown when the user has no actual budget categories.
-                    val hasRealExpenseCategories = snapshot.budgetCategories.any { !it.id.startsWith("transaction-only-") }
-                    val hasRealIncomeCategories  = snapshot.incomeCategories.isNotEmpty()
-                    val hasActualCategories      = hasRealExpenseCategories || hasRealIncomeCategories
+                    val hasExpenseCategories = snapshot.budgetCategories.any { !it.id.startsWith("transaction-only-") }
+                    val hasIncomeCategories  = snapshot.incomeCategories.isNotEmpty()
 
                     val totalBudget = snapshot.budgetCategories.filter { it.hasLimit }.sumOf { it.limitAmount }
                     val totalSpent  = snapshot.budgetCategories.sumOf { it.spentAmount }
@@ -207,7 +206,8 @@ class BudgetingViewModel @Inject constructor(
                             totalSpent          = totalSpent,
                             budgetCategories    = snapshot.budgetCategories,
                             incomeCategories    = snapshot.incomeCategories,
-                            hasActualCategories = hasActualCategories,
+                            hasExpenseCategories = hasExpenseCategories,
+                            hasIncomeCategories  = hasIncomeCategories,
                             recurringBudgets    = snapshot.recurringBudgets,
                             installments        = snapshot.installments,
                             rawCategories       = snapshot.rawCategories,

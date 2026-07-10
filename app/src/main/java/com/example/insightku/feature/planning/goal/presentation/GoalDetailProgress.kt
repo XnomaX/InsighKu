@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.SuccessColor
@@ -47,12 +49,12 @@ internal fun ProgressSection(goal: Goal, goalColor: Color, animatedProgress: Flo
             }
             Spacer(Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(if (goal.isCompleted) "Goal achieved!" else "${NumberFormatter.formatCurrencyCompact(goal.remainingAmount)} remaining", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = if (goal.isCompleted) SuccessColor else AppPalette.textMuted)
+                Text(if (goal.isCompleted) stringResource(R.string.goal_progress_achieved) else stringResource(R.string.goal_progress_remaining, NumberFormatter.formatCurrencyCompact(goal.remainingAmount)), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = if (goal.isCompleted) SuccessColor else AppPalette.textMuted)
                 if (goal.isCompleted) {
                     Surface(shape = RoundedCornerShape(8.dp), color = SuccessColor.copy(alpha = 0.12f)) {
                         Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Icon(Icons.Outlined.Check, null, tint = SuccessColor, modifier = Modifier.size(12.dp))
-                            Text("Done", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = SuccessColor)
+                            Text(stringResource(R.string.goal_progress_done), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = SuccessColor)
                         }
                     }
                 }

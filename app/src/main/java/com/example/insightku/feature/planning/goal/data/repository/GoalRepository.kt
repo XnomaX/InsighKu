@@ -3,6 +3,7 @@ package com.example.insightku.feature.planning.goal.data.repository
 import android.content.Context
 import android.util.Log
 import androidx.room.withTransaction
+import com.example.insightku.R
 import com.example.insightku.core.data.local.database.InsightKuDatabase
 import com.example.insightku.core.notification.AutoAllocationNotificationHelper
 import com.example.insightku.core.worker.SyncGoalWorker
@@ -219,7 +220,7 @@ class GoalRepository @Inject constructor(
             accountDao.updateBalance(accountId, amount)
 
             val tx = Transaction(
-                title = "Withdraw: ${goal?.name ?: "Goal"}", amount = amount,
+                title = context.getString(R.string.goal_withdraw_title, goal?.name ?: context.getString(R.string.goals_title)), amount = amount,
                 category = "Goal Withdrawal", date = System.currentTimeMillis(),
                 type = TransactionType.GOAL_WITHDRAWAL,
                 description = notes.ifBlank { "Withdrawal from ${goal?.name ?: "Goal"}" },

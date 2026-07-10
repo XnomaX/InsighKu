@@ -34,6 +34,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.feature.home.presentation.PremiumFlameIcon
 import com.example.insightku.feature.home.presentation.flameConfig
@@ -54,21 +56,21 @@ fun DailyStreakCard(
     val activeDays = minOf(currentStreak, 7).let { if (hasTrackedToday) it.coerceAtLeast(1) else it }
 
     val statusLabel = when {
-        !hasTrackedToday && currentStreak > 0 -> "Log today to restore your streak"
-        !hasTrackedToday                      -> "Start your streak today"
+        !hasTrackedToday && currentStreak > 0 -> stringResource(R.string.streak_log_today_restore)
+        !hasTrackedToday                      -> stringResource(R.string.streak_start_today)
         else                                  -> config.statusCopy
     }
 
     val motivationalText = when {
         !hasTrackedToday && currentStreak > 0 ->
-            "Your $currentStreak-day streak is waiting. Log a transaction to keep it alive."
-        currentStreak == 0  -> "Log your first transaction to ignite your streak."
-        currentStreak < 3   -> "Every habit starts with a single step. Keep going."
-        currentStreak < 7   -> "Your momentum is building. Don't break the chain."
-        currentStreak < 14  -> "One week of discipline. Your future self thanks you."
-        currentStreak < 30  -> "Two weeks strong — this is becoming who you are."
-        currentStreak < 100 -> "Remarkable consistency. Financial mastery in motion."
-        else                -> "100 days. You've built something rare and lasting."
+            stringResource(R.string.streak_waiting, currentStreak)
+        currentStreak == 0  -> stringResource(R.string.streak_log_your_first)
+        currentStreak < 3   -> stringResource(R.string.streak_every_habit)
+        currentStreak < 7   -> stringResource(R.string.streak_momentum_building)
+        currentStreak < 14  -> stringResource(R.string.streak_one_week)
+        currentStreak < 30  -> stringResource(R.string.streak_two_weeks)
+        currentStreak < 100 -> stringResource(R.string.streak_remarkable)
+        else                -> stringResource(R.string.streak_100_days)
     }
 
     Surface(
@@ -133,8 +135,8 @@ fun DailyStreakCard(
                             )
                         }
                         Column(modifier = Modifier.padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Text("day", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
-                            Text("streak", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                            Text(stringResource(R.string.streak_day), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                            Text(stringResource(R.string.streak_streak), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                         }
                     }
 
@@ -151,9 +153,8 @@ fun DailyStreakCard(
             }
 
             // -- Weekly rhythm track -------------------------------------------
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    "This week",
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {                    Text(
+                        stringResource(R.string.streak_this_week),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textMuted,
@@ -208,8 +209,8 @@ fun DailyStreakCard(
                     ) {
                         Icon(Icons.Default.CheckCircle, null, tint = IncomeGreen, modifier = Modifier.size(16.dp))
                         Column {
-                            Text("Habit intact.", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppPalette.successChipBg)
-                            Text("You've tracked today — streak is safe.", style = MaterialTheme.typography.labelSmall, color = AppPalette.successChipBg.copy(alpha = 0.65f))
+                            Text(stringResource(R.string.streak_habit_intact), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppPalette.successChipBg)
+                            Text(stringResource(R.string.streak_tracked_today), style = MaterialTheme.typography.labelSmall, color = AppPalette.successChipBg.copy(alpha = 0.65f))
                         }
                     }
                 }
@@ -227,7 +228,7 @@ fun DailyStreakCard(
                         Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            if (currentStreak == 0) "Start Your Streak" else "Log Today's Transaction",
+                            if (currentStreak == 0) stringResource(R.string.streak_start_your_streak) else stringResource(R.string.streak_log_today),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             color = Color.White
@@ -246,20 +247,20 @@ fun StreakCelebrationDialog(streak: Int, onDismiss: () -> Unit) {
     val config = flameConfig(streak)
 
     val headline = when {
-        streak >= 100 -> "Legendary."
-        streak >= 30  -> "On fire."
-        streak >= 14  -> "Two weeks strong."
-        streak >= 7   -> "One week done."
-        streak >= 3   -> "Habit forming."
-        else          -> "Streak started."
+        streak >= 100 -> stringResource(R.string.celebration_legendary)
+        streak >= 30  -> stringResource(R.string.celebration_on_fire)
+        streak >= 14  -> stringResource(R.string.celebration_two_weeks)
+        streak >= 7   -> stringResource(R.string.celebration_one_week)
+        streak >= 3   -> stringResource(R.string.celebration_habit_forming)
+        else          -> stringResource(R.string.celebration_streak_started)
     }
     val subtext = when {
-        streak >= 100 -> "100 days of discipline. This is who you are now."
-        streak >= 30  -> "A month of consistency. Financial mastery in motion."
-        streak >= 14  -> "Two weeks of daily tracking. The habit is real."
-        streak >= 7   -> "Seven days straight. Momentum is building."
-        streak >= 3   -> "Three days in. The chain is forming."
-        else          -> "Day one done. Every streak starts here."
+        streak >= 100 -> stringResource(R.string.celebration_100_body)
+        streak >= 30  -> stringResource(R.string.celebration_30_body)
+        streak >= 14  -> stringResource(R.string.celebration_14_body)
+        streak >= 7   -> stringResource(R.string.celebration_7_body)
+        streak >= 3   -> stringResource(R.string.celebration_3_body)
+        else          -> stringResource(R.string.celebration_1_body)
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -293,7 +294,7 @@ fun StreakCelebrationDialog(streak: Int, onDismiss: () -> Unit) {
                         color = NavPurple.copy(alpha = 0.08f)
                     ) {
                         Text(
-                            text = "$streak-day streak",
+                            text = stringResource(R.string.streak_day_streak, streak),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
@@ -315,7 +316,7 @@ fun StreakCelebrationDialog(streak: Int, onDismiss: () -> Unit) {
                     color = NavPurple
                 ) {
                     Box(modifier = Modifier.padding(vertical = 14.dp), contentAlignment = Alignment.Center) {
-                        Text("Keep going", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White)
+                        Text(stringResource(R.string.streak_keep_going), fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White)
                     }
                 }
             }
@@ -354,8 +355,8 @@ fun StreakDetailSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("Habit Journey", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-                        Text("Your momentum over time", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.streak_habit_journey), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                        Text(stringResource(R.string.streak_momentum_over_time), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                     }
                     Box(
                         modifier = Modifier
@@ -397,7 +398,7 @@ fun StreakDetailSheet(
                         ) {
                             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text("$bestStreak", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 30.sp, color = NavPurple.copy(alpha = 0.75f))
-                                Text("Personal Best", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, lineHeight = 14.sp)
+                                Text(stringResource(R.string.streak_personal_best), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, lineHeight = 14.sp)
                             }
                         }
                     }
@@ -422,8 +423,8 @@ fun StreakDetailSheet(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            if (hasTrackedToday) "Today's habit complete — streak is safe."
-                            else "Log a transaction today to keep your streak.",
+                            if (hasTrackedToday) stringResource(R.string.streak_today_complete)
+                            else stringResource(R.string.streak_log_today_keep),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = if (hasTrackedToday) AppPalette.successChipBg else ExpenseRed
@@ -433,7 +434,7 @@ fun StreakDetailSheet(
 
                 // -- Momentum calendar -----------------------------------------
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Streak history", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold,
+                    Text(stringResource(R.string.streak_history), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold,
                         color = AppPalette.textMuted, letterSpacing = 0.5.sp)
 
                     Surface(
@@ -524,8 +525,8 @@ fun StreakDetailSheet(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        LegendDot(NavPurple, "Tracked")
-                        LegendDot(AppPalette.cardBorder, "Missed")
+                        LegendDot(NavPurple, stringResource(R.string.streak_tracked))
+                        LegendDot(AppPalette.cardBorder, stringResource(R.string.streak_missed))
                     }
                 }
 
@@ -535,7 +536,7 @@ fun StreakDetailSheet(
                     color = NavPurple
                 ) {
                     Box(modifier = Modifier.padding(vertical = 14.dp), contentAlignment = Alignment.Center) {
-                        Text("Got it", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White)
+                        Text(stringResource(R.string.streak_got_it), fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White)
                     }
                 }
             }

@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.data.repository.MonitorableApp
 import com.example.insightku.core.ui.theme.Dimens
 
@@ -45,10 +47,10 @@ fun BankWhitelistScreen(
         containerColor = SettingsPalette.background,
         topBar = {
             TopAppBar(
-                title = { Text("Aplikasi yang dipantau", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.whitelist_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -72,7 +74,7 @@ fun BankWhitelistScreen(
         ) {
             item {
                 Text(
-                    "InsighKu hanya membaca notifikasi dari aplikasi yang kamu pilih di sini. Tidak ada aplikasi lain yang disentuh.",
+                    stringResource(R.string.whitelist_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = SettingsPalette.textMuted
                 )
@@ -81,7 +83,7 @@ fun BankWhitelistScreen(
             // ── Terpasang di HP-mu ────────────────────────────────────────────
             item {
                 Text(
-                    "Terpasang di HP-mu",
+                    stringResource(R.string.whitelist_installed_section),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = SettingsPalette.textPrimary
@@ -90,7 +92,7 @@ fun BankWhitelistScreen(
             if (installed.isEmpty()) {
                 item {
                     Text(
-                        "Tidak ada aplikasi keuangan yang didukung terdeteksi di perangkatmu.",
+                        stringResource(R.string.whitelist_installed_empty),
                         style = MaterialTheme.typography.bodySmall,
                         color = SettingsPalette.textMuted
                     )
@@ -114,7 +116,7 @@ fun BankWhitelistScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "Didukung lainnya (${others.size})",
+                            stringResource(R.string.whitelist_other_section, others.size),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = SettingsPalette.textPrimary
@@ -160,7 +162,7 @@ private fun AppRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(app.displayName, style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
                 Text(
-                    if (app.isAllowed) "Dipantau" else "Tidak dipantau",
+                    if (app.isAllowed) stringResource(R.string.whitelist_monitored) else stringResource(R.string.whitelist_not_monitored),
                     style = MaterialTheme.typography.bodySmall,
                     color = SettingsPalette.textMuted
                 )

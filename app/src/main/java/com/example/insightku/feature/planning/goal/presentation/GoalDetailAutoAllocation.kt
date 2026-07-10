@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.SuccessColor
@@ -26,15 +28,15 @@ import com.example.insightku.feature.planning.goal.domain.model.Goal
 @Composable
 internal fun AutoAllocationSection(goal: Goal, rules: List<AutoAllocationRule>, goalColor: Color, onAddRule: () -> Unit, onEditRule: (AutoAllocationRule) -> Unit, onToggleRule: (String, Boolean) -> Unit, onDeleteRule: (String) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
-        SectionHeader(title = "Auto Allocation", subtitle = if (rules.isEmpty()) "No rules set up yet" else "${rules.size} active rule${if (rules.size != 1) "s" else ""}")
+        SectionHeader(title = stringResource(R.string.goal_auto_allocation), subtitle = if (rules.isEmpty()) stringResource(R.string.goal_auto_allocation_empty) else stringResource(R.string.goal_auto_allocation_count, rules.size))
         Spacer(Modifier.height(12.dp))
         if (rules.isEmpty()) {
             Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onAddRule), shape = RoundedCornerShape(Dimens.CardRadius), colors = CardDefaults.cardColors(containerColor = AppPalette.card), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp), border = BorderStroke(1.dp, AppPalette.cardBorder)) {
                 Row(modifier = Modifier.fillMaxWidth().padding(Dimens.CardInnerPadding), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Outlined.AutoAwesome, null, tint = goalColor.copy(alpha = 0.5f), modifier = Modifier.size(24.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Automatic savings", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
-                        Text("Set up rules to save automatically from your income or accounts", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.goal_auto_automatic_savings), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
+                        Text(stringResource(R.string.goal_auto_set_up_rules), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                     }
                     Icon(Icons.Outlined.Add, null, tint = goalColor, modifier = Modifier.size(20.dp))
                 }
@@ -53,7 +55,7 @@ internal fun AutoAllocationSection(goal: Goal, rules: List<AutoAllocationRule>, 
                 Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                     Icon(Icons.Outlined.Add, null, tint = goalColor, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Add Rule", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = goalColor)
+                    Text(stringResource(R.string.goal_auto_add_rule), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = goalColor)
                 }
             }
         }

@@ -28,6 +28,34 @@ object Dimens {
     val ChipRadius = 10.dp
     val BottomSheetRadius = 28.dp
 
+    // ─── Bottom Sheet tokens ────────────────────────────────────────────
+    /** Corner radius for all bottom sheets. */
+    // val BottomSheetRadius = 28.dp  // already defined above
+    /** Drag handle width. */
+    val BottomSheetHandleWidth = 40.dp
+    /** Drag handle height. */
+    val BottomSheetHandleHeight = 4.dp
+    /** Drag handle corner radius (pill shape). */
+    val BottomSheetHandleRadius = 50.dp
+    /** Top padding above drag handle. */
+    val BottomSheetHandlePaddingTop = 12.dp
+    /** Bottom padding below drag handle. */
+    val BottomSheetHandlePaddingBottom = 4.dp
+    /** Horizontal content padding inside sheet. */
+    val BottomSheetContentPadding = 24.dp
+    /** Spacing between header divider and content. */
+    val BottomSheetHeaderDividerSpacing = 8.dp
+    /** Bottom padding for sticky footer area. */
+    val BottomSheetFooterPadding = 24.dp
+    /** Spacing between footer buttons. */
+    val BottomSheetFooterSpacing = 10.dp
+    /** Small sheet height (45–55% of screen). */
+    val BottomSheetHeightSmall = 0.50f
+    /** Medium sheet height (65–75% of screen). */
+    val BottomSheetHeightMedium = 0.70f
+    /** Large sheet height (max 90% of screen). */
+    val BottomSheetHeightLarge = 0.90f
+
     // Elevation
     val ElevationSmall = 1.dp
     val ElevationMedium = 2.dp

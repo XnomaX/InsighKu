@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -59,6 +60,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.i18n.NumberFormatter
@@ -122,6 +125,7 @@ fun EditAccountDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .safeDrawingPadding()
                 .background(SheetBg)
                 .padding(24.dp)
                 .navigationBarsPadding()
@@ -138,7 +142,7 @@ fun EditAccountDialog(
                         color = SheetPurple.copy(alpha = 0.10f)
                     ) {
                         Text(
-                            text = "Edit Account",
+                            text = stringResource(R.string.account_edit),
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
@@ -158,7 +162,7 @@ fun EditAccountDialog(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
-                                contentDescription = "Close",
+                                contentDescription = stringResource(R.string.cd_close),
                                 modifier = Modifier.size(16.dp),
                                 tint = AppPalette.textMuted
                             )
@@ -173,7 +177,7 @@ fun EditAccountDialog(
                     color = AppPalette.textPrimary
                 )
                 Text(
-                    text = "Update your account details",
+                    text = stringResource(R.string.account_edit_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -186,7 +190,7 @@ fun EditAccountDialog(
             // Account Type
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "ACCOUNT TYPE",
+                    text = stringResource(R.string.account_type_label),
                     style = MaterialTheme.typography.labelSmall,
                     letterSpacing = 1.2.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -211,10 +215,10 @@ fun EditAccountDialog(
 
             // Account Name
             AccountFormFieldEdit(
-                label = "ACCOUNT NAME",
+                label = stringResource(R.string.account_name_label),
                 value = uiState.accountName,
                 onValueChange = { viewModel.onEvent(EditAccountEvent.UpdateAccountName(it)) },
-                placeholder = "e.g., BCA Savings, GoPay",
+                placeholder = stringResource(R.string.account_name_placeholder),
                 error = uiState.nameError,
                 accentColor = SheetPurple
             )
@@ -223,7 +227,7 @@ fun EditAccountDialog(
 
             // Balance — live currency formatting
             CurrencyTextFieldEdit(
-                label = "BALANCE",
+                label = stringResource(R.string.account_balance_label),
                 rawValue = uiState.balance,
                 onValueChange = { viewModel.onEvent(EditAccountEvent.UpdateBalance(it)) },
                 error = uiState.balanceError,
@@ -235,7 +239,7 @@ fun EditAccountDialog(
             // Color
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "COLOR",
+                    text = stringResource(R.string.account_color_only),
                     style = MaterialTheme.typography.labelSmall,
                     letterSpacing = 1.2.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -262,7 +266,7 @@ fun EditAccountDialog(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Cancel",
+                            text = stringResource(R.string.cancel),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = AppPalette.textDialogMuted
@@ -290,7 +294,7 @@ fun EditAccountDialog(
                         )
                     } else {
                         Text(
-                            text = "Save Changes",
+                            text = stringResource(R.string.save_changes),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -496,10 +500,10 @@ private fun AccountTypeChipEdit(
         Spacer(Modifier.height(4.dp))
         Text(
             text = when (type) {
-                AccountType.CASH -> "Cash"
-                AccountType.BANK_ACCOUNT -> "Bank"
-                AccountType.E_WALLET -> "E-Wallet"
-                AccountType.CREDIT_CARD -> "Card"
+                AccountType.CASH -> stringResource(R.string.account_type_cash)
+                AccountType.BANK_ACCOUNT -> stringResource(R.string.account_type_bank)
+                AccountType.E_WALLET -> stringResource(R.string.account_type_ewallet)
+                AccountType.CREDIT_CARD -> stringResource(R.string.account_type_card)
             },
             style = MaterialTheme.typography.labelSmall,
             color = textColor,

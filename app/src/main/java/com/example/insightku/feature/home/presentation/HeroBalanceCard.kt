@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.IncomeGreen
@@ -54,7 +56,7 @@ fun HeroBalanceCard(
             // Balance label + amount
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    "Total Balance",
+                    stringResource(R.string.hero_total_balance),
                     style = MaterialTheme.typography.labelSmall,
                     color = AppPalette.textMuted,
                     letterSpacing = 0.5.sp
@@ -83,7 +85,7 @@ fun HeroBalanceCard(
                                 color = AppPalette.cardBorder
                             ) {
                                 Text(
-                                    text = "$accountCount account${if (accountCount != 1) "s" else ""}",
+                                    text = stringResource(R.string.hero_account_count, accountCount),
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = AppPalette.textMuted
@@ -97,7 +99,7 @@ fun HeroBalanceCard(
                                 color = AppPalette.cardBorder
                             )
                             Text(
-                                text = "Ledger: ${formatCurrencyShort(totalBalance)}",
+                                text = stringResource(R.string.hero_ledger, formatCurrencyShort(totalBalance)),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = AppPalette.textMuted
                             )
@@ -120,7 +122,7 @@ fun HeroBalanceCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 HeroStatItem(
-                    label  = "Income",
+                    label  = stringResource(R.string.hero_income),
                     value  = if (isBalanceVisible) formatCurrencyShort(monthlyIncome) else "\u2022\u2022\u2022",
                     icon   = Icons.Default.ArrowUpward,
                     tint   = IncomeGreen,
@@ -134,7 +136,7 @@ fun HeroBalanceCard(
                         .align(Alignment.CenterVertically)
                 )
                 HeroStatItem(
-                    label  = "Expenses",
+                    label  = stringResource(R.string.hero_expenses),
                     value  = if (isBalanceVisible) formatCurrencyShort(monthlyExpenses) else "\u2022\u2022\u2022",
                     icon   = Icons.Default.ArrowDownward,
                     tint   = ExpenseRed,
@@ -148,7 +150,7 @@ fun HeroBalanceCard(
                         .align(Alignment.CenterVertically)
                 )
                 HeroStatItem(
-                    label  = "Savings",
+                    label  = stringResource(R.string.hero_savings),
                     value  = if (isBalanceVisible) formatCurrencyShort(abs(monthlySavings)) else "\u2022\u2022\u2022",
                     icon   = if (monthlySavings >= 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                     tint   = if (monthlySavings >= 0) IncomeGreen else ExpenseRed,

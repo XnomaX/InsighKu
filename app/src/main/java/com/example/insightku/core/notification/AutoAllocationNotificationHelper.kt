@@ -36,7 +36,7 @@ class AutoAllocationNotificationHelper @Inject constructor(
         const val NOTIFICATION_ID_ALLOCATION_SUCCESS = 5001
         const val NOTIFICATION_ID_ALLOCATION_SKIPPED = 5002
         const val NOTIFICATION_ID_GOAL_COMPLETED = 5003
-        const val NOTIFICATION_ID_ALLOCATION_SUGGESTION = 5004
+
     }
 
     init {
@@ -50,7 +50,7 @@ class AutoAllocationNotificationHelper @Inject constructor(
                 CHANNEL_NAME_AUTO_ALLOCATION,
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Notifications for automatic savings allocations"
+                description = context.getString(R.string.alloc_notif_channel_desc)
             }
             val notificationManager = context.getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
@@ -62,8 +62,8 @@ class AutoAllocationNotificationHelper @Inject constructor(
      */
     fun showAllocationSuccessNotification(goalName: String, amount: Double) {
         val formattedAmount = CurrencyUtils.formatAmount(amount)
-        val title = "Auto Allocation Successful"
-        val message = "$formattedAmount has been automatically allocated to your $goalName."
+        val title = context.getString(R.string.alloc_notif_success_title)
+        val message = context.getString(R.string.alloc_notif_success_msg, formattedAmount, goalName)
 
         showNotification(
             notificationId = NOTIFICATION_ID_ALLOCATION_SUCCESS + abs(goalName.hashCode()),
@@ -77,8 +77,8 @@ class AutoAllocationNotificationHelper @Inject constructor(
      * Show notification when allocation is skipped due to insufficient balance.
      */
     fun showAllocationSkippedNotification(goalName: String, accountName: String) {
-        val title = "Auto Allocation Skipped"
-        val message = "Auto Allocation to $goalName was skipped because $accountName has insufficient balance."
+        val title = context.getString(R.string.alloc_notif_skipped_title)
+        val message = context.getString(R.string.alloc_notif_skipped_msg, goalName, accountName)
 
         showNotification(
             notificationId = NOTIFICATION_ID_ALLOCATION_SKIPPED + abs(goalName.hashCode()),
@@ -92,27 +92,11 @@ class AutoAllocationNotificationHelper @Inject constructor(
      * Show notification when a goal is completed and auto-allocation stops.
      */
     fun showGoalCompletedNotification(goalName: String) {
-        val title = "🎉 Goal Completed!"
-        val message = "Congratulations! Auto Allocation has stopped because your $goalName goal has been completed."
+        val title = context.getString(R.string.alloc_notif_completed_title)
+        val message = context.getString(R.string.alloc_notif_completed_msg, goalName)
 
         showNotification(
             notificationId = NOTIFICATION_ID_GOAL_COMPLETED + abs(goalName.hashCode()),
-            title = title,
-            message = message,
-            priority = NotificationCompat.PRIORITY_HIGH
-        )
-    }
-
-    /**
-     * Show notification for allocation suggestion (requires user confirmation).
-     */
-    fun showAllocationSuggestionNotification(goalName: String, amount: Double, triggerDescription: String) {
-        val formattedAmount = CurrencyUtils.formatAmount(amount)
-        val title = "New Auto-Allocation Suggestion"
-        val message = "Save $formattedAmount to $goalName. $triggerDescription"
-
-        showNotification(
-            notificationId = NOTIFICATION_ID_ALLOCATION_SUGGESTION + abs(goalName.hashCode()),
             title = title,
             message = message,
             priority = NotificationCompat.PRIORITY_HIGH

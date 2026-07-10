@@ -40,6 +40,8 @@ import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.PremiumDatePicker
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -330,7 +332,7 @@ private fun DialogGradientHeader(
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     tint = AppPalette.textMuted,
                     modifier = Modifier.size(18.dp)
                 )    }
@@ -340,12 +342,11 @@ private fun DialogGradientHeader(
         Column(
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
+        ) {                Text(
                 text = when {
-                    !isManual -> "Add Transaction"
-                    isIncome  -> "Add Income"
-                    else      -> "Add Expense"
+                    !isManual -> stringResource(R.string.add_transaction_title)
+                    isIncome  -> stringResource(R.string.add_income)
+                    else      -> stringResource(R.string.add_expense)
                 },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
@@ -353,9 +354,9 @@ private fun DialogGradientHeader(
             )
             Text(
                 text = when {
-                    !isManual -> "Track every mindful spending"
-                    isIncome  -> "Record your income source"
-                    else      -> "Record your spending"
+                    !isManual -> stringResource(R.string.add_transaction_subtitle)
+                    isIncome  -> stringResource(R.string.add_income_subtitle)
+                    else      -> stringResource(R.string.add_expense_subtitle)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted
@@ -375,7 +376,7 @@ private fun DialogGradientHeader(
         ) {
             Icon(
                 Icons.Default.Close,
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.close),
                 tint = AppPalette.textMuted,
                 modifier = Modifier.size(16.dp)
             )
@@ -409,8 +410,8 @@ private fun ModeSelectionContent(
             icon        = Icons.Default.CameraAlt,
             iconBg      = AppPalette.accent.copy(alpha = 0.1f),
             iconTint    = AppPalette.accent,
-            title       = "Scan Receipt",
-            description = "Foto struk, AI ekstrak detailnya",
+            title       = stringResource(R.string.scan_receipt),
+            description = stringResource(R.string.scan_receipt_desc),
             badge       = "AI",
             badgeColor  = AppPalette.accent,
             onClick     = onOCRSelected
@@ -419,8 +420,8 @@ private fun ModeSelectionContent(
             icon        = Icons.Default.EditNote,
             iconBg      = IncomeGreen.copy(alpha = 0.1f),
             iconTint    = IncomeGreen,
-            title       = "Manual Entry",
-            description = "Isi sendiri nominal dan kategori",
+            title       = stringResource(R.string.manual_entry),
+            description = stringResource(R.string.manual_entry_desc),
             onClick     = onManualSelected
         )
     }
@@ -561,13 +562,13 @@ fun ColumnScope.ManualFormContent(
 
         // ── 3. Details card ───────────────────────────────────────────────
         FormSectionCard {
-            FormSectionTitle("Transaction Details")
+            FormSectionTitle(stringResource(R.string.transaction_details_section))
             Spacer(Modifier.height(12.dp))
             FinanceField(
                 icon          = if (formData.isIncome) Icons.Default.Work else Icons.Default.Store,
                 value         = formData.merchant,
                 onValueChange = { onFormDataChanged(formData.copy(merchant = it)) },
-                placeholder   = if (formData.isIncome) "Income Source" else "Merchant / Store",
+                placeholder   = if (formData.isIncome) stringResource(R.string.income_source) else stringResource(R.string.merchant_store),
                 imeAction     = ImeAction.Next,
                 onImeAction   = { focusManager.moveFocus(FocusDirection.Down) },
                 onFocusChange = { onFocusChanged(it) }
@@ -576,7 +577,7 @@ fun ColumnScope.ManualFormContent(
 
         // ── 4. Category card ──────────────────────────────────────────────
         FormSectionCard {
-            FormSectionTitle("Category")
+            FormSectionTitle(stringResource(R.string.category))
             Spacer(Modifier.height(12.dp))
             CategoryChipSelector(
                 categories         = categories,
@@ -588,7 +589,7 @@ fun ColumnScope.ManualFormContent(
 
         // ── 5. Account card ─────────────────────────────────────────────
         FormSectionCard {
-            FormSectionTitle("Account")
+            FormSectionTitle(stringResource(R.string.account))
             Spacer(Modifier.height(12.dp))
             AccountChipSelector(
                 accounts = accounts,
@@ -599,7 +600,7 @@ fun ColumnScope.ManualFormContent(
 
         // ── 6. Date & Note card ───────────────────────────────────────────
         FormSectionCard {
-            FormSectionTitle("Date & Note")
+            FormSectionTitle(stringResource(R.string.date_and_note))
             Spacer(Modifier.height(12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 // Date row — tappable surface
@@ -640,7 +641,7 @@ fun ColumnScope.ManualFormContent(
                         )
                         Icon(
                             Icons.Default.EditCalendar,
-                            contentDescription = "Change date",
+                            contentDescription = stringResource(R.string.change_date),
                             tint     = AppPalette.textMuted,
                             modifier = Modifier.size(16.dp)
                         )
@@ -652,7 +653,7 @@ fun ColumnScope.ManualFormContent(
                     icon          = Icons.AutoMirrored.Filled.Notes,
                     value         = formData.description,
                     onValueChange = { onFormDataChanged(formData.copy(description = it)) },
-                    placeholder   = "What was this for? (optional)",
+                    placeholder   = stringResource(R.string.note_placeholder),
                     singleLine    = false,
                     imeAction     = ImeAction.Done,
                     onImeAction   = { focusManager.clearFocus() },
@@ -684,7 +685,7 @@ fun ColumnScope.ManualFormContent(
                     modifier           = Modifier.size(18.dp)
                 )
                 Text(
-                    text          = if (formData.isIncome) "Save Income" else "Save Expense",
+                    text          = if (formData.isIncome) stringResource(R.string.save_income) else stringResource(R.string.save_expense),
                     style         = MaterialTheme.typography.bodyLarge,
                     fontWeight    = FontWeight.Bold,
                     color         = if (isFormValid) Color.White else AppPalette.textMuted,
@@ -713,7 +714,7 @@ fun ColumnScope.ManualFormContent(
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    "Back",
+                    stringResource(R.string.back),
                     style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color      = AppPalette.textMuted

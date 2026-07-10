@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -166,9 +168,9 @@ fun InsightDialog(
     title: String,
     message: String,
     onDismiss: () -> Unit,
-    confirmText: String = "Confirm",
+    confirmText: String = stringResource(R.string.dialog_confirm),
     onConfirm: () -> Unit,
-    dismissText: String = "Cancel",
+    dismissText: String = stringResource(R.string.cancel),
     showDismissButton: Boolean = true,
     customIcon: ImageVector? = null,
     customAccentColor: Color? = null,
@@ -769,9 +771,9 @@ fun PremiumDialog(
     title: String,
     message: String,
     onDismiss: () -> Unit,
-    confirmText: String = "Confirm",
+    confirmText: String = stringResource(R.string.dialog_confirm),
     onConfirm: () -> Unit,
-    dismissText: String = "Cancel",
+    dismissText: String = stringResource(R.string.cancel),
     showDismissButton: Boolean = true,
     customIcon: ImageVector? = null,
     customAccentColor: Color? = null,
@@ -800,10 +802,10 @@ fun PremiumDialog(
 
 @Composable
 fun InsightSuccessDialog(
-    title: String = "Success",
+    title: String = stringResource(R.string.success),
     message: String,
     onDismiss: () -> Unit,
-    confirmText: String = "OK"
+    confirmText: String = stringResource(R.string.dialog_ok)
 ) {
     InsightDialog(
         type = DialogType.SUCCESS,
@@ -820,12 +822,12 @@ fun InsightSuccessDialog(
 
 @Composable
 fun InsightWarningDialog(
-    title: String = "Warning",
+    title: String = stringResource(R.string.warning),
     message: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = "Continue",
-    dismissText: String = "Cancel"
+    confirmText: String = stringResource(R.string.dialog_continue),
+    dismissText: String = stringResource(R.string.cancel)
 ) {
     InsightDialog(
         type = DialogType.WARNING,
@@ -842,18 +844,18 @@ fun InsightWarningDialog(
 
 @Composable
 fun InsightErrorDialog(
-    title: String = "Error",
+    title: String = stringResource(R.string.error),
     message: String,
     onDismiss: () -> Unit,
     onRetry: (() -> Unit)? = null,
-    retryText: String = "Retry"
+    retryText: String = stringResource(R.string.transaction_retry)
 ) {
     InsightDialog(
         type = DialogType.ERROR,
         title = title,
         message = message,
         onDismiss = onDismiss,
-        confirmText = if (onRetry != null) retryText else "OK",
+        confirmText = if (onRetry != null) retryText else stringResource(R.string.dialog_ok),
         onConfirm = { onRetry?.invoke() },
         showDismissButton = onRetry != null
     )
@@ -867,16 +869,16 @@ fun InsightDeleteDialog(
     message: String? = null,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = "Delete"
+    confirmText: String = stringResource(R.string.delete)
 ) {
     InsightDialog(
         type = DialogType.DELETE,
-        title = "Delete $itemName?",
-        message = message ?: "This action cannot be undone. The item will be permanently removed.",
+        title = stringResource(R.string.dialog_delete_title, itemName),
+        message = message ?: stringResource(R.string.dialog_delete_message),
         onDismiss = onDismiss,
         confirmText = confirmText,
         onConfirm = onConfirm,
-        dismissText = "Cancel"
+        dismissText = stringResource(R.string.cancel)
     )
 }
 
@@ -891,12 +893,12 @@ fun InsightArchiveDialog(
 ) {
     InsightDialog(
         type = DialogType.ARCHIVE,
-        title = "Archive $itemName?",
-        message = message ?: "You can view archived items in settings.",
+        title = stringResource(R.string.dialog_archive_title, itemName),
+        message = message ?: stringResource(R.string.dialog_archive_message),
         onDismiss = onDismiss,
-        confirmText = "Archive",
+        confirmText = stringResource(R.string.goals_archive_confirm),
         onConfirm = onConfirm,
-        dismissText = "Cancel"
+        dismissText = stringResource(R.string.cancel)
     )
 }
 
@@ -904,11 +906,11 @@ fun InsightArchiveDialog(
 
 @Composable
 fun InsightAllocationDialog(
-    title: String = "Confirm Allocation",
+    title: String = stringResource(R.string.allocation_review_title),
     message: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = "Allocate"
+    confirmText: String = stringResource(R.string.dialog_allocate)
 ) {
     InsightDialog(
         type = DialogType.ALLOCATION,
@@ -917,7 +919,7 @@ fun InsightAllocationDialog(
         onDismiss = onDismiss,
         confirmText = confirmText,
         onConfirm = onConfirm,
-        dismissText = "Cancel"
+        dismissText = stringResource(R.string.cancel)
     )
 }
 
@@ -925,12 +927,12 @@ fun InsightAllocationDialog(
 
 @Composable
 fun InsightGoalDialog(
-    title: String = "Goal",
+    title: String = stringResource(R.string.goals_title),
     message: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = "Confirm",
-    dismissText: String = "Cancel"
+    confirmText: String = stringResource(R.string.dialog_confirm),
+    dismissText: String = stringResource(R.string.cancel)
 ) {
     InsightDialog(
         type = DialogType.GOAL,
@@ -947,11 +949,11 @@ fun InsightGoalDialog(
 
 @Composable
 fun InsightBudgetDialog(
-    title: String = "Budget",
+    title: String = stringResource(R.string.budgeting_title),
     message: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = "Confirm"
+    confirmText: String = stringResource(R.string.dialog_confirm)
 ) {
     InsightDialog(
         type = DialogType.BUDGET,
@@ -960,7 +962,7 @@ fun InsightBudgetDialog(
         onDismiss = onDismiss,
         confirmText = confirmText,
         onConfirm = onConfirm,
-        dismissText = "Cancel"
+        dismissText = stringResource(R.string.cancel)
     )
 }
 
@@ -968,11 +970,11 @@ fun InsightBudgetDialog(
 
 @Composable
 fun InsightAccountDialog(
-    title: String = "Account",
+    title: String = stringResource(R.string.accounts_title),
     message: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = "Confirm"
+    confirmText: String = stringResource(R.string.dialog_confirm)
 ) {
     InsightDialog(
         type = DialogType.ACCOUNT,
@@ -981,7 +983,7 @@ fun InsightAccountDialog(
         onDismiss = onDismiss,
         confirmText = confirmText,
         onConfirm = onConfirm,
-        dismissText = "Cancel"
+        dismissText = stringResource(R.string.cancel)
     )
 }
 
@@ -989,10 +991,10 @@ fun InsightAccountDialog(
 
 @Composable
 fun InsightInfoDialog(
-    title: String = "Information",
+    title: String = stringResource(R.string.dialog_information),
     message: String,
     onDismiss: () -> Unit,
-    confirmText: String = "Got it"
+    confirmText: String = stringResource(R.string.dialog_got_it)
 ) {
     InsightDialog(
         type = DialogType.INFORMATION,
@@ -1045,8 +1047,8 @@ fun PremiumWarningDialog(
     message: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = "Confirm",
-    dismissText: String = "Cancel"
+    confirmText: String = stringResource(R.string.dialog_confirm),
+    dismissText: String = stringResource(R.string.cancel)
 ) {
     InsightWarningDialog(
         title = title,
@@ -1060,11 +1062,11 @@ fun PremiumWarningDialog(
 
 @Composable
 fun PremiumErrorDialog(
-    title: String = "Error",
+    title: String = stringResource(R.string.error),
     message: String,
     onDismiss: () -> Unit,
     onRetry: (() -> Unit)? = null,
-    retryText: String = "Retry"
+    retryText: String = stringResource(R.string.transaction_retry)
 ) {
     InsightErrorDialog(
         title = title,
@@ -1077,10 +1079,10 @@ fun PremiumErrorDialog(
 
 @Composable
 fun PremiumInfoDialog(
-    title: String = "Information",
+    title: String = stringResource(R.string.dialog_information),
     message: String,
     onDismiss: () -> Unit,
-    confirmText: String = "Got it"
+    confirmText: String = stringResource(R.string.dialog_got_it)
 ) {
     InsightInfoDialog(
         title = title,
@@ -1097,12 +1099,12 @@ fun PremiumLogoutDialog(
 ) {
     InsightDialog(
         type = DialogType.DELETE,
-        title = "Log Out?",
-        message = "Are you sure you want to log out? You'll need to sign in again to access your account.",
+        title = stringResource(R.string.dialog_logout_title),
+        message = stringResource(R.string.dialog_logout_message),
         onDismiss = onDismiss,
-        confirmText = "Log Out",
+        confirmText = stringResource(R.string.dialog_logout_confirm),
         onConfirm = onConfirm,
-        dismissText = "Stay"
+        dismissText = stringResource(R.string.dialog_stay)
     )
 }
 
@@ -1181,7 +1183,7 @@ fun PremiumSuccessOverlay(
                     ) {
                         Icon(
                             Icons.Outlined.CheckCircle,
-                            contentDescription = "Success",
+                            contentDescription = stringResource(R.string.cd_success),
                             tint = AppPalette.success,
                             modifier = Modifier
                                 .size(52.dp)
@@ -1207,7 +1209,7 @@ fun PremiumSuccessOverlay(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = "Success",
+                                text = stringResource(R.string.success),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = AppPalette.textPrimary

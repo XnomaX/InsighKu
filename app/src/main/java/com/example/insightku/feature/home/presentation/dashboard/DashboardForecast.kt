@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.feature.home.presentation.ForecastPeriod
 
@@ -57,10 +59,10 @@ fun AiForecastCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Spending Forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-                    Text("AI-powered analysis", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.dashboard_spending_forecast), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                    Text(stringResource(R.string.dashboard_ai_analysis), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                 }
-                SegmentedControl(listOf("Weekly","Monthly"), if (isWeekly) 0 else 1) {
+                SegmentedControl(listOf(stringResource(R.string.dashboard_weekly), stringResource(R.string.dashboard_monthly)), if (isWeekly) 0 else 1) {
                     onPeriodChange(if (it == 0) "week" else "month")
                 }
             }
@@ -83,8 +85,8 @@ fun AiForecastCard(
                         ) {
                             Icon(Icons.Default.BarChart, null, tint = NavPurple.copy(alpha = 0.45f), modifier = Modifier.size(26.dp))
                         }
-                        Text("No data yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
-                        Text("Start adding transactions to see insights.", style = MaterialTheme.typography.bodySmall,
+                        Text(stringResource(R.string.dashboard_no_data), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+                        Text(stringResource(R.string.dashboard_start_adding), style = MaterialTheme.typography.bodySmall,
                             color = AppPalette.textMuted, textAlign = TextAlign.Center)
                     }
                 }

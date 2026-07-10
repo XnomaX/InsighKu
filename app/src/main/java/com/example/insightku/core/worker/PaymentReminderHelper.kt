@@ -9,7 +9,13 @@ import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.work.*
+import com.example.insightku.R
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.insightku.core.i18n.LocaleHelper
+import com.example.insightku.core.i18n.NumberFormatter
 import java.util.concurrent.TimeUnit
 
 /**
@@ -29,7 +35,7 @@ import java.util.concurrent.TimeUnit
 object PaymentReminderHelper {
 
     private const val CHANNEL_ID = "payment_reminder_channel"
-    private const val CHANNEL_NAME = "Payment Reminders"
+    private val CHANNEL_NAME_RES = R.string.payment_channel_name
     private const val WORK_NAME = "PaymentReminderWorker"
     private const val PREFS_NAME = "payment_reminder_state"
     private const val KEY_PREFIX = "last_sent_"
@@ -98,34 +104,39 @@ object PaymentReminderHelper {
         createChannelIfNeeded(context)
 
         // Determine reminder type and content
-        val (type, title, body) = when {
+        val ctx = LocaleHelper.wrapContext(context)
+        val formattedAmount = "Rp ${"%,.0f".format(amount)}"
+        val reminderData = when {
             daysUntilDue < 0 -> Triple(
                 "overdue",
-                "⚠️ Overdue: $paymentName",
-                "\"$paymentName\" is ${-daysUntilDue} day(s) overdue. Amount: Rp ${"%,.0f".format(amount)}"
+                ctx.getString(R.string.payment_overdue_title, paymentName),
+                ctx.getString(R.string.payment_overdue_body, paymentName, -daysUntilDue, formattedAmount)
             )
             daysUntilDue == 0 -> Triple(
                 "today",
-                "📅 Due Today: $paymentName",
-                "\"$paymentName\" is due today. Amount: Rp ${"%,.0f".format(amount)}"
+                ctx.getString(R.string.payment_due_today_title, paymentName),
+                ctx.getString(R.string.payment_due_today_body, paymentName, formattedAmount)
             )
             daysUntilDue == 1 -> Triple(
                 "h1",
-                "⏰ Due Tomorrow: $paymentName",
-                "\"$paymentName\" is due tomorrow. Amount: Rp ${"%,.0f".format(amount)}"
+                ctx.getString(R.string.payment_due_tomorrow_title, paymentName),
+                ctx.getString(R.string.payment_due_tomorrow_body, paymentName, formattedAmount)
             )
             daysUntilDue <= 3 -> Triple(
                 "h3",
-                "📋 Due in $daysUntilDue days: $paymentName",
-                "\"$paymentName\" is due in $daysUntilDue days. Amount: Rp ${"%,.0f".format(amount)}"
+                ctx.getString(R.string.payment_due_in_days_title, daysUntilDue, paymentName),
+                ctx.getString(R.string.payment_due_in_days_body, paymentName, daysUntilDue, formattedAmount)
             )
             daysUntilDue <= 7 -> Triple(
                 "h7",
-                "📋 Due in $daysUntilDue days: $paymentName",
-                "\"$paymentName\" is due in $daysUntilDue days. Amount: Rp ${"%,.0f".format(amount)}"
+                ctx.getString(R.string.payment_due_in_days_title, daysUntilDue, paymentName),
+                ctx.getString(R.string.payment_due_in_days_body, paymentName, daysUntilDue, formattedAmount)
             )
             else -> return // Don't send reminders for payments > 7 days away
         }
+        val type = reminderData.first
+        val title = reminderData.second
+        val body = reminderData.third
 
         // Duplicate prevention: only send once per calendar day per payment+type
         val todayBucket = todayDayBucket()
@@ -136,9 +147,9 @@ object PaymentReminderHelper {
             return
         }
 
-        val typeLabel = if (isRecurring) "Recurring" else "Installment"
+        val typeLabel = if (isRecurring) ctx.getString(R.string.payment_recurring) else ctx.getString(R.string.payment_installment)
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText("$typeLabel · Rp ${"%,.0f".format(amount)}")
@@ -178,12 +189,13 @@ object PaymentReminderHelper {
 
     private fun createChannelIfNeeded(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ctx = LocaleHelper.wrapContext(context)
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                ctx.getString(CHANNEL_NAME_RES),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Reminders for upcoming and overdue payments"
+                description = ctx.getString(R.string.payment_channel_desc)
             }
             val manager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

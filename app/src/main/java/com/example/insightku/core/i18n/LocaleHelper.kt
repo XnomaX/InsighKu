@@ -2,6 +2,7 @@ package com.example.insightku.core.i18n
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
@@ -54,6 +55,20 @@ object LocaleHelper {
         }
         val deviceCode = deviceLocale?.language ?: "en"
         return if (SUPPORTED_LOCALES.any { it.code == deviceCode }) deviceCode else "en"
+    }
+
+    /**
+     * Wrap a [Context] with the current application locale.
+     *
+     * Use this in non-Composable contexts (Services, Workers, Notifications)
+     * to ensure string resources are resolved in the correct locale.
+     */
+    fun wrapContext(context: Context): Context {
+        val localeCode = getCurrentLanguageCode(context)
+        val locale = Locale(localeCode)
+        val config = Configuration(context.resources.configuration)
+        config.setLocale(locale)
+        return context.createConfigurationContext(config)
     }
 
     /**

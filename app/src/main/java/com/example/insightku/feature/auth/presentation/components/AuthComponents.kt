@@ -441,7 +441,7 @@ fun AuthErrorCard(
             ) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Dismiss error",
+                    contentDescription = stringResource(R.string.cd_dismiss_error),
                     modifier = Modifier.size(14.dp),
                     tint = AppPalette.error.copy(alpha = 0.6f)
                 )

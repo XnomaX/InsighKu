@@ -32,6 +32,8 @@ import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.RecurringBudget
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
@@ -58,20 +60,28 @@ fun RecurringBudgetsDialog(
     var budgetToDelete by remember { mutableStateOf<RecurringBudget?>(null) }
 
     val categories = mapOf(
-        "Subscriptions" to "cat_1",
-        "Utilities" to "cat_2",
-        "Insurance" to "cat_3",
-        "Rent/Mortgage" to "cat_4",
-        "Loan Payments" to "cat_5",
-        "Memberships" to "cat_6",
-        "Donations" to "cat_7",
-        "Others" to "cat_8"
+        stringResource(R.string.cat_subscriptions) to "cat_1",
+        stringResource(R.string.cat_utilities) to "cat_2",
+        stringResource(R.string.cat_insurance) to "cat_3",
+        stringResource(R.string.cat_rent_mortgage) to "cat_4",
+        stringResource(R.string.cat_loan_payments) to "cat_5",
+        stringResource(R.string.cat_memberships) to "cat_6",
+        stringResource(R.string.cat_donations) to "cat_7",
+        stringResource(R.string.cat_others) to "cat_8"
     )
 
     fun handleEdit(budget: RecurringBudget) { editingBudget = budget; showAddForm = true }
     fun handleBackToList() { showAddForm = false; editingBudget = null }
     fun handleDeleteRequest(budget: RecurringBudget) { budgetToDelete = budget }
     fun handleDeleteConfirm() { budgetToDelete?.let { onBudgetDeleted(it); budgetToDelete = null } }
+
+    // Localized reminder options
+    val reminderOptions = listOf(
+        1 to stringResource(R.string.recurring_reminder_1day),
+        3 to stringResource(R.string.recurring_reminder_3days),
+        7 to stringResource(R.string.recurring_reminder_7days),
+        14 to stringResource(R.string.recurring_reminder_14days)
+    )
 
     if (isOpen) {
         Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -95,12 +105,12 @@ fun RecurringBudgetsDialog(
 fun DialogHeader(showAddForm: Boolean, isEditing: Boolean, onBack: () -> Unit, onClose: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (showAddForm) { IconButton(onClick = onBack, modifier = Modifier.size(24.dp)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }; Spacer(Modifier.width(8.dp)) }
+            if (showAddForm) { IconButton(onClick = onBack, modifier = Modifier.size(24.dp)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back)) }; Spacer(Modifier.width(8.dp)) }
             Icon(Icons.Default.Repeat, contentDescription = null, tint = AppPalette.accent)
             Spacer(Modifier.width(8.dp))
-            Text(text = when { showAddForm && isEditing -> "Edit Pembayaran Berulang"; showAddForm -> "Tambah Pembayaran Berulang"; else -> "Pembayaran Berulang" }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(text = when { showAddForm && isEditing -> stringResource(R.string.recurring_budgets_edit_title); showAddForm -> stringResource(R.string.recurring_budgets_add_title); else -> stringResource(R.string.recurring_budgets_title) }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
-        IconButton(onClick = onClose, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, contentDescription = "Close") }
+        IconButton(onClick = onClose, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close)) }
     }
     HorizontalDivider()
 }
@@ -108,9 +118,9 @@ fun DialogHeader(showAddForm: Boolean, isEditing: Boolean, onBack: () -> Unit, o
 @Composable
 fun ColumnScope.BudgetList(budgets: List<RecurringBudget>, onEdit: (RecurringBudget) -> Unit, onDelete: (RecurringBudget) -> Unit, onAdd: () -> Unit, categories: Map<String, String>) {
     Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
-        Text("Kelola pembayaran berulang dan langganan Anda.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), textAlign = TextAlign.Center)
+        Text(stringResource(R.string.recurring_manage_desc), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), textAlign = TextAlign.Center)
         if (budgets.isEmpty()) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("Belum ada pembayaran berulang.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.recurring_empty), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         } else {
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
                 items(budgets) { budget -> RecurringBudgetItem(budget = budget, categoryName = categories.entries.find { it.value == budget.categoryId }?.key ?: "N/A", onEdit = { onEdit(budget) }, onDelete = { onDelete(budget) }) }
@@ -118,7 +128,7 @@ fun ColumnScope.BudgetList(budgets: List<RecurringBudget>, onEdit: (RecurringBud
         }
     }
     Button(onClick = onAdd, modifier = Modifier.fillMaxWidth().padding(16.dp).height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = AppPalette.accent)) {
-        Icon(Icons.Default.Add, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Tambah Pembayaran Berulang")
+        Icon(Icons.Default.Add, contentDescription = null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.recurring_add))
     }
 }
 
@@ -131,7 +141,7 @@ fun RecurringBudgetItem(budget: RecurringBudget, categoryName: String, onEdit: (
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(budget.name, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.width(8.dp))
-                        Badge(containerColor = MaterialTheme.colorScheme.secondaryContainer) { Text(text = budget.frequency.name.lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) }
+                        Badge(containerColor = MaterialTheme.colorScheme.secondaryContainer) { Text(text = when (budget.frequency) { BudgetFrequency.WEEKLY -> stringResource(R.string.period_weekly); BudgetFrequency.BIWEEKLY -> stringResource(R.string.recurring_biweekly); BudgetFrequency.MONTHLY -> stringResource(R.string.period_monthly); BudgetFrequency.QUARTERLY -> stringResource(R.string.recurring_quarterly); BudgetFrequency.YEARLY -> stringResource(R.string.recurring_yearly) }, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) }
                     }
                     Text(categoryName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -148,11 +158,11 @@ fun RecurringBudgetItem(budget: RecurringBudget, categoryName: String, onEdit: (
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(4.dp))
-                    Text("Selanjutnya: ${DateFormatter.formatShortDate(budget.nextDue)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.recurring_budgets_next, DateFormatter.formatShortDate(budget.nextDue)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Edit, contentDescription = "Edit", tint = AppPalette.accent, modifier = Modifier.size(18.dp)) }
-                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)) }
+                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit), tint = AppPalette.accent, modifier = Modifier.size(18.dp)) }
+                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)) }
                 }
             }
         }
@@ -171,37 +181,58 @@ fun ColumnScope.AddEditBudgetForm(editingBudget: RecurringBudget?, onSave: (Recu
     var notifications by remember { mutableStateOf(editingBudget?.isActive ?: true) }
     var reminderDaysBefore by remember { mutableIntStateOf(editingBudget?.reminderDaysBefore ?: 3) }
     var showDatePicker by remember { mutableStateOf(false) }
-    val reminderOptions = listOf(1 to "1 hari sebelumnya", 3 to "3 hari sebelumnya", 7 to "7 hari sebelumnya", 14 to "14 hari sebelumnya")
+    val reminderOptions = listOf(1 to stringResource(R.string.recurring_reminder_1day), 3 to stringResource(R.string.recurring_reminder_3days), 7 to stringResource(R.string.recurring_reminder_7days), 14 to stringResource(R.string.recurring_reminder_14days))
 
     Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
-        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nama Pembayaran") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.recurring_budgets_name_label)) }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(16.dp))
-        OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Nominal (Rp)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text(stringResource(R.string.recurring_budgets_amount_label)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(16.dp))
-        DropdownField(label = "Kategori", options = categories.map { it.key to it.value }.toMap(), onValueSelected = { categoryId = it }, displayValue = { categories.entries.find { it.value == categoryId }?.key ?: "Pilih Kategori" })
+        DropdownField(label = stringResource(R.string.recurring_budgets_category), options = categories.map { it.key to it.value }.toMap(), onValueSelected = { categoryId = it }, displayValue = { categories.entries.find { it.value == categoryId }?.key ?: stringResource(R.string.recurring_select_category) })
         Spacer(Modifier.height(16.dp))
-        DropdownField(label = "Frekuensi", options = BudgetFrequency.entries.associateBy({ it }, { it.name.lowercase().replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() } }), onValueSelected = { frequency = it }, displayValue = { frequency.name.lowercase().replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() } })
+        DropdownField(
+            label = stringResource(R.string.recurring_budgets_frequency),
+            options = BudgetFrequency.entries.associateBy({ it }, { freq ->
+                when (freq) {
+                    BudgetFrequency.WEEKLY -> stringResource(R.string.period_weekly)
+                    BudgetFrequency.BIWEEKLY -> stringResource(R.string.recurring_biweekly)
+                    BudgetFrequency.MONTHLY -> stringResource(R.string.period_monthly)
+                    BudgetFrequency.QUARTERLY -> stringResource(R.string.recurring_quarterly)
+                    BudgetFrequency.YEARLY -> stringResource(R.string.recurring_yearly)
+                }
+            }),
+            onValueSelected = { frequency = it },
+            displayValue = {
+                when (frequency) {
+                    BudgetFrequency.WEEKLY -> stringResource(R.string.period_weekly)
+                    BudgetFrequency.BIWEEKLY -> stringResource(R.string.recurring_biweekly)
+                    BudgetFrequency.MONTHLY -> stringResource(R.string.period_monthly)
+                    BudgetFrequency.QUARTERLY -> stringResource(R.string.recurring_quarterly)
+                    BudgetFrequency.YEARLY -> stringResource(R.string.recurring_yearly)
+                }
+            }
+        )
         Spacer(Modifier.height(16.dp))
-        Text("ACCOUNT", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted, letterSpacing = 1.2.sp)
+        Text(stringResource(R.string.account).uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted, letterSpacing = 1.2.sp)
         Spacer(Modifier.height(8.dp))
         RecurringBudgetAccountSelector(accounts = accounts, selectedAccountId = accountId, onSelect = { accountId = it })
         Spacer(Modifier.height(16.dp))
         HorizontalDivider(Modifier.padding(vertical = 16.dp))
-        Text("Pengingat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.recurring_budgets_reminder), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(value = DateFormatter.formatFullDate(nextDueDate), onValueChange = {}, readOnly = true, label = { Text("Tanggal Mulai Pengingat") }, trailingIcon = { IconButton(onClick = { showDatePicker = true }) { Icon(Icons.Default.CalendarToday, contentDescription = "Select Date") } }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = DateFormatter.formatFullDate(nextDueDate), onValueChange = {}, readOnly = true, label = { Text(stringResource(R.string.recurring_budgets_reminder_start)) }, trailingIcon = { IconButton(onClick = { showDatePicker = true }) { Icon(Icons.Default.CalendarToday, contentDescription = stringResource(R.string.recurring_select_date)) } }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(16.dp))
-        DropdownField(label = "Waktu Pengingat", options = reminderOptions.toMap(), onValueSelected = { reminderDaysBefore = it }, displayValue = { reminderOptions.find { it.first == reminderDaysBefore }?.second ?: "Pilih Waktu" })
+        DropdownField(label = stringResource(R.string.recurring_budgets_reminder_time), options = reminderOptions.toMap(), onValueSelected = { reminderDaysBefore = it }, displayValue = { reminderOptions.find { it.first == reminderDaysBefore }?.second ?: stringResource(R.string.recurring_select_reminder) })
         Spacer(Modifier.height(16.dp))
         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Column { Text("Notifikasi", style = MaterialTheme.typography.bodyLarge); Text("Dapatkan pengingat sebelum jatuh tempo", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Column { Text(stringResource(R.string.recurring_budgets_notifications), style = MaterialTheme.typography.bodyLarge); Text(stringResource(R.string.recurring_budgets_notifications_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Switch(checked = notifications, onCheckedChange = { notifications = it })
         }
     }
     if (showDatePicker) { PremiumDatePicker(initialMillis = nextDueDate, onDateSelected = { millis -> nextDueDate = millis; showDatePicker = false }, onDismiss = { showDatePicker = false }) }
     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Batal") }
-        Button(onClick = { val budget = RecurringBudget(id = editingBudget?.id ?: 0, name = name, amount = amount.toDoubleOrNull() ?: 0.0, frequency = frequency, categoryId = categoryId, accountId = accountId ?: editingBudget?.accountId, nextDue = nextDueDate, isActive = notifications, reminderDaysBefore = reminderDaysBefore); onSave(budget) }, enabled = name.isNotBlank() && amount.isNotBlank() && categoryId != null, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = AppPalette.accent)) { Icon(Icons.Default.Add, contentDescription = null); Spacer(Modifier.width(4.dp)); Text(if (editingBudget != null) "Update" else "Tambah") }
+        OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.cancel)) }
+        Button(onClick = { val budget = RecurringBudget(id = editingBudget?.id ?: 0, name = name, amount = amount.toDoubleOrNull() ?: 0.0, frequency = frequency, categoryId = categoryId, accountId = accountId ?: editingBudget?.accountId, nextDue = nextDueDate, isActive = notifications, reminderDaysBefore = reminderDaysBefore); onSave(budget) }, enabled = name.isNotBlank() && amount.isNotBlank() && categoryId != null, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = AppPalette.accent)) { Icon(Icons.Default.Add, contentDescription = null); Spacer(Modifier.width(4.dp)); Text(if (editingBudget != null) stringResource(R.string.save) else stringResource(R.string.recurring_add)) }
     }
 }
 
@@ -217,7 +248,7 @@ fun <T> DropdownField(label: String, options: Map<T, String>, onValueSelected: (
 
 @Composable
 private fun RecurringBudgetAccountSelector(accounts: List<Account>, selectedAccountId: String?, onSelect: (String?) -> Unit) {
-    if (accounts.isEmpty()) { Text("No accounts available. Create an account first.", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted); return }
+    if (accounts.isEmpty()) { Text(stringResource(R.string.recurring_budgets_no_accounts), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted); return }
     val rows = accounts.chunked(3)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         rows.forEach { rowItems ->
@@ -238,13 +269,26 @@ private fun RecurringBudgetAccountSelector(accounts: List<Account>, selectedAcco
 }
 
 @Composable
-fun DeleteConfirmationDialog(budgetName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog(itemName = budgetName, onDismiss = onDismiss, onConfirm = onConfirm, message = "Apakah Anda yakin ingin menghapus pembayaran berulang \"$budgetName\"? Tindakan ini tidak dapat dibatalkan.")
+fun formatNextDue(nextDue: Long): String {
+    val now = System.currentTimeMillis()
+    val diffMs = nextDue - now
+    val diffDays = TimeUnit.MILLISECONDS.toDays(diffMs)
+    return when {
+        diffDays < 0 -> stringResource(R.string.recurring_budgets_overdue)
+        diffDays == 0L -> stringResource(R.string.recurring_budgets_today)
+        diffDays == 1L -> stringResource(R.string.recurring_budgets_tomorrow)
+        else -> stringResource(R.string.recurring_budgets_in_days, diffDays.toInt())
+    }
 }
 
-private fun formatNextDue(dateMillis: Long): String {
-    val diff = dateMillis - System.currentTimeMillis()
-    if (diff < 0) return "Jatuh Tempo"
-    val days = TimeUnit.MILLISECONDS.toDays(diff)
-    return when (days) { 0L -> "Hari Ini"; 1L -> "Besok"; else -> "Dalam $days hari" }
+@Composable
+fun DeleteConfirmationDialog(budgetName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog(
+        itemName = budgetName,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        message = stringResource(R.string.recurring_budgets_delete_msg, budgetName)
+    )
 }
+
+

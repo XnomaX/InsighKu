@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import com.example.insightku.feature.planning.goal.presentation.getGoalIcon
@@ -42,15 +44,15 @@ fun GoalsPreviewSection(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    "Goals",
+                    stringResource(R.string.dashboard_goals),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.textPrimary
                 )
                 val subtitle = when {
-                    totalCount == 0 -> "No active goals yet"
-                    totalCount <= 3  -> "$totalCount active goal${if (totalCount != 1) "s" else ""}"
-                    else            -> "${goals.size} of $totalCount goals"
+                    totalCount == 0 -> stringResource(R.string.dashboard_no_active_goals)
+                    totalCount <= 3  -> stringResource(R.string.dashboard_active_goals_count, totalCount)
+                    else            -> stringResource(R.string.dashboard_goals_of_count, goals.size, totalCount)
                 }
                 Text(
                     subtitle,
@@ -66,7 +68,7 @@ fun GoalsPreviewSection(
                     border   = BorderStroke(1.dp, NavPurple)
                 ) {
                     Text(
-                        "View All",
+                        stringResource(R.string.dashboard_view_all),
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -106,7 +108,7 @@ fun GoalsPreviewSection(
                         )
                     }
                     Text(
-                        "No active goals yet",
+                        stringResource(R.string.dashboard_no_active_goals),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = AppPalette.textPrimary
@@ -117,7 +119,7 @@ fun GoalsPreviewSection(
                         color = NavPurple
                     ) {
                         Text(
-                            "Create Goal",
+                            stringResource(R.string.dashboard_create_goal),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
@@ -156,7 +158,7 @@ fun GoalsPreviewSection(
 
             if (totalCount > 3) {
                 Text(
-                    "+${totalCount - 3} more goals",
+                    stringResource(R.string.dashboard_more_goals, totalCount - 3),
                     style = MaterialTheme.typography.labelMedium,
                     color = NavPurple,
                     modifier = Modifier

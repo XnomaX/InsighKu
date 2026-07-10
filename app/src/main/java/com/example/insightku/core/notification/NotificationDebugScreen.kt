@@ -27,6 +27,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.i18n.DateFormatter
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import java.util.*
@@ -167,11 +169,11 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.BugReport, null, tint = AppPalette.accent, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Notification Debug", style = MaterialTheme.typography.titleLarge,
+            Text(stringResource(R.string.notification_debug_title), style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { refreshTick++ }) {
-                Icon(Icons.Default.Refresh, "Refresh", tint = AppPalette.textMuted)
+                Icon(Icons.Default.Refresh, stringResource(R.string.debug_refresh), tint = AppPalette.textMuted)
             }
         }
 
@@ -179,9 +181,9 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
 
         // ── Listener status ───────────────────────────────────────────────────
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatusChip(if (isListenerEnabled) "AKTIF" else "TIDAK AKTIF", isListenerEnabled)
-            StatusChip("All: ${rawEntries.size}", rawEntries.isNotEmpty())
-            StatusChip("Bank: ${bankEntries.size}", bankEntries.any { it.parseSuccess })
+            StatusChip(if (isListenerEnabled) stringResource(R.string.debug_listener_active) else stringResource(R.string.debug_listener_inactive), isListenerEnabled)
+            StatusChip(stringResource(R.string.debug_tab_all, rawEntries.size), rawEntries.isNotEmpty())
+            StatusChip(stringResource(R.string.debug_tab_bank, bankEntries.size), bankEntries.any { it.parseSuccess })
         }
 
         Spacer(Modifier.height(8.dp))
@@ -201,18 +203,18 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
                 onClick  = { BankNotificationListenerService.openSettings(context) },
                 colors   = ButtonDefaults.buttonColors(containerColor = AppPalette.accent),
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Buka Notification Access Settings") }
+            ) { Text(stringResource(R.string.debug_open_notification_settings)) }
         } else {
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick  = { BankNotificationListenerService.forceReconnect(context) },
                     modifier = Modifier.weight(1f)
-                ) { Text("Force Reconnect", color = AppPalette.textMuted, fontSize = 12.sp) }
+                ) { Text(stringResource(R.string.debug_force_reconnect), color = AppPalette.textMuted, fontSize = 12.sp) }
                 OutlinedButton(
                     onClick  = { NotificationDebugLog.clearAll() },
                     modifier = Modifier.weight(1f)
-                ) { Text("Clear Log", color = AppPalette.textMuted, fontSize = 12.sp) }
+                ) { Text(stringResource(R.string.debug_clear_log), color = AppPalette.textMuted, fontSize = 12.sp) }
             }
         }
 
@@ -225,19 +227,19 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
             contentColor     = AppPalette.accent
         ) {
             Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                Text("All (${rawEntries.size})", color = if (selectedTab == 0) AppPalette.accent else AppPalette.textMuted,
+                Text(stringResource(R.string.debug_tab_all, rawEntries.size), color = if (selectedTab == 0) AppPalette.accent else AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
             Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                Text("Bank (${bankEntries.size})", color = if (selectedTab == 1) AppPalette.accent else AppPalette.textMuted,
+                Text(stringResource(R.string.debug_tab_bank, bankEntries.size), color = if (selectedTab == 1) AppPalette.accent else AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
             Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }) {
-                Text("Service", color = if (selectedTab == 2) AppPalette.accent else AppPalette.textMuted,
+                Text(stringResource(R.string.debug_tab_service), color = if (selectedTab == 2) AppPalette.accent else AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
             Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }) {
-                Text("Battery", color = if (selectedTab == 3) AppPalette.accent else AppPalette.textMuted,
+                Text(stringResource(R.string.debug_tab_battery), color = if (selectedTab == 3) AppPalette.accent else AppPalette.textMuted,
                     modifier = Modifier.padding(vertical = 10.dp), fontSize = 12.sp)
             }
         }
@@ -248,7 +250,7 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
             // ── Tab 0: All notifications (no filter) ─────────────────────────
             0 -> {
                 if (rawEntries.isEmpty()) {
-                    EmptyState("Belum ada notifikasi diterima.\nonNotificationPosted() belum terpanggil.\nPastikan service AKTIF dan ada notifikasi masuk.")
+                    EmptyState(stringResource(R.string.debug_empty_raw))
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         items(rawEntries) { RawEntryCard(it) }
@@ -258,7 +260,7 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
             // ── Tab 1: Bank parsed entries ────────────────────────────────────
             1 -> {
                 if (bankEntries.isEmpty()) {
-                    EmptyState("Belum ada notifikasi bank diproses.\nNotifikasi mungkin disaring di filter package.\nCek tab 'All' untuk melihat semua package yang masuk.")
+                    EmptyState(stringResource(R.string.debug_empty_bank))
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         items(bankEntries) { BankEntryCard(it) }
@@ -268,7 +270,7 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
             // ── Tab 2: Service lifecycle events ──────────────────────────────
             2 -> {
                 if (serviceEvents.isEmpty()) {
-                    EmptyState("Belum ada service event.\nonListenerConnected() belum terpanggil.")
+                    EmptyState(stringResource(R.string.debug_empty_service))
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         items(serviceEvents) { event ->
@@ -295,28 +297,28 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
 private fun BatteryGuideTab(context: android.content.Context) {
     val steps = listOf(
         BatteryStep(
-            title   = "1. Battery Optimization → Unrestricted",
-            detail  = "Pengaturan → Battery → Battery Optimization → Cari InsighKu → pilih 'Don't optimize' atau 'Unrestricted'",
-            action  = "Buka Battery Settings",
+            title   = stringResource(R.string.debug_battery_step1_title),
+            detail  = stringResource(R.string.debug_battery_step1_detail),
+            action  = stringResource(R.string.debug_battery_step1_action),
             intent  = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
         ),
         BatteryStep(
-            title   = "2. App Launch (Infinix/XOS)",
-            detail  = "Pengaturan → Apps → App Launch → InsighKu → Manage manually → aktifkan Auto-launch, Secondary launch, Run in background",
-            action  = "Buka App Settings",
+            title   = stringResource(R.string.debug_battery_step2_title),
+            detail  = stringResource(R.string.debug_battery_step2_detail),
+            action  = stringResource(R.string.debug_battery_step2_action),
             intent  = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                 data = android.net.Uri.parse("package:${context.packageName}")
             }
         ),
         BatteryStep(
-            title   = "3. Notification Access",
-            detail  = "Pastikan InsighKu masih ada di daftar Allowed di Notification Access settings",
-            action  = "Buka Notification Access",
+            title   = stringResource(R.string.debug_battery_step3_title),
+            detail  = stringResource(R.string.debug_battery_step3_detail),
+            action  = stringResource(R.string.debug_battery_step3_action),
             intent  = android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
         ),
         BatteryStep(
-            title   = "4. Restart device setelah mengubah semua setting",
-            detail  = "Beberapa ROM XOS memerlukan restart agar perubahan battery setting berlaku.",
+            title   = stringResource(R.string.debug_battery_step4_title),
+            detail  = stringResource(R.string.debug_battery_step4_detail),
             action  = null,
             intent  = null
         )
@@ -327,14 +329,14 @@ private fun BatteryGuideTab(context: android.content.Context) {
             Surface(shape = RoundedCornerShape(10.dp), color = AppPalette.errorChipBg.copy(alpha = 0.3f)) {
                 Column(Modifier.fillMaxWidth().padding(12.dp)) {
                     Text(
-                        "⚠ Service restart loop terdeteksi",
+                        stringResource(R.string.debug_battery_warning_title),
                         color = AppPalette.error,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Pola CONNECTED → DESTROYED dalam hitungan detik adalah tanda ROM membunuh service karena battery optimization. Ini bukan bug kode — ikuti langkah di bawah.",
+                        stringResource(R.string.debug_battery_warning_desc),
                         color = AppPalette.textMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -440,7 +442,7 @@ private fun BankEntryCard(entry: NotificationDebugEntry) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CheckCircle, null, tint = AppPalette.success, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Draft created", color = AppPalette.success, style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.debug_draft_created), color = AppPalette.success, style = MaterialTheme.typography.labelSmall)
                     }
                 }
             } else {

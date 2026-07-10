@@ -11,7 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.PurpleViolet
 
@@ -22,7 +24,7 @@ internal fun DetailTopBar(onBack: () -> Unit, title: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.Outlined.ArrowBack, "Back", tint = AppPalette.textPrimary)
+            Icon(Icons.Outlined.ArrowBack, stringResource(R.string.back), tint = AppPalette.textPrimary)
         }
         if (title.isNotEmpty()) {
             Spacer(Modifier.width(8.dp))
@@ -53,7 +55,7 @@ internal fun ErrorContent(message: String, onBack: () -> Unit, onRetry: () -> Un
                     Text(message, style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     Spacer(Modifier.height(24.dp))
                     Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = PurpleViolet)) {
-                        Text("Retry")
+                        Text(stringResource(R.string.goal_header_retry))
                     }
                 }
             }

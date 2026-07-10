@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -37,6 +38,8 @@ import androidx.compose.ui.unit.sp
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.i18n.NumberFormatter
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import kotlin.math.roundToInt
 
@@ -69,10 +72,11 @@ fun AddCategoryDialog(
     var selectedPeriod   by remember { mutableStateOf<String?>(null) }
 
     val selectedIcon = iconSet.find { it.name == selectedIconName } ?: iconSet.first()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     fun validate(): Boolean {
         return if (name.trim().length < 2) {
-            nameError = "Category name must be at least 2 characters"
+            nameError = context.getString(R.string.add_category_name_error)
             false
         } else {
             nameError = null
@@ -111,7 +115,7 @@ fun AddCategoryDialog(
             }
         }
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.safeDrawingPadding().fillMaxWidth()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -120,7 +124,7 @@ fun AddCategoryDialog(
             ) {
                 Surface(shape = RoundedCornerShape(50), color = accentColor.copy(alpha = 0.10f)) {
                     Text(
-                        text       = if (initialType == CategoryType.EXPENSE) "Expense Category" else "Income Category",
+                        text       = stringResource(if (initialType == CategoryType.EXPENSE) R.string.add_category_expense_chip else R.string.add_category_income_chip),
                         modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style      = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
@@ -129,13 +133,13 @@ fun AddCategoryDialog(
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text       = if (initialType == CategoryType.EXPENSE) "Add Expense Category" else "Add Income Source",
+                    text       = stringResource(if (initialType == CategoryType.EXPENSE) R.string.add_category_expense_title else R.string.add_category_income_title),
                     style      = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color      = AppPalette.textPrimary
                 )
                 Text(
-                    text  = if (initialType == CategoryType.EXPENSE) "Track and limit your spending" else "Track where your money comes from",
+                    text  = stringResource(if (initialType == CategoryType.EXPENSE) R.string.add_category_expense_desc else R.string.add_category_income_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -236,14 +240,14 @@ fun AddCategoryDialog(
                             )
                             Text(
                                 text  = if (initialType == CategoryType.EXPENSE) {
-                                    if (budgetLimitText.isNotBlank()) "${NumberFormatter.formatCurrency(budgetLimitText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0)} / month" else "No limit set"
+                                    if (budgetLimitText.isNotBlank()) "${NumberFormatter.formatCurrency(budgetLimitText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0)} / month" else stringResource(R.string.add_category_no_limit)
                                 } else "Income tracking",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppPalette.textMuted
                             )
                         }
                         Surface(shape = RoundedCornerShape(50), color = accentColor.copy(alpha = 0.10f)) {
-                            Text("Preview", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = accentColor, fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.add_category_preview), modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = accentColor, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -256,7 +260,7 @@ fun AddCategoryDialog(
                         border   = BorderStroke(1.dp, AppPalette.cardBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textDialogMuted)
+                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textDialogMuted)
                         }
                     }
                     Box(
@@ -287,7 +291,7 @@ fun AddCategoryDialog(
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                             Text(
-                                if (initialType == CategoryType.EXPENSE) "Add Category" else "Add Source",
+                                if (initialType == CategoryType.EXPENSE) stringResource(R.string.add_category_expense_title) else stringResource(R.string.add_category_income_title),
                                 style      = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color      = Color.White

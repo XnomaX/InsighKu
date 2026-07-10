@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.components.dialogs.PremiumSuccessOverlay
 import com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog
 import com.example.insightku.core.ui.components.dialogs.PremiumArchiveConfirmDialog
@@ -36,17 +38,17 @@ internal fun GoalDetailSuccessOverlay(message: String) {
 
 @Composable
 internal fun GoalDeleteConfirmDialog(goalName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    PremiumDeleteConfirmDialog(itemName = goalName, onDismiss = onDismiss, onConfirm = onConfirm, message = "Are you sure you want to permanently delete \"$goalName\"? This action cannot be undone.")
+    PremiumDeleteConfirmDialog(itemName = goalName, onDismiss = onDismiss, onConfirm = onConfirm, message = stringResource(R.string.goal_confirm_delete_message, goalName))
 }
 
 @Composable
 internal fun GoalArchiveConfirmDialog(goalName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    PremiumArchiveConfirmDialog(itemName = goalName, onDismiss = onDismiss, onConfirm = onConfirm, message = "Are you sure you want to archive \"$goalName\"? You can view archived goals in settings.")
+    PremiumArchiveConfirmDialog(itemName = goalName, onDismiss = onDismiss, onConfirm = onConfirm, message = stringResource(R.string.goal_confirm_archive_message, goalName))
 }
 
 @Composable
 internal fun GoalDeleteAutoAllocationRuleConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    PremiumDeleteConfirmDialog(itemName = "auto-allocation rule", onDismiss = onDismiss, onConfirm = onConfirm, message = "Are you sure you want to delete this auto-allocation rule? Automatic savings for this rule will stop.")
+    PremiumDeleteConfirmDialog(itemName = "auto-allocation rule", onDismiss = onDismiss, onConfirm = onConfirm, message = stringResource(R.string.goal_confirm_delete_rule_message))
 }
 
 internal fun formatCurrencyFull(amount: Double): String {

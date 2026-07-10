@@ -9,7 +9,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,8 +22,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -91,6 +91,8 @@ import com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency
 import com.example.insightku.feature.planning.goal.domain.model.AllocationTriggerParams
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
 import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import java.time.Instant
 import java.time.LocalDate
@@ -99,6 +101,13 @@ import java.util.UUID
 
 // ─── Account Type Icon Resolver ────────────────────────────────────────────────
 
+private fun accountTypeLabelRes(type: AccountType): Int = when (type) {
+    AccountType.BANK_ACCOUNT -> R.string.auto_alloc_bank
+    AccountType.CASH -> R.string.auto_alloc_cash
+    AccountType.E_WALLET -> R.string.auto_alloc_ewallet
+    AccountType.CREDIT_CARD -> R.string.auto_alloc_credit
+}
+
 private fun accountTypeIcon(type: AccountType): ImageVector = when (type) {
     AccountType.BANK_ACCOUNT -> Icons.Outlined.AccountBalance
     AccountType.CASH -> Icons.Outlined.Money
@@ -106,12 +115,7 @@ private fun accountTypeIcon(type: AccountType): ImageVector = when (type) {
     AccountType.CREDIT_CARD -> Icons.Outlined.CreditCard
 }
 
-private fun accountTypeLabel(type: AccountType): String = when (type) {
-    AccountType.BANK_ACCOUNT -> "Bank"
-    AccountType.CASH -> "Cash"
-    AccountType.E_WALLET -> "E-Wallet"
-    AccountType.CREDIT_CARD -> "Credit"
-}
+
 
 // ─── Form State ───────────────────────────────────────────────────────────────
 
@@ -330,13 +334,14 @@ fun AutoAllocationDialog(
         // ── Header ──────────────────────────────────────────────────────
         Column(
             modifier = Modifier
+                .safeDrawingPadding()
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 8.dp)
         ) {
             Surface(shape = RoundedCornerShape(50), color = goalColor.copy(alpha = 0.10f)) {
                 Text(
-                    text = "Auto Allocation",
+                    text = stringResource(R.string.auto_alloc_chip),
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -350,13 +355,13 @@ fun AutoAllocationDialog(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isEditing) "Edit Allocation Rule" else "New Allocation Rule",
+                        text = stringResource(if (isEditing) R.string.auto_alloc_edit_rule else R.string.auto_alloc_new_rule),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = AppPalette.textPrimary
                     )
                     Text(
-                        text = "Configure automatic savings",
+                        text = stringResource(R.string.auto_alloc_configure),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
@@ -365,7 +370,7 @@ fun AutoAllocationDialog(
                     IconButton(onClick = { showDeleteConfirm = true }) {
                         Icon(
                             imageVector = Icons.Outlined.DeleteOutline,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(R.string.delete),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -391,7 +396,7 @@ fun AutoAllocationDialog(
             }
 
             // Trigger
-            FormSectionLabel("TRIGGER")
+            FormSectionLabel(stringResource(R.string.auto_alloc_trigger))
             TriggerTypeSelector(
                 selected = form.triggerType,
                 onSelect = { newTrigger ->
@@ -409,7 +414,7 @@ fun AutoAllocationDialog(
             )
 
             // Source Account
-            FormSectionLabel("SOURCE ACCOUNT")
+            FormSectionLabel(stringResource(R.string.auto_alloc_source_account))
             AccountSelector(
                 accounts = activeAccounts,
                 selectedAccountId = form.sourceAccountId,
@@ -421,7 +426,7 @@ fun AutoAllocationDialog(
             )
 
             // Allocation Amount
-            FormSectionLabel("ALLOCATION AMOUNT")
+            FormSectionLabel(stringResource(R.string.auto_alloc_amount))
             AllocationValueSelector(
                 allocationType = form.allocationType,
                 allocationValue = form.allocationValue,
@@ -437,7 +442,7 @@ fun AutoAllocationDialog(
                 exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FormSectionLabel("MINIMUM INCOME (OPTIONAL)")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_min_income))
                     OutlinedTextField(
                         value = if (form.minIncomeAmount.isEmpty()) ""
                             else CurrencyUtils.formatInputThousands(form.minIncomeAmount),
@@ -471,7 +476,7 @@ fun AutoAllocationDialog(
                 exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    FormSectionLabel("BALANCE THRESHOLD")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_balance_threshold))
                     OutlinedTextField(
                         value = if (form.threshold.isNullOrEmpty()) ""
                             else CurrencyUtils.formatInputThousands(form.threshold!!),
@@ -496,12 +501,12 @@ fun AutoAllocationDialog(
                         )
                     )
                     Text(
-                        text = "Allocate when account balance exceeds this amount",
+                        text = stringResource(R.string.auto_alloc_balance_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
 
-                    FormSectionLabel("MINIMUM REMAINING BALANCE (OPTIONAL)")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_min_remaining))
                     OutlinedTextField(
                         value = if (form.minRemainingBalance.isEmpty()) ""
                             else CurrencyUtils.formatInputThousands(form.minRemainingBalance),
@@ -526,7 +531,7 @@ fun AutoAllocationDialog(
                         )
                     )
                     Text(
-                        text = "Keep at least this amount in the source account",
+                        text = stringResource(R.string.auto_alloc_min_remaining_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
@@ -540,14 +545,14 @@ fun AutoAllocationDialog(
                 exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel("EXECUTION TIME")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_time))
                     TimePickerRow(
                         hour = form.executionHour,
                         minute = form.executionMinute,
                         onHourChange = { h -> form = form.copy(executionHour = h) },
                         onMinuteChange = { m -> form = form.copy(executionMinute = m) },
                         accentColor = goalColor,
-                        frequencyLabel = "every day"
+                        frequencyLabel = stringResource(R.string.auto_alloc_time_every_day)
                     )
                 }
             }
@@ -559,21 +564,21 @@ fun AutoAllocationDialog(
                 exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel("EXECUTION DAY")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_day))
                     WeekDayPicker(
                         selectedDay = form.scheduledDayOfWeek,
                         onDaySelected = { d -> form = form.copy(scheduledDayOfWeek = d) },
                         accentColor = goalColor
                     )
-                    FormSectionLabel("EXECUTION TIME")
-                    val dayName = when (form.scheduledDayOfWeek) { 1->"Monday";2->"Tuesday";3->"Wednesday";4->"Thursday";5->"Friday";6->"Saturday";7->"Sunday";else->"Monday" }
+                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_time))
+                    val dayRes = when (form.scheduledDayOfWeek) { 1->R.string.auto_alloc_day_monday;2->R.string.auto_alloc_day_tuesday;3->R.string.auto_alloc_day_wednesday;4->R.string.auto_alloc_day_thursday;5->R.string.auto_alloc_day_friday;6->R.string.auto_alloc_day_saturday;7->R.string.auto_alloc_day_sunday;else->R.string.auto_alloc_day_monday }
                     TimePickerRow(
                         hour = form.executionHour,
                         minute = form.executionMinute,
                         onHourChange = { h -> form = form.copy(executionHour = h) },
                         onMinuteChange = { m -> form = form.copy(executionMinute = m) },
                         accentColor = goalColor,
-                        frequencyLabel = "every $dayName"
+                        frequencyLabel = stringResource(R.string.auto_alloc_time_every_week, stringResource(dayRes))
                     )
                 }
             }
@@ -585,10 +590,10 @@ fun AutoAllocationDialog(
                 exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel("START DATE")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_start_date))
                     val startDateText = if (form.biweeklyStartDate > 0) {
                         DateFormatter.formatFullDate(form.biweeklyStartDate)
-                    } else "Select start date"
+                    } else stringResource(R.string.auto_alloc_select_start_date)
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
@@ -597,7 +602,7 @@ fun AutoAllocationDialog(
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                text = "Starting",
+                                text = stringResource(R.string.auto_alloc_month_label),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = AppPalette.textMuted
                             )
@@ -617,7 +622,7 @@ fun AutoAllocationDialog(
                                     val daysUntilMonday = (8 - today.dayOfWeek.value) % 7
                                     today.plusDays(daysUntilMonday.toLong().coerceAtLeast(1))
                                 }
-                                listOf("Today" to todayMillis, "Tomorrow" to (todayMillis + 86400000L), "Next Monday" to nextMonday.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()).forEach { (label, millis) ->
+                                listOf(stringResource(R.string.auto_alloc_today) to todayMillis, stringResource(R.string.auto_alloc_tomorrow) to (todayMillis + 86400000L), stringResource(R.string.auto_alloc_next_monday) to nextMonday.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()).forEach { (label, millis) ->
                                     val ts = millis as Long
                                     val isSel = form.biweeklyStartDate == ts
                                     FilterChip(
@@ -634,18 +639,18 @@ fun AutoAllocationDialog(
                         }
                     }
                     Text(
-                        text = "Repeats every 2 weeks from the selected date",
+                        text = stringResource(R.string.auto_alloc_repeats_biweekly),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
-                    FormSectionLabel("EXECUTION TIME")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_time))
                     TimePickerRow(
                         hour = form.executionHour,
                         minute = form.executionMinute,
                         onHourChange = { h -> form = form.copy(executionHour = h) },
                         onMinuteChange = { m -> form = form.copy(executionMinute = m) },
                         accentColor = goalColor,
-                        frequencyLabel = "every 2 weeks"
+                        frequencyLabel = stringResource(R.string.auto_alloc_time_every_2weeks)
                     )
                 }
             }
@@ -657,22 +662,22 @@ fun AutoAllocationDialog(
                 exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel("DAY OF MONTH")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_day_of_month))
                     MonthDayPicker(
                         selectedDay = form.scheduledDayOfMonth,
                         onDaySelected = { d -> form = form.copy(scheduledDayOfMonth = d) },
                         accentColor = goalColor
                     )
-                    FormSectionLabel("EXECUTION TIME")
-                    val dayText = if (form.scheduledDayOfMonth == -1) "last day"
-                    else "the ${form.scheduledDayOfMonth}${when(form.scheduledDayOfMonth%10){1->"st";2->"nd";3->"rd";else->"th"}}"
+                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_time))
+                    val dayText = if (form.scheduledDayOfMonth == -1) stringResource(R.string.auto_alloc_time_last_day)
+                    else "${form.scheduledDayOfMonth}${when(form.scheduledDayOfMonth%10){1->"st";2->"nd";3->"rd";else->"th"}}"
                     TimePickerRow(
                         hour = form.executionHour,
                         minute = form.executionMinute,
                         onHourChange = { h -> form = form.copy(executionHour = h) },
                         onMinuteChange = { m -> form = form.copy(executionMinute = m) },
                         accentColor = goalColor,
-                        frequencyLabel = "every $dayText of the month"
+                        frequencyLabel = stringResource(R.string.auto_alloc_time_every_month, dayText)
                     )
                 }
             }
@@ -684,7 +689,7 @@ fun AutoAllocationDialog(
                 exit = shrinkVertically()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormSectionLabel("CATEGORIES")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_categories))
                     val categoriesToShow = remember(expenseCategories) {
                         if (expenseCategories.isNotEmpty()) expenseCategories
                         else listOf(
@@ -737,11 +742,11 @@ fun AutoAllocationDialog(
                         }
                     }
 
-                    FormSectionLabel("EXECUTION MODE")
+                    FormSectionLabel(stringResource(R.string.auto_alloc_execution_mode))
                     val modes = listOf(
-                        "every_transaction" to "Every Transaction",
-                        "after_daily_total" to "After Daily Total",
-                        "after_monthly_total" to "After Monthly Total"
+                        "every_transaction" to stringResource(R.string.auto_alloc_every_transaction),
+                        "after_daily_total" to stringResource(R.string.auto_alloc_after_daily_total),
+                        "after_monthly_total" to stringResource(R.string.auto_alloc_after_monthly_total)
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         modes.forEach { (value, label) ->
@@ -785,7 +790,7 @@ fun AutoAllocationDialog(
             }
 
             // Confirmation Mode
-            FormSectionLabel("CONFIRMATION")
+            FormSectionLabel(stringResource(R.string.auto_alloc_confirmation))
             ConfirmationModeSelector(
                 selected = form.confirmationMode,
                 onSelect = { form = form.copy(confirmationMode = it) },
@@ -810,7 +815,7 @@ fun AutoAllocationDialog(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            "Cancel",
+                            stringResource(R.string.cancel),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = AppPalette.textDialogMuted
@@ -836,7 +841,7 @@ fun AutoAllocationDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        if (isEditing) "Update Rule" else "Create Rule",
+                        stringResource(if (isEditing) R.string.auto_alloc_update_rule else R.string.auto_alloc_create_rule),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -851,12 +856,11 @@ fun AutoAllocationDialog(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = {
-                Text("Delete Rule?", fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                Text(stringResource(R.string.auto_alloc_delete_rule), fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
             },
             text = {
                 Text(
-                    "This auto-allocation rule will be permanently deleted. " +
-                            "Automatic savings for this rule will stop.",
+                    stringResource(R.string.auto_alloc_delete_rule_desc),
                     color = AppPalette.textMuted
                 )
             },
@@ -870,12 +874,12 @@ fun AutoAllocationDialog(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
             shape = RoundedCornerShape(20.dp),
@@ -930,7 +934,7 @@ private fun GoalSummaryCard(goal: Goal, goalColor: Color) {
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Auto-allocation for",
+                    text = stringResource(R.string.auto_alloc_for),
                     style = MaterialTheme.typography.labelMedium,
                     color = AppPalette.textMuted
                 )
@@ -975,55 +979,16 @@ private data class TriggerOption(
     val icon: ImageVector
 )
 
-private val triggerOptions = listOf(
-    TriggerOption(
-        AllocationTriggerType.INCOME_RECEIVED,
-        "Income-Based",
-        "Pay Yourself First",
-        Icons.Outlined.TrendingUp
-    ),
-    TriggerOption(
-        AllocationTriggerType.ROUND_UP,
-        "Round-Up",
-        "Save from expenses",
-        Icons.Outlined.ChangeHistory
-    ),
-    TriggerOption(
-        AllocationTriggerType.DAILY,
-        "Daily",
-        "Fixed daily savings",
-        Icons.Outlined.Schedule
-    ),
-    TriggerOption(
-        AllocationTriggerType.WEEKLY,
-        "Weekly",
-        "Fixed weekly savings",
-        Icons.Outlined.Schedule
-    ),
-    TriggerOption(
-        AllocationTriggerType.BIWEEKLY,
-        "Biweekly",
-        "Every 2 weeks",
-        Icons.Outlined.Schedule
-    ),
-    TriggerOption(
-        AllocationTriggerType.MONTHLY,
-        "Monthly",
-        "Fixed monthly savings",
-        Icons.Outlined.Schedule
-    ),
-    TriggerOption(
-        AllocationTriggerType.BALANCE_ABOVE,
-        "Balance Above",
-        "When balance exceeds threshold",
-        Icons.Outlined.AccountBalance
-    ),
-    TriggerOption(
-        AllocationTriggerType.SPENDING_CATEGORY,
-        "Category-Based",
-        "Save from category spending",
-        Icons.Outlined.Category
-    )
+@Composable
+private fun getTriggerOptions(): List<TriggerOption> = listOf(
+    TriggerOption(AllocationTriggerType.INCOME_RECEIVED, stringResource(R.string.auto_alloc_trigger_income), stringResource(R.string.auto_alloc_trigger_income_desc), Icons.Outlined.TrendingUp),
+    TriggerOption(AllocationTriggerType.ROUND_UP, stringResource(R.string.auto_alloc_trigger_roundup), stringResource(R.string.auto_alloc_trigger_roundup_desc), Icons.Outlined.ChangeHistory),
+    TriggerOption(AllocationTriggerType.DAILY, stringResource(R.string.auto_alloc_trigger_daily), stringResource(R.string.auto_alloc_trigger_daily_desc), Icons.Outlined.Schedule),
+    TriggerOption(AllocationTriggerType.WEEKLY, stringResource(R.string.auto_alloc_trigger_weekly), stringResource(R.string.auto_alloc_trigger_weekly_desc), Icons.Outlined.Schedule),
+    TriggerOption(AllocationTriggerType.BIWEEKLY, stringResource(R.string.auto_alloc_trigger_biweekly), stringResource(R.string.auto_alloc_trigger_biweekly_desc), Icons.Outlined.Schedule),
+    TriggerOption(AllocationTriggerType.MONTHLY, stringResource(R.string.auto_alloc_trigger_monthly), stringResource(R.string.auto_alloc_trigger_monthly_desc), Icons.Outlined.Schedule),
+    TriggerOption(AllocationTriggerType.BALANCE_ABOVE, stringResource(R.string.auto_alloc_trigger_balance), stringResource(R.string.auto_alloc_trigger_balance_desc), Icons.Outlined.AccountBalance),
+    TriggerOption(AllocationTriggerType.SPENDING_CATEGORY, stringResource(R.string.auto_alloc_trigger_category), stringResource(R.string.auto_alloc_trigger_category_desc), Icons.Outlined.Category)
 )
 
 @Composable
@@ -1033,7 +998,7 @@ private fun TriggerTypeSelector(
     accentColor: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        triggerOptions.forEach { option ->
+        getTriggerOptions().forEach { option ->
             val isSelected = option.type == selected
             Surface(
                 modifier = Modifier
@@ -1138,13 +1103,13 @@ private fun AccountSelector(
                         )
                     }
                     Text(
-                        text = "Create an account first",
+                        text = stringResource(R.string.auto_alloc_create_account_first),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AppPalette.textPrimary
                     )
                     Text(
-                        text = "You need at least one account to set up auto-allocation rules",
+                        text = stringResource(R.string.auto_alloc_need_account),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
@@ -1171,7 +1136,7 @@ private fun AccountSelector(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = "Create Account",
+                                    text = stringResource(R.string.auto_alloc_create_account),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = accentColor
@@ -1206,13 +1171,13 @@ private fun AccountSelector(
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Source account unavailable",
+                            text = stringResource(R.string.auto_alloc_account_unavailable),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.error
                         )
                         Text(
-                            text = "The previously selected account was deleted. Please select another.",
+                            text = stringResource(R.string.auto_alloc_account_deleted),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppPalette.textMuted
                         )
@@ -1247,8 +1212,8 @@ private fun AccountPickerChips(
     onSelect: (Account) -> Unit,
     accentColor: Color
 ) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(accounts, key = { it.id }) { account ->
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        accounts.forEach { account ->
             val isSelected = account.id == selectedAccountId
             val borderColor by animateColorAsState(
                 targetValue = if (isSelected) accentColor else AppPalette.cardBorder,
@@ -1327,8 +1292,8 @@ private fun AccountPickerChips(
                                     accentColor.copy(alpha = 0.10f)
                                 }
                             ) {
-                                Text(
-                                    text = accountTypeLabel(account.type),
+                    Text(
+                        text = stringResource(accountTypeLabelRes(account.type)),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
                                     color = try {
@@ -1359,7 +1324,7 @@ private fun AccountPickerChips(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Check,
-                                contentDescription = "Selected",
+                                contentDescription = stringResource(R.string.cd_selected),
                                 tint = Color.White,
                                 modifier = Modifier.size(14.dp)
                             )
@@ -1386,7 +1351,7 @@ private fun AllocationValueSelector(
             FilterChip(
                 selected = allocationType == AllocationValueType.PERCENT,
                 onClick = { onTypeChange(AllocationValueType.PERCENT) },
-                label = { Text("Percentage %") },
+                label = { Text(stringResource(R.string.auto_alloc_percentage)) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = accentColor.copy(alpha = 0.12f),
                     selectedLabelColor = accentColor
@@ -1395,7 +1360,7 @@ private fun AllocationValueSelector(
             FilterChip(
                 selected = allocationType == AllocationValueType.FIXED,
                 onClick = { onTypeChange(AllocationValueType.FIXED) },
-                label = { Text("Fixed Amount") },
+                label = { Text(stringResource(R.string.auto_alloc_fixed)) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = accentColor.copy(alpha = 0.12f),
                     selectedLabelColor = accentColor
@@ -1452,17 +1417,18 @@ private data class ExecutionModeOption(
     val icon: ImageVector
 )
 
-private val executionModeOptions = listOf(
+@Composable
+private fun getExecutionModeOptions(): List<ExecutionModeOption> = listOf(
     ExecutionModeOption(
         mode = ConfirmationMode.AUTO,
-        title = "Automatic",
-        description = "Execute immediately when triggered",
+        title = stringResource(R.string.auto_alloc_automatic),
+        description = stringResource(R.string.auto_alloc_automatic_desc),
         icon = Icons.Outlined.AutoAwesome
     ),
     ExecutionModeOption(
         mode = ConfirmationMode.CONFIRMATION_REQUIRED,
-        title = "Confirm First",
-        description = "Show notification before executing",
+        title = stringResource(R.string.auto_alloc_confirm_first),
+        description = stringResource(R.string.auto_alloc_confirm_first_desc),
         icon = Icons.Outlined.Warning
     )
 )
@@ -1477,7 +1443,7 @@ private fun ConfirmationModeSelector(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        executionModeOptions.forEach { option ->
+        getExecutionModeOptions().forEach { option ->
             val isSelected = selected == option.mode
             val borderColor by animateColorAsState(
                 targetValue = if (isSelected) accentColor else AppPalette.cardBorder,
@@ -1553,7 +1519,7 @@ private fun ConfirmationModeSelector(
                             if (isSelected) {
                                 Icon(
                                     imageVector = Icons.Outlined.Check,
-                                    contentDescription = "Selected",
+                                    contentDescription = stringResource(R.string.cd_selected),
                                     tint = Color.White,
                                     modifier = Modifier.size(14.dp)
                                 )
@@ -1592,9 +1558,8 @@ private fun TimePickerRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Hour selector
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = "Hour",
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {            Text(
+                    text = stringResource(R.string.auto_alloc_hour),
                 style = MaterialTheme.typography.labelSmall,
                 color = AppPalette.textMuted
             )
@@ -1624,7 +1589,7 @@ private fun TimePickerRow(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text("Custom:", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.auto_alloc_custom), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                         // Decrease button
                         Surface(
                             modifier = Modifier
@@ -1667,7 +1632,7 @@ private fun TimePickerRow(
         // Minute selector
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = "Minute",
+                text = stringResource(R.string.auto_alloc_minute),
                 style = MaterialTheme.typography.labelSmall,
                 color = AppPalette.textMuted
             )
@@ -1707,7 +1672,7 @@ private fun TimePickerRow(
         ) {
             Icon(Icons.Outlined.Schedule, null, tint = accentColor, modifier = Modifier.size(16.dp))
             Text(
-                text = "Executes $frequencyLabel at $timeStr",
+                text = stringResource(R.string.auto_alloc_time_execute, frequencyLabel, timeStr),
                 style = MaterialTheme.typography.bodySmall,
                 color = accentColor
             )
@@ -1723,7 +1688,15 @@ private fun WeekDayPicker(
     onDaySelected: (Int) -> Unit,
     accentColor: Color
 ) {
-    val days = listOf(1 to "Mon", 2 to "Tue", 3 to "Wed", 4 to "Thu", 5 to "Fri", 6 to "Sat", 7 to "Sun")
+    val days = listOf(
+        1 to stringResource(R.string.auto_alloc_day_mon),
+        2 to stringResource(R.string.auto_alloc_day_tue),
+        3 to stringResource(R.string.auto_alloc_day_wed),
+        4 to stringResource(R.string.auto_alloc_day_thu),
+        5 to stringResource(R.string.auto_alloc_day_fri),
+        6 to stringResource(R.string.auto_alloc_day_sat),
+        7 to stringResource(R.string.auto_alloc_day_sun)
+    )
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1842,7 +1815,7 @@ private fun MonthDayPicker(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Last",
+                        text = stringResource(R.string.auto_alloc_day_last),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (isLastDay) FontWeight.Bold else FontWeight.Normal,
                         color = if (isLastDay) Color.White else AppPalette.textMuted
@@ -1859,39 +1832,39 @@ private fun MonthDayPicker(
 private fun PreviewCard(form: AutoAllocationRuleForm, accentColor: Color) {
     val timeStr = "${form.executionHour.toString().padStart(2, '0')}:${form.executionMinute.toString().padStart(2, '0')}"
     val summary = when (form.triggerType) {
-        AllocationTriggerType.DAILY -> "Every day at $timeStr"
+        AllocationTriggerType.DAILY -> stringResource(R.string.auto_alloc_preview_daily, timeStr)
         AllocationTriggerType.WEEKLY -> {
-            val dayName = when (form.scheduledDayOfWeek) { 1->"Monday";2->"Tuesday";3->"Wednesday";4->"Thursday";5->"Friday";6->"Saturday";7->"Sunday";else->"Monday" }
-            "Every $dayName at $timeStr"
+            val dayNameRes = when (form.scheduledDayOfWeek) { 1->R.string.auto_alloc_day_monday;2->R.string.auto_alloc_day_tuesday;3->R.string.auto_alloc_day_wednesday;4->R.string.auto_alloc_day_thursday;5->R.string.auto_alloc_day_friday;6->R.string.auto_alloc_day_saturday;7->R.string.auto_alloc_day_sunday;else->R.string.auto_alloc_day_monday }
+            stringResource(R.string.auto_alloc_preview_weekly, stringResource(dayNameRes), timeStr)
         }
         AllocationTriggerType.BIWEEKLY -> {
             val dateText = if (form.biweeklyStartDate > 0) {
                 DateFormatter.formatShortDate(form.biweeklyStartDate)
-            } else "not set"
-            "Every two weeks starting $dateText at $timeStr"
+            } else stringResource(R.string.auto_alloc_not_set)
+            stringResource(R.string.auto_alloc_preview_biweekly, dateText, timeStr)
         }
         AllocationTriggerType.MONTHLY -> {
-            val dayText = if (form.scheduledDayOfMonth == -1) "Last day"
+            val dayText = if (form.scheduledDayOfMonth == -1) stringResource(R.string.auto_alloc_last_day)
             else "${form.scheduledDayOfMonth}${when(form.scheduledDayOfMonth%10){1->"st";2->"nd";3->"rd";else->"th"}}"
-            "Every $dayText at $timeStr"
+            stringResource(R.string.auto_alloc_preview_monthly, dayText, timeStr)
         }
         AllocationTriggerType.BALANCE_ABOVE -> {
             val thresh = form.threshold?.toDoubleOrNull() ?: 0.0
-            val base = "When balance exceeds Rp ${"%,.0f".format(thresh).replace(",", ".")}"
+            val base = stringResource(R.string.auto_alloc_preview_balance, "Rp ${"%,.0f".format(thresh).replace(",", ".")}")
             val minRem = form.minRemainingBalance.toDoubleOrNull() ?: 0.0
-            if (minRem > 0) "$base (keep Rp ${"%,.0f".format(minRem).replace(",", ".")})" else base
+            if (minRem > 0) stringResource(R.string.auto_alloc_preview_balance_keep, base, "Rp ${"%,.0f".format(minRem).replace(",", ".")}") else base
         }
         AllocationTriggerType.SPENDING_CATEGORY -> {
             val modeText = when (form.categoryBasedExecutionMode) {
-                "every_transaction" -> "On every transaction"
-                "after_daily_total" -> "After daily total"
-                "after_monthly_total" -> "After monthly total"
-                else -> "On every transaction"
+                "every_transaction" -> stringResource(R.string.auto_alloc_preview_every_day)
+                "after_daily_total" -> stringResource(R.string.auto_alloc_preview_after_daily)
+                "after_monthly_total" -> stringResource(R.string.auto_alloc_preview_after_monthly)
+                else -> stringResource(R.string.auto_alloc_preview_every_day)
             }
             "$modeText in ${form.categoryBasedCategoryIds.size} categories"
         }
-        AllocationTriggerType.INCOME_RECEIVED -> "When income is received"
-        AllocationTriggerType.ROUND_UP -> "After every expense (round-up)"
+        AllocationTriggerType.INCOME_RECEIVED -> stringResource(R.string.auto_alloc_preview_income)
+        AllocationTriggerType.ROUND_UP -> stringResource(R.string.auto_alloc_preview_roundup)
     }
 
     Card(
@@ -1906,7 +1879,7 @@ private fun PreviewCard(form: AutoAllocationRuleForm, accentColor: Color) {
         ) {
             Surface(shape = RoundedCornerShape(50), color = accentColor.copy(alpha = 0.12f)) {
                 Text(
-                    text = "Configuration Summary",
+                    text = stringResource(R.string.auto_alloc_configuration_summary),
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -1957,7 +1930,7 @@ private fun PreviewCard(form: AutoAllocationRuleForm, accentColor: Color) {
             // Amount row
             val amountText = when {
                 form.allocationType == AllocationValueType.PERCENT ->
-                    "${form.allocationValue}% of amount"
+                    stringResource(R.string.auto_alloc_of_amount, form.allocationValue)
                 form.allocationType == AllocationValueType.FIXED -> {
                     val raw = form.allocationValue.toLongOrNull() ?: 0L
                     "${NumberFormatter.getCurrencySymbol()} ${CurrencyUtils.formatInputThousands(raw.toString())}"
@@ -1985,7 +1958,7 @@ private fun PreviewCard(form: AutoAllocationRuleForm, accentColor: Color) {
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text = "Requires confirmation before executing",
+                        text = stringResource(R.string.auto_alloc_requires_confirmation),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error
                     )

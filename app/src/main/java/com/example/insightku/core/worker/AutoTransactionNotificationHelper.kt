@@ -8,6 +8,8 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.NumberFormatter
 
 object AutoTransactionNotificationHelper {
@@ -38,20 +40,21 @@ object AutoTransactionNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val typeLabel  = if (isRecurring) "Pembayaran rutin" else "Cicilan"
+        val ctx = LocaleHelper.wrapContext(context)
+        val typeLabel  = if (isRecurring) ctx.getString(R.string.auto_tx_recurring) else ctx.getString(R.string.auto_tx_installment)
         val amountText = NumberFormatter.formatCurrency(amount)
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("$typeLabel otomatis dicatat")
+            .setContentTitle(ctx.getString(R.string.auto_tx_title, typeLabel))
             .setContentText("$title · $amountText")
             .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("$title · $amountText\nTransaksi ini dicatat otomatis. Tidak relevan? Hapus langsung dari sini."))
+                .bigText("$title · $amountText\n${ctx.getString(R.string.auto_tx_big_body)}"))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .addAction(
                 android.R.drawable.ic_delete,
-                "Hapus transaksi",
+                ctx.getString(R.string.auto_tx_delete_action),
                 deletePending
             )
             .build()
@@ -65,12 +68,13 @@ object AutoTransactionNotificationHelper {
 
     private fun createChannelIfNeeded(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ctx = LocaleHelper.wrapContext(context)
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                ctx.getString(R.string.auto_tx_channel_name),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Notifikasi saat transaksi rutin atau cicilan dicatat otomatis"
+                description = ctx.getString(R.string.auto_tx_channel_desc)
             }
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)

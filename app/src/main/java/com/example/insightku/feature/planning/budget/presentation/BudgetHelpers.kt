@@ -30,7 +30,7 @@ internal fun categoryListSubtitle(uiState: BudgetingUiState): String {
     val over = uiState.overBudgetCategories.size
     val warning = uiState.budgetCategories.count { it.health == BudgetHealth.Warning }
     return when {
-        total == 0 -> "No categories to monitor yet"
+        !uiState.hasExpenseCategories -> ""
         over > 0 -> "$over over budget, $total total"
         warning > 0 -> "$warning close to limit, $total total"
         else -> "$total categories monitored"
