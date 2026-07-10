@@ -3,6 +3,7 @@ package com.example.insightku.feature.home.presentation.dashboard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.*
@@ -41,6 +44,7 @@ fun AllocationDraftReviewSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .safeDrawingPadding()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
         ) {
@@ -52,12 +56,12 @@ fun AllocationDraftReviewSheet(
             ) {
                 Column {
                     Text(
-                        text = "Auto Allocation Review",
+                        text = stringResource(R.string.allocation_review_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Review and confirm this allocation",
+                        text = stringResource(R.string.allocation_review_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppPalette.textMuted
                     )
@@ -84,7 +88,7 @@ fun AllocationDraftReviewSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Allocation Amount",
+                            text = stringResource(R.string.allocation_review_amount),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppPalette.textMuted
                         )
@@ -101,23 +105,32 @@ fun AllocationDraftReviewSheet(
                     // Source Account
                     DetailRow(
                         icon = Icons.Outlined.AccountBalance,
-                        label = "Source Account",
-                        value = draft.sourceAccountName ?: "Unknown"
+                        label = stringResource(R.string.allocation_review_source),
+                        value = draft.sourceAccountName ?: stringResource(R.string.allocation_review_unknown)
                     )
 
                     // Destination Goal
                     DetailRow(
                         icon = Icons.Outlined.Savings,
-                        label = "Destination Goal",
-                        value = draft.goalName ?: "Unknown Goal"
+                        label = stringResource(R.string.allocation_review_destination),
+                        value = draft.goalName ?: stringResource(R.string.allocation_review_unknown_goal)
                     )
 
                     // Trigger
                     DetailRow(
                         icon = Icons.Outlined.AutoAwesome,
-                        label = "Trigger",
-                        value = draft.triggerDescription ?: draft.triggerType ?: "Unknown"
+                        label = stringResource(R.string.allocation_review_trigger),
+                        value = draft.triggerDescription ?: draft.triggerType ?: stringResource(R.string.allocation_review_unknown)
                     )
+
+                    // Execution Time
+                    draft.triggerTimestamp?.let { ts ->
+                        DetailRow(
+                            icon = Icons.Outlined.Schedule,
+                            label = "Execution Time",
+                            value = java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(ts))
+                        )
+                    }
 
                     // Remaining Balance
                     if (draft.allocationAmount != null) {
@@ -128,12 +141,12 @@ fun AllocationDraftReviewSheet(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "After Allocation",
+                                text = stringResource(R.string.allocation_review_after),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppPalette.textMuted
                             )
                             Text(
-                                text = "Balance will decrease by ${NumberFormatter.formatCurrency(draft.allocationAmount)}",
+                                text = stringResource(R.string.allocation_review_balance_decrease, NumberFormatter.formatCurrency(draft.allocationAmount)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppPalette.textMuted
                             )
@@ -163,7 +176,7 @@ fun AllocationDraftReviewSheet(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "When approved, this amount will be transferred from your account to the goal.",
+                        text = stringResource(R.string.allocation_review_info),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
@@ -190,7 +203,7 @@ fun AllocationDraftReviewSheet(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Reject")
+                    Text(stringResource(R.string.allocation_review_reject))
                 }
 
                 // Approve Button
@@ -206,7 +219,7 @@ fun AllocationDraftReviewSheet(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Approve")
+                    Text(stringResource(R.string.allocation_review_approve))
                 }
             }
         }

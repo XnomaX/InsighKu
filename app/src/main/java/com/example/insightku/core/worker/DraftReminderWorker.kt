@@ -17,12 +17,14 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.insightku.MainActivity
 import com.example.insightku.core.data.repository.DraftTransactionRepository
+import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
 private const val TAG = "DraftReminderWorker"
 private const val CHANNEL_ID = "draft_reminder_channel"
-private const val CHANNEL_NAME = "Pengingat Tinjau Transaksi"
+private val CHANNEL_NAME_RES = R.string.draft_reminder_channel_name
 private const val REMINDER_NOTIF_ID = 90_210
 private const val MIN_AGE_MS = 18L * 60 * 60 * 1000 // 18 jam
 
@@ -76,14 +78,15 @@ class DraftReminderWorker @AssistedInject constructor(
         )
 
         // Sebut jumlah saja — tanpa nominal/merchant. Nada ajakan ringan, bukan tagihan.
+        val ctx = LocaleHelper.wrapContext(applicationContext)
         val body = if (count == 1)
-            "Ada 1 transaksi yang sudah aku siapkan untuk kamu tinjau."
+            ctx.getString(R.string.draft_reminder_body_singular)
         else
-            "Ada $count transaksi yang sudah aku siapkan untuk kamu tinjau."
+            ctx.getString(R.string.draft_reminder_body_plural, count)
 
-        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Kapan pun kamu sempat")
+            .setContentTitle(ctx.getString(R.string.draft_reminder_title))
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -109,10 +112,11 @@ class DraftReminderWorker @AssistedInject constructor(
 
     private fun createChannelIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ctx = LocaleHelper.wrapContext(applicationContext)
             val channel = NotificationChannel(
-                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW
+                CHANNEL_ID, ctx.getString(CHANNEL_NAME_RES), NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Pengingat lembut saat ada transaksi terdeteksi yang menunggu ditinjau"
+                description = ctx.getString(R.string.draft_reminder_channel_desc)
             }
             (applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
                 .createNotificationChannel(channel)

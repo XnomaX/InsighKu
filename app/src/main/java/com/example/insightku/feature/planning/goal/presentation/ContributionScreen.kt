@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -62,7 +63,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.i18n.NumberFormatter
@@ -250,7 +253,7 @@ private fun ContributionContent(
                     Icon(imageVector = Icons.Outlined.Savings, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Save to Goal",
+                        text = stringResource(R.string.contribution_screen_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -270,11 +273,11 @@ private fun ContributionHeader(onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = "Back", tint = AppPalette.textPrimary)
+            Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = stringResource(R.string.back), tint = AppPalette.textPrimary)
         }
         Spacer(Modifier.width(8.dp))
         Text(
-            text = "Save to Goal",
+            text = stringResource(R.string.contribution_screen_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = AppPalette.textPrimary
@@ -310,7 +313,7 @@ private fun GoalSummaryPreview(goal: Goal, goalColor: Color) {
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = "Saving to", style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted)
+            Text(text = stringResource(R.string.contribution_screen_saving_to), style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted)
             Text(
                 text = goal.name,
                 style = MaterialTheme.typography.titleMedium,
@@ -405,7 +408,7 @@ private fun AccountSelectorCard(account: Account?, availableCash: Double, goalCo
             if (account == null) {
                 Icon(imageVector = Icons.Outlined.AccountBalanceWallet, contentDescription = null, tint = goalColor, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(12.dp))
-                Text(text = "Select Account", style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted)
+                Text(text = stringResource(R.string.contribution_screen_select_account), style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted)
             } else {
                 Box(
                     modifier = Modifier.size(40.dp).clip(CircleShape).background(goalColor.copy(alpha = 0.1f)),
@@ -416,7 +419,7 @@ private fun AccountSelectorCard(account: Account?, availableCash: Double, goalCo
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
-                    Text(text = "Available: ${CurrencyUtils.formatAmount(availableCash)}", style = MaterialTheme.typography.labelSmall, color = SuccessColor)
+                    Text(text = stringResource(R.string.contribution_screen_available, CurrencyUtils.formatAmount(availableCash)), style = MaterialTheme.typography.labelSmall, color = SuccessColor)
                 }
             }
             Icon(imageVector = Icons.Outlined.ChevronRight, contentDescription = null, tint = AppPalette.textMuted)
@@ -440,8 +443,8 @@ private fun InsufficientFundsCard(shortfall: Double) {
             Icon(imageVector = Icons.Outlined.Warning, contentDescription = null, tint = AppPalette.insufficientFundsText, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Insufficient Funds", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.insufficientFundsText)
-                Text(text = "Need ${CurrencyUtils.formatAmountCompact(shortfall)} more", style = MaterialTheme.typography.bodySmall, color = AppPalette.insufficientFundsDetail)
+                Text(text = stringResource(R.string.contribution_screen_insufficient), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.insufficientFundsText)
+                Text(text = stringResource(R.string.contribution_screen_need_more, CurrencyUtils.formatAmountCompact(shortfall)), style = MaterialTheme.typography.bodySmall, color = AppPalette.insufficientFundsDetail)
             }
         }
     }
@@ -468,8 +471,8 @@ private fun AllocationPreviewCard(goal: Goal, parsedAmount: Double, newAmount: D
     ) {
         Column(modifier = Modifier.padding(Dimens.CardInnerPadding)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = "Current", style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted)
-                Text(text = "After Saving", style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted)
+                Text(text = stringResource(R.string.contribution_screen_current), style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted)
+                Text(text = stringResource(R.string.contribution_screen_after_saving), style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted)
             }
             Spacer(Modifier.height(4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -509,8 +512,8 @@ private fun NotesCard(notes: String, onNotesChange: (String) -> Unit) {
         value = notes,
         onValueChange = onNotesChange,
         modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text(text = "Add notes (optional)", color = AppPalette.textMuted.copy(alpha = 0.5f)) },
-        label = { Text("Notes") },
+        placeholder = { Text(text = stringResource(R.string.contribution_screen_add_notes), color = AppPalette.textMuted.copy(alpha = 0.5f)) },
+        label = { Text(stringResource(R.string.contribution_screen_notes)) },
         minLines = 2,
         maxLines = 4,
         shape = RoundedCornerShape(16.dp),
@@ -544,8 +547,8 @@ private fun AccountPickerDialog(
             }
         }
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
-            Text(text = "Select Account", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+        Column(modifier = Modifier.fillMaxWidth().safeDrawingPadding().padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
+            Text(text = stringResource(R.string.contribution_screen_select_account), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
             Spacer(Modifier.height(16.dp))
             accounts.forEach { account ->
                 val isSelected = account.id == selectedAccountId
@@ -565,10 +568,10 @@ private fun AccountPickerDialog(
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = account.name, style = MaterialTheme.typography.bodyLarge, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = AppPalette.textPrimary)
-                            Text(text = "Balance: ${CurrencyUtils.formatAmount(account.balance)}", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+                            Text(text = stringResource(R.string.contribution_screen_balance, CurrencyUtils.formatAmount(account.balance)), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                         }
                         if (isSelected) {
-                            Icon(imageVector = Icons.Outlined.CheckCircle, contentDescription = "Selected", tint = goalColor, modifier = Modifier.size(22.dp))
+                            Icon(imageVector = Icons.Outlined.CheckCircle, contentDescription = stringResource(R.string.content_selected), tint = goalColor, modifier = Modifier.size(22.dp))
                         }
                     }
                 }

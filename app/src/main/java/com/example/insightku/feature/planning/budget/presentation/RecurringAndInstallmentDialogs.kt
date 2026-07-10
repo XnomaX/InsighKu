@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +35,8 @@ import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
@@ -135,6 +139,7 @@ fun AddRecurringPaymentDialog(
 ) {
     if (!isOpen) return
 
+    val context            = LocalContext.current
     val focusManager       = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val sheetState         = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -175,17 +180,17 @@ fun AddRecurringPaymentDialog(
             }
         }
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.safeDrawingPadding().fillMaxWidth()) {
             // Header
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
                 Surface(shape = RoundedCornerShape(50), color = SheetPurple.copy(alpha = 0.10f)) {
-                    Text("Recurring Payment", Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    Text(stringResource(R.string.recurring_sheet_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = SheetPurple)
                 }
                 Spacer(Modifier.height(6.dp))
-                Text(if (editing != null) "Edit Payment" else "Add Recurring Payment",
+                Text(if (editing != null) stringResource(R.string.recurring_sheet_edit) else stringResource(R.string.recurring_sheet_add),
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-                Text("Subscriptions, bills, memberships",
+                Text(stringResource(R.string.recurring_sheet_desc),
                     style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             }
 
@@ -197,19 +202,19 @@ fun AddRecurringPaymentDialog(
                     .background(SheetBg).padding(24.dp).navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                SheetFormField(label = "PAYMENT NAME", value = name,
+                SheetFormField(label = stringResource(R.string.recurring_form_name), value = name,
                     onValueChange = { name = it; nameError = null },
-                    placeholder = "e.g. Netflix, Spotify, Rent", error = nameError, accentColor = SheetPurple)
+                    placeholder = stringResource(R.string.recurring_name_placeholder), error = nameError, accentColor = SheetPurple)
 
-                SheetFormField(label = "AMOUNT",
+                SheetFormField(label = stringResource(R.string.amount_label),
                     value = CurrencyUtils.formatInputThousands(amountText),
                     onValueChange = { amountText = CurrencyUtils.stripThousands(it); amountError = null },
-                    placeholder = "e.g. 59.000", keyboardType = KeyboardType.Number,
+                    placeholder = stringResource(R.string.recurring_amount_placeholder), keyboardType = KeyboardType.Number,
                     prefix = NumberFormatter.getCurrencySymbol(), error = amountError, accentColor = SheetPurple)
 
                 // Icon picker
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("ICON", style = MaterialTheme.typography.labelSmall,
+                    Text(stringResource(R.string.recurring_form_icon), style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                     SheetIconPicker(
                         icons = recurringIcons,
@@ -225,7 +230,7 @@ fun AddRecurringPaymentDialog(
                 // Category selector
                 if (availableCategories.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("CATEGORY", style = MaterialTheme.typography.labelSmall,
+                        Text(stringResource(R.string.category_label), style = MaterialTheme.typography.labelSmall,
                             letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                         SheetCategorySelector(
                             categories = availableCategories,
@@ -239,7 +244,7 @@ fun AddRecurringPaymentDialog(
                 // Account selector
                 if (accounts.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("ACCOUNT", style = MaterialTheme.typography.labelSmall,
+                        Text(stringResource(R.string.account_label), style = MaterialTheme.typography.labelSmall,
                             letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                         SheetAccountSelector(
                             accounts = accounts,
@@ -250,13 +255,13 @@ fun AddRecurringPaymentDialog(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("FREQUENCY", style = MaterialTheme.typography.labelSmall,
+                    Text(stringResource(R.string.recurring_form_frequency), style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                     SheetFrequencySelector(selected = frequency, onSelect = { frequency = it }, accentColor = SheetPurple)
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("NEXT DUE DATE", style = MaterialTheme.typography.labelSmall,
+                    Text(stringResource(R.string.recurring_form_next_due), style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                     Surface(
                         modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
@@ -281,7 +286,7 @@ fun AddRecurringPaymentDialog(
                         border   = BorderStroke(1.dp, SheetBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
+                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
                         }
                     }
                     Box(
@@ -289,9 +294,9 @@ fun AddRecurringPaymentDialog(
                             .background(SheetPurple).clickable {
                                 // Validate
                                 var hasError = false
-                                if (name.trim().length < 2) { nameError = "Name must be at least 2 characters"; hasError = true }
+                                if (name.trim().length < 2) { nameError = context.getString(R.string.error_name_short); hasError = true }
                                 val parsedAmount = amountText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0
-                                if (parsedAmount <= 0) { amountError = "Amount must be greater than zero"; hasError = true }
+                                if (parsedAmount <= 0) { amountError = context.getString(R.string.error_amount_zero); hasError = true }
                                 if (hasError) return@clickable
 
                                 focusManager.clearFocus(); keyboardController?.hide()
@@ -311,7 +316,7 @@ fun AddRecurringPaymentDialog(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(if (editing != null) "Save Changes" else "Add Payment",
+                        Text(if (editing != null) stringResource(R.string.recurring_save_changes) else stringResource(R.string.recurring_add_payment_btn),
                             style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
@@ -334,6 +339,7 @@ fun AddInstallmentDialog(
 ) {
     if (!isOpen) return
 
+    val context            = LocalContext.current
     val focusManager       = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val sheetState         = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -399,10 +405,10 @@ fun AddInstallmentDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = { state.selectedDateMillis?.let { nextDue = it }; showDatePicker = false }) {
-                    Text("OK", fontWeight = FontWeight.Bold, color = SheetCyan)
+                    Text(stringResource(R.string.dialog_ok), fontWeight = FontWeight.Bold, color = SheetCyan)
                 }
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) } }
         ) { DatePicker(state = state) }
     }
 
@@ -416,16 +422,16 @@ fun AddInstallmentDialog(
             }
         }
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.safeDrawingPadding().fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
                 Surface(shape = RoundedCornerShape(50), color = SheetCyan.copy(alpha = 0.10f)) {
-                    Text("Installment", Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    Text(stringResource(R.string.installment_sheet_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = SheetCyan)
                 }
                 Spacer(Modifier.height(6.dp))
-                Text(if (editing != null) "Edit Installment" else "Add Installment",
+                Text(if (editing != null) stringResource(R.string.installment_sheet_edit) else stringResource(R.string.installment_sheet_add),
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-                Text("Cicilan, PayLater, vehicle credit",
+                Text(stringResource(R.string.installment_sheet_desc),
                     style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             }
 
@@ -436,19 +442,19 @@ fun AddInstallmentDialog(
                     .background(SheetBg).padding(24.dp).navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                SheetFormField(label = "INSTALLMENT NAME", value = name,
+                SheetFormField(label = stringResource(R.string.installment_form_name), value = name,
                     onValueChange = { name = it; nameError = null },
-                    placeholder = "e.g. MacBook, Phone, Car", error = nameError, accentColor = SheetCyan)
+                    placeholder = stringResource(R.string.installment_name_placeholder), error = nameError, accentColor = SheetCyan)
 
-                SheetFormField(label = "TOTAL AMOUNT",
+                SheetFormField(label = stringResource(R.string.total_amount_label),
                     value = CurrencyUtils.formatInputThousands(totalAmountText),
                     onValueChange = { totalAmountText = CurrencyUtils.stripThousands(it); totalAmountError = null },
-                    placeholder = "e.g. 12.000.000", keyboardType = KeyboardType.Number,
+                    placeholder = stringResource(R.string.installment_total_placeholder), keyboardType = KeyboardType.Number,
                     prefix = NumberFormatter.getCurrencySymbol(), error = totalAmountError, accentColor = SheetCyan)
 
                 // Icon picker
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("ICON", style = MaterialTheme.typography.labelSmall,
+                    Text(stringResource(R.string.installment_form_icon), style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                     SheetIconPicker(
                         icons = installmentIcons,
@@ -463,34 +469,34 @@ fun AddInstallmentDialog(
 
                 // Smart Monthly Payment / Total Months fields
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("PAYMENT DETAILS", style = MaterialTheme.typography.labelSmall,
+                    Text(stringResource(R.string.installment_form_details), style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
-                    Text("Enter any two values — the third will auto-calculate",
+                    Text(stringResource(R.string.installment_form_auto_hint),
                         style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted.copy(alpha = 0.7f))
                 }
 
-                SheetFormField(label = "MONTHLY PAYMENT",
+                SheetFormField(label = stringResource(R.string.installment_form_monthly),
                     value = CurrencyUtils.formatInputThousands(monthlyText),
                     onValueChange = {
                         monthlyText = CurrencyUtils.stripThousands(it); monthlyError = null
                         lastEditedField = "monthly"
                     },
-                    placeholder = "e.g. 1.000.000", keyboardType = KeyboardType.Number,
+                    placeholder = stringResource(R.string.installment_monthly_placeholder), keyboardType = KeyboardType.Number,
                     prefix = NumberFormatter.getCurrencySymbol(), error = monthlyError, accentColor = SheetCyan,
-                    description = if (totalAmount > 0 && totalMonths > 0 && monthly == 0L) "Auto-calculated from Total Amount ÷ Total Months" else null)
+                    description = if (totalAmount > 0 && totalMonths > 0 && monthly == 0L) stringResource(R.string.installment_form_auto_hint) else null)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.weight(1f)) {
-                        SheetFormField(label = "TOTAL MONTHS", value = totalMonthsText,
+                        SheetFormField(label = stringResource(R.string.installment_form_total_months), value = totalMonthsText,
                             onValueChange = {
                                 totalMonthsText = it.filter { c -> c.isDigit() }; monthsError = null
                                 lastEditedField = "months"
                             },
                             placeholder = "12", keyboardType = KeyboardType.Number, accentColor = SheetCyan,
-                            description = if (totalAmount > 0 && monthly > 0 && totalMonths == 0) "Auto-calculated" else null)
+                            description = if (totalAmount > 0 && monthly > 0 && totalMonths == 0) stringResource(R.string.installment_form_auto_hint) else null)
                     }
                     Column(Modifier.weight(1f)) {
-                        SheetFormField(label = "PAID MONTHS", value = paidMonthsText,
+                        SheetFormField(label = stringResource(R.string.installment_form_paid_months), value = paidMonthsText,
                             onValueChange = { paidMonthsText = it.filter { c -> c.isDigit() } },
                             placeholder = "0", keyboardType = KeyboardType.Number, accentColor = SheetCyan)
                     }
@@ -499,7 +505,7 @@ fun AddInstallmentDialog(
                 // Category selector
                 if (availableCategories.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("CATEGORY", style = MaterialTheme.typography.labelSmall,
+                        Text(stringResource(R.string.category_label), style = MaterialTheme.typography.labelSmall,
                             letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                         SheetCategorySelector(
                             categories  = availableCategories,
@@ -513,7 +519,7 @@ fun AddInstallmentDialog(
                 // Account selector
                 if (accounts.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("ACCOUNT", style = MaterialTheme.typography.labelSmall,
+                        Text(stringResource(R.string.account_label), style = MaterialTheme.typography.labelSmall,
                             letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                         SheetAccountSelector(
                             accounts = accounts,
@@ -533,12 +539,12 @@ fun AddInstallmentDialog(
                         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    Text("Remaining", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                                    Text(stringResource(R.string.recurring_remaining), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                                     Text(NumberFormatter.formatCurrency(remaining.toDouble()),
                                         style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = SheetCyan)
                                 }
                                 Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    Text("Progress", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                                    Text(stringResource(R.string.installment_progress_label), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                                     Text("$progressPercent%",
                                         style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color(0xFF7C4DFF))
                                 }
@@ -550,14 +556,14 @@ fun AddInstallmentDialog(
                                 color = Color(0xFF7C4DFF),
                                 trackColor = SheetBorder
                             )
-                            Text("$remainingMonths months remaining • ${paidMonths}/${totalMonths} paid",
+                            Text(stringResource(R.string.installment_months_summary, remainingMonths, paidMonths, totalMonths),
                                 style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                         }
                     }
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("NEXT DUE DATE", style = MaterialTheme.typography.labelSmall,
+                    Text(stringResource(R.string.next_due_date_label), style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                     Surface(
                         modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
@@ -582,7 +588,7 @@ fun AddInstallmentDialog(
                         border   = BorderStroke(1.dp, SheetBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
+                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
                         }
                     }
                     Box(
@@ -590,16 +596,16 @@ fun AddInstallmentDialog(
                             .background(SheetCyan).clickable {
                                 // Validate
                                 var hasError = false
-                                if (name.trim().length < 2) { nameError = "Name must be at least 2 characters"; hasError = true }
+                                if (name.trim().length < 2) { nameError = context.getString(R.string.error_name_short); hasError = true }
                                 val parsedTotal = totalAmountText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0
                                 val parsedMonthly = monthlyText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0
                                 val parsedMonths = totalMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
                                 val parsedPaid = paidMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
 
-                                if (parsedTotal <= 0) { totalAmountError = "Total amount is required"; hasError = true }
-                                if (parsedMonthly <= 0) { monthlyError = "Monthly payment is required"; hasError = true }
-                                if (parsedMonths <= 0) { monthsError = "Total months is required"; hasError = true }
-                                if (parsedPaid > parsedMonths && parsedMonths > 0) { monthsError = "Paid months cannot exceed total"; hasError = true }
+                                if (parsedTotal <= 0) { totalAmountError = context.getString(R.string.error_total_required); hasError = true }
+                                if (parsedMonthly <= 0) { monthlyError = context.getString(R.string.error_monthly_required); hasError = true }
+                                if (parsedMonths <= 0) { monthsError = context.getString(R.string.error_months_required); hasError = true }
+                                if (parsedPaid > parsedMonths && parsedMonths > 0) { monthsError = context.getString(R.string.error_paid_exceeds); hasError = true }
                                 if (hasError) return@clickable
 
                                 focusManager.clearFocus(); keyboardController?.hide()
@@ -621,7 +627,7 @@ fun AddInstallmentDialog(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(if (editing != null) "Save Changes" else "Add Installment",
+                        Text(if (editing != null) stringResource(R.string.recurring_save_changes) else stringResource(R.string.installment_add_btn),
                             style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
@@ -786,11 +792,11 @@ internal fun SheetFrequencySelector(
     accentColor: Color
 ) {
     val options = listOf(
-        BudgetFrequency.WEEKLY    to "Weekly",
-        BudgetFrequency.BIWEEKLY  to "Biweekly",
-        BudgetFrequency.MONTHLY   to "Monthly",
-        BudgetFrequency.QUARTERLY to "Quarterly",
-        BudgetFrequency.YEARLY    to "Yearly"
+        BudgetFrequency.WEEKLY    to stringResource(R.string.frequency_weekly),
+        BudgetFrequency.BIWEEKLY  to stringResource(R.string.frequency_biweekly),
+        BudgetFrequency.MONTHLY   to stringResource(R.string.frequency_monthly),
+        BudgetFrequency.QUARTERLY to stringResource(R.string.frequency_quarterly),
+        BudgetFrequency.YEARLY    to stringResource(R.string.frequency_yearly)
     )
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(options) { (freq, label) ->

@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
 
@@ -53,14 +55,14 @@ fun UpcomingPaymentsSection(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    "Upcoming",
+                    stringResource(R.string.dashboard_upcoming),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.textPrimary
                 )
                 Text(
-                    if (noPayments) "No payments due soon"
-                    else "${dueSoonRecurring.size + dueSoonInstallments.size} payments due soon",
+                    if (noPayments) stringResource(R.string.dashboard_no_payments_soon)
+                    else stringResource(R.string.dashboard_payments_due_count, dueSoonRecurring.size + dueSoonInstallments.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -85,8 +87,8 @@ fun UpcomingPaymentsSection(
                     ) {
                         Icon(Icons.Default.CheckCircle, null, tint = NavPurple.copy(alpha = 0.45f), modifier = Modifier.size(26.dp))
                     }
-                    Text("You're all caught up.", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
-                    Text("No recurring or installment payments due in the next 14 days.", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.dashboard_all_caught_up), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+                    Text(stringResource(R.string.dashboard_no_payments_14), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, textAlign = TextAlign.Center)
                 }
             }
         } else {
@@ -164,7 +166,7 @@ private fun UpcomingRecurringRow(
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Surface(shape = RoundedCornerShape(50.dp), color = dueBadgeColor.copy(alpha = 0.10f)) {
                         Text(
-                            if (daysUntil == 0) "Today" else "in ${daysUntil}d",
+                            if (daysUntil == 0) stringResource(R.string.dashboard_today) else stringResource(R.string.dashboard_in_days, daysUntil),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
@@ -173,7 +175,7 @@ private fun UpcomingRecurringRow(
                     }
                     Surface(shape = RoundedCornerShape(50.dp), color = NavPurple.copy(alpha = 0.08f)) {
                         Text(
-                            "Recurring",
+                            stringResource(R.string.dashboard_recurring),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = NavPurple
@@ -195,7 +197,7 @@ private fun UpcomingRecurringRow(
                     modifier = Modifier.clickable { onMarkPaid() }
                 ) {
                     Text(
-                        "Mark Paid",
+                        stringResource(R.string.dashboard_mark_paid),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
@@ -261,7 +263,7 @@ private fun UpcomingInstallmentRow(
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Surface(shape = RoundedCornerShape(50.dp), color = dueBadgeColor.copy(alpha = 0.10f)) {
                         Text(
-                            if (daysUntil == 0) "Today" else "in ${daysUntil}d",
+                            if (daysUntil == 0) stringResource(R.string.dashboard_today) else stringResource(R.string.dashboard_in_days, daysUntil),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
@@ -292,7 +294,7 @@ private fun UpcomingInstallmentRow(
                     modifier = Modifier.clickable { onMarkPaid() }
                 ) {
                     Text(
-                        "Mark Paid",
+                        stringResource(R.string.dashboard_mark_paid),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,

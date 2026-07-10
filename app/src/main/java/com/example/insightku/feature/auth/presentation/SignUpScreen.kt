@@ -79,6 +79,7 @@ private fun SignUpScreenContent(
         Dimens.FormSpacingExpanded
     )
 
+    val signUpScreenDesc = stringResource(R.string.cd_sign_up_screen)
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -91,7 +92,7 @@ private fun SignUpScreenContent(
                 .padding(horizontal = screenPadding)
                 .imePadding()
                 .verticalScroll(scrollState)
-                .semantics { contentDescription = "Sign up screen" },
+                .semantics { contentDescription = signUpScreenDesc },
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
@@ -142,7 +143,7 @@ private fun SignUpScreenContent(
                     value = uiState.password,
                     onValueChange = { onEvent(SignUpEvent.PasswordChanged(it)) },
                     label = stringResource(R.string.password_label),
-                    placeholder = "Create a password",
+                    placeholder = stringResource(R.string.create_password_placeholder),
                     leadingIcon = Icons.Default.Lock,
                     isError = uiState.passwordError != null,
                     errorMessage = uiState.passwordError,

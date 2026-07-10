@@ -1,11 +1,14 @@
 package com.example.insightku.core.ui.components
 
+import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.insightku.core.data.model.TransactionType
 import androidx.compose.ui.graphics.Color
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 
 /**
@@ -17,7 +20,7 @@ import com.example.insightku.core.ui.theme.AppPalette
 enum class TransactionTypePresentation(
     val icon: ImageVector,
     val color: Color,
-    val label: String,
+    @StringRes val labelRes: Int,
     val showAmountPrefix: Boolean = false,
     val allowsEdit: Boolean = false,
     val allowsDelete: Boolean = false,
@@ -26,7 +29,7 @@ enum class TransactionTypePresentation(
     INCOME(
         icon = Icons.Default.TrendingUp,
         color = AppPalette.success,
-        label = "Income",
+        labelRes = R.string.type_income,
         showAmountPrefix = true,
         allowsEdit = true,
         allowsDelete = true,
@@ -35,7 +38,7 @@ enum class TransactionTypePresentation(
     EXPENSE(
         icon = Icons.Default.TrendingDown,
         color = AppPalette.error,
-        label = "Expense",
+        labelRes = R.string.type_expense,
         showAmountPrefix = true,
         allowsEdit = true,
         allowsDelete = true,
@@ -44,35 +47,41 @@ enum class TransactionTypePresentation(
     TRANSFER_OUT(
         icon = Icons.Default.SwapHoriz,
         color = AppPalette.defaultBlue,
-        label = "Transfer Out"
+        labelRes = R.string.type_transfer_out
     ),
     TRANSFER_IN(
         icon = Icons.Default.SwapHoriz,
         color = AppPalette.defaultBlue,
-        label = "Transfer In"
+        labelRes = R.string.type_transfer_in
     ),
     GOAL_CONTRIBUTION(
         icon = Icons.Default.Savings,
         color = AppPalette.notesPurple,
-        label = "Goal Contribution"
+        labelRes = R.string.type_goal_contribution
     ),
     GOAL_WITHDRAWAL(
         icon = Icons.Default.Savings,
         color = AppPalette.cyan,
-        label = "Goal Withdrawal"
+        labelRes = R.string.type_goal_withdrawal
     ),
     AUTO_ALLOCATION(
         icon = Icons.Default.AutoAwesome,
         color = AppPalette.indigo,
-        label = "Auto Allocation"
+        labelRes = R.string.type_auto_allocation
     ),
     BALANCE_ADJUSTMENT(
         icon = Icons.Default.Tune,
         color = AppPalette.warning,
-        label = "Balance Adjustment",
+        labelRes = R.string.type_balance_adjustment,
         allowsEdit = true,
         allowsDelete = true
     );
+
+    /**
+     * Get the localized display label for this transaction type.
+     * Use [label] in Composable contexts for automatic recomposition.
+     */
+    fun label(context: Context): String = context.getString(labelRes)
 
     companion object {
         /**
@@ -102,8 +111,9 @@ enum class TransactionTypePresentation(
         fun colorForType(type: TransactionType): Color = forType(type).color
 
         /**
-         * Get the display label for a transaction type.
+         * Get the localized display label for a transaction type.
          */
-        fun labelForType(type: TransactionType): String = forType(type).label
+        fun labelForType(type: TransactionType, context: Context): String =
+            forType(type).label(context)
     }
 }

@@ -8,15 +8,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 
 @Composable
 fun GoalDetailScreenPlaceholder(goalId: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().background(AppPalette.background)) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = "Back", tint = AppPalette.textPrimary) }
+            IconButton(onClick = onBack) { Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = stringResource(R.string.cd_back), tint = AppPalette.textPrimary) }
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "Goal Detail", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }

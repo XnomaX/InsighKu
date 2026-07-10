@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -35,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import kotlin.math.roundToInt
 
@@ -67,10 +70,11 @@ fun EditCategoryDialog(
 
     val selectedIcon = iconSet.find { it.name == selectedIconName }
         ?: iconSet.firstOrNull() ?: expenseCategoryIcons.first()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     fun validate(): Boolean {
         return if (name.trim().length < 2) {
-            nameError = "Category name must be at least 2 characters"
+            nameError = context.getString(R.string.add_category_name_error)
             false
         } else {
             nameError = null
@@ -103,7 +107,7 @@ fun EditCategoryDialog(
             }
         }
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.safeDrawingPadding().fillMaxWidth()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -112,7 +116,7 @@ fun EditCategoryDialog(
             ) {
                 Surface(shape = RoundedCornerShape(50), color = accentColor.copy(alpha = 0.10f)) {
                     Text(
-                        text       = if (categoryType == CategoryType.EXPENSE) "Expense Category" else "Income Category",
+                        text       = stringResource(if (categoryType == CategoryType.EXPENSE) R.string.add_category_expense_chip else R.string.add_category_income_chip),
                         modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style      = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
@@ -121,13 +125,13 @@ fun EditCategoryDialog(
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text       = "Edit Category",
+                    text       = stringResource(R.string.edit_category),
                     style      = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color      = AppPalette.textPrimary
                 )
                 Text(
-                    text  = "Update your budget category",
+                    text  = stringResource(R.string.edit_category_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -210,7 +214,7 @@ fun EditCategoryDialog(
                         border   = BorderStroke(1.dp, AppPalette.cardBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("Cancel", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textDialogMuted)
+                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textDialogMuted)
                         }
                     }
                     Box(
@@ -238,7 +242,7 @@ fun EditCategoryDialog(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Save Changes", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(stringResource(R.string.transaction_save_changes), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
 
@@ -259,7 +263,7 @@ fun EditCategoryDialog(
                         ) {
                             Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = AppPalette.deleteRed)
                             Spacer(Modifier.width(8.dp))
-                            Text("Delete Category", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.deleteRed)
+                            Text(stringResource(R.string.delete), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.deleteRed)
                         }
                     }
                 }

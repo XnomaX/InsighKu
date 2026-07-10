@@ -38,6 +38,8 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import javax.inject.Inject
 
+private const val TAG = "DashboardViewModel"
+
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val getTransactionsUseCase: GetTransactionsUseCase,
@@ -327,17 +329,21 @@ class DashboardViewModel @Inject constructor(
     private fun approveAllocationDraft(draftId: String) {
         viewModelScope.launch {
             try {
+                android.util.Log.i(TAG, "[DraftApproved] Processing draft=$draftId")
                 val draft = draftRepository.getById(draftId)
                 if (draft == null || draft.draftType != com.example.insightku.core.data.model.DraftType.AUTO_ALLOCATION) {
+                    android.util.Log.w(TAG, "[DraftApproved] Draft not found or wrong type: draftId=$draftId")
                     _uiState.update { it.copy(error = "Draft not found") }
                     return@launch
                 }
+                android.util.Log.d(TAG, "[DraftApproved] Rule=${draft.ruleId} Goal=${draft.goalName} Amount=${draft.allocationAmount}")
 
                 val accountId = draft.sourceAccountId
                 val goalId = draft.goalId
                 val amount = draft.allocationAmount
 
                 if (accountId == null || goalId == null || amount == null || amount <= 0) {
+                    android.util.Log.e(TAG, "[DraftApproved] Invalid draft data — ruleId=${draft.ruleId}")
                     _uiState.update { it.copy(error = "Invalid allocation draft data") }
                     draftRepository.confirmAndRemove(draftId)
                     return@launch
@@ -346,15 +352,18 @@ class DashboardViewModel @Inject constructor(
                 // Validate account exists and has sufficient balance
                 val account = accountRepository.getAccountById(accountId)
                 if (account == null) {
+                    android.util.Log.e(TAG, "[DraftApproved] Source account deleted: accountId=$accountId")
                     _uiState.update { it.copy(error = "Source account no longer exists") }
                     draftRepository.confirmAndRemove(draftId)
                     return@launch
                 }
                 if (account.balance < amount) {
+                    android.util.Log.w(TAG, "[DraftApproved] Insufficient balance: ${account.balance} < $amount in ${account.name}")
                     _uiState.update { it.copy(error = "Insufficient balance in ${account.name}") }
                     draftRepository.confirmAndRemove(draftId)
                     return@launch
                 }
+                android.util.Log.d(TAG, "[DraftApproved] Validation passed — account=${account.name} balance=${account.balance}")
 
                 // Execute the allocation via GoalRepository
                 val result = goalRepository.contribute(
@@ -365,12 +374,16 @@ class DashboardViewModel @Inject constructor(
                 )
 
                 if (result.isSuccess) {
+                    android.util.Log.i(TAG, "[DraftApproved] Allocation executed — ${NumberFormatter.formatCurrency(amount)} → ${draft.goalName}")
                     draftRepository.confirmAndRemove(draftId)
+                    android.util.Log.d(TAG, "[DraftApproved] Draft removed — home card will disappear")
                     _uiState.update { it.copy(snackbarMessage = "${NumberFormatter.formatCurrency(amount)} allocated to ${draft.goalName ?: "goal"}") }
                 } else {
+                    android.util.Log.e(TAG, "[DraftApproved] Allocation FAILED — ${result.exceptionOrNull()?.message}")
                     _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to allocate") }
                 }
             } catch (e: Exception) {
+                android.util.Log.e(TAG, "[DraftApproved] EXCEPTION — ${e.message}", e)
                 _uiState.update { it.copy(error = e.message ?: "Failed to approve allocation") }
             }
         }
@@ -379,9 +392,12 @@ class DashboardViewModel @Inject constructor(
     private fun rejectAllocationDraft(draftId: String) {
         viewModelScope.launch {
             try {
+                android.util.Log.i(TAG, "[DraftRejected] Rejecting draft=$draftId")
                 draftRepository.purgeDismissed(draftId)
+                android.util.Log.d(TAG, "[DraftRejected] Draft deleted — no allocation, rule remains active")
                 _uiState.update { it.copy(snackbarMessage = "Allocation rejected") }
             } catch (e: Exception) {
+                android.util.Log.e(TAG, "[DraftRejected] EXCEPTION — ${e.message}", e)
                 _uiState.update { it.copy(error = e.message ?: "Failed to reject allocation") }
             }
         }

@@ -23,7 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.example.insightku.R
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Installment
@@ -62,14 +64,14 @@ fun RecurringSection(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "Recurring Payments",
+                    text = stringResource(R.string.recurring_section_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.textPrimary
                 )
                 Text(
-                    text = if (recurringBudgets.isEmpty()) "No recurring payments"
-                           else "${recurringBudgets.size} active • ${NumberFormatter.formatCurrency(recurringBudgets.sumOf { it.amount })} / mo",
+                    text = if (recurringBudgets.isEmpty()) stringResource(R.string.recurring_section_empty)
+                           else stringResource(R.string.recurring_section_active, recurringBudgets.size, NumberFormatter.formatCurrency(recurringBudgets.sumOf { it.amount })),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -86,7 +88,7 @@ fun RecurringSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = Purple)
-                    Text("Add", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Purple)
+                    Text(stringResource(R.string.add), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Purple)
                 }
             }
         }
@@ -217,10 +219,10 @@ fun RecurringPaymentCard(
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
                     IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(14.dp), tint = AppPalette.notesPurple)
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit), modifier = Modifier.size(14.dp), tint = AppPalette.notesPurple)
                     }
                     IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", modifier = Modifier.size(14.dp), tint = Red.copy(alpha = 0.7f))
+                        Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.delete), modifier = Modifier.size(14.dp), tint = Red.copy(alpha = 0.7f))
                     }
                 }
             }
@@ -247,8 +249,8 @@ private fun RecurringEmptyState(onAdd: () -> Unit) {
             ) {
                 Icon(Icons.Default.Repeat, contentDescription = null, tint = Purple.copy(alpha = 0.5f), modifier = Modifier.size(26.dp))
             }
-            Text("No recurring payments yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
-            Text("Track subscriptions, rent, and bills.", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+            Text(stringResource(R.string.recurring_empty), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+            Text(stringResource(R.string.recurring_empty_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             Surface(
                 modifier = Modifier.clickable(onClick = onAdd),
                 shape = RoundedCornerShape(50.dp),
@@ -261,7 +263,7 @@ private fun RecurringEmptyState(onAdd: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = Purple)
-                    Text("Add Recurring Payment", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Purple)
+                    Text(stringResource(R.string.recurring_add), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Purple)
                 }
             }
         }
@@ -288,14 +290,14 @@ fun InstallmentsSection(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "Installments",
+                    text = stringResource(R.string.installment_section_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.textPrimary
                 )
                 Text(
-                    text = if (installments.isEmpty()) "No active installments"
-                           else "${installments.size} active • ${NumberFormatter.formatCurrency(installments.sumOf { it.remainingBalance })} remaining",
+                    text = if (installments.isEmpty()) stringResource(R.string.installment_section_empty)
+                           else stringResource(R.string.installment_section_active, installments.size, NumberFormatter.formatCurrency(installments.sumOf { it.remainingBalance })),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -312,7 +314,7 @@ fun InstallmentsSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = AppPalette.cyan)
-                    Text("Add", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.cyan)
+                    Text(stringResource(R.string.add), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.cyan)
                 }
             }
         }
@@ -420,17 +422,17 @@ fun InstallmentCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "${NumberFormatter.formatCurrency(installment.monthlyPayment)} / month",
+                        text = stringResource(R.string.recurring_per_month, NumberFormatter.formatCurrency(installment.monthlyPayment)),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
                     IconButton(onClick = onEdit, modifier = Modifier.size(30.dp)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(15.dp), tint = AppPalette.notesPurple)
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit), modifier = Modifier.size(15.dp), tint = AppPalette.notesPurple)
                     }
                     IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(30.dp)) {
-                        Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", modifier = Modifier.size(15.dp), tint = Red.copy(alpha = 0.7f))
+                        Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.delete), modifier = Modifier.size(15.dp), tint = Red.copy(alpha = 0.7f))
                     }
                 }
             }
@@ -469,7 +471,7 @@ fun InstallmentCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Remaining", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.recurring_remaining), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                     Text(
                         text = NumberFormatter.formatCurrency(installment.remainingBalance),
                         style = MaterialTheme.typography.titleSmall,
@@ -502,8 +504,8 @@ private fun InstallmentEmptyState(onAdd: () -> Unit) {
             ) {
                 Icon(Icons.Default.CreditScore, contentDescription = null, tint = AppPalette.cyan.copy(alpha = 0.5f), modifier = Modifier.size(26.dp))
             }
-            Text("No installments yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
-            Text("Track your cicilan and PayLater payments.", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+            Text(stringResource(R.string.installment_section_empty), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+            Text(stringResource(R.string.installment_empty_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             Surface(
                 modifier = Modifier.clickable(onClick = onAdd),
                 shape = RoundedCornerShape(50.dp),
@@ -516,7 +518,7 @@ private fun InstallmentEmptyState(onAdd: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = AppPalette.cyan)
-                    Text("Add Installment", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.cyan)
+                    Text(stringResource(R.string.installment_add_btn), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.cyan)
                 }
             }
         }
@@ -526,13 +528,12 @@ private fun InstallmentEmptyState(onAdd: () -> Unit) {
 // ─── Shared chips ─────────────────────────────────────────────────────────────
 
 @Composable
-private fun FrequencyChip(frequency: BudgetFrequency) {
-    val label = when (frequency) {
-        BudgetFrequency.WEEKLY    -> "Weekly"
-        BudgetFrequency.BIWEEKLY  -> "Biweekly"
-        BudgetFrequency.MONTHLY   -> "Monthly"
-        BudgetFrequency.QUARTERLY -> "Quarterly"
-        BudgetFrequency.YEARLY    -> "Yearly"
+private fun FrequencyChip(frequency: BudgetFrequency) {        val label = when (frequency) {
+        BudgetFrequency.WEEKLY    -> stringResource(R.string.period_weekly)
+        BudgetFrequency.BIWEEKLY  -> stringResource(R.string.recurring_biweekly)
+        BudgetFrequency.MONTHLY   -> stringResource(R.string.period_monthly)
+        BudgetFrequency.QUARTERLY -> stringResource(R.string.recurring_quarterly)
+        BudgetFrequency.YEARLY    -> stringResource(R.string.recurring_yearly)
     }
     Surface(shape = RoundedCornerShape(50), color = Purple.copy(alpha = 0.08f)) {
         Text(
@@ -558,10 +559,10 @@ private fun dueStatusFor(daysUntilDue: Int): DueStatus = when {
 @Composable
 private fun DueChip(daysUntilDue: Int, status: DueStatus) {
     val (label, bg, fg) = when (status) {
-        DueStatus.OVERDUE -> Triple("Overdue by ${-daysUntilDue}d", Red.copy(alpha = 0.12f),    Red)
-        DueStatus.TODAY   -> Triple("Due Today",        Orange.copy(alpha = 0.12f), Orange)
-        DueStatus.TOMORROW -> Triple("Due Tomorrow",    Orange.copy(alpha = 0.10f), Orange)
-        DueStatus.SOON    -> Triple("Due in ${daysUntilDue}d", Orange.copy(alpha = 0.08f), Orange)
+        DueStatus.OVERDUE -> Triple(stringResource(R.string.recurring_overdue_by, -daysUntilDue), Red.copy(alpha = 0.12f),    Red)
+        DueStatus.TODAY   -> Triple(stringResource(R.string.recurring_due_today),        Orange.copy(alpha = 0.12f), Orange)
+        DueStatus.TOMORROW -> Triple(stringResource(R.string.recurring_due_tomorrow),    Orange.copy(alpha = 0.10f), Orange)
+        DueStatus.SOON    -> Triple(stringResource(R.string.recurring_due_in, daysUntilDue), Orange.copy(alpha = 0.08f), Orange)
         DueStatus.NORMAL  -> Triple(
             DateFormatter.formatShortDate(
                 System.currentTimeMillis() + TimeUnit.DAYS.toMillis(daysUntilDue.toLong())

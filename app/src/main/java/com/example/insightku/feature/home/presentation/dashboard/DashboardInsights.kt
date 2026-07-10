@@ -17,6 +17,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.*
 
 @Composable
@@ -40,13 +42,13 @@ fun InsightsSection(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    "Insights",
+                    stringResource(R.string.dashboard_insights),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.textPrimary
                 )
                 Text(
-                    "Your financial pulse this month",
+                    stringResource(R.string.dashboard_financial_pulse),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )

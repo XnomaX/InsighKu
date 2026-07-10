@@ -10,10 +10,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.insightku.R
 import com.example.insightku.core.navigation.BottomNavItem
 import com.example.insightku.core.navigation.Route
 import com.example.insightku.core.navigation.bottomNavItems
@@ -62,12 +64,12 @@ fun MainNavBar(
                             } else {
                                 item.unselectedIcon
                             },
-                            contentDescription = item.title
+                            contentDescription = stringResource(item.titleRes)
                         )
                     },
                     label = {
                         Text(
-                            text = item.title,
+                            text = stringResource(item.titleRes),
                             style = MaterialTheme.typography.labelSmall
                         )
                     },
@@ -104,7 +106,7 @@ fun MainNavBar(
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Add Transaction",
+                contentDescription = stringResource(R.string.nav_add_transaction),
                 modifier = Modifier.size(24.dp)
             )
         }

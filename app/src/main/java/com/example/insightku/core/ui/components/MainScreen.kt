@@ -26,8 +26,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import androidx.annotation.StringRes
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.insightku.R
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -84,15 +87,15 @@ private fun DraftTransaction.toNotificationData(): NotificationTransactionData =
 
 private data class NavItem(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector
 )
 
 private val navItems = listOf(
-    NavItem(Route.HOME,      "Home",      Icons.Filled.Home),
-    NavItem(Route.ANALYSIS,  "Analytics", Icons.Filled.BarChart),
-    NavItem(Route.BUDGETING, "Planning",  Icons.Filled.Assignment),
-    NavItem(Route.ACCOUNTS,  "Accounts",  Icons.Filled.Wallet)
+    NavItem(Route.HOME,      R.string.nav_home,      Icons.Filled.Home),
+    NavItem(Route.ANALYSIS,  R.string.nav_analytics,  Icons.Filled.BarChart),
+    NavItem(Route.BUDGETING, R.string.nav_planning,   Icons.Filled.Assignment),
+    NavItem(Route.ACCOUNTS,  R.string.nav_accounts,   Icons.Filled.Wallet)
 )
 
 // ─── Tab Route Mapping ───────────────────────────────────────────────────────
@@ -235,10 +238,14 @@ fun MainScreen(
         }
     }
 
+    val backExitHint = stringResource(R.string.back_exit_hint)
+    val draftDismissedMsg = stringResource(R.string.draft_dismissed)
+    val undoLabel = stringResource(R.string.undo)
+
     LaunchedEffect(backPressedOnce) {
         if (backPressedOnce) {
             snackbarHostState.showSnackbar(
-                message  = "Tekan back sekali lagi untuk keluar",
+                message  = backExitHint,
                 duration = SnackbarDuration.Short
             )
             delay(2000)
@@ -287,8 +294,8 @@ fun MainScreen(
             // Tawarkan undo 5 detik; jika tidak di-undo, hard-delete.
             scope.launch {
                 val result = snackbarHostState.showSnackbar(
-                    message     = "Draft dihapus",
-                    actionLabel = "Urungkan",
+                    message     = draftDismissedMsg,
+                    actionLabel = undoLabel,
                     duration    = SnackbarDuration.Short
                 )
                 if (result == SnackbarResult.ActionPerformed) {
@@ -454,14 +461,14 @@ fun PremiumBottomNav(
             verticalAlignment     = Alignment.CenterVertically
         ) {
                 // Home
-                BottomNavItem(
+                BottomNavTabItem(
                     item       = navItems[0],
                     isSelected = currentTab == navItems[0].route,
                     onClick    = { navigateToTab(navItems[0].route) }
                 )
 
                 // Analytics
-                BottomNavItem(
+                BottomNavTabItem(
                     item       = navItems[1],
                     isSelected = currentTab == navItems[1].route,
                     onClick    = { navigateToTab(navItems[1].route) }
@@ -471,14 +478,14 @@ fun PremiumBottomNav(
                 CenterAddButton(onClick = onAddClick)
 
                 // Budgeting
-                BottomNavItem(
+                BottomNavTabItem(
                     item       = navItems[2],
                     isSelected = currentTab == navItems[2].route,
                     onClick    = { navigateToTab(navItems[2].route) }
                 )
 
                 // Accounts
-                BottomNavItem(
+                BottomNavTabItem(
                     item       = navItems[3],
                     isSelected = currentTab == navItems[3].route,
                     onClick    = { navigateToTab(navItems[3].route) }
@@ -490,7 +497,7 @@ fun PremiumBottomNav(
 // ─── Nav Item ─────────────────────────────────────────────────────────────────
 
 @Composable
-private fun BottomNavItem(
+private fun BottomNavTabItem(
     item: NavItem,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -506,19 +513,19 @@ private fun BottomNavItem(
             else       -> 1f
         },
         animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
-        label         = "icon_scale_${item.label}"
+        label         = "icon_scale_${item.route}"
     )
 
     val pillWidth by animateDpAsState(
         targetValue   = if (isSelected) 56.dp else 40.dp,
         animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-        label         = "pill_width_${item.label}"
+        label         = "pill_width_${item.route}"
     )
 
     val pillAlpha by animateFloatAsState(
         targetValue   = if (isSelected) 1f else 0f,
         animationSpec = tween(200),
-        label         = "pill_alpha_${item.label}"
+        label         = "pill_alpha_${item.route}"
     )
 
     Column(
@@ -540,18 +547,18 @@ private fun BottomNavItem(
                 .clip(RoundedCornerShape(50.dp))
                 .background(NavPurple.copy(alpha = pillAlpha * 0.10f)),
             contentAlignment  = Alignment.Center
-        ) {
-            Icon(
-                imageVector        = item.icon,
-                contentDescription = item.label,
-                modifier           = Modifier.size(20.dp).scale(iconScale),
-                tint               = if (isSelected) NavPurple else NavInactive
-            )
+        ) {                val label = stringResource(item.labelRes)
+                Icon(
+                    imageVector        = item.icon,
+                    contentDescription = label,
+                    modifier           = Modifier.size(20.dp).scale(iconScale),
+                    tint               = if (isSelected) NavPurple else NavInactive
+                )
         }
 
         // Label
         Text(
-            text       = item.label,
+            text       = stringResource(item.labelRes),
             style      = MaterialTheme.typography.labelSmall,
             fontSize   = 10.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
@@ -601,14 +608,14 @@ fun CenterAddButton(onClick: () -> Unit) {
         ) {
             Icon(
                 imageVector        = Icons.Default.Add,
-                contentDescription = "Add Transaction",
+                contentDescription = stringResource(R.string.nav_add_transaction),
                 tint               = Color.White,
                 modifier           = Modifier.size(22.dp)
             )
         }
 
         Text(
-            text       = "Add",
+            text       = stringResource(R.string.nav_add),
             style      = MaterialTheme.typography.labelSmall,
             fontSize   = 10.sp,
             fontWeight = FontWeight.SemiBold,

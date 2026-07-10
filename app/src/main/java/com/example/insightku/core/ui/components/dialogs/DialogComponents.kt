@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.utils.CurrencyUtils
 import kotlin.math.roundToInt
@@ -387,7 +389,7 @@ internal fun CategoryTypeSelector(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text       = if (type == CategoryType.EXPENSE) "Expense" else "Income",
+                        text       = if (type == CategoryType.EXPENSE) stringResource(R.string.type_expense) else stringResource(R.string.type_income),
                         style      = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color      = contentColor
@@ -400,7 +402,12 @@ internal fun CategoryTypeSelector(
 
 // ─── Recurring Period Selector ────────────────────────────────────────────────
 
-private val recurringPeriods = listOf("Weekly", "Monthly", "Yearly")
+@Composable
+private fun getRecurringPeriods(): List<Pair<String, String>> = listOf(
+    stringResource(R.string.period_weekly) to "Weekly",
+    stringResource(R.string.dialog_recurring_monthly) to "Monthly",
+    stringResource(R.string.dialog_recurring_yearly) to "Yearly"
+)
 
 @Composable
 fun RecurringPeriodSelector(
@@ -429,21 +436,20 @@ fun RecurringPeriodSelector(
                 .border(1.dp, if (noneSelected) purple else border, RoundedCornerShape(50.dp))
                 .clickable { onSelect(null) },
             contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text       = "None",
+        ) {                Text(
+                    text       = stringResource(R.string.dialog_recurring_none),
                 style      = MaterialTheme.typography.labelSmall,
                 fontWeight = if (noneSelected) FontWeight.Bold else FontWeight.Normal,
                 color      = if (noneSelected) Color.White else com.example.insightku.core.ui.theme.AppPalette.textDialogMuted
             )
         }
 
-        recurringPeriods.forEach { period ->
-            val isSelected = selected == period
+        getRecurringPeriods().forEach { (label, value) ->
+            val isSelected = selected == value
             val bg by animateColorAsState(
                 targetValue   = if (isSelected) purple else com.example.insightku.core.ui.theme.AppPalette.card,
                 animationSpec = tween(180),
-                label         = "period_bg_$period"
+                label         = "period_bg_$value"
             )
             Box(
                 modifier = Modifier
@@ -452,11 +458,11 @@ fun RecurringPeriodSelector(
                     .clip(RoundedCornerShape(50.dp))
                     .background(bg)
                     .border(1.dp, if (isSelected) purple else border, RoundedCornerShape(50.dp))
-                    .clickable { onSelect(if (isSelected) null else period) },
+                    .clickable { onSelect(if (isSelected) null else value) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text       = period,
+                    text       = label,
                     style      = MaterialTheme.typography.labelSmall,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     color      = if (isSelected) Color.White else com.example.insightku.core.ui.theme.AppPalette.textDialogMuted
@@ -494,9 +500,8 @@ fun BudgetLimitInput(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text  = "Monthly Budget",
+            ) {                Text(
+                    text       = stringResource(R.string.dialog_monthly_budget),
                     style = MaterialTheme.typography.bodyMedium,
                     color = com.example.insightku.core.ui.theme.AppPalette.textDialogMuted
                 )
@@ -548,9 +553,9 @@ fun BudgetLimitInput(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Alert at", style = MaterialTheme.typography.bodyMedium, color = com.example.insightku.core.ui.theme.AppPalette.textDialogMuted)
+                Text(stringResource(R.string.dialog_alert_at), style = MaterialTheme.typography.bodyMedium, color = com.example.insightku.core.ui.theme.AppPalette.textDialogMuted)
                 Text(
-                    "${alertThreshold.roundToInt()}% of budget",
+                    stringResource(R.string.dialog_pct_of_budget, alertThreshold.roundToInt()),
                     style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color      = purple

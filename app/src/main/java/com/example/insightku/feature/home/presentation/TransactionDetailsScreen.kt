@@ -52,6 +52,8 @@ import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.ui.theme.AppPalette
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.i18n.DateFormatter
@@ -86,7 +88,8 @@ private val TxTint:        Color @Composable get() = AppPalette.cardElevated
 private fun txTypeColor(type: TransactionType): Color = TransactionTypePresentation.colorForType(type)
 
 /** Get the display label for a transaction type (e.g. "Transfer", "Goal Contribution"). */
-private fun txTypeLabel(type: TransactionType): String = TransactionTypePresentation.labelForType(type)
+@Composable
+private fun txTypeLabel(type: TransactionType): String = stringResource(TransactionTypePresentation.forType(type).labelRes)
 
 /** Get the amount prefix/sign for display. */
 private fun txAmountPrefix(type: TransactionType): String = when (type) {
@@ -126,12 +129,13 @@ private fun getTxGroup(dateMillis: Long): TxGroup {
     }
 }
 
+@Composable
 private fun TxGroup.label(): String = when (this) {
-    TxGroup.TODAY      -> "Today"
-    TxGroup.YESTERDAY  -> "Yesterday"
-    TxGroup.THIS_WEEK  -> "This Week"
-    TxGroup.THIS_MONTH -> "This Month"
-    TxGroup.OLDER      -> "Earlier"
+    TxGroup.TODAY      -> stringResource(R.string.tx_group_today)
+    TxGroup.YESTERDAY  -> stringResource(R.string.tx_group_yesterday)
+    TxGroup.THIS_WEEK  -> stringResource(R.string.tx_group_this_week)
+    TxGroup.THIS_MONTH -> stringResource(R.string.tx_group_this_month)
+    TxGroup.OLDER      -> stringResource(R.string.tx_group_earlier)
 }
 
 // --- Helpers ------------------------------------------------------------------
@@ -417,20 +421,20 @@ private fun PremiumTxHeader(
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_back),
                     tint = accent,
                     modifier = Modifier.size(20.dp)
                 )
             }
             Column {
                 Text(
-                    "All Transactions",
+                    stringResource(R.string.tx_list_title),
                     style      = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color      = TxTextPrimary
                 )
                 Text(
-                    "Track every mindful financial movement",
+                    stringResource(R.string.tx_list_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = TxTextMuted
                 )
@@ -445,7 +449,7 @@ private fun PremiumTxHeader(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             TxSummaryCard(
-                label  = "Income",
+                label  = stringResource(R.string.tx_summary_income),
                 amount = income,
                 color  = TxIncomeGreen,
                 bg     = TxIncomeGreen.copy(alpha = 0.10f),
@@ -453,7 +457,7 @@ private fun PremiumTxHeader(
                 modifier = Modifier.weight(1f)
             )
             TxSummaryCard(
-                label  = "Expenses",
+                label  = stringResource(R.string.tx_summary_expenses),
                 amount = expense,
                 color  = TxExpenseRed,
                 bg     = TxExpenseRed.copy(alpha = 0.10f),
@@ -461,7 +465,7 @@ private fun PremiumTxHeader(
                 modifier = Modifier.weight(1f)
             )
             TxSummaryCard(
-                label  = "Total",
+                label  = stringResource(R.string.tx_summary_total),
                 amount = null,
                 count  = total,
                 color  = accent,
@@ -539,7 +543,7 @@ private fun PremiumSearchBar(value: String, onChange: (String) -> Unit) {
         onValueChange = onChange,
         placeholder   = {
             Text(
-                "Search transactions…",
+                stringResource(R.string.tx_list_search_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TxTextMuted
             )
@@ -580,16 +584,17 @@ private fun PremiumFilterRow(
     filterType: FilterType,
     onFilterTypeChanged: (FilterType) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val filters = listOf(
-        FilterType.ALL         to "All",
-        FilterType.INCOME      to "Income",
-        FilterType.EXPENSE     to "Expense",
-        FilterType.TRANSFER    to "Transfer",
-        FilterType.GOAL        to "Goals",
-        FilterType.AUTO_ALLOC  to "Auto",
-        FilterType.TODAY       to "Today",
-        FilterType.WEEK        to "This Week",
-        FilterType.MONTH       to "This Month"
+        FilterType.ALL         to context.getString(R.string.tx_filter_all),
+        FilterType.INCOME      to context.getString(R.string.tx_filter_income),
+        FilterType.EXPENSE     to context.getString(R.string.tx_filter_expense),
+        FilterType.TRANSFER    to context.getString(R.string.tx_filter_transfer),
+        FilterType.GOAL        to context.getString(R.string.tx_filter_goals),
+        FilterType.AUTO_ALLOC  to context.getString(R.string.tx_filter_auto),
+        FilterType.TODAY       to context.getString(R.string.tx_filter_today),
+        FilterType.WEEK        to context.getString(R.string.tx_filter_this_week),
+        FilterType.MONTH       to context.getString(R.string.tx_filter_this_month)
     )
 
     val accent = TxAccent
@@ -668,11 +673,11 @@ private fun PremiumSortRow(
                     Icon(Icons.AutoMirrored.Filled.Sort, null, tint = accent, modifier = Modifier.size(14.dp))
                     Text(
                         when (sortBy) {
-                            SortType.NEWEST   -> "Newest"
-                            SortType.OLDEST   -> "Oldest"
-                            SortType.HIGHEST  -> "Highest"
-                            SortType.LOWEST   -> "Lowest"
-                            SortType.CATEGORY -> "Category"
+                            SortType.NEWEST   -> stringResource(R.string.tx_sort_newest_short)
+                            SortType.OLDEST   -> stringResource(R.string.tx_sort_oldest_short)
+                            SortType.HIGHEST  -> stringResource(R.string.tx_sort_highest_short)
+                            SortType.LOWEST   -> stringResource(R.string.tx_sort_lowest_short)
+                            SortType.CATEGORY -> stringResource(R.string.tx_sort_category)
                         },
                         style      = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -690,11 +695,11 @@ private fun PremiumSortRow(
                 modifier         = Modifier.background(TxCard, RoundedCornerShape(14.dp))
             ) {
                 listOf(
-                    SortType.NEWEST   to "Newest First",
-                    SortType.OLDEST   to "Oldest First",
-                    SortType.HIGHEST  to "Highest Amount",
-                    SortType.LOWEST   to "Lowest Amount",
-                    SortType.CATEGORY to "By Category"
+                    SortType.NEWEST   to stringResource(R.string.tx_sort_newest),
+                    SortType.OLDEST   to stringResource(R.string.tx_sort_oldest),
+                    SortType.HIGHEST  to stringResource(R.string.tx_sort_highest),
+                    SortType.LOWEST   to stringResource(R.string.tx_sort_lowest),
+                    SortType.CATEGORY to stringResource(R.string.tx_sort_category)
                 ).forEach { (type, label) ->
                     DropdownMenuItem(
                         text = {
@@ -881,7 +886,7 @@ fun PremiumTransactionCard(
                     color = if (transaction.isSynced) TxIncomeGreen.copy(alpha = 0.10f) else TxAdjustOrange.copy(alpha = 0.10f)
                 ) {
                     Text(
-                        if (transaction.isSynced) "Synced" else "Syncing",
+                        if (transaction.isSynced) stringResource(R.string.tx_detail_synced) else stringResource(R.string.tx_detail_syncing),
                         style      = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color      = if (transaction.isSynced) TxIncomeGreen else TxAdjustOrange,
@@ -917,14 +922,14 @@ private fun PremiumEmptyState(modifier: Modifier = Modifier) {
             )
         }
         Text(
-            "No transactions found",
+            stringResource(R.string.tx_list_empty),
             style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color      = TxTextPrimary,
             textAlign  = TextAlign.Center
         )
         Text(
-            "Try adjusting your search or filter\nto find what you're looking for.",
+            stringResource(R.string.tx_list_empty_desc),
             style     = MaterialTheme.typography.bodySmall,
             color     = TxTextMuted,
             textAlign = TextAlign.Center,
@@ -981,6 +986,7 @@ fun TransactionDetailOverlay(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .safeDrawingPadding()
                 .navigationBarsPadding()
         ) {
             // -- Hero section ----------------------------------------------
@@ -1023,8 +1029,8 @@ fun TransactionDetailOverlay(
             // -- Info grid -------------------------------------------------
             Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PremiumInfoTile(Icons.Default.CalendarMonth, "Date", formatFullDate(transaction.date), accent, Modifier.weight(1f))
-                    PremiumInfoTile(Icons.Default.AccessTime, "Time", transaction.time, accent, Modifier.weight(1f))
+                    PremiumInfoTile(Icons.Default.CalendarMonth, stringResource(R.string.tx_detail_date), formatFullDate(transaction.date), accent, Modifier.weight(1f))
+                    PremiumInfoTile(Icons.Default.AccessTime, stringResource(R.string.tx_detail_time), transaction.time, accent, Modifier.weight(1f))
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     // Account info
@@ -1037,11 +1043,11 @@ fun TransactionDetailOverlay(
                         null -> Icons.Default.AccountBalance
                     }
                     val accountColor = account?.let { runCatching { Color(android.graphics.Color.parseColor(it.color)) }.getOrDefault(AppPalette.defaultBlue) } ?: AppPalette.defaultBlue
-                    PremiumInfoTile(accountIcon, "Account", account?.name ?: "No account", accountColor, Modifier.weight(1f))
+                    PremiumInfoTile(accountIcon, stringResource(R.string.tx_detail_account), account?.name ?: stringResource(R.string.tx_detail_no_account), accountColor, Modifier.weight(1f))
                     // Sync status
                     PremiumInfoTile(
                         if (transaction.isSynced) Icons.Default.CloudDone else Icons.Default.CloudQueue,
-                        "Status", if (transaction.isSynced) "Synced" else "Syncing",
+                        stringResource(R.string.tx_detail_status), if (transaction.isSynced) stringResource(R.string.tx_detail_synced) else stringResource(R.string.tx_detail_syncing),
                         if (transaction.isSynced) TxIncomeGreen else TxAdjustOrange, Modifier.weight(1f)
                     )
                 }
@@ -1049,7 +1055,7 @@ fun TransactionDetailOverlay(
                 if (txType == TransactionType.TRANSFER_OUT || txType == TransactionType.TRANSFER_IN) {
                     transaction.relatedAccountId?.let { relatedId ->
                         val relatedAccount = accountMap[relatedId]
-                        val label = if (txType == TransactionType.TRANSFER_OUT) "To Account" else "From Account"
+                        val label = if (txType == TransactionType.TRANSFER_OUT) stringResource(R.string.tx_detail_to_account) else stringResource(R.string.tx_detail_from_account)
                         PremiumInfoTile(
                             Icons.Default.SwapHoriz, label,
                             relatedAccount?.name ?: relatedId,
@@ -1062,15 +1068,15 @@ fun TransactionDetailOverlay(
                     transaction.goalName?.let { goalName ->
                         val goalIcon = if (txType == TransactionType.GOAL_WITHDRAWAL) Icons.Default.ArrowUpward else Icons.Default.Flag
                         val goalColor = if (txType == TransactionType.GOAL_WITHDRAWAL) TxWithdrawalTeal else TxGoalPurple
-                        PremiumInfoTile(goalIcon, "Goal", goalName, goalColor, Modifier.fillMaxWidth())
+                        PremiumInfoTile(goalIcon, stringResource(R.string.tx_detail_goal), goalName, goalColor, Modifier.fillMaxWidth())
                     }
                 }
                 // Contribution type info for Goal Contribution
                 if (txType == TransactionType.GOAL_CONTRIBUTION) {
-                    val contribType = if (transaction.isAuto) "Auto Allocation" else "Manual"
+                    val contribType = if (transaction.isAuto) stringResource(R.string.tx_detail_auto) else stringResource(R.string.tx_detail_manual)
                     PremiumInfoTile(
-                        if (transaction.isAuto) Icons.Default.AutoAwesome else Icons.Default.TouchApp,
-                        "Contribution Type", contribType,
+                            if (transaction.isAuto) Icons.Default.AutoAwesome else Icons.Default.TouchApp,
+                            stringResource(R.string.tx_detail_contribution_type), contribType,
                         TxGoalPurple, Modifier.fillMaxWidth()
                     )
                 }
@@ -1083,8 +1089,8 @@ fun TransactionDetailOverlay(
                         )
                     }
                 }
-                if (!transaction.description.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.Notes, "Notes", transaction.description, AppPalette.notesPurple)
-                if (!transaction.location.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.LocationOn, "Location", transaction.location, AppPalette.locationPink)
+                if (!transaction.description.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.Notes, stringResource(R.string.tx_detail_notes), transaction.description, AppPalette.notesPurple)
+                if (!transaction.location.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.LocationOn, stringResource(R.string.tx_detail_location), transaction.location, AppPalette.locationPink)
             }
 
             // -- Action buttons (type-dependent) --------------------------------
@@ -1096,7 +1102,7 @@ fun TransactionDetailOverlay(
                             Box(contentAlignment = Alignment.Center) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Icon(Icons.Default.Edit, null, tint = accent, modifier = Modifier.size(16.dp))
-                                    Text("Edit", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = accent)
+                                    Text(stringResource(R.string.edit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = accent)
                                 }
                             }
                         }
@@ -1104,7 +1110,7 @@ fun TransactionDetailOverlay(
                             Box(contentAlignment = Alignment.Center) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Icon(Icons.Default.Delete, null, tint = TxExpenseRed, modifier = Modifier.size(16.dp))
-                                    Text("Delete", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxExpenseRed)
+                                    Text(stringResource(R.string.delete), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxExpenseRed)
                                 }
                             }
                         }
@@ -1116,7 +1122,7 @@ fun TransactionDetailOverlay(
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.Flag, null, tint = TxGoalPurple, modifier = Modifier.size(16.dp))
-                                Text("View Goal", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxGoalPurple)
+                                Text(stringResource(R.string.transaction_view_goal), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxGoalPurple)
                             }
                         }
                     }
@@ -1127,7 +1133,7 @@ fun TransactionDetailOverlay(
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.SwapHoriz, null, tint = TxTransferBlue, modifier = Modifier.size(16.dp))
-                                Text("View Transfer Details", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxTransferBlue)
+                                Text(stringResource(R.string.transaction_view_transfer), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxTransferBlue)
                             }
                         }
                     }
@@ -1144,7 +1150,7 @@ fun TransactionDetailOverlay(
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.ContentCopy, null, tint = accent, modifier = Modifier.size(15.dp))
-                                Text("Duplicate Transaction", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = accent)
+                                Text(stringResource(R.string.transaction_duplicate), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = accent)
                             }
                         }
                     }
@@ -1157,10 +1163,10 @@ fun TransactionDetailOverlay(
         com.example.insightku.core.ui.components.dialogs.PremiumDialog(
             type = com.example.insightku.core.ui.components.dialogs.PremiumDialogType.ERROR,
             customIcon = Icons.Default.DeleteForever,
-            title = "Delete Transaction?",
-            message = "\"${transaction.title}\" will be permanently deleted.",
-            confirmText = "Delete",
-            dismissText = "Cancel",
+            title = stringResource(R.string.transaction_delete),
+            message = "\"${transaction.title}\" ${stringResource(R.string.transaction_delete_desc)}",
+            confirmText = stringResource(R.string.delete),
+            dismissText = stringResource(R.string.cancel),
             onConfirm = {
                 showDeleteDialog = false
                 onDelete(transaction.id)

@@ -89,7 +89,7 @@ private fun ForgotPasswordScreenContent(
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         tint = AppPalette.textPrimary,
                         modifier = Modifier.size(24.dp)
                     )

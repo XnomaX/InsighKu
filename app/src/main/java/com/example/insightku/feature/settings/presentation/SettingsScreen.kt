@@ -68,6 +68,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.R
@@ -142,8 +143,8 @@ fun SettingsScreen(
                         )
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Notification Debug", style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
-                            Text("Lihat log notifikasi bank yang diterima", style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
+                            Text(stringResource(R.string.settings_notification_debug), style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
+                            Text(stringResource(R.string.settings_notification_debug_desc), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
                         }
                         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SettingsPalette.textMuted)
                     }
@@ -210,14 +211,14 @@ private fun ToneSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
 private fun IdentityHeader(uiState: SettingsUiState) {
     Column {
         Text(
-            if (uiState.userName.isNotBlank()) "Hey, ${uiState.userName.substringBefore(' ')}" else "Your space",
+            if (uiState.userName.isNotBlank()) stringResource(R.string.settings_identity_greeting, uiState.userName.substringBefore(' ')) else stringResource(R.string.settings_identity_default),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = SettingsPalette.textPrimary
         )
         Spacer(Modifier.height(Dimens.PaddingSmall))
         Text(
-            "Shape how InsightKu feels and how it gets to know you 💜",
+            stringResource(R.string.settings_identity_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = SettingsPalette.textMuted
         )
@@ -306,7 +307,7 @@ private fun LanguageBottomSheet(
             )
         }
     ) {
-        Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
+        Column(modifier = Modifier.safeDrawingPadding().padding(bottom = Dimens.PaddingExtraLarge)) {
             Text(
                 text = stringResource(R.string.settings_language),
                 style = MaterialTheme.typography.titleMedium,
@@ -372,11 +373,11 @@ private fun LanguageBottomSheet(
 private fun AppearanceSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     SettingsSurface {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SectionLabel(
-                if (uiState.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
-                "Appearance",
-                if (uiState.isDarkMode) "Dark and easy on the eyes" else "Light and airy"
-            )
+        SectionLabel(
+            if (uiState.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+            stringResource(R.string.appearance),
+            if (uiState.isDarkMode) stringResource(R.string.settings_appearance_desc_dark) else stringResource(R.string.settings_appearance_desc_light)
+        )
             Spacer(Modifier.weight(1f))
             ToneSwitch(uiState.isDarkMode) { onEvent(SettingsEvent.OnThemeChange(it)) }
         }
@@ -394,8 +395,8 @@ private fun AppearanceSection(uiState: SettingsUiState, onEvent: (SettingsEvent)
                 Box(Modifier.size(28.dp).clip(CircleShape).background(SettingsPalette.Purple))
                 Spacer(Modifier.width(Dimens.PaddingMedium))
                 Column {
-                    Text("Preview", style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
-                    Text("This is how cards will look", style = MaterialTheme.typography.bodyMedium, color = previewText)
+                    Text(stringResource(R.string.settings_preview), style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
+                    Text(stringResource(R.string.settings_preview_desc), style = MaterialTheme.typography.bodyMedium, color = previewText)
                 }
             }
         }
@@ -408,13 +409,13 @@ private fun AppearanceSection(uiState: SettingsUiState, onEvent: (SettingsEvent)
 private fun ComfortSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     SettingsSurface {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SectionLabel(Icons.Default.Spa, "Comfort mode", "Softer motion, calmer pace")
+            SectionLabel(Icons.Default.Spa, stringResource(R.string.settings_comfort_mode), stringResource(R.string.settings_comfort_mode_desc))
             Spacer(Modifier.weight(1f))
             ToneSwitch(uiState.comfortMode) { onEvent(SettingsEvent.OnComfortModeToggle(it)) }
         }
         AnimatedVisibility(uiState.comfortMode, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
             Text(
-                "Animations across the app are gentled — things settle softly instead of sliding in.",
+                stringResource(R.string.settings_comfort_body_detail),
                 style = MaterialTheme.typography.bodySmall,
                 color = SettingsPalette.Purple,
                 modifier = Modifier.padding(top = Dimens.PaddingMedium)
@@ -428,7 +429,7 @@ private fun ComfortSection(uiState: SettingsUiState, onEvent: (SettingsEvent) ->
 @Composable
 private fun InsightToneSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     SettingsSurface {
-        SectionLabel(Icons.Default.AutoAwesome, "How insights talk to you", "Pick the voice that feels right")
+        SectionLabel(Icons.Default.AutoAwesome, stringResource(R.string.settings_insight_tone), stringResource(R.string.settings_insight_tone_desc))
         Spacer(Modifier.height(Dimens.PaddingLarge))
         // Segmented pills — not a tab bar, an in-place voice picker.
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)) {
@@ -462,7 +463,7 @@ private fun InsightToneSection(uiState: SettingsUiState, onEvent: (SettingsEvent
                 Text("🔮", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.width(Dimens.PaddingMedium))
                 Column {
-                    Text("Sounds like", style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
+                    Text(stringResource(R.string.settings_sounds_like), style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
                     Spacer(Modifier.height(2.dp))
                     Text(uiState.insightTone.previewSentence, style = MaterialTheme.typography.bodyMedium, color = SettingsPalette.textPrimary)
                 }
@@ -534,7 +535,7 @@ private val ACCENT_PRESETS = listOf(
 @Composable
 private fun AccentSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     SettingsSurface {
-        SectionLabel(Icons.Default.Palette, "Accent color", "Recolors the whole app instantly")
+        SectionLabel(Icons.Default.Palette, stringResource(R.string.settings_accent_color), stringResource(R.string.settings_accent_color_desc))
         Spacer(Modifier.height(Dimens.PaddingLarge))
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
             ACCENT_PRESETS.forEach { (hex, _) ->
@@ -557,7 +558,7 @@ private fun AccentSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> 
 @Composable
 private fun VisualDensitySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     SettingsSurface {
-        SectionLabel(Icons.Default.Dashboard, "Visual density", "How tightly content is packed")
+        SectionLabel(Icons.Default.Dashboard, stringResource(R.string.settings_visual_density), stringResource(R.string.settings_visual_density_desc))
         Spacer(Modifier.height(Dimens.PaddingLarge))
         PillSelector(
             options = listOf(
@@ -576,7 +577,7 @@ private fun VisualDensitySection(uiState: SettingsUiState, onEvent: (SettingsEve
 private fun HabitGoalSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     SettingsSurface {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SectionLabel(Icons.Default.LocalFireDepartment, "Your habit goal", "Days a week you want to check in")
+            SectionLabel(Icons.Default.LocalFireDepartment, stringResource(R.string.settings_habit_goal), stringResource(R.string.settings_habit_goal_desc))
             Spacer(Modifier.weight(1f))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StepperButton(Icons.Default.Remove, enabled = uiState.habitGoal > 1) {
@@ -624,7 +625,7 @@ private fun CurrencySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -
                 .clickable { showSheet = true },
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SectionLabel(Icons.Default.Payments, "Currency", "Used everywhere amounts appear")
+            SectionLabel(Icons.Default.Payments, stringResource(R.string.settings_currency), stringResource(R.string.settings_currency_desc))
             Spacer(Modifier.weight(1f))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -685,9 +686,8 @@ private fun CurrencyBottomSheet(
             )
         }
     ) {
-        Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
-            Text(
-                text = "Choose currency",
+        Column(modifier = Modifier.safeDrawingPadding().padding(bottom = Dimens.PaddingExtraLarge)) {
+            Text(                    text = stringResource(R.string.settings_choose_currency),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = SettingsPalette.textPrimary,
@@ -755,12 +755,12 @@ private fun SmartCaptureSection(
 ) {
     SettingsSurface {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SectionLabel(Icons.Default.AutoAwesome, "Smart capture", "Let the app learn your habits")
+            SectionLabel(Icons.Default.AutoAwesome, stringResource(R.string.settings_smart_capture), stringResource(R.string.settings_smart_capture_desc))
             Spacer(Modifier.weight(1f))
             ToneSwitch(uiState.smartCaptureEnabled) { onEvent(SettingsEvent.OnSmartCaptureToggle(it)) }
         }
         Text(
-            "When on, InsightKu quietly learns from how you log things to make tracking faster. It only ever uses your own transactions, and you can pause it anytime.",
+            stringResource(R.string.settings_smart_capture_body_long),
             style = MaterialTheme.typography.bodySmall,
             color = SettingsPalette.textMuted,
             modifier = Modifier.padding(top = Dimens.PaddingMedium)
@@ -773,8 +773,8 @@ private fun SmartCaptureSection(
         // The genuinely-real control: category learning + transparency.
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Learn my categories", style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
-                Text("Suggests a category when you log a place you've logged before", style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
+                Text(stringResource(R.string.settings_learn_categories), style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
+                Text(stringResource(R.string.settings_learn_categories_desc), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
             }
             ToneSwitch(uiState.categoryLearningEnabled) { onEvent(SettingsEvent.OnCategoryLearningToggle(it)) }
         }
@@ -785,7 +785,7 @@ private fun SmartCaptureSection(
             exit = fadeOut() + shrinkVertically()
         ) {
             Column(Modifier.padding(top = Dimens.PaddingLarge)) {
-                Text("What I've picked up so far", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.Purple)
+                Text(stringResource(R.string.settings_learn_categories_hint), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.Purple)
                 Spacer(Modifier.height(Dimens.PaddingMedium))
                 uiState.learnedMemories.forEach { memory ->
                     MemoryRow(memory) { onEvent(SettingsEvent.OnForgetMemory(memory.merchant)) }
@@ -795,7 +795,7 @@ private fun SmartCaptureSection(
 
         if (uiState.categoryLearningEnabled && uiState.learnedMemories.isEmpty()) {
             Text(
-                "Nothing learned yet — once you log a place a couple of times, it'll show up here.",
+                stringResource(R.string.settings_learn_categories_empty_detail),
                 style = MaterialTheme.typography.bodySmall,
                 color = SettingsPalette.textMuted,
                 modifier = Modifier.padding(top = Dimens.PaddingMedium)
@@ -841,12 +841,12 @@ private fun BankNotificationSection(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Baca notifikasi bank",
+                    stringResource(R.string.settings_bank_notification),
                     style = MaterialTheme.typography.bodyLarge,
                     color = SettingsPalette.textPrimary
                 )
                 Text(
-                    "Deteksi transaksi dari BCA, SeaBank, GoPay, DANA, OVO, dll.",
+                    stringResource(R.string.settings_bank_notification_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = SettingsPalette.textMuted
                 )
@@ -877,14 +877,14 @@ private fun BankNotificationSection(
                 ) {
                     Column(Modifier.padding(Dimens.CardInnerPadding)) {
                         Text(
-                            "Izin Notification Access belum diberikan",
+                            stringResource(R.string.settings_notification_access_prompt),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                             color = SettingsPalette.textPrimary
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "Aplikasi perlu izin membaca notifikasi untuk mendeteksi transaksi dari aplikasi bank secara otomatis.",
+                            stringResource(R.string.settings_notification_access_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = SettingsPalette.textMuted
                         )
@@ -905,7 +905,7 @@ private fun BankNotificationSection(
                             containerColor = SettingsPalette.Purple
                             )
                         ) {
-                            Text("Aktifkan Notification Access")
+                            Text(stringResource(R.string.settings_notification_access_button))
                         }
                     }
                 }
@@ -913,7 +913,7 @@ private fun BankNotificationSection(
             // Permission granted AND feature enabled — show active status
             isListenerEnabled && uiState.bankNotificationEnabled -> {
                 Text(
-                    "✓ Aktif — transaksi dari notifikasi bank akan dideteksi otomatis.",
+                    "✓ ${stringResource(R.string.settings_notification_active)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = SettingsPalette.textMuted
                 )
@@ -921,7 +921,7 @@ private fun BankNotificationSection(
             // Permission granted but feature toggled OFF
             isListenerEnabled && !uiState.bankNotificationEnabled -> {
                 Text(
-                    "Notification Access sudah diberikan. Aktifkan toggle untuk mulai mendeteksi transaksi.",
+                    stringResource(R.string.settings_notification_inactive),
                     style = MaterialTheme.typography.bodySmall,
                     color = SettingsPalette.textMuted
                 )
@@ -938,8 +938,8 @@ private fun BankNotificationSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Aplikasi yang dipantau", style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
-                    Text("Pilih aplikasi keuangan mana yang boleh dibaca", style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
+                    Text(stringResource(R.string.settings_monitored_apps), style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
+                    Text(stringResource(R.string.settings_monitored_apps_desc), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
                 }
                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SettingsPalette.textMuted)
             }
@@ -991,7 +991,7 @@ private fun AccountSection(uiState: SettingsUiState, onEvent: (SettingsEvent) ->
             ) {
                 Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = SettingsPalette.ExpenseRed, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(Dimens.PaddingMedium))
-                Text("Log out", color = SettingsPalette.ExpenseRed, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.settings_log_out), color = SettingsPalette.ExpenseRed, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -1003,8 +1003,8 @@ private fun AppInfoFooter() {
         Modifier.fillMaxWidth().padding(top = Dimens.PaddingMedium),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("InsightKu", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.textMuted)
-        Text("Made with care 💜", style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
+        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.textMuted)
+        Text(stringResource(R.string.app_info_made_with_love), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
     }
 }
 
@@ -1045,14 +1045,14 @@ fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)
                 ) {
                     Text(
-                        text       = "Log out of InsightKu?",
+                        text       = stringResource(R.string.settings_logout_title),
                         style      = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color      = MaterialTheme.colorScheme.onSurface,
                         textAlign  = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     Text(
-                        text      = "You'll need to sign in again to access your financial story.",
+                        text      = stringResource(R.string.settings_logout_message),
                         style     = MaterialTheme.typography.bodyMedium,
                         color     = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -1081,7 +1081,7 @@ fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                             modifier           = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(Dimens.PaddingMedium))
-                        Text("Log Out", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.settings_logout_button), fontWeight = FontWeight.Bold)
                     }
                     OutlinedButton(
                         onClick  = onDismiss,
@@ -1092,7 +1092,7 @@ fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Text(
-                            "Stay Logged In",
+                            stringResource(R.string.settings_logout_stay),
                             fontWeight = FontWeight.Medium,
                             color      = MaterialTheme.colorScheme.onSurface
                         )

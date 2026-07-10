@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
@@ -26,7 +28,7 @@ import java.time.ZoneId
 @Composable
 internal fun TimelineSection(events: List<GoalTimelineEvent>, goalColor: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
-        SectionHeader(title = "Savings Journey", subtitle = "Track your milestones")
+        SectionHeader(title = stringResource(R.string.goal_savings_journey), subtitle = stringResource(R.string.goal_savings_journey_desc))
         Spacer(Modifier.height(12.dp))
         if (events.isEmpty()) {
             EmptyTimelineCard(goalColor)
@@ -84,8 +86,8 @@ internal fun EmptyTimelineCard(goalColor: androidx.compose.ui.graphics.Color) {
                 Icon(Icons.Outlined.Flag, null, tint = goalColor.copy(alpha = 0.5f), modifier = Modifier.size(28.dp))
             }
             Spacer(Modifier.height(12.dp))
-            Text("No milestones yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            Text("Start saving to unlock your first milestone", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(stringResource(R.string.goal_contrib_no_milestones), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(stringResource(R.string.goal_contrib_start_saving), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }

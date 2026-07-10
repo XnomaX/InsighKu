@@ -66,8 +66,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.Category
@@ -199,7 +201,7 @@ internal fun AmountHeroCard(
                 onAmountChange(rawDigits)
             },
             placeholder = { Text("0", color = accentColor.copy(alpha = 0.35f)) },
-            label = { Text("Amount (Rp)", color = accentColor.copy(alpha = 0.7f)) },
+            label = { Text(stringResource(R.string.transaction_amount_hint), color = accentColor.copy(alpha = 0.7f)) },
             leadingIcon = {
                 Text(
                     NumberFormatter.getCurrencySymbol(),
@@ -383,8 +385,8 @@ internal fun CategoryChipSelector(
                 ) {
                     Icon(Icons.Default.Category, contentDescription = null, tint = primary.copy(alpha = 0.5f), modifier = Modifier.size(22.dp))
                 }
-                Text("No categories yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-                Text("Create a category to get started.", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+                Text(stringResource(R.string.transaction_form_no_categories), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                Text(stringResource(R.string.transaction_form_create_category_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                 Surface(
                     modifier = Modifier.clickable(onClick = onCreateCategory),
                     shape = RoundedCornerShape(50.dp),
@@ -397,7 +399,7 @@ internal fun CategoryChipSelector(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = primary)
-                        Text("Create Category", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = primary)
+                        Text(stringResource(R.string.transaction_form_create_category), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = primary)
                     }
                 }
             }
@@ -434,7 +436,7 @@ internal fun CategoryChipSelector(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(12.dp), tint = primary.copy(alpha = 0.7f))
-            Text("Add category", style = MaterialTheme.typography.labelSmall, color = primary.copy(alpha = 0.7f))
+            Text(stringResource(R.string.transaction_form_add_category), style = MaterialTheme.typography.labelSmall, color = primary.copy(alpha = 0.7f))
         }
     }
 }
@@ -526,8 +528,8 @@ internal fun AccountChipSelector(
                 ) {
                     Icon(Icons.Default.AccountBalance, contentDescription = null, tint = accent.copy(alpha = 0.5f), modifier = Modifier.size(22.dp))
                 }
-                Text("No accounts yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-                Text("Create an account in Settings to start tracking transactions.", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+                Text(stringResource(R.string.transaction_form_no_accounts), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                Text(stringResource(R.string.transaction_form_create_account_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             }
         }
         return
@@ -713,7 +715,7 @@ fun PremiumSegmentedControl(
                         modifier = Modifier.size(15.dp)
                     )
                     Text(
-                        "Expense",
+                        stringResource(R.string.transaction_form_expense),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (!isIncome) FontWeight.ExtraBold else FontWeight.Normal,
                         color = if (!isIncome) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -738,7 +740,7 @@ fun PremiumSegmentedControl(
                         modifier = Modifier.size(15.dp)
                     )
                     Text(
-                        "Income",
+                        stringResource(R.string.transaction_form_income),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isIncome) FontWeight.ExtraBold else FontWeight.Normal,
                         color = if (isIncome) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)

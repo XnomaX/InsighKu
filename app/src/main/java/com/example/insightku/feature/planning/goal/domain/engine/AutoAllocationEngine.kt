@@ -11,6 +11,7 @@ import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRe
 import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
 import com.example.insightku.core.i18n.NumberFormatter
+import android.util.Log
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,6 +23,9 @@ class AutoAllocationEngine @Inject constructor(
     private val dataSource: AutoAllocationDataSource,
     private val accountRepository: AccountRepository
 ) {
+    companion object {
+        private const val TAG = "AutoAllocationEngine"
+    }
     suspend fun processTransaction(transaction: Transaction): AutoAllocationResult {
         val enabledRules = dataSource.getEnabledRules()
         if (enabledRules.isEmpty()) {
@@ -36,7 +40,7 @@ class AutoAllocationEngine @Inject constructor(
                 categoryIdToName[cat.id] = cat.name
                 nameToCategoryId[cat.name.trim().lowercase()] = cat.id
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) { Log.e(TAG, "Failed to load categories: ${e.message}") }
 
         val suggestions = mutableListOf<AllocationSuggestion>()
         val autoExecuted = mutableListOf<AllocationSuggestion>()
@@ -51,7 +55,7 @@ class AutoAllocationEngine @Inject constructor(
                         com.example.insightku.feature.planning.goal.data.model.ConfirmationMode.CONFIRMATION_REQUIRED -> suggestions.add(result)
                     }
                 }
-            } catch (_: Exception) {}
+            } catch (e: Exception) { Log.e(TAG, "[TransactionEval] Rule=${rule.id} EXCEPTION — ${e.message}", e) }
         }
 
         return AutoAllocationResult(suggestions, autoExecuted, transaction.id, transaction.amount)
@@ -59,10 +63,14 @@ class AutoAllocationEngine @Inject constructor(
 
     suspend fun processScheduledAllocations(): AutoAllocationResult {
         val enabledRules = dataSource.getEnabledRules()
+        Log.d(TAG, "processScheduledAllocations: ${enabledRules.size} enabled rules loaded")
+
         val scheduledRules = enabledRules.filter { rule ->
             val trigger = AllocationTriggerType.fromString(rule.triggerType)
             trigger in listOf(AllocationTriggerType.DAILY, AllocationTriggerType.WEEKLY, AllocationTriggerType.BIWEEKLY, AllocationTriggerType.MONTHLY)
         }
+        Log.d(TAG, "processScheduledAllocations: ${scheduledRules.size} scheduled rules (daily/weekly/biweekly/monthly)")
+
         if (scheduledRules.isEmpty()) return AutoAllocationResult(emptyList(), emptyList(), null, null)
 
         val suggestions = mutableListOf<AllocationSuggestion>()
@@ -70,18 +78,27 @@ class AutoAllocationEngine @Inject constructor(
 
         for (entity in scheduledRules) {
             val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal")
-            if (!shouldExecuteScheduled(rule)) continue
+            if (!shouldExecuteScheduled(rule)) {
+                Log.d(TAG, "[ScheduledSkip] Rule=${rule.id} Goal=${rule.goalName} — shouldExecuteScheduled=false (already fired or wrong day)")
+                continue
+            }
             try {
                 val result = evaluateScheduledRule(rule)
                 if (result != null) {
+                    Log.d(TAG, "[ScheduledEval] Rule=${rule.id} Goal=${rule.goalName} mode=${rule.confirmationMode.value} → ${result.amount}")
                     when (rule.confirmationMode) {
                         com.example.insightku.feature.planning.goal.data.model.ConfirmationMode.AUTO -> autoExecuted.add(result)
                         com.example.insightku.feature.planning.goal.data.model.ConfirmationMode.CONFIRMATION_REQUIRED -> suggestions.add(result)
                     }
+                } else {
+                    Log.d(TAG, "[ScheduledEval] Rule=${rule.id} Goal=${rule.goalName} → evaluateScheduledRule returned null (validation failed)")
                 }
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                Log.e(TAG, "[ScheduledEval] Rule=${rule.id} EXCEPTION — ${e.message}", e)
+            }
         }
 
+        Log.d(TAG, "processScheduledAllocations complete: ${autoExecuted.size} auto, ${suggestions.size} confirm-first")
         return AutoAllocationResult(suggestions, autoExecuted, null, null)
     }
 
@@ -101,7 +118,7 @@ class AutoAllocationEngine @Inject constructor(
                         com.example.insightku.feature.planning.goal.data.model.ConfirmationMode.CONFIRMATION_REQUIRED -> suggestions.add(result)
                     }
                 }
-            } catch (_: Exception) {}
+            } catch (e: Exception) { Log.e(TAG, "[BalanceAboveEval] EXCEPTION — ${e.message}", e) }
         }
 
         return AutoAllocationResult(suggestions, autoExecuted, null, null)

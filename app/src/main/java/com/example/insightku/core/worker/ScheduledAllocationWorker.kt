@@ -63,8 +63,11 @@ class ScheduledAllocationWorker @AssistedInject constructor(
     }
 
     private suspend fun processResult(result: com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult) {
+        Log.d(TAG, "processResult: ${result.autoExecuted.size} auto-executed, ${result.suggestions.size} suggestions needing confirmation")
+
         // Auto-execute allocations via GoalRepository
         for (suggestion in result.autoExecuted) {
+            Log.d(TAG, "[AutoExec] Rule=${suggestion.ruleId} Goal=${suggestion.goalName} Amount=${suggestion.amount}")
             try {
                 val contributionResult = goalRepository.contribute(
                     goalId = suggestion.goalId,
@@ -73,7 +76,7 @@ class ScheduledAllocationWorker @AssistedInject constructor(
                     type = ContributionType.AUTO_ALLOCATION
                 )
                 if (contributionResult.isSuccess) {
-                    Log.d(TAG, "Auto-allocated ${suggestion.amount} to ${suggestion.goalName}")
+                    Log.d(TAG, "[AutoExec] SUCCESS — ${suggestion.amount} allocated to ${suggestion.goalName}")
                     notificationHelper.showAllocationSuccessNotification(
                         goalName = suggestion.goalName,
                         amount = suggestion.amount
@@ -81,23 +84,24 @@ class ScheduledAllocationWorker @AssistedInject constructor(
                     // Update lastExecutedAt on matching scheduled rules to prevent duplicate fires
                     updateLastExecutedForGoal(suggestion.goalId)
                 } else {
-                    Log.e(TAG, "Auto-allocation failed: ${contributionResult.exceptionOrNull()?.message}")
+                    Log.e(TAG, "[AutoExec] FAILED — ${contributionResult.exceptionOrNull()?.message}")
                     notificationHelper.showAllocationSkippedNotification(
                         goalName = suggestion.goalName,
                         accountName = suggestion.sourceAccountName
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to auto-execute allocation: ${e.message}", e)
+                Log.e(TAG, "[AutoExec] EXCEPTION — ${e.message}", e)
             }
         }
 
         // Create DraftTransaction for suggestions requiring confirmation
         for (suggestion in result.suggestions) {
+            Log.d(TAG, "[ConfirmFirst] Creating draft — Rule=${suggestion.ruleId} Goal=${suggestion.goalName} Amount=${suggestion.amount}")
             try {
-                DraftTransactionManager.get().createAllocationDraft(
+                val draftId = DraftTransactionManager.get().createAllocationDraft(
                     context = applicationContext,
-                    ruleId = suggestion.id,
+                    ruleId = suggestion.ruleId,
                     goalId = suggestion.goalId,
                     goalName = suggestion.goalName,
                     sourceAccountId = suggestion.sourceAccountId,
@@ -107,9 +111,15 @@ class ScheduledAllocationWorker @AssistedInject constructor(
                     triggerDescription = suggestion.triggerDescription,
                     draftRepository = draftRepository
                 )
-                Log.d(TAG, "Created allocation draft for ${suggestion.goalName}")
+                if (draftId != null) {
+                    Log.d(TAG, "[ConfirmFirst] DRAFT CREATED — id=$draftId for ${suggestion.goalName}")
+                } else {
+                    Log.w(TAG, "[ConfirmFirst] DRAFT DUPLICATE — already pending for rule ${suggestion.ruleId}")
+                }
+                // Update lastExecutedAt to prevent duplicate fires even for confirmation rules
+                updateLastExecutedForGoal(suggestion.goalId)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to create allocation draft: ${e.message}", e)
+                Log.e(TAG, "[ConfirmFirst] EXCEPTION creating draft — ${e.message}", e)
             }
         }
     }

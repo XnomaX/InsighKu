@@ -29,11 +29,26 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.home.presentation.PremiumFlameIcon
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
+
+@Composable
+private fun getTimeGreetingRes(): Int {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when {
+        hour < 12 -> R.string.dashboard_greeting_morning
+        hour < 17 -> R.string.dashboard_greeting_afternoon
+        else -> R.string.dashboard_greeting_evening
+    }
+}
+
+
 
 @Composable
 fun DashboardHeader(
@@ -69,13 +84,13 @@ fun DashboardHeader(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "${getTimeGreeting()}, ${userName.firstName()}",
+                    text = "${stringResource(getTimeGreetingRes())}, ${userName.firstName()}",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textPrimary
                 )
                 Text(
-                    text = getContextualSubtitle(monthlySavings, currentStreak),
+                    text = stringResource(getContextualSubtitleRes(monthlySavings, currentStreak)),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -91,7 +106,7 @@ fun DashboardHeader(
                         contentColor = PurpleViolet
                     ) {
                         Text(
-                            text = "Syncing",
+                            text = stringResource(R.string.dashboard_syncing),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold
@@ -111,7 +126,7 @@ fun DashboardHeader(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = if (isBalanceVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = "Toggle Balance",
+                            contentDescription = stringResource(R.string.dashboard_toggle_balance),
                             tint = AppPalette.textMuted,
                             modifier = Modifier.size(16.dp)
                         )
@@ -127,7 +142,7 @@ fun DashboardHeader(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notifications",
+                            contentDescription = stringResource(R.string.dashboard_notifications),
                             tint = AppPalette.textMuted,
                             modifier = Modifier.size(16.dp)
                         )
@@ -146,7 +161,7 @@ fun DashboardHeader(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
+                            contentDescription = stringResource(R.string.dashboard_settings),
                             tint = AppPalette.textMuted,
                             modifier = Modifier.size(16.dp)
                         )
@@ -221,7 +236,7 @@ fun StickyFinanceStatusBar(
                     label = "streak_count"
                 ) { streak ->
                     Text(
-                        text       = if (streak > 0) "$streak days" else "—",
+                        text       = if (streak > 0) stringResource(R.string.dashboard_streak_days, streak) else "—",
                         style      = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color      = if (hasTrackedToday) NavPurple else AppPalette.textMuted

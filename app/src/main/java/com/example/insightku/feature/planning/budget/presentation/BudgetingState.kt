@@ -1,6 +1,8 @@
 package com.example.insightku.feature.planning.budget.presentation
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
@@ -19,7 +21,8 @@ data class BudgetingUiState(
     val installments: List<Installment> = emptyList(),
     val selectedPeriod: BudgetPeriod = BudgetPeriod.MONTHLY,
     val dialogState: DialogState = DialogState.None,
-    val hasActualCategories: Boolean = false,
+    val hasExpenseCategories: Boolean = false,
+    val hasIncomeCategories: Boolean = false,
     val rawCategories: List<Category> = emptyList(),
     val accounts: List<Account> = emptyList()
 ) {
@@ -43,10 +46,10 @@ sealed class DialogState {
     data class EditInstallment(val installment: Installment) : DialogState()
 }
 
-enum class BudgetPeriod(val displayName: String) {
-    WEEKLY("Weekly"),
-    MONTHLY("Monthly"),
-    YEARLY("Yearly")
+enum class BudgetPeriod(val displayNameRes: Int) {
+    WEEKLY(R.string.budget_period_weekly),
+    MONTHLY(R.string.budget_period_monthly),
+    YEARLY(R.string.budget_period_yearly)
 }
 
 enum class BudgetHealth {

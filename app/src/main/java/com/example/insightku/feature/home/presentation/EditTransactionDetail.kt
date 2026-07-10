@@ -13,6 +13,7 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,6 +49,8 @@ import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.PremiumDatePicker
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
@@ -115,6 +118,7 @@ fun EditTransactionDetail(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.92f)
+                .safeDrawingPadding()
                 .navigationBarsPadding()
         ) {
 
@@ -127,8 +131,8 @@ fun EditTransactionDetail(
                 verticalAlignment     = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Edit Transaction", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = EditTextPrimary)
-                    Text("Update your transaction details", style = MaterialTheme.typography.bodySmall, color = EditTextMuted)
+                    Text(stringResource(R.string.transaction_edit), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = EditTextPrimary)
+                    Text(stringResource(R.string.transaction_edit_desc), style = MaterialTheme.typography.bodySmall, color = EditTextMuted)
                 }
                 Box(
                     modifier = Modifier.size(36.dp).clip(CircleShape).background(EditPurpleTint).clickable { onDismiss() },
@@ -161,11 +165,11 @@ fun EditTransactionDetail(
 
                 // ── Title ─────────────────────────────────────────────────
                 EditFormCard {
-                    EditFieldLabel("TITLE")
+                    EditFieldLabel(stringResource(R.string.transaction_title_label))
                     EditTextField(
                         value         = title,
                         onValueChange = { title = it },
-                        placeholder   = "Transaction title",
+                        placeholder   = stringResource(R.string.transaction_title_placeholder),
                         icon          = Icons.Default.Edit,
                         accentColor   = accentColor,
                         imeAction     = ImeAction.Next,
@@ -175,7 +179,7 @@ fun EditTransactionDetail(
 
                 // ── Category ──────────────────────────────────────────────
                 EditFormCard {
-                    EditFieldLabel("CATEGORY")
+                    EditFieldLabel(stringResource(R.string.transaction_category_label))
                     Spacer(Modifier.height(8.dp))
                     EditCategoryPicker(
                         selected = category,
@@ -188,7 +192,7 @@ fun EditTransactionDetail(
 
                 // ── Account ────────────────────────────────────────────────
                 EditFormCard {
-                    EditFieldLabel("ACCOUNT")
+                    EditFieldLabel(stringResource(R.string.transaction_account_label))
                     Spacer(Modifier.height(10.dp))
                     EditAccountSelector(
                         accounts = accounts,
@@ -199,7 +203,7 @@ fun EditTransactionDetail(
 
                 // ── Date ──────────────────────────────────────────────────
                 EditFormCard {
-                    EditFieldLabel("DATE")
+                    EditFieldLabel(stringResource(R.string.transaction_date_label))
                     Spacer(Modifier.height(8.dp))
                     Surface(
                         modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
@@ -232,13 +236,13 @@ fun EditTransactionDetail(
 
                 // ── Notes ─────────────────────────────────────────────────
                 EditFormCard {
-                    EditFieldLabel("NOTES (OPTIONAL)")
+                    EditFieldLabel(stringResource(R.string.transaction_notes_label))
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value         = notes,
                         onValueChange = { notes = it },
                         modifier      = Modifier.fillMaxWidth(),
-                        placeholder   = { Text("Add a note…", color = EditTextMuted.copy(alpha = 0.5f)) },
+                        placeholder   = { Text(stringResource(R.string.add_note_placeholder), color = EditTextMuted.copy(alpha = 0.5f)) },
                         leadingIcon   = {
                             Box(
                                 modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(accentColor.copy(alpha = 0.08f)),
@@ -271,7 +275,7 @@ fun EditTransactionDetail(
                     shape    = RoundedCornerShape(16.dp),
                     border   = BorderStroke(1.dp, EditBorder)
                 ) {
-                    Text("Cancel", fontWeight = FontWeight.SemiBold, color = EditTextMuted)
+                    Text(stringResource(R.string.cancel), fontWeight = FontWeight.SemiBold, color = EditTextMuted)
                 }
                 Button(
                     onClick = {
@@ -294,7 +298,7 @@ fun EditTransactionDetail(
                 ) {
                     Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Save Changes", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.transaction_save_changes), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -334,7 +338,7 @@ private fun EditTypeToggle(isIncome: Boolean, onToggle: (Boolean) -> Unit) {
                     .background(expenseColor).clickable { onToggle(false) },
                 contentAlignment = Alignment.Center
             ) {
-                Text("Expense", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                Text(stringResource(R.string.type_expense), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                     color = if (!isIncome) Color.White else EditTextMuted)
             }
             Box(
@@ -342,7 +346,7 @@ private fun EditTypeToggle(isIncome: Boolean, onToggle: (Boolean) -> Unit) {
                     .background(incomeColor).clickable { onToggle(true) },
                 contentAlignment = Alignment.Center
             ) {
-                Text("Income", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                Text(stringResource(R.string.type_income), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                     color = if (isIncome) Color.White else EditTextMuted)
             }
         }
@@ -377,7 +381,7 @@ private fun EditAmountCard(
     ) {
         Text("${NumberFormatter.getCurrencySymbol()} $displayText", style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold, color = accentColor, textAlign = TextAlign.Center)
-        Text(if (isIncome) "Income amount" else "Expense amount",
+        Text(if (isIncome) stringResource(R.string.income_amount) else stringResource(R.string.expense_amount),
             style = MaterialTheme.typography.labelSmall, color = accentColor.copy(alpha = 0.6f))
         Spacer(Modifier.height(4.dp))
         OutlinedTextField(
@@ -389,7 +393,7 @@ private fun EditAmountCard(
                 onAmountChange(raw, next)
             },
             placeholder   = { Text("0", color = accentColor.copy(alpha = 0.35f)) },
-            label         = { Text("Amount (Rp)", color = accentColor.copy(alpha = 0.7f)) },
+            label         = { Text(stringResource(R.string.transaction_amount_hint), color = accentColor.copy(alpha = 0.7f)) },
             leadingIcon   = {
                 Text(NumberFormatter.getCurrencySymbol(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold,
                     color = accentColor, modifier = Modifier.padding(start = 4.dp))
@@ -460,7 +464,7 @@ private fun EditCategoryPicker(
                 Icon(iconFor(selected), null, tint = currentColor, modifier = Modifier.size(20.dp))
             }
             Text(
-                selected.ifBlank { "Choose a category" },
+                selected.ifBlank { stringResource(R.string.choose_category) },
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = EditTextPrimary,
@@ -532,7 +536,7 @@ private fun EditAccountSelector(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(Icons.Default.Warning, null, tint = EditTextMuted, modifier = Modifier.size(20.dp))
-                Text("No accounts available", style = MaterialTheme.typography.bodyMedium, color = EditTextMuted)
+                Text(stringResource(R.string.no_accounts_available), style = MaterialTheme.typography.bodyMedium, color = EditTextMuted)
             }
         }
         return

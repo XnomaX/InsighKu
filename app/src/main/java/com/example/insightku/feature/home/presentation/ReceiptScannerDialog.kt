@@ -17,7 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
+import com.example.insightku.R
 import com.example.insightku.feature.home.presentation.TransactionData
 
 enum class ScanningState {
@@ -68,13 +70,13 @@ fun ReceiptScannerDialog(
                 ) {
                     // Header
                     Text(
-                        text = "Scan Receipt",
+                        text = stringResource(R.string.scanner_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Use our AI to automatically extract details.",
+                        text = stringResource(R.string.scanner_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -83,7 +85,7 @@ fun ReceiptScannerDialog(
                     // Content based on state
                     when (scanningState) {
                         ScanningState.READY -> ReadyToScanContent(isIncome, onScan = handleScan)
-                        ScanningState.SCANNING -> ProcessingContent(isIncome, text = "Scanning...")
+                        ScanningState.SCANNING -> ProcessingContent(isIncome, text = stringResource(R.string.scanner_scanning))
                         ScanningState.SCANNED -> ScannedContent(
                             formData = formData,
                             onFormDataChange = { formData = it },
@@ -91,7 +93,7 @@ fun ReceiptScannerDialog(
                             onCancel = handleClose,
                             onSubmit = handleSubmit
                         )
-                        ScanningState.PROCESSING -> ProcessingContent(isIncome, text = "Processing...")
+                        ScanningState.PROCESSING -> ProcessingContent(isIncome, text = stringResource(R.string.scanner_processing))
                         ScanningState.RESULT -> ResultContent(
                             extractedData = mapOf(
                                 "merchant" to "Starbucks",
@@ -132,12 +134,11 @@ fun ReadyToScanContent(isIncome: Boolean, onScan: () -> Unit) {
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            "Scan Your ${if (isIncome) "Income Document" else "Receipt"}",
+            stringResource(if (isIncome) R.string.scanner_scan_income_doc else R.string.scanner_scan_receipt),
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            if (isIncome) "Point your camera at invoices, payment confirmations, or income documents"
-            else "Point your camera at the receipt and our AI will extract the details",
+            stringResource(if (isIncome) R.string.scanner_point_camera_income else R.string.scanner_point_camera_receipt),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(vertical = 8.dp)
@@ -149,7 +150,7 @@ fun ReadyToScanContent(isIncome: Boolean, onScan: () -> Unit) {
         ) {
             Icon(Icons.Default.CameraAlt, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("Take Photo")
+            Text(stringResource(R.string.scanner_take_photo))
         }
         OutlinedButton(
             onClick = onScan,
@@ -159,7 +160,7 @@ fun ReadyToScanContent(isIncome: Boolean, onScan: () -> Unit) {
         ) {
             Icon(Icons.Default.Upload, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("Upload from Gallery")
+            Text(stringResource(R.string.scanner_upload_gallery))
         }
     }
 }
@@ -176,7 +177,7 @@ fun ProcessingContent(isIncome: Boolean, text: String) {
         Spacer(Modifier.height(24.dp))
         Text(text, fontWeight = FontWeight.Bold)
         Text(
-            "AI is extracting ${if (isIncome) "income" else "transaction"} details...",
+            stringResource(if (isIncome) R.string.scanner_extracting_income else R.string.scanner_extracting_transaction),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp)
@@ -193,7 +194,7 @@ fun ScannedContent(
     onCancel: () -> Unit,
     onSubmit: () -> Unit
 ) {
-    val categories = if (isIncome) listOf("Salary", "Freelance", "Gift") else listOf("Food", "Transport", "Shopping")
+    val categories = if (isIncome) listOf(stringResource(R.string.scanner_cat_salary), stringResource(R.string.scanner_cat_freelance), stringResource(R.string.scanner_cat_gift)) else listOf(stringResource(R.string.scanner_cat_food), stringResource(R.string.scanner_cat_transport), stringResource(R.string.scanner_cat_shopping))
     var showCategoryDropdown by remember { mutableStateOf(false) }
 
     Column {
@@ -207,7 +208,7 @@ fun ScannedContent(
             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = com.example.insightku.core.ui.theme.AppPalette.success)
             Spacer(Modifier.width(8.dp))
             Text(
-                "${if (isIncome) "Income document" else "Receipt"} scanned! Review and add details.",
+                stringResource(if (isIncome) R.string.scanner_income_scanned else R.string.scanner_receipt_scanned),
                 color = com.example.insightku.core.ui.theme.AppPalette.success,
                 fontWeight = FontWeight.Medium
             )
@@ -217,13 +218,13 @@ fun ScannedContent(
             OutlinedTextField(
                 value = formData.merchant,
                 onValueChange = { onFormDataChange(formData.copy(merchant = it)) },
-                label = { Text(if (isIncome) "Income Source" else "Merchant/Store") },
+                label = { Text(stringResource(if (isIncome) R.string.income_source else R.string.merchant_store)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = formData.amount,
                 onValueChange = { onFormDataChange(formData.copy(amount = it)) },
-                label = { Text("Amount") },
+                label = { Text(stringResource(R.string.goal_amount_label)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -236,7 +237,7 @@ fun ScannedContent(
                     value = formData.category,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Category") },
+                    label = { Text(stringResource(R.string.category)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -260,14 +261,14 @@ fun ScannedContent(
             OutlinedTextField(
                 value = formData.description,
                 onValueChange = { onFormDataChange(formData.copy(description = it)) },
-                label = { Text("Description") },
+                label = { Text(stringResource(R.string.note_placeholder)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(formData.dateMillis)),
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Date") },
+                label = { Text(stringResource(R.string.transaction_date_label)) },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -277,7 +278,7 @@ fun ScannedContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
             Button(
                 onClick = onSubmit,
@@ -287,7 +288,7 @@ fun ScannedContent(
                     containerColor = if (isIncome) com.example.insightku.core.ui.theme.AppPalette.success else com.example.insightku.core.ui.theme.AppPalette.primary
                 )
             ) {
-                Text("Add ${if (isIncome) "Income" else "Transaction"}")
+                Text(stringResource(if (isIncome) R.string.add_income else R.string.add_expense))
             }
         }
     }
@@ -319,7 +320,7 @@ private fun ResultContent(
             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = com.example.insightku.core.ui.theme.AppPalette.success)
             Spacer(Modifier.width(8.dp))
             Text(
-                "AI extracted the details. Please review.",
+                stringResource(R.string.scanner_ai_extracted),
                 color = com.example.insightku.core.ui.theme.AppPalette.success,
                 fontWeight = FontWeight.Medium,
                 style = MaterialTheme.typography.bodySmall
@@ -328,25 +329,25 @@ private fun ResultContent(
         OutlinedTextField(
             value = merchant,
             onValueChange = { merchant = it },
-            label = { Text("Merchant") },
+            label = { Text(stringResource(R.string.scanner_merchant)) },
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
             value = amount,
             onValueChange = { amount = it },
-            label = { Text("Amount") },
+            label = { Text(stringResource(R.string.goal_amount_label)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
             value = category,
             onValueChange = { category = it },
-            label = { Text("Category") },
+            label = { Text(stringResource(R.string.category)) },
             modifier = Modifier.fillMaxWidth()
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = onRetry, modifier = Modifier.weight(1f)) {
-                Text("Retry")
+                Text(stringResource(R.string.try_again))
             }
             Button(
                 onClick = {
@@ -366,7 +367,7 @@ private fun ResultContent(
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = com.example.insightku.core.ui.theme.AppPalette.primary)
             ) {
-                Text("Confirm")
+                Text(stringResource(R.string.transaction_confirm))
             }
         }
     }

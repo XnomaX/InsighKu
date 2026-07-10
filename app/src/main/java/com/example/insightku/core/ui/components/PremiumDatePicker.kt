@@ -27,15 +27,39 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
 import java.util.Calendar
 
-private val DAYS   = listOf("Su", "Mo", "Tu", "We", "Th", "Fr", "Sa")
-private val MONTHS = listOf(
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+@Composable
+private fun getDayAbbreviations(): List<String> = listOf(
+    stringResource(R.string.date_picker_day_su),
+    stringResource(R.string.date_picker_day_mo),
+    stringResource(R.string.date_picker_day_tu),
+    stringResource(R.string.date_picker_day_we),
+    stringResource(R.string.date_picker_day_th),
+    stringResource(R.string.date_picker_day_fr),
+    stringResource(R.string.date_picker_day_sa)
 )
+
+@Composable
+private fun getMonthName(monthIndex: Int): String = when (monthIndex) {
+    0 -> stringResource(R.string.date_picker_month_january)
+    1 -> stringResource(R.string.date_picker_month_february)
+    2 -> stringResource(R.string.date_picker_month_march)
+    3 -> stringResource(R.string.date_picker_month_april)
+    4 -> stringResource(R.string.date_picker_month_may)
+    5 -> stringResource(R.string.date_picker_month_june)
+    6 -> stringResource(R.string.date_picker_month_july)
+    7 -> stringResource(R.string.date_picker_month_august)
+    8 -> stringResource(R.string.date_picker_month_september)
+    9 -> stringResource(R.string.date_picker_month_october)
+    10 -> stringResource(R.string.date_picker_month_november)
+    11 -> stringResource(R.string.date_picker_month_december)
+    else -> ""
+}
 
 /**
  * Premium custom date picker dialog.
@@ -116,28 +140,29 @@ fun PremiumDatePicker(
                 ) {
                     // ── Header ────────────────────────────────────────────────
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            "Select Date",
-                            style      = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color      = textPrimary
-                        )
-                        Text(
-                            "Choose a date for this transaction",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = textMuted
-                        )
+                    Text(
+                        stringResource(R.string.date_picker_title),
+                        style      = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color      = textPrimary
+                    )
+                    Text(
+                        stringResource(R.string.date_picker_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = textMuted
+                    )
                     }
 
                     // ── Selected date pill ────────────────────────────────────
+                    val dayAbbreviations = getDayAbbreviations()
                     Surface(shape = RoundedCornerShape(14.dp), color = accentTint) {
                         Text(
                             text = buildString {
-                                append(DAYS[Calendar.getInstance().apply {
+                                append(dayAbbreviations[Calendar.getInstance().apply {
                                     set(selectedYear, selectedMonth, selectedDay)
                                 }.get(Calendar.DAY_OF_WEEK) - 1])
                                 append(", $selectedDay ")
-                                append(MONTHS[selectedMonth].take(3))
+                                append(getMonthName(selectedMonth).take(3))
                                 append(" $selectedYear")
                             },
                             modifier   = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -158,7 +183,7 @@ fun PremiumDatePicker(
                                 .background(accentTint).clickable { prevMonth() },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous month", tint = accent, modifier = Modifier.size(20.dp))
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.date_picker_prev_month), tint = accent, modifier = Modifier.size(20.dp))
                         }
 
                         AnimatedContent(
@@ -175,7 +200,7 @@ fun PremiumDatePicker(
                         ) { key ->
                             val parts = key.split("/")
                             Text(
-                                "${MONTHS[parts[0].toInt()]} ${parts[1]}",
+                                "${getMonthName(parts[0].toInt())} ${parts[1]}",
                                 style      = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color      = textPrimary
@@ -187,13 +212,13 @@ fun PremiumDatePicker(
                                 .background(accentTint).clickable { nextMonth() },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next month", tint = accent, modifier = Modifier.size(20.dp))
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.date_picker_next_month), tint = accent, modifier = Modifier.size(20.dp))
                         }
                     }
 
                     // ── Day-of-week headers ───────────────────────────────────
                     Row(modifier = Modifier.fillMaxWidth()) {
-                        DAYS.forEach { day ->
+                        dayAbbreviations.forEach { day ->
                             Text(
                                 day,
                                 modifier   = Modifier.weight(1f),
@@ -288,7 +313,7 @@ fun PremiumDatePicker(
                             shape    = RoundedCornerShape(14.dp),
                             border   = androidx.compose.foundation.BorderStroke(1.dp, cardBorder)
                         ) {
-                            Text("Cancel", fontWeight = FontWeight.SemiBold, color = textMuted)
+                            Text(stringResource(R.string.date_picker_cancel), fontWeight = FontWeight.SemiBold, color = textMuted)
                         }
                         Button(
                             onClick = {
@@ -302,7 +327,7 @@ fun PremiumDatePicker(
                             shape    = RoundedCornerShape(14.dp),
                             colors   = ButtonDefaults.buttonColors(containerColor = accent)
                         ) {
-                            Text("Confirm", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.date_picker_confirm), fontWeight = FontWeight.Bold)
                         }
                     }
                 }

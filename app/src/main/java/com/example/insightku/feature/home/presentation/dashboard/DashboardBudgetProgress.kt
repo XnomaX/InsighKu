@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.*
 import com.example.insightku.feature.home.presentation.BudgetSpendingItem
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
@@ -41,15 +43,15 @@ fun BudgetPreviewSection(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    "Budgets",
+                    stringResource(R.string.dashboard_budgets),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.textPrimary
                 )
                 val subtitle = when {
-                    totalCount == 0 -> "No active budgets yet"
-                    totalCount <= 3  -> "$totalCount active budget${if (totalCount != 1) "s" else ""}"
-                    else            -> "${budgets.size} of $totalCount budgets"
+                    totalCount == 0 -> stringResource(R.string.dashboard_no_active_budgets)
+                    totalCount <= 3  -> stringResource(R.string.dashboard_active_budgets_count, totalCount)
+                    else            -> stringResource(R.string.dashboard_budgets_of_count, budgets.size, totalCount)
                 }
                 Text(
                     subtitle,
@@ -65,7 +67,7 @@ fun BudgetPreviewSection(
                     border   = BorderStroke(1.dp, NavPurple)
                 ) {
                     Text(
-                        "View All",
+                        stringResource(R.string.dashboard_view_all),
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -105,7 +107,7 @@ fun BudgetPreviewSection(
                         )
                     }
                     Text(
-                        "No active budgets yet",
+                        stringResource(R.string.dashboard_no_active_budgets),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = AppPalette.textPrimary
@@ -116,7 +118,7 @@ fun BudgetPreviewSection(
                         color = NavPurple
                     ) {
                         Text(
-                            "Create Budget",
+                            stringResource(R.string.dashboard_create_budget),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
@@ -157,7 +159,7 @@ fun BudgetPreviewSection(
 
             if (totalCount > 3) {
                 Text(
-                    "+${totalCount - 3} more budgets",
+                    stringResource(R.string.dashboard_more_budgets, totalCount - 3),
                     style = MaterialTheme.typography.labelMedium,
                     color = NavPurple,
                     modifier = Modifier

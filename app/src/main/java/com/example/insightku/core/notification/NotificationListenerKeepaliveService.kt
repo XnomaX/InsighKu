@@ -10,6 +10,8 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 
 private const val TAG = "KeepaliveService"
 private const val CHANNEL_ID = "keepalive_channel"
@@ -40,9 +42,10 @@ class NotificationListenerKeepaliveService : Service() {
 
     private fun buildNotification(): Notification {
         createChannelIfNeeded()
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("InsighKu aktif")
-            .setContentText("Memantau notifikasi transaksi bank")
+        val ctx = LocaleHelper.wrapContext(this)
+        return NotificationCompat.Builder(ctx, CHANNEL_ID)
+            .setContentTitle(ctx.getString(R.string.keepalive_title))
+            .setContentText(ctx.getString(R.string.keepalive_text))
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setSilent(true)
@@ -52,15 +55,16 @@ class NotificationListenerKeepaliveService : Service() {
 
     private fun createChannelIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ctx = LocaleHelper.wrapContext(this@NotificationListenerKeepaliveService)
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "InsighKu Background",
+                ctx.getString(R.string.keepalive_channel),
                 NotificationManager.IMPORTANCE_MIN
             ).apply {
                 setShowBadge(false)
                 enableLights(false)
                 enableVibration(false)
-                description = "Diperlukan agar deteksi transaksi bank berjalan di background"
+                description = ctx.getString(R.string.keepalive_channel_desc)
             }
             (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
                 .createNotificationChannel(channel)

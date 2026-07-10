@@ -24,6 +24,8 @@ import com.example.insightku.core.data.model.DraftConfidence
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.DraftType
 import com.example.insightku.core.data.model.TransactionType
+import androidx.compose.ui.res.stringResource
+import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.*
 
@@ -43,13 +45,13 @@ fun DraftInboxSection(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                "Perlu ditinjau",
+                stringResource(R.string.draft_inbox_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppPalette.textPrimary
             )
             Text(
-                "${drafts.size} item${if (drafts.size > 1) "s" else ""} menunggu kamu cek",
+                stringResource(R.string.draft_inbox_subtitle, drafts.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted
             )
@@ -89,7 +91,7 @@ fun DraftInboxSection(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "+ $hiddenCount lainnya",
+                            stringResource(R.string.draft_inbox_more, hiddenCount),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
                             color = NavPurple
@@ -126,8 +128,7 @@ private fun AllocationDraftInboxRow(
                     .background(ExpenseRed.copy(alpha = 0.10f))
                     .padding(horizontal = Dimens.CardInnerPadding),
                 contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = "Hapus draft", tint = ExpenseRed, modifier = Modifier.size(22.dp))
+            ) {                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.draft_delete_description), tint = ExpenseRed, modifier = Modifier.size(22.dp))
             }
         }
     ) {
@@ -166,9 +167,9 @@ private fun AllocationDraftInboxRow(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = buildString {
-                            append(draft.sourceAccountName ?: "Account")
+                            append(draft.sourceAccountName ?: stringResource(R.string.draft_account_label))
                             append(" · ")
-                            append(draft.triggerDescription ?: "Auto allocation")
+                            append(draft.triggerDescription ?: stringResource(R.string.draft_auto_allocation))
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted,
@@ -206,8 +207,7 @@ private fun DraftInboxRow(
                     .background(ExpenseRed.copy(alpha = 0.10f))
                     .padding(horizontal = Dimens.CardInnerPadding),
                 contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = "Hapus draft", tint = ExpenseRed, modifier = Modifier.size(22.dp))
+            ) {                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.draft_delete_description), tint = ExpenseRed, modifier = Modifier.size(22.dp))
             }
         }
     ) {
@@ -234,14 +234,14 @@ private fun DraftInboxRow(
                         text = buildString {
                             append(draft.bankName)
                             append(" · ")
-                            append(if (draft.typeGuess == TransactionType.INCOME) "kemungkinan Pemasukan" else "kemungkinan Pengeluaran")
+                            append(if (draft.typeGuess == TransactionType.INCOME) stringResource(R.string.draft_possible_income) else stringResource(R.string.draft_possible_expense))
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted,
                         maxLines = 1
                     )
                     if (draft.confidence == DraftConfidence.LOW) {
-                        Text("· perlu kamu pastikan", style = MaterialTheme.typography.bodySmall, color = WarningYellow, maxLines = 1)
+                        Text("· ${stringResource(R.string.draft_needs_check)}", style = MaterialTheme.typography.bodySmall, color = WarningYellow, maxLines = 1)
                     }
                 }
             }
