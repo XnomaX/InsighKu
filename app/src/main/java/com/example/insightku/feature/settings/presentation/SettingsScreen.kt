@@ -44,8 +44,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
+import com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet
+import com.example.insightku.core.ui.components.bottomsheet.DefaultDragHandle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -287,12 +287,10 @@ private fun LanguageBottomSheet(
     onSelect: (AppLanguage) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val Purple = SettingsPalette.Purple
 
-    ModalBottomSheet(
+    SafeBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
         shape = RoundedCornerShape(topStart = Dimens.BottomSheetRadius, topEnd = Dimens.BottomSheetRadius),
         containerColor = SettingsPalette.card,
         tonalElevation = 0.dp,
@@ -666,12 +664,10 @@ private fun CurrencyBottomSheet(
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val Purple = SettingsPalette.Purple
 
-    ModalBottomSheet(
+    SafeBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
         shape = RoundedCornerShape(topStart = Dimens.BottomSheetRadius, topEnd = Dimens.BottomSheetRadius),
         containerColor = SettingsPalette.card,
         tonalElevation = 0.dp,

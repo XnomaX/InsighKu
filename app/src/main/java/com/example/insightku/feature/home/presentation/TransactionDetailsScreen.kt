@@ -958,8 +958,6 @@ fun TransactionDetailOverlay(
     accountMap: Map<String, com.example.insightku.core.data.model.Account> = emptyMap()
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
     val txType      = transaction.type
     val amountColor = txTypeColor(txType)
     val typeLabel   = txTypeLabel(txType)
@@ -973,9 +971,8 @@ fun TransactionDetailOverlay(
     val catColor = resolved.color
 
     val accent = TxAccent
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState       = sheetState,
         containerColor   = TxCard,
         dragHandle = {
             Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {

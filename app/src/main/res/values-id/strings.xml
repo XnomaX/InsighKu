@@ -987,7 +987,7 @@
     <string name="auto_alloc_trigger">PEMICU</string>
     <string name="auto_alloc_source_account">AKUN SUMBER</string>
     <string name="auto_alloc_amount">JUMLAH ALOKASI</string>
-    <string name="auto_alloc_percentage">Persentase %%</string>
+    <string name="auto_alloc_percentage">Persentase %</string>
     <string name="auto_alloc_fixed">Jumlah Tetap</string>
     <string name="auto_alloc_min_income">PENDAPATAN MINIMUM (OPSIONAL)</string>
     <string name="auto_alloc_balance_threshold">BATAS SALDO</string>

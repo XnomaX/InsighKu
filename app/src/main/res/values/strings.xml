@@ -1090,7 +1090,7 @@
     <string name="auto_alloc_every_transaction">Every Transaction</string>
     <string name="auto_alloc_after_daily_total">After Daily Total</string>
     <string name="auto_alloc_after_monthly_total">After Monthly Total</string>
-    <string name="auto_alloc_confirmation">CONFIRMATION</string>
+    <string name="auto_alloc_confirmation">Confirmation</string>
     <string name="auto_alloc_automatic">Automatic</string>
     <string name="auto_alloc_automatic_desc">Execute immediately when triggered</string>
     <string name="auto_alloc_confirm_first">Confirm First</string>

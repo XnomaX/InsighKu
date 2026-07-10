@@ -102,9 +102,8 @@ fun EditAccountDialog(
         if (uiState.isSaved) onAccountUpdated()
     }
 
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
         containerColor = AppPalette.card,
         dragHandle = {
             Box(

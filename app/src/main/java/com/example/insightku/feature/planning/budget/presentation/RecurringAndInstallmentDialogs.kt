@@ -170,9 +170,8 @@ fun AddRecurringPaymentDialog(
         )
     }
 
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest   = onDismiss,
-        sheetState         = sheetState,
         containerColor     = AppPalette.card,
         dragHandle         = {
             Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
@@ -412,9 +411,8 @@ fun AddInstallmentDialog(
         ) { DatePicker(state = state) }
     }
 
-    ModalBottomSheet(
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState       = sheetState,
         containerColor   = AppPalette.card,
         dragHandle = {
             Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
