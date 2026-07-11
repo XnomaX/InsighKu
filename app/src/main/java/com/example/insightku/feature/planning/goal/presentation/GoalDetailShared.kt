@@ -48,7 +48,7 @@ internal fun GoalArchiveConfirmDialog(goalName: String, onConfirm: () -> Unit, o
 
 @Composable
 internal fun GoalDeleteAutoAllocationRuleConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    PremiumDeleteConfirmDialog(itemName = "auto-allocation rule", onDismiss = onDismiss, onConfirm = onConfirm, message = stringResource(R.string.goal_confirm_delete_rule_message))
+    PremiumDeleteConfirmDialog(itemName = stringResource(R.string.auto_alloc_rule), onDismiss = onDismiss, onConfirm = onConfirm, message = stringResource(R.string.goal_confirm_delete_rule_message))
 }
 
 internal fun formatCurrencyFull(amount: Double): String {

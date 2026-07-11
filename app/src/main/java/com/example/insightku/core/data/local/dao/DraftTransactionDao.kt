@@ -66,4 +66,11 @@ interface DraftTransactionDao {
     /** Delete all allocation drafts for a specific rule (when rule is deleted). */
     @Query("DELETE FROM draft_transactions WHERE ruleId = :ruleId AND draftType = 'AUTO_ALLOCATION'")
     suspend fun deleteAllocationDraftsByRule(ruleId: String)
+
+    /**
+     * Auto-expire stale allocation drafts older than the given timestamp.
+     * Marks them as DISMISSED so they disappear from the Inbox.
+     */
+    @Query("UPDATE draft_transactions SET status = 'DISMISSED' WHERE status = 'PENDING' AND draftType = 'AUTO_ALLOCATION' AND detectedAt < :expireBeforeMillis")
+    suspend fun expireStaleAllocationDrafts(expireBeforeMillis: Long): Int
 }

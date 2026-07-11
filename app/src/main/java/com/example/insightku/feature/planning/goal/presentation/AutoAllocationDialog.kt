@@ -43,8 +43,6 @@ import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Money
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,7 +58,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -85,11 +82,13 @@ import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
+import com.example.insightku.feature.planning.goal.data.model.RoundUpMode
 import com.example.insightku.feature.planning.goal.data.model.AllocationValueType
 import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
 import com.example.insightku.feature.planning.goal.data.model.ConfirmationMode
@@ -126,6 +125,7 @@ data class AutoAllocationRuleForm(
     val minIncomeAmount: String = "",
     val roundUpEnabled: Boolean = false,
     val roundUpIncrement: Double = 5000.0,
+    val roundUpMode: RoundUpMode = RoundUpMode.ROUND_UP,
     val scheduledFrequency: ScheduledFrequency = ScheduledFrequency.DAILY,
     val scheduledDayOfWeek: Int = 1,
     val scheduledDayOfMonth: Int = 1,
@@ -199,6 +199,7 @@ data class AutoAllocationRuleForm(
             minIncomeAmount = minIncomeAmount.toDoubleOrNull() ?: 0.0,
             roundUpEnabled = roundUpEnabled,
             roundUpIncrement = roundUpIncrement,
+            roundUpMode = roundUpMode,
             scheduledFrequency = scheduledFrequency,
             scheduledDayOfWeek = scheduledDayOfWeek,
             scheduledDayOfMonth = scheduledDayOfMonth,
@@ -257,6 +258,7 @@ fun AutoAllocationDialog(
                 minIncomeAmount = if (rule.minIncomeAmount > 0) rule.minIncomeAmount.toLong().toString() else "",
                 roundUpEnabled = rule.roundUpEnabled,
                 roundUpIncrement = rule.roundUpIncrement,
+                roundUpMode = rule.roundUpMode,
                 scheduledFrequency = rule.scheduledFrequency,
                 scheduledDayOfWeek = rule.scheduledDayOfWeek,
                 scheduledDayOfMonth = rule.scheduledDayOfMonth,
@@ -428,7 +430,65 @@ fun AutoAllocationDialog(
                 )
             }
 
-            // ── 4. Dynamic Trigger-Specific Config ──────────────────────
+            // ── 4. Round-Up Configuration ──────────────────────────────
+            AnimatedVisibility(
+                visible = form.triggerType == AllocationTriggerType.ROUND_UP,
+                enter = expandVertically(), exit = shrinkVertically()
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Rounding Mode Selector
+                    Text(
+                        text = stringResource(R.string.auto_alloc_rounding_mode),
+                        style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 1.2.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppPalette.textMuted
+                    )
+                    val roundingModes = listOf(
+                        RoundUpMode.ROUND_UP to stringResource(R.string.auto_alloc_round_up),
+                        RoundUpMode.ROUND_DOWN to stringResource(R.string.auto_alloc_round_down),
+                        RoundUpMode.ROUND_NEAREST to stringResource(R.string.auto_alloc_round_nearest)
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        roundingModes.forEach { (mode, label) ->
+                            val isSel = form.roundUpMode == mode
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { form = form.copy(roundUpMode = mode) },
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSel) goalColor.copy(alpha = 0.08f) else AppPalette.card,
+                                border = BorderStroke(1.dp, if (isSel) goalColor else AppPalette.cardBorder)
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (isSel) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (isSel) goalColor else AppPalette.textMuted,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+                    // Increment input
+                    InlineField(
+                        label = stringResource(R.string.auto_alloc_increment),
+                        value = CurrencyUtils.formatInputThousands(form.roundUpIncrement.toLong().toString()),
+                        onValueChange = { newValue ->
+                            val cleaned = CurrencyUtils.stripThousands(newValue)
+                            val parsed = cleaned.toDoubleOrNull() ?: return@InlineField
+                            if (parsed > 0) form = form.copy(roundUpIncrement = parsed)
+                        },
+                        placeholder = "e.g. 5.000",
+                        prefix = NumberFormatter.getCurrencySymbol(),
+                        accentColor = goalColor,
+                        hint = stringResource(R.string.auto_alloc_increment_desc)
+                    )
+                }
+            }
+
+            // ── 5. Dynamic Trigger-Specific Config ──────────────────────
             AnimatedVisibility(
                 visible = form.triggerType == AllocationTriggerType.INCOME_RECEIVED,
                 enter = expandVertically(), exit = shrinkVertically()
@@ -714,32 +774,14 @@ fun AutoAllocationDialog(
 
     // ── Delete Confirmation Dialog ────────────────────────────────────────
     if (showDeleteConfirm && isEditing && onDelete != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = {
-                Text(stringResource(R.string.auto_alloc_delete_rule), fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+        PremiumDeleteConfirmDialog(
+            itemName = stringResource(R.string.auto_alloc_rule),
+            onDismiss = { showDeleteConfirm = false },
+            onConfirm = {
+                onDelete(rule.id)
+                showDeleteConfirm = false
             },
-            text = {
-                Text(stringResource(R.string.auto_alloc_delete_rule_desc), color = AppPalette.textMuted)
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete(rule.id)
-                        showDeleteConfirm = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = AppPalette.card
+            message = stringResource(R.string.auto_alloc_delete_rule_desc)
         )
     }
 }

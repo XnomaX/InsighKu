@@ -23,11 +23,14 @@ import com.example.insightku.feature.planning.goal.domain.model.*
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,6 +52,11 @@ class GoalRepository @Inject constructor(
     companion object {
         private const val TAG = "GoalRepository"
     }
+
+    // ── Per-account Mutex to prevent concurrent auto-allocation overdrafts ──
+    private val accountMutexes = ConcurrentHashMap<String, Mutex>()
+    private fun mutexForAccount(accountId: String): Mutex =
+        accountMutexes.computeIfAbsent(accountId) { Mutex() }
 
     fun getActiveGoals(): Flow<List<Goal>> {
         return combine(
@@ -148,16 +156,44 @@ class GoalRepository @Inject constructor(
     ): Result<Contribution> {
         return try {
             if (amount <= 0) return Result.failure(IllegalArgumentException("Amount must be positive"))
-            val goal = goalDao.getGoalById(goalId) ?: return Result.failure(IllegalArgumentException("Goal not found"))
-            val account = accountDao.getAccountById(accountId) ?: return Result.failure(IllegalArgumentException("Account not found"))
-            if (account.balance < amount) return Result.failure(IllegalArgumentException("Insufficient balance"))
 
-            val contribution = atomicContribute(goalId, accountId, amount, type, transactionId, notes, goal)
-            scheduleGoalSync()
-            Result.success(Contribution.fromEntity(contribution))
+            // ── Mutex: serialize auto-allocation per account to prevent overdrafts ──
+            if (type == ContributionType.AUTO_ALLOCATION) {
+                return mutexForAccount(accountId).withLock {
+                    contributeInternal(goalId, accountId, amount, type, transactionId, notes)
+                }
+            }
+
+            contributeInternal(goalId, accountId, amount, type, transactionId, notes)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private suspend fun contributeInternal(
+        goalId: String,
+        accountId: String,
+        amount: Double,
+        type: ContributionType,
+        transactionId: String?,
+        notes: String
+    ): Result<Contribution> {
+        // ── Idempotency: skip if this transaction already triggered an allocation ──
+        if (type == ContributionType.AUTO_ALLOCATION && !transactionId.isNullOrBlank()) {
+            val existing = contributionDao.getContributionByTransaction(transactionId)
+            if (existing != null) {
+                Log.d(TAG, "[Idempotency] Skipping — contribution already exists for transactionId=$transactionId")
+                return Result.success(Contribution.fromEntity(existing))
+            }
+        }
+
+        val goal = goalDao.getGoalById(goalId) ?: return Result.failure(IllegalArgumentException("Goal not found"))
+        val account = accountDao.getAccountById(accountId) ?: return Result.failure(IllegalArgumentException("Account not found"))
+        if (account.balance < amount) return Result.failure(IllegalArgumentException("Insufficient balance"))
+
+        val contribution = atomicContribute(goalId, accountId, amount, type, transactionId, notes, goal)
+        scheduleGoalSync()
+        return Result.success(Contribution.fromEntity(contribution))
     }
 
     private suspend fun atomicContribute(
@@ -193,6 +229,56 @@ class GoalRepository @Inject constructor(
             transactionDao.insertTransaction(tx.copy(isSynced = false))
             contribution
         }
+    }
+
+    /**
+     * Reverse all auto-allocation contributions triggered by a specific transaction.
+     * Called when an income transaction is edited or deleted after allocation.
+     *
+     * @return number of reversed contributions
+     */
+    suspend fun reverseAllocationsForTransaction(transactionId: String): Int {
+        val contributions = contributionDao.getContributionsByTransactionType(
+            transactionId, ContributionType.AUTO_ALLOCATION.value
+        )
+        if (contributions.isEmpty()) return 0
+
+        var reversedCount = 0
+        for (contribution in contributions) {
+            try {
+                mutexForAccount(contribution.accountId).withLock {
+                    database.withTransaction {
+                        // 1. Credit back to account
+                        accountDao.updateBalance(contribution.accountId, contribution.amount)
+
+                        // 2. Delete the contribution
+                        contributionDao.deleteContribution(contribution)
+
+                        // 3. Delete the auto-allocation transaction record
+                        transactionDao.deleteTransactionByReferenceId(contribution.id)
+
+                        // 4. Re-evaluate goal completion status
+                        val goal = goalDao.getGoalById(contribution.goalId)
+                        if (goal != null) {
+                            val currentAmount = contributionDao.getTotalContributed(contribution.goalId)
+                            if (currentAmount < goal.targetAmount && goal.goalStatus == GoalStatus.COMPLETED) {
+                                goalDao.updateGoalStatus(contribution.goalId, GoalStatus.ACTIVE.value)
+                                goalDao.updateGoal(goal.copy(isSynced = false))
+                            }
+                        }
+                    }
+                    reversedCount++
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to reverse contribution ${contribution.id}: ${e.message}", e)
+            }
+        }
+
+        if (reversedCount > 0) {
+            scheduleGoalSync()
+            Log.d(TAG, "Reversed $reversedCount allocation(s) for transactionId=$transactionId")
+        }
+        return reversedCount
     }
 
     suspend fun withdraw(goalId: String, accountId: String, amount: Double, notes: String = ""): Result<Contribution> {

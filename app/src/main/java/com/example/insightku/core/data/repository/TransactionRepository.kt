@@ -13,6 +13,7 @@ import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.worker.SyncTransactionWorker
+import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
@@ -41,8 +42,12 @@ class TransactionRepository @Inject constructor(
     private val transactionDao: TransactionDao,
     private val accountDao: AccountDao,
     private val firestore: FirebaseFirestore,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val goalRepository: GoalRepository
 ) {
+    companion object {
+        private const val TAG = "TransactionRepository"
+    }
     // ─── Transaction ───────────────────────────────────────────────────────────
 
     fun getAllTransactions(): Flow<List<Transaction>> = transactionDao.getAllTransactions()
@@ -141,6 +146,17 @@ class TransactionRepository @Inject constructor(
             } else if (transaction.accountId.isNotBlank()) {
                 accountDao.updateBalance(transaction.accountId, newDelta)
             }
+
+            // ── Reconciliation: reverse auto-allocation if income transaction changed ──
+            if (original.type == TransactionType.INCOME) {
+                val originalAmount = original.amount
+                val newAmount = transaction.amount
+                if (originalAmount != newAmount || original.accountId != transaction.accountId) {
+                    // Amount or account changed — reverse previous allocation and let it re-evaluate
+                    Log.d(TAG, "[Reconciliation] Income changed: reversing allocations for txId=${original.id}")
+                    goalRepository.reverseAllocationsForTransaction(original.id)
+                }
+            }
         } else if (transaction.accountId.isNotBlank()) {
             val newDelta = TransactionType.balanceDelta(transaction.type, transaction.amount)
             accountDao.updateBalance(transaction.accountId, newDelta)
@@ -160,6 +176,12 @@ class TransactionRepository @Inject constructor(
     suspend fun deleteTransaction(transactionId: String, userId: String) {
         // Get transaction first to restore its account balance
         val transaction = transactionDao.getTransactionByIdWithAccount(transactionId)
+
+        // ── Reconciliation: reverse auto-allocation if income transaction is deleted ──
+        if (transaction != null && transaction.type == TransactionType.INCOME) {
+            Log.d(TAG, "[Reconciliation] Income deleted: reversing allocations for txId=$transactionId")
+            goalRepository.reverseAllocationsForTransaction(transactionId)
+        }
 
         if (transaction != null && transaction.accountId.isNotBlank()) {
             // Restore account balance: reverse the transaction's effect

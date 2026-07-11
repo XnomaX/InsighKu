@@ -1061,6 +1061,7 @@
 
     <!-- Auto Allocation Dialog -->
     <string name="auto_alloc_chip">Auto Allocation</string>
+    <string name="auto_alloc_rule">Allocation Rule</string>
     <string name="auto_alloc_edit_rule">Edit Allocation Rule</string>
     <string name="auto_alloc_new_rule">New Allocation Rule</string>
     <string name="auto_alloc_configure">Configure automatic savings</string>
@@ -1099,7 +1100,6 @@
     <string name="auto_alloc_requires_confirmation">Requires confirmation before executing</string>
     <string name="auto_alloc_update_rule">Update Rule</string>
     <string name="auto_alloc_create_rule">Create Rule</string>
-    <string name="auto_alloc_delete_rule">Delete Rule?</string>
     <string name="auto_alloc_delete_rule_desc">This auto-allocation rule will be permanently deleted. Automatic savings for this rule will stop.</string>
     <string name="auto_alloc_create_account_first">Create an account first</string>
     <string name="auto_alloc_need_account">You need at least one account to set up auto-allocation rules</string>
@@ -1366,6 +1366,12 @@
     <string name="auto_alloc_trigger_income_desc">Pay Yourself First</string>
     <string name="auto_alloc_trigger_roundup">Round-Up</string>
     <string name="auto_alloc_trigger_roundup_desc">Save from expenses</string>
+    <string name="auto_alloc_rounding_mode">ROUNDING MODE</string>
+    <string name="auto_alloc_round_up">Round Up</string>
+    <string name="auto_alloc_round_down">Round Down</string>
+    <string name="auto_alloc_round_nearest">Round Nearest</string>
+    <string name="auto_alloc_increment">INCREMENT</string>
+    <string name="auto_alloc_increment_desc">Round to the nearest multiple of this amount</string>
     <string name="auto_alloc_trigger_daily">Daily</string>
     <string name="auto_alloc_trigger_daily_desc">Fixed daily savings</string>
     <string name="auto_alloc_trigger_weekly">Weekly</string>

@@ -8,11 +8,15 @@ import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.core.notification.DraftTransactionManager
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.data.repository.TransactionRepository
-import com.example.insightku.feature.planning.goal.data.model.ConfirmationMode
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import com.example.insightku.feature.planning.goal.domain.engine.AutoAllocationEngine
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.insightku.core.worker.AllocationSafetyNetWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -75,14 +79,18 @@ class AddTransactionUseCase @Inject constructor(
             }
 
             // Step 3: Execute AUTO-mode allocations immediately
+            // Pass transactionId|ruleId for per-rule idempotency — prevents duplicate allocations
+            // while allowing multiple rules to fire on the same transaction
             val executedSuggestions = mutableListOf<com.example.insightku.feature.planning.goal.domain.model.AllocationSuggestion>()
             for (suggestion in allocationResult.autoExecuted) {
                 try {
+                    val idempotencyKey = "${transaction.id}|${suggestion.ruleId}"
                     goalRepository.contribute(
                         goalId = suggestion.goalId,
                         accountId = suggestion.sourceAccountId,
                         amount = suggestion.amount,
-                        type = ContributionType.AUTO_ALLOCATION
+                        type = ContributionType.AUTO_ALLOCATION,
+                        transactionId = idempotencyKey
                     ).onSuccess {
                         executedSuggestions.add(suggestion)
                     }.onFailure { _ ->
@@ -114,6 +122,14 @@ class AddTransactionUseCase @Inject constructor(
                 }
             }
 
+            // ── Safety-net: schedule a one-shot worker to re-process allocations ──
+            // If the app is killed between addTransaction() and contribute(),
+            // this worker will re-evaluate allocations. The idempotency check
+            // in GoalRepository.contribute() ensures no duplicate execution.
+            if (transaction.type == TransactionType.INCOME || transaction.type == TransactionType.EXPENSE) {
+                scheduleAllocationSafetyNet(transaction.id)
+            }
+
             // Return result with executed suggestions moved to autoExecuted
             Result.success(allocationResult.copy(
                 autoExecuted = executedSuggestions,
@@ -122,5 +138,25 @@ class AddTransactionUseCase @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /**
+     * Schedule a one-shot safety-net worker to ensure allocations are processed.
+     * This handles the case where the app is killed between transaction save
+     * and allocation execution. The worker re-evaluates the allocation engine;
+     * idempotency checks in GoalRepository.contribute() prevent duplicates.
+     */
+    private fun scheduleAllocationSafetyNet(transactionId: String) {
+        val request = OneTimeWorkRequestBuilder<AllocationSafetyNetWorker>()
+            .setInputData(androidx.work.workDataOf("transactionId" to transactionId))
+            .setConstraints(Constraints.Builder().build()) // No network needed
+            .setInitialDelay(5, java.util.concurrent.TimeUnit.SECONDS) // Small delay to avoid conflict with inline execution
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "AllocationSafetyNet_$transactionId",
+            ExistingWorkPolicy.KEEP,
+            request
+        )
     }
 }

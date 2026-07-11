@@ -980,6 +980,7 @@
 
     <!-- Auto Allocation Dialog -->
     <string name="auto_alloc_chip">Alokasi Otomatis</string>
+    <string name="auto_alloc_rule">Aturan Alokasi</string>
     <string name="auto_alloc_edit_rule">Edit Aturan Alokasi</string>
     <string name="auto_alloc_new_rule">Aturan Alokasi Baru</string>
     <string name="auto_alloc_configure">Konfigurasi tabungan otomatis</string>
@@ -1018,7 +1019,6 @@
     <string name="auto_alloc_requires_confirmation">Memerlukan konfirmasi sebelum mengeksekusi</string>
     <string name="auto_alloc_update_rule">Perbarui Aturan</string>
     <string name="auto_alloc_create_rule">Buat Aturan</string>
-    <string name="auto_alloc_delete_rule">Hapus Aturan?</string>
     <string name="auto_alloc_delete_rule_desc">Aturan alokasi otomatis ini akan dihapus permanen. Tabungan otomatis untuk aturan ini akan berhenti.</string>
     <string name="auto_alloc_create_account_first">Buat akun terlebih dahulu</string>
     <string name="auto_alloc_need_account">Anda memerlukan setidaknya satu akun untuk mengatur aturan alokasi otomatis</string>
@@ -1273,6 +1273,12 @@
     <string name="auto_alloc_trigger_income_desc">Bayar Diri Sendiri Dulu</string>
     <string name="auto_alloc_trigger_roundup">Pembulatan</string>
     <string name="auto_alloc_trigger_roundup_desc">Simpan dari pengeluaran</string>
+    <string name="auto_alloc_rounding_mode">MODE PEMBULATAN</string>
+    <string name="auto_alloc_round_up">Bulatkan ke Atas</string>
+    <string name="auto_alloc_round_down">Bulatkan ke Bawah</string>
+    <string name="auto_alloc_round_nearest">Bulatkan Terdekat</string>
+    <string name="auto_alloc_increment">INCREMEN</string>
+    <string name="auto_alloc_increment_desc">Bulatkan ke kelipatan terdekat dari jumlah ini</string>
     <string name="auto_alloc_trigger_daily">Harian</string>
     <string name="auto_alloc_trigger_daily_desc">Tabungan harian tetap</string>
     <string name="auto_alloc_trigger_weekly">Mingguan</string>

@@ -88,13 +88,23 @@ class DraftTransactionRepository @Inject constructor(
         }
         val rowId = draftDao.insert(draft)
         return rowId != -1L
+    }    /** Delete allocation drafts for a specific rule (when rule is deleted). */
+    suspend fun deleteAllocationDraftsByRule(ruleId: String) = draftDao.deleteAllocationDraftsByRule(ruleId)
+
+    /**
+     * Auto-expire stale allocation drafts older than the given TTL.
+     * @param ttlMs Time-to-live in milliseconds (default 48 hours)
+     * @return number of expired drafts
+     */
+    suspend fun expireStaleAllocationDrafts(ttlMs: Long = ALLOCATION_DRAFT_TTL_MS): Int {
+        val expireBefore = System.currentTimeMillis() - ttlMs
+        return draftDao.expireStaleAllocationDrafts(expireBefore)
     }
 
-    /** Delete allocation drafts for a specific rule (when rule is deleted). */
-    suspend fun deleteAllocationDraftsByRule(ruleId: String) =
-        draftDao.deleteAllocationDraftsByRule(ruleId)
-
     companion object {
+        /** Default TTL for pending allocation drafts: 48 hours. */
+        const val ALLOCATION_DRAFT_TTL_MS = 48L * 60 * 60 * 1000
+
         /** Kunci dedup stabil dari hasil parser. */
         fun dedupHashOf(amount: Double, merchant: String, bankName: String): String =
             "${amount.toLong()}|${merchant.trim().lowercase()}|${bankName.trim().lowercase()}"

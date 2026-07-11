@@ -25,8 +25,6 @@ data class GoalDetailUiState(
     val showDeleteConfirmDialog: Boolean = false,
     val showArchiveConfirmDialog: Boolean = false,
     val showAutoAllocationDialog: Boolean = false,
-    val showDeleteAutoAllocationRuleConfirm: Boolean = false,
-    val pendingDeleteAutoAllocationRuleId: String? = null,
     val editingAutoAllocationRule: AutoAllocationRule? = null,
     val contributionAmount: String = "",
     val contributionNotes: String = "",
