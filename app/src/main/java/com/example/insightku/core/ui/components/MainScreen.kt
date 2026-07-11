@@ -257,7 +257,7 @@ fun MainScreen(
         // Main content — full screen, nav bar floats on top
         Scaffold(
             modifier            = Modifier.fillMaxSize(),
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            contentWindowInsets = WindowInsets(0, 8, 0, 8),
             snackbarHost        = {
                 SnackbarHost(
                     hostState = snackbarHostState,

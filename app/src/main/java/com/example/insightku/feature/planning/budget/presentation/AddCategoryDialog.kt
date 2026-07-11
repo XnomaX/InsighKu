@@ -13,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -99,9 +98,10 @@ fun AddCategoryDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = { handleDismiss() },
         containerColor   = AppPalette.card,
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
         dragHandle       = {
             Box(
-                modifier         = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -114,7 +114,7 @@ fun AddCategoryDialog(
             }
         }
     ) {
-        Column(modifier = Modifier.safeDrawingPadding().fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

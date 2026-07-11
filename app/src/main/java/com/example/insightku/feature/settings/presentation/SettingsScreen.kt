@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -68,7 +69,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.R
@@ -293,19 +293,26 @@ private fun LanguageBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = Dimens.BottomSheetRadius, topEnd = Dimens.BottomSheetRadius),
         containerColor = SettingsPalette.card,
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
         tonalElevation = 0.dp,
         dragHandle = {
             Box(
                 modifier = Modifier
-                    .padding(top = Dimens.PaddingMedium, bottom = Dimens.PaddingSmall)
-                    .width(40.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(SettingsPalette.cardBorder)
-            )
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(SettingsPalette.cardBorder)
+                )
+            }
         }
     ) {
-        Column(modifier = Modifier.safeDrawingPadding().padding(bottom = Dimens.PaddingExtraLarge)) {
+        Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
             Text(
                 text = stringResource(R.string.settings_language),
                 style = MaterialTheme.typography.titleMedium,
@@ -670,20 +677,28 @@ private fun CurrencyBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = Dimens.BottomSheetRadius, topEnd = Dimens.BottomSheetRadius),
         containerColor = SettingsPalette.card,
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
         tonalElevation = 0.dp,
         dragHandle = {
             Box(
                 modifier = Modifier
-                    .padding(top = Dimens.PaddingMedium, bottom = Dimens.PaddingSmall)
-                    .width(40.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(SettingsPalette.cardBorder)
-            )
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(SettingsPalette.cardBorder)
+                )
+            }
         }
     ) {
-        Column(modifier = Modifier.safeDrawingPadding().padding(bottom = Dimens.PaddingExtraLarge)) {
-            Text(                    text = stringResource(R.string.settings_choose_currency),
+        Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
+            Text(
+                text = stringResource(R.string.settings_choose_currency),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = SettingsPalette.textPrimary,

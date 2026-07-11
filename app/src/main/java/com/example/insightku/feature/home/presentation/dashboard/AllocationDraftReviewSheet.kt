@@ -3,7 +3,6 @@ package com.example.insightku.feature.home.presentation.dashboard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,12 +38,12 @@ fun AllocationDraftReviewSheet(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        containerColor = AppPalette.card
+        containerColor = AppPalette.card,
+        contentWindowInsets = WindowInsets(0, 8, 0, 8)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .safeDrawingPadding()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
         ) {

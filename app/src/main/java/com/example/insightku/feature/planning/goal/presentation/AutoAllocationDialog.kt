@@ -11,7 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Add
@@ -34,13 +35,13 @@ import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.ChangeHistory
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Money
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.TrendingUp
+import androidx.compose.material.icons.outlined.Money
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -60,7 +61,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -74,14 +74,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
-import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
@@ -89,13 +91,11 @@ import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
 import com.example.insightku.feature.planning.goal.data.model.AllocationValueType
+import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
 import com.example.insightku.feature.planning.goal.data.model.ConfirmationMode
 import com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency
 import com.example.insightku.feature.planning.goal.domain.model.AllocationTriggerParams
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
-import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import java.time.Instant
 import java.time.LocalDate
@@ -103,13 +103,6 @@ import java.time.ZoneId
 import java.util.UUID
 
 // ─── Account Type Icon Resolver ────────────────────────────────────────────────
-
-private fun accountTypeLabelRes(type: AccountType): Int = when (type) {
-    AccountType.BANK_ACCOUNT -> R.string.auto_alloc_bank
-    AccountType.CASH -> R.string.auto_alloc_cash
-    AccountType.E_WALLET -> R.string.auto_alloc_ewallet
-    AccountType.CREDIT_CARD -> R.string.auto_alloc_credit
-}
 
 private fun accountTypeIcon(type: AccountType): ImageVector = when (type) {
     AccountType.BANK_ACCOUNT -> Icons.Outlined.AccountBalance
@@ -236,12 +229,11 @@ fun AutoAllocationDialog(
     val isEditing = rule != null
     val fallbackColor = LocalAccent.current
     val goalColor = remember(goal?.color) {
-        try { Color(android.graphics.Color.parseColor(goal?.color ?: "")) }
+        try { Color((goal?.color ?: "").toColorInt()) }
         catch (_: Exception) { fallbackColor }
     }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val activeAccounts = remember(accounts) { accounts.filter { it.isActive } }
 
@@ -312,11 +304,12 @@ fun AutoAllocationDialog(
             topStart = Dimens.BottomSheetRadius,
             topEnd = Dimens.BottomSheetRadius
         ),
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
         dragHandle = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp, bottom = 4.dp),
+                    .padding(top = 8.dp, bottom = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -332,10 +325,9 @@ fun AutoAllocationDialog(
         // ── Header ──────────────────────────────────────────────────────
         Column(
             modifier = Modifier
-                .safeDrawingPadding()
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 8.dp)
+                .padding(horizontal = 28.dp)
+                .padding(bottom = 20.dp)
         ) {
             Surface(shape = RoundedCornerShape(50), color = goalColor.copy(alpha = 0.10f)) {
                 Text(
@@ -346,7 +338,7 @@ fun AutoAllocationDialog(
                     color = goalColor
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -358,6 +350,7 @@ fun AutoAllocationDialog(
                         fontWeight = FontWeight.Bold,
                         color = AppPalette.textPrimary
                     )
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.auto_alloc_configure),
                         style = MaterialTheme.typography.bodySmall,
@@ -378,7 +371,6 @@ fun AutoAllocationDialog(
 
         HorizontalDivider(color = AppPalette.cardBorder)
 
-        // ── Compact Scrollable Content ──────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -389,8 +381,6 @@ fun AutoAllocationDialog(
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-            // ── 1. Trigger: compact horizontal chips ────────────────────
             CompactTriggerSelector(
                 selected = form.triggerType,
                 onSelect = { newTrigger ->
@@ -563,13 +553,14 @@ fun AutoAllocationDialog(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     val categoriesToShow = remember(expenseCategories) {
-                        if (expenseCategories.isNotEmpty()) expenseCategories
-                        else listOf(
-                            CategoryInfo("fallback-food", "Food"), CategoryInfo("fallback-transport", "Transport"),
-                            CategoryInfo("fallback-shopping", "Shopping"), CategoryInfo("fallback-bills", "Bills"),
-                            CategoryInfo("fallback-entertainment", "Entertainment"), CategoryInfo("fallback-health", "Health"),
-                            CategoryInfo("fallback-education", "Education"), CategoryInfo("fallback-other", "Other")
-                        )
+                        expenseCategories.ifEmpty {
+                            listOf(
+                                CategoryInfo("fallback-food", "Food"), CategoryInfo("fallback-transport", "Transport"),
+                                CategoryInfo("fallback-shopping", "Shopping"), CategoryInfo("fallback-bills", "Bills"),
+                                CategoryInfo("fallback-entertainment", "Entertainment"), CategoryInfo("fallback-health", "Health"),
+                                CategoryInfo("fallback-education", "Education"), CategoryInfo("fallback-other", "Other")
+                            )
+                        }
                     }
                     Text(
                         text = stringResource(R.string.auto_alloc_categories),
@@ -704,7 +695,7 @@ fun AutoAllocationDialog(
                             val newRule = form.toRule()
                             if (newRule != null) {
                                 val ruleWithId =
-                                    if (isEditing) newRule.copy(id = rule!!.id) else newRule
+                                    if (isEditing) newRule.copy(id = rule.id) else newRule
                                 onSave(ruleWithId)
                             }
                         },
@@ -734,7 +725,7 @@ fun AutoAllocationDialog(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDelete(rule!!.id)
+                        onDelete(rule.id)
                         showDeleteConfirm = false
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
@@ -767,7 +758,9 @@ private data class TriggerOption(
 
 @Composable
 private fun getTriggerOptions(): List<TriggerOption> = listOf(
-    TriggerOption(AllocationTriggerType.INCOME_RECEIVED, stringResource(R.string.auto_alloc_trigger_income), stringResource(R.string.auto_alloc_trigger_income_desc), Icons.Outlined.TrendingUp),
+    TriggerOption(AllocationTriggerType.INCOME_RECEIVED, stringResource(R.string.auto_alloc_trigger_income), stringResource(R.string.auto_alloc_trigger_income_desc),
+        Icons.AutoMirrored.Outlined.TrendingUp
+    ),
     TriggerOption(AllocationTriggerType.ROUND_UP, stringResource(R.string.auto_alloc_trigger_roundup), stringResource(R.string.auto_alloc_trigger_roundup_desc), Icons.Outlined.ChangeHistory),
     TriggerOption(AllocationTriggerType.DAILY, stringResource(R.string.auto_alloc_trigger_daily), stringResource(R.string.auto_alloc_trigger_daily_desc), Icons.Outlined.Schedule),
     TriggerOption(AllocationTriggerType.WEEKLY, stringResource(R.string.auto_alloc_trigger_weekly), stringResource(R.string.auto_alloc_trigger_weekly_desc), Icons.Outlined.Schedule),
@@ -1053,10 +1046,11 @@ private fun AccountPickerChips(
                 Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(
                         modifier = Modifier.size(32.dp).clip(RoundedCornerShape(10.dp))
-                            .background(try { Color(android.graphics.Color.parseColor(account.color)).copy(alpha = 0.12f) } catch (_: Exception) { accentColor.copy(alpha = 0.12f) }),
+                            .background(try { Color(account.color.toColorInt()).copy(alpha = 0.12f) } catch (_: Exception) { accentColor.copy(alpha = 0.12f) }),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(accountTypeIcon(account.type), null, tint = try { Color(android.graphics.Color.parseColor(account.color)) } catch (_: Exception) { accentColor }, modifier = Modifier.size(16.dp))
+                        Icon(accountTypeIcon(account.type), null, tint = try {
+                            Color(account.color.toColorInt()) } catch (_: Exception) { accentColor }, modifier = Modifier.size(16.dp))
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(account.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1172,7 +1166,7 @@ private fun InlineConfirmationToggle(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(
-                imageVector = if (isAuto) Icons.Outlined.AutoAwesome else Icons.Outlined.Warning,
+                imageVector = if (isAuto) Icons.Outlined.AutoAwesome else Icons.Outlined.CheckCircle,
                 contentDescription = null,
                 tint = if (isAuto) accentColor else MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(20.dp)
@@ -1206,12 +1200,6 @@ private fun InlineConfirmationToggle(
         }
     }
 }
-
-// ─── NEW: Compact Time Picker ────────────────────────────────────────────────
-// DESIGN RATIONALE: The original TimePickerRow had hour/minute cards with
-// FilterChip grids + custom increment/decrement buttons = ~300dp height.
-// CompactTimePicker uses a single row with +/- buttons = ~80dp.
-
 @Composable
 private fun CompactTimePicker(
     hour: Int,

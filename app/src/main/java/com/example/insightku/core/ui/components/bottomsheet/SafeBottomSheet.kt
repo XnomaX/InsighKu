@@ -30,6 +30,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.core.view.WindowInsetsCompat
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
@@ -74,18 +76,17 @@ fun SafeBottomSheet(
     containerColor: Color = AppPalette.card,
     tonalElevation: Dp = 0.dp,
     scrimColor: Color = Color.Black.copy(alpha = 0.32f),
+    contentWindowInsets: WindowInsets = WindowInsets.safeDrawing,
     dragHandle: @Composable (() -> Unit)? = { DefaultDragHandle() },
     content: @Composable ColumnScope.() -> Unit
 ) {
     val resolvedContentColor = contentColorFor(containerColor)
 
-    // Calculate maximum height: screen height - status bar - safe margin (24dp)
-    // This ensures the sheet never reaches the status bar
     val view = LocalView.current
     val density = LocalDensity.current
     val maxHeight = remember {
-        val windowInsets = WindowInsetsCompat.toWindowInsetsCompat(view.rootWindowInsets)
-        val statusBarPx = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+        val windowInsetsCompat = WindowInsetsCompat.toWindowInsetsCompat(view.rootWindowInsets)
+        val statusBarPx = windowInsetsCompat.getInsets(WindowInsetsCompat.Type.statusBars()).top
         val screenHeightPx = view.rootView.height
         val safeMarginPx = with(density) { 24.dp.toPx() }
         with(density) { (screenHeightPx - statusBarPx - safeMarginPx).toDp() }
@@ -94,11 +95,6 @@ fun SafeBottomSheet(
     // Track whether a dismiss is pending (animation in progress)
     var pendingDismiss by remember { mutableStateOf(false) }
 
-    // Observe sheet visibility and pending dismiss state.
-    // When the sheet becomes hidden AND we have a pending dismiss,
-    // the hide animation has completed and it's safe to call the callback.
-    // When the sheet becomes visible, reset any pending dismiss to handle
-    // rapid open/close (user opens, dismiss starts, then re-opens).
     LaunchedEffect(sheetState.isVisible, pendingDismiss) {
         if (!sheetState.isVisible && pendingDismiss) {
             pendingDismiss = false
@@ -108,10 +104,6 @@ fun SafeBottomSheet(
         }
     }
 
-    // ModalBottomSheet calls onDismissRequest BEFORE the hide animation completes.
-    // We don't call the callback immediately - instead we set a flag and wait
-    // for the animation to complete (detected by isVisible becoming false).
-    // This prevents the caller from removing the sheet from composition mid-animation.
     ModalBottomSheet(
         onDismissRequest = {
             pendingDismiss = true
@@ -123,12 +115,9 @@ fun SafeBottomSheet(
         contentColor = resolvedContentColor,
         tonalElevation = tonalElevation,
         scrimColor = scrimColor,
+        contentWindowInsets = { contentWindowInsets },
         dragHandle = dragHandle
     ) {
-        // Constrain content height so the sheet never reaches the status bar.
-        // heightIn(max = maxHeight) ensures:
-        // - Small content: natural height (no constraint applied)
-        // - Tall content: stops at maxHeight, ModalBottomSheet handles scrolling
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -147,10 +136,7 @@ fun DefaultDragHandle() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                top = Dimens.BottomSheetHandlePaddingTop,
-                bottom = Dimens.BottomSheetHandlePaddingBottom
-            ),
+            .padding(top = 8.dp, bottom = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(
