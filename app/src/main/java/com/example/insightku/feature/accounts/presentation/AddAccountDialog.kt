@@ -13,11 +13,11 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -99,9 +99,9 @@ fun AddAccountDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
         dragHandle = {
-            Box(
-                Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
+            Box(                 Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -118,7 +118,6 @@ fun AddAccountDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .safeDrawingPadding()
                 .background(SheetBg)
                 .padding(24.dp)
                 .navigationBarsPadding()

@@ -11,12 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -540,14 +540,14 @@ private fun AccountPickerDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = {
-            Box(Modifier.padding(top = 12.dp, bottom = 4.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+        dragHandle = {             Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.width(40.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(AppPalette.cardBorder))
             }
         }
     ) {
-        Column(modifier = Modifier.fillMaxWidth().safeDrawingPadding().padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
             Text(text = stringResource(R.string.contribution_screen_select_account), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
             Spacer(Modifier.height(16.dp))
             accounts.forEach { account ->

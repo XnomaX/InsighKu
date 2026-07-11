@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -173,13 +172,13 @@ fun AddRecurringPaymentDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest   = onDismiss,
         containerColor     = AppPalette.card,
-        dragHandle         = {
-            Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
+        dragHandle         = {             Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(SheetBorder))
             }
         }
     ) {
-        Column(modifier = Modifier.safeDrawingPadding().fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             // Header
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
                 Surface(shape = RoundedCornerShape(50), color = SheetPurple.copy(alpha = 0.10f)) {
@@ -414,13 +413,13 @@ fun AddInstallmentDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor   = AppPalette.card,
-        dragHandle = {
-            Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
+        dragHandle = {             Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(SheetBorder))
             }
         }
     ) {
-        Column(modifier = Modifier.safeDrawingPadding().fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
                 Surface(shape = RoundedCornerShape(50), color = SheetCyan.copy(alpha = 0.10f)) {
                     Text(stringResource(R.string.installment_sheet_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp),

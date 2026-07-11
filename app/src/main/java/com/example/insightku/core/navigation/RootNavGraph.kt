@@ -57,7 +57,7 @@ fun RootNavGraph(notificationData: NotificationTransactionData? = null, allocati
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // WindowInsets.None: kita kelola sendiri di tiap screen/graph
         // agar tidak double-padding antara Scaffold dan content
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(0, 8, 0, 8)
     ) { paddingValues ->
         NavHost(
             navController = navController,

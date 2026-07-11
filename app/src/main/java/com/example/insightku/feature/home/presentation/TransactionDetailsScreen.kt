@@ -974,8 +974,8 @@ fun TransactionDetailOverlay(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor   = TxCard,
-        dragHandle = {
-            Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
+        dragHandle = {             Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(TxCardBorder))
             }
         }
@@ -983,7 +983,6 @@ fun TransactionDetailOverlay(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .safeDrawingPadding()
                 .navigationBarsPadding()
         ) {
             // -- Hero section ----------------------------------------------

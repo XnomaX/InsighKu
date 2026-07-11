@@ -37,10 +37,6 @@ object Dimens {
     val BottomSheetHandleHeight = 4.dp
     /** Drag handle corner radius (pill shape). */
     val BottomSheetHandleRadius = 50.dp
-    /** Top padding above drag handle. */
-    val BottomSheetHandlePaddingTop = 12.dp
-    /** Bottom padding below drag handle. */
-    val BottomSheetHandlePaddingBottom = 4.dp
     /** Horizontal content padding inside sheet. */
     val BottomSheetContentPadding = 24.dp
     /** Spacing between header divider and content. */

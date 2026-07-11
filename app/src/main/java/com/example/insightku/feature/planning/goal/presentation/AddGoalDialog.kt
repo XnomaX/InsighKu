@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -69,8 +68,13 @@ fun AddGoalDialog(initialDeadline: LocalDate? = null, onDismiss: () -> Unit, onC
     val context = LocalContext.current
     val isValid = name.isNotBlank() && targetAmountText.toDoubleOrNull()?.let { it > 0 } == true
     if (showDatePicker) { val initialMillis = deadline?.atStartOfDay()?.toInstant(ZoneId.systemDefault().rules.getOffset(Instant.now()))?.toEpochMilli() ?: System.currentTimeMillis(); PremiumDatePicker(initialMillis = initialMillis, onDateSelected = { millis -> deadline = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate(); showDatePicker = false }, onDismiss = { showDatePicker = false }) }
-    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(onDismissRequest = onDismiss, containerColor = AppPalette.card, dragHandle = { Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) { Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(GoalBorder)) } }) {
-        Column(modifier = Modifier.safeDrawingPadding().fillMaxWidth()) {
+    com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = AppPalette.card,
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
+        dragHandle = { Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) { Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(GoalBorder)) } }
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) { Surface(shape = RoundedCornerShape(50), color = GoalPurple.copy(alpha = 0.10f)) { Text(stringResource(R.string.add_goal_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = GoalPurple) }; Spacer(Modifier.height(6.dp)); Text(stringResource(R.string.add_goal_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary); Text(stringResource(R.string.add_goal_subtitle), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted) }
             Box(Modifier.fillMaxWidth().height(1.dp).background(GoalBorder))
             Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).background(GoalBg).padding(24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {

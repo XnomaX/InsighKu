@@ -13,7 +13,6 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -105,8 +104,8 @@ fun EditTransactionDetail(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor   = EditSurface,
-        dragHandle = {
-            Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
+        contentWindowInsets = WindowInsets(0, 8, 0, 8),
+        dragHandle = {             Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(EditBorder))
             }
         }
@@ -115,7 +114,6 @@ fun EditTransactionDetail(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.92f)
-                .safeDrawingPadding()
                 .navigationBarsPadding()
         ) {
 
