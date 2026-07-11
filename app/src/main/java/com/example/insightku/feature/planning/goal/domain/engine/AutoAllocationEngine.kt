@@ -6,6 +6,7 @@ import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
 import com.example.insightku.feature.planning.goal.data.model.AllocationValueType
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
+import com.example.insightku.feature.planning.goal.data.model.RoundUpMode
 import com.example.insightku.feature.planning.goal.domain.model.AllocationSuggestion
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult
 import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
@@ -16,7 +17,9 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.min
+import kotlin.math.abs
 
 @Singleton
 class AutoAllocationEngine @Inject constructor(
@@ -167,16 +170,38 @@ class AutoAllocationEngine @Inject constructor(
         if (goal.goalStatus != GoalStatus.ACTIVE) return null
         val currentAmount = dataSource.getTotalContributed(rule.goalId)
         if (currentAmount >= goal.targetAmount) return null
-        val roundedUp = ceil(transaction.amount / rule.roundUpIncrement) * rule.roundUpIncrement
-        val roundUpAmount = roundedUp - transaction.amount
-        if (roundUpAmount <= 0 || roundUpAmount >= rule.roundUpIncrement) return null
+
+        // Calculate rounded amount based on rounding mode
+        val increment = rule.roundUpIncrement
+        val roundedAmount = when (rule.roundUpMode) {
+            RoundUpMode.ROUND_UP -> ceil(transaction.amount / increment) * increment
+            RoundUpMode.ROUND_DOWN -> floor(transaction.amount / increment) * increment
+            RoundUpMode.ROUND_NEAREST -> { 
+                val remainder = transaction.amount % increment
+                if (remainder == 0.0) transaction.amount
+                else if (remainder < increment / 2.0) floor(transaction.amount / increment) * increment
+                else ceil(transaction.amount / increment) * increment
+            }
+        }
+
+        val roundUpAmount = abs(roundedAmount - transaction.amount)
+        if (roundUpAmount <= 0.0 || roundUpAmount >= increment) return null
+
         val sourceAccountId = rule.sourceAccountId ?: transaction.accountId
         if (sourceAccountId.isBlank()) return null
         val account = accountRepository.getAccountById(sourceAccountId) ?: return null
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(roundUpAmount, remainingToGoal)
         if (account.balance < actualAmount) return null
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Round-up: ${formatCurrency(transaction.amount)} → ${formatCurrency(roundedUp)}", rule.description, ruleId = rule.id)
+
+        val modeLabel = when (rule.roundUpMode) {
+            RoundUpMode.ROUND_UP -> "Round up"
+            RoundUpMode.ROUND_DOWN -> "Round down"
+            RoundUpMode.ROUND_NEAREST -> "Round nearest"
+        }
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name,
+            "$modeLabel: ${formatCurrency(transaction.amount)} → ${formatCurrency(roundedAmount)}",
+            rule.description, ruleId = rule.id)
     }
 
     private suspend fun evaluateSpendingCategoryRule(rule: AutoAllocationRule, transaction: Transaction, nameToCategoryId: Map<String, String>): AllocationSuggestion? {

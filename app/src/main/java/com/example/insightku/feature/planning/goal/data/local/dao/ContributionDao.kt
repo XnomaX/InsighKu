@@ -19,6 +19,9 @@ interface ContributionDao {
     @Query("SELECT * FROM contributions WHERE transactionId = :transactionId")
     suspend fun getContributionByTransaction(transactionId: String): ContributionEntity?
 
+    @Query("SELECT * FROM contributions WHERE transactionId LIKE :transactionIdPrefix || '%' AND type = :type")
+    suspend fun getContributionsByTransactionType(transactionIdPrefix: String, type: String): List<ContributionEntity>
+
     @Query("SELECT * FROM contributions WHERE id = :id")
     suspend fun getContributionById(id: String): ContributionEntity?
 

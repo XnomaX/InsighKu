@@ -66,6 +66,17 @@ enum class CategoryBasedExecutionMode(val value: String) {
     }
 }
 
+enum class RoundUpMode(val value: String) {
+    ROUND_UP("round_up"),
+    ROUND_DOWN("round_down"),
+    ROUND_NEAREST("round_nearest");
+
+    companion object {
+        fun fromString(value: String): RoundUpMode =
+            entries.find { it.value == value } ?: ROUND_UP
+    }
+}
+
 @Entity(
     tableName = "auto_allocation_rules",
     foreignKeys = [
@@ -126,11 +137,14 @@ data class AutoAllocationRuleEntity(
     @ColumnInfo(defaultValue = "'[]'")
     val categoryBasedCategoryIds: String = "[]",
     @ColumnInfo(defaultValue = "'every_transaction'")
-    val categoryBasedExecutionMode: String = "every_transaction"
+    val categoryBasedExecutionMode: String = "every_transaction",
+    @ColumnInfo(defaultValue = "'round_up'")
+    val roundUpMode: String = "round_up"
 ) {
     val trigger: AllocationTriggerType get() = AllocationTriggerType.fromString(triggerType)
     val valueType: AllocationValueType get() = AllocationValueType.fromString(allocationType)
     val mode: ConfirmationMode get() = ConfirmationMode.fromString(confirmationMode)
     val frequency: ScheduledFrequency get() = ScheduledFrequency.fromString(scheduledFrequency)
     val catExecMode: CategoryBasedExecutionMode get() = CategoryBasedExecutionMode.fromString(categoryBasedExecutionMode)
+    val roundMode: RoundUpMode get() = RoundUpMode.fromString(roundUpMode)
 }

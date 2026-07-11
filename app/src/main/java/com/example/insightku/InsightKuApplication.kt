@@ -114,15 +114,14 @@ class InsightKuApplication : Application(), Configuration.Provider {
      * Evaluates daily/weekly/biweekly/monthly allocation rules and balance-above rules.
      */
     private fun scheduleScheduledAllocationWorker() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
+        // ── No network constraint — only needs local Room data ──
+        // This prevents missed allocations during extended offline periods.
+        // Firestore sync is handled separately by SyncGoalWorker.
         val request = PeriodicWorkRequestBuilder<ScheduledAllocationWorker>(
             repeatInterval = 6,
             repeatIntervalTimeUnit = TimeUnit.HOURS
         )
-            .setConstraints(constraints)
+            .setConstraints(Constraints.Builder().build())
             .build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(

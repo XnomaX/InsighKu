@@ -49,6 +49,12 @@ class DraftReminderWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
+        // ── TTL: auto-expire stale allocation drafts (>48 hours) ──
+        val expired = draftRepository.expireStaleAllocationDrafts()
+        if (expired > 0) {
+            Log.d(TAG, "Auto-expired $expired stale allocation draft(s)")
+        }
+
         val count = draftRepository.getPendingCountOnce()
         if (count <= 0) {
             Log.d(TAG, "No pending drafts — no reminder")

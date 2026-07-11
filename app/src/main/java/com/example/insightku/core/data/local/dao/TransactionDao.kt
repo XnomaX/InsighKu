@@ -121,6 +121,13 @@ interface TransactionDao {
     /** Get transfer pair by transferId. */
     @Query("SELECT * FROM transactions WHERE transferId = :transferId ORDER BY date DESC")
     suspend fun getTransactionsByTransferId(transferId: String): List<Transaction>
+
+    /**
+     * Delete auto-allocation transaction records linked to a contribution.
+     * Used during allocation reversal when the triggering transaction is edited/deleted.
+     */
+    @Query("DELETE FROM transactions WHERE referenceId = :contributionId AND sourceModule = 'auto_allocation'")
+    suspend fun deleteTransactionByReferenceId(contributionId: String)
 }
 
 

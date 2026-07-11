@@ -73,11 +73,15 @@ class ScheduledAllocationWorker @AssistedInject constructor(
         for (suggestion in result.autoExecuted) {
             Log.d(TAG, "[AutoExec] Rule=${suggestion.ruleId} Goal=${suggestion.goalName} Amount=${suggestion.amount}")
             try {
+                // Generate a deterministic idempotency key from ruleId + execution timestamp
+                // to prevent duplicate allocations across worker retries
+                val idempotencyKey = "scheduled|${suggestion.ruleId}|${System.currentTimeMillis() / 60_000}"
                 val contributionResult = goalRepository.contribute(
                     goalId = suggestion.goalId,
                     accountId = suggestion.sourceAccountId,
                     amount = suggestion.amount,
-                    type = ContributionType.AUTO_ALLOCATION
+                    type = ContributionType.AUTO_ALLOCATION,
+                    transactionId = idempotencyKey
                 )
                 if (contributionResult.isSuccess) {
                     Log.d(TAG, "[AutoExec] SUCCESS — ${suggestion.amount} allocated to ${suggestion.goalName}")

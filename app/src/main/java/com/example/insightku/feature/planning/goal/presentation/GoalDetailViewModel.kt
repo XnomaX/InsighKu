@@ -67,10 +67,7 @@ class GoalDetailViewModel @Inject constructor(
             is GoalDetailEvent.ShowEditAutoAllocationRule -> showEditAutoAllocationRule(event.rule)
             is GoalDetailEvent.AddAutoAllocationRule -> addAutoAllocationRule(event.rule)
             is GoalDetailEvent.UpdateAutoAllocationRule -> updateAutoAllocationRule(event.rule)
-            is GoalDetailEvent.DeleteAutoAllocationRule -> showDeleteAutoAllocationConfirm(event.ruleId)
-            is GoalDetailEvent.ShowDeleteAutoAllocationConfirm -> showDeleteAutoAllocationConfirm(event.ruleId)
-            is GoalDetailEvent.ConfirmDeleteAutoAllocationRule -> confirmDeleteAutoAllocationRule()
-            is GoalDetailEvent.CancelDeleteAutoAllocationRule -> cancelDeleteAutoAllocationRule()
+            is GoalDetailEvent.DeleteAutoAllocationRule -> deleteAutoAllocationRule(event.ruleId)
             is GoalDetailEvent.ToggleAutoAllocationRule -> toggleAutoAllocationRule(event.ruleId, event.enabled)
         }
     }
@@ -168,9 +165,14 @@ class GoalDetailViewModel @Inject constructor(
     private fun showEditAutoAllocationRule(rule: AutoAllocationRule) { _uiState.update { it.copy(showAutoAllocationDialog = true, editingAutoAllocationRule = rule) } }
     private fun addAutoAllocationRule(rule: AutoAllocationRule) { viewModelScope.launch { goalRepository.addAutoAllocationRule(rule).onSuccess { _uiState.update { it.copy(showAutoAllocationDialog = false, editingAutoAllocationRule = null) } }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.goal_add_rule_failed)) } } } }
     private fun updateAutoAllocationRule(rule: AutoAllocationRule) { viewModelScope.launch { goalRepository.updateAutoAllocationRule(rule).onSuccess { _uiState.update { it.copy(showAutoAllocationDialog = false, editingAutoAllocationRule = null) } }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.goal_update_rule_failed)) } } } }
-    private fun showDeleteAutoAllocationConfirm(ruleId: String) { _uiState.update { it.copy(showDeleteAutoAllocationRuleConfirm = true, pendingDeleteAutoAllocationRuleId = ruleId) } }
-    private fun confirmDeleteAutoAllocationRule() { val ruleId = _uiState.value.pendingDeleteAutoAllocationRuleId ?: return; _uiState.update { it.copy(showDeleteAutoAllocationRuleConfirm = false, pendingDeleteAutoAllocationRuleId = null, showAutoAllocationDialog = false, editingAutoAllocationRule = null) }; viewModelScope.launch { goalRepository.deleteAutoAllocationRule(ruleId).onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.goal_delete_rule_failed)) } } } }
-    private fun cancelDeleteAutoAllocationRule() { _uiState.update { it.copy(showDeleteAutoAllocationRuleConfirm = false, pendingDeleteAutoAllocationRuleId = null) } }
+    private fun deleteAutoAllocationRule(ruleId: String) {
+        _uiState.update { it.copy(showAutoAllocationDialog = false, editingAutoAllocationRule = null) }
+        viewModelScope.launch {
+            goalRepository.deleteAutoAllocationRule(ruleId).onFailure { e ->
+                _uiState.update { it.copy(error = e.message ?: context.getString(R.string.goal_delete_rule_failed)) }
+            }
+        }
+    }
     private fun toggleAutoAllocationRule(ruleId: String, enabled: Boolean) { viewModelScope.launch { goalRepository.setRuleEnabled(ruleId, enabled) } }
 
     private fun loadMoreContributions() {

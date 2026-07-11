@@ -24,9 +24,7 @@ sealed class GoalDetailEvent {
     data class UpdateAutoAllocationRule(val rule: AutoAllocationRule) : GoalDetailEvent()
     data class DeleteAutoAllocationRule(val ruleId: String) : GoalDetailEvent()
     data class ToggleAutoAllocationRule(val ruleId: String, val enabled: Boolean) : GoalDetailEvent()
-    data class ShowDeleteAutoAllocationConfirm(val ruleId: String) : GoalDetailEvent()
-    data object ConfirmDeleteAutoAllocationRule : GoalDetailEvent()
-    data object CancelDeleteAutoAllocationRule : GoalDetailEvent()
+
     data object LoadMoreContributions : GoalDetailEvent()
     data object ArchiveGoal : GoalDetailEvent()
     data object DeleteGoal : GoalDetailEvent()

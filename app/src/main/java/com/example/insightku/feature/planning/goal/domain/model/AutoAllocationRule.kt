@@ -3,6 +3,7 @@ package com.example.insightku.feature.planning.goal.domain.model
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
+import com.example.insightku.feature.planning.goal.data.model.RoundUpMode
 import com.example.insightku.feature.planning.goal.data.model.AllocationValueType
 import com.example.insightku.feature.planning.goal.data.model.AutoAllocationRuleEntity
 import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
@@ -45,7 +46,7 @@ data class AutoAllocationRule(
     val createdAt: Instant, val updatedAt: Instant,
     val sourceAccountId: String? = null, val confirmationMode: ConfirmationMode = ConfirmationMode.AUTO,
     val incomeCategoryIds: List<String> = emptyList(), val minIncomeAmount: Double = 0.0,
-    val roundUpEnabled: Boolean = false, val roundUpIncrement: Double = 5000.0,
+    val roundUpEnabled: Boolean = false, val roundUpIncrement: Double = 5000.0, val roundUpMode: RoundUpMode = RoundUpMode.ROUND_UP,
     val scheduledFrequency: ScheduledFrequency = ScheduledFrequency.DAILY,
     val scheduledDayOfWeek: Int = 1, val scheduledDayOfMonth: Int = 1, val lastExecutedAt: Instant? = null,
     // ── P1.1: Trigger-specific configuration ────────────────────────────────
@@ -88,7 +89,11 @@ data class AutoAllocationRule(
             if (minIncomeAmount > 0) "$base (min ${formatAmount(minIncomeAmount)})" else base
         }
         AllocationTriggerType.SPENDING_CATEGORY -> if (allocationType == AllocationValueType.PERCENT) "Save ${allocationValue.toInt()}% from category spending" else "Save ${formatAmount(allocationValue)} from category spending"
-        AllocationTriggerType.ROUND_UP -> "Round up to nearest ${formatAmount(roundUpIncrement)}"
+        AllocationTriggerType.ROUND_UP -> when (roundUpMode) {
+            RoundUpMode.ROUND_UP -> "Round up to nearest ${formatAmount(roundUpIncrement)}"
+            RoundUpMode.ROUND_DOWN -> "Round down to nearest ${formatAmount(roundUpIncrement)}"
+            RoundUpMode.ROUND_NEAREST -> "Round to nearest ${formatAmount(roundUpIncrement)}"
+        }
         AllocationTriggerType.DAILY -> "Every day at ${formatTime()}"
         AllocationTriggerType.WEEKLY -> "Every ${dayOfWeekName()} at ${formatTime()}"
         AllocationTriggerType.BIWEEKLY -> "Every 2 weeks from ${biweeklyStartDateText()} at ${formatTime()}"
@@ -119,13 +124,21 @@ data class AutoAllocationRule(
             "$modeText in selected categories"
         }
         AllocationTriggerType.INCOME_RECEIVED -> "When income is received"
-        AllocationTriggerType.ROUND_UP -> "After every expense (round-up)"
+        AllocationTriggerType.ROUND_UP -> when (roundUpMode) {
+            RoundUpMode.ROUND_UP -> "After every expense (round-up)"
+            RoundUpMode.ROUND_DOWN -> "After every expense (round-down)"
+            RoundUpMode.ROUND_NEAREST -> "After every expense (round-nearest)"
+        }
     }
 
     val triggerLabel: String get() = when (triggerType) {
         AllocationTriggerType.INCOME_RECEIVED -> "Income-Based"
         AllocationTriggerType.SPENDING_CATEGORY -> "Category-Based"
-        AllocationTriggerType.ROUND_UP -> "Round-Up"
+        AllocationTriggerType.ROUND_UP -> when (roundUpMode) {
+            RoundUpMode.ROUND_UP -> "Round-Up"
+            RoundUpMode.ROUND_DOWN -> "Round-Down"
+            RoundUpMode.ROUND_NEAREST -> "Round-Nearest"
+        }
         AllocationTriggerType.DAILY -> "Daily"
         AllocationTriggerType.WEEKLY -> "Weekly"
         AllocationTriggerType.BIWEEKLY -> "Biweekly"
@@ -159,7 +172,7 @@ data class AutoAllocationRule(
                 updatedAt = Instant.ofEpochMilli(entity.updatedAt), sourceAccountId = entity.sourceAccountId,
                 confirmationMode = ConfirmationMode.fromString(entity.confirmationMode),
                 incomeCategoryIds = categoryIds, minIncomeAmount = entity.minIncomeAmount,
-                roundUpEnabled = entity.roundUpEnabled, roundUpIncrement = entity.roundUpIncrement,
+                roundUpEnabled = entity.roundUpEnabled, roundUpIncrement = entity.roundUpIncrement, roundUpMode = entity.roundMode,
                 scheduledFrequency = ScheduledFrequency.fromString(entity.scheduledFrequency),
                 scheduledDayOfWeek = entity.scheduledDayOfWeek, scheduledDayOfMonth = entity.scheduledDayOfMonth,
                 lastExecutedAt = if (entity.lastExecutedAt > 0) Instant.ofEpochMilli(entity.lastExecutedAt) else null,
@@ -180,7 +193,7 @@ data class AutoAllocationRule(
             sourceAccountId = sourceAccountId, confirmationMode = confirmationMode.value,
             incomeCategoryIds = JSONArray(incomeCategoryIds).toString(),
             minIncomeAmount = minIncomeAmount, roundUpEnabled = roundUpEnabled,
-            roundUpIncrement = roundUpIncrement, scheduledFrequency = scheduledFrequency.value,
+            roundUpIncrement = roundUpIncrement, roundUpMode = roundUpMode.value, scheduledFrequency = scheduledFrequency.value,
             scheduledDayOfWeek = scheduledDayOfWeek, scheduledDayOfMonth = scheduledDayOfMonth,
             lastExecutedAt = lastExecutedAt?.toEpochMilli() ?: 0L,
             executionHour = executionHour, executionMinute = executionMinute,
