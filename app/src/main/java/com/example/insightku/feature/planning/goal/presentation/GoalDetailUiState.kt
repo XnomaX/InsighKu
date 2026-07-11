@@ -29,7 +29,6 @@ data class GoalDetailUiState(
     val contributionAmount: String = "",
     val contributionNotes: String = "",
     val selectedAccountId: String? = null,
-    val showAccountPicker: Boolean = false,
     val isSubmitting: Boolean = false,
     val isInsufficientFunds: Boolean = false,
     val shortfall: Double = 0.0,

@@ -55,8 +55,6 @@ class GoalDetailViewModel @Inject constructor(
             is GoalDetailEvent.ShowContributeDialog -> showContributeDialog()
             is GoalDetailEvent.ShowWithdrawDialog -> showWithdrawDialog()
             is GoalDetailEvent.DismissDialog -> dismissDialog()
-            is GoalDetailEvent.ShowAccountPicker -> _uiState.update { it.copy(showAccountPicker = true) }
-            is GoalDetailEvent.HideAccountPicker -> _uiState.update { it.copy(showAccountPicker = false) }
             is GoalDetailEvent.SelectAccount -> selectAccount(event.accountId)
             is GoalDetailEvent.UpdateAmount -> updateAmount(event.amount)
             is GoalDetailEvent.UpdateNotes -> updateNotes(event.notes)
@@ -113,7 +111,7 @@ class GoalDetailViewModel @Inject constructor(
     }
 
     private fun dismissDialog() {
-        _uiState.update { it.copy(showContributeDialog = false, showWithdrawDialog = false, showEditGoalDialog = false, showDeleteConfirmDialog = false, showArchiveConfirmDialog = false, showAccountPicker = false, showAutoAllocationDialog = false, editingAutoAllocationRule = null) }
+        _uiState.update { it.copy(showContributeDialog = false, showWithdrawDialog = false, showEditGoalDialog = false, showDeleteConfirmDialog = false, showArchiveConfirmDialog = false, showAutoAllocationDialog = false, editingAutoAllocationRule = null) }
     }
 
     private fun selectAccount(accountId: String) { _uiState.update { it.copy(selectedAccountId = accountId, isInsufficientFunds = false, shortfall = 0.0) } }

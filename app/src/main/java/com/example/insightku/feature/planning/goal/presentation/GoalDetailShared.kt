@@ -24,14 +24,6 @@ internal fun SectionHeader(title: String, subtitle: String) {
 }
 
 @Composable
-internal fun SummaryRow(label: String, value: String, valueColor: Color) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = com.example.insightku.core.ui.theme.AppPalette.textMuted)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = valueColor)
-    }
-}
-
-@Composable
 internal fun GoalDetailSuccessOverlay(message: String) {
     PremiumSuccessOverlay(message = message)
 }
