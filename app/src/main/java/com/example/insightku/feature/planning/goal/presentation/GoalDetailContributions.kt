@@ -30,6 +30,7 @@ import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.domain.model.Contribution
+import com.example.insightku.core.utils.AppConstants
 import java.time.ZoneId
 
 @Composable
@@ -48,9 +49,14 @@ internal fun ContributionSummarySection(uiState: GoalDetailUiState, goalColor: C
                 if (uiState.averageContribution > 0) {
                     ContributionMiniCard(label = stringResource(R.string.goal_average), value = NumberFormatter.formatCurrencyCompact(uiState.averageContribution), subtitle = stringResource(R.string.goal_contrib_per_deposit), icon = Icons.Outlined.Equalizer, color = PurpleViolet, modifier = Modifier.weight(1f))
                 }
-                uiState.lastActivityDate?.let { date ->
-                    ContributionMiniCard(label = stringResource(R.string.goal_last_deposit_date), value = DateFormatter.formatShortDate(date.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()), subtitle = stringResource(R.string.goal_contrib_most_recent), icon = Icons.Outlined.Event, color = AppPalette.textMuted, modifier = Modifier.weight(1f))
+                val lastDate = uiState.lastActivityDate
+                val isValidLastDate = lastDate != null && lastDate.toEpochMilli() > AppConstants.EPOCH_CUTOFF_MS
+                val lastDateValue = if (isValidLastDate) {
+                    DateFormatter.formatShortDate(lastDate!!.toEpochMilli())
+                } else {
+                    "—"
                 }
+                ContributionMiniCard(label = stringResource(R.string.goal_last_deposit_date), value = lastDateValue, subtitle = stringResource(R.string.goal_contrib_most_recent), icon = Icons.Outlined.Event, color = AppPalette.textMuted, modifier = Modifier.weight(1f))
             }
         }
     }

@@ -36,6 +36,7 @@ data class GoalDetailUiState(
     val contributionPage: Int = 0,
     val isLoadingMore: Boolean = false,
     val hasMoreContributions: Boolean = false,
+    val showExtendDeadlineDialog: Boolean = false,
     val expenseCategories: List<CategoryInfo> = emptyList()
 ) {
     companion object { fun initial() = GoalDetailUiState() }

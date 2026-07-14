@@ -14,6 +14,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.TransactionDao
+import com.example.insightku.core.utils.AppConstants
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
@@ -201,9 +202,11 @@ class GoalRepository @Inject constructor(
         transactionId: String?, notes: String, goal: GoalEntity
     ): ContributionEntity {
         return database.withTransaction {
+            val now = System.currentTimeMillis()
             val contribution = ContributionEntity(
                 goalId = goalId, accountId = accountId, amount = amount,
-                type = type.value, transactionId = transactionId, notes = notes, isSynced = false
+                type = type.value, transactionId = transactionId, notes = notes, isSynced = false,
+                createdAt = now
             )
             contributionDao.insertContribution(contribution)
             accountDao.updateBalance(accountId, -amount)
@@ -220,7 +223,7 @@ class GoalRepository @Inject constructor(
             val txTitle = if (type == ContributionType.AUTO_ALLOCATION) "Auto: ${goal.name}" else "Goal: ${goal.name}"
             val tx = Transaction(
                 title = txTitle, amount = -amount, category = txType.name.replace('_', ' '),
-                date = System.currentTimeMillis(), type = txType,
+                date = now, type = txType,
                 description = notes.ifBlank { "Contribution to ${goal.name}" },
                 accountId = accountId, goalId = goalId, goalName = goal.name,
                 sourceModule = if (type == ContributionType.AUTO_ALLOCATION) "auto_allocation" else "goal",
@@ -298,16 +301,18 @@ class GoalRepository @Inject constructor(
     private suspend fun atomicWithdraw(goalId: String, accountId: String, amount: Double, notes: String): ContributionEntity {
         return database.withTransaction {
             val goal = goalDao.getGoalById(goalId)
+            val now = System.currentTimeMillis()
             val contribution = ContributionEntity(
                 goalId = goalId, accountId = accountId, amount = -amount,
-                type = ContributionType.WITHDRAWAL.value, notes = notes, isSynced = false
+                type = ContributionType.WITHDRAWAL.value, notes = notes, isSynced = false,
+                createdAt = now
             )
             contributionDao.insertContribution(contribution)
             accountDao.updateBalance(accountId, amount)
 
             val tx = Transaction(
                 title = context.getString(R.string.goal_withdraw_title, goal?.name ?: context.getString(R.string.goals_title)), amount = amount,
-                category = "Goal Withdrawal", date = System.currentTimeMillis(),
+                category = "Goal Withdrawal", date = now,
                 type = TransactionType.GOAL_WITHDRAWAL,
                 description = notes.ifBlank { "Withdrawal from ${goal?.name ?: "Goal"}" },
                 accountId = accountId, goalId = goalId, goalName = goal?.name,
@@ -479,6 +484,50 @@ class GoalRepository @Inject constructor(
         }
     }
 
+    /**
+     * One-time migration: fix contributions with epoch (0L) timestamps.
+     * Attempts to recover the real timestamp from the linked Transaction's
+     * [Transaction.date] field via [Transaction.referenceId].
+     */
+    private var legacyTimestampFixRun = false
+
+    suspend fun fixLegacyContributionTimestamps() {
+        if (legacyTimestampFixRun) return
+        legacyTimestampFixRun = true
+        try {
+            val cutoff = com.example.insightku.core.utils.AppConstants.EPOCH_CUTOFF_MS
+            val broken = contributionDao.getContributionsWithEpochTimestamps(cutoff)
+            if (broken.isEmpty()) return
+            Log.d(TAG, "Fixing ${broken.size} contribution(s) with epoch timestamps")
+            var fixed = 0
+            for (contribution in broken) {
+                val newTimestamp = resolveContributionTimestamp(contribution)
+                contributionDao.updateContributionTimestamp(contribution.id, newTimestamp)
+                fixed++
+            }
+            Log.d(TAG, "Fixed $fixed contribution timestamp(s)")
+        } catch (e: Exception) {
+            Log.w(TAG, "fixLegacyContributionTimestamps failed", e)
+        }
+    }
+
+    private suspend fun resolveContributionTimestamp(contribution: ContributionEntity): Long {
+        // 1) If transactionId is set, use the Transaction's date
+        if (!contribution.transactionId.isNullOrBlank()) {
+            val tx = transactionDao.getTransactionById(contribution.transactionId)
+            if (tx != null && tx.date > AppConstants.EPOCH_CUTOFF_MS) return tx.date
+        }
+        // 2) If referenceId links a Transaction to this contribution, use that Transaction's date
+        //    (Transaction.referenceId == contribution.id for linked records)
+        val linkedTx = transactionDao.getTransactionById(contribution.id)
+        if (linkedTx != null && linkedTx.date > AppConstants.EPOCH_CUTOFF_MS) return linkedTx.date
+        // 3) Use the goal's createdAt as best-effort
+        val goal = goalDao.getGoalById(contribution.goalId)
+        if (goal != null && goal.createdAt > AppConstants.EPOCH_CUTOFF_MS) return goal.createdAt
+        // 4) Final fallback: now
+        return System.currentTimeMillis()
+    }
+
     suspend fun refreshGoalsFromFirestore(userId: String) {
         try {
             val snapshot = firestore.collection("users").document(userId).collection("goals").get().await()
@@ -508,7 +557,7 @@ class GoalRepository @Inject constructor(
                         type = data["type"] as? String ?: "manual",
                         transactionId = data["transactionId"] as? String,
                         notes = data["notes"] as? String ?: "",
-                        createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L, isSynced = true)
+                        createdAt = (data["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(), isSynced = true)
                 }
             }
             contributionDao.insertContributionsFromRemote(remoteContributions)

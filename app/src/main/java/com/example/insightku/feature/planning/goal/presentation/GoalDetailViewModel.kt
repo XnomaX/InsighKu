@@ -20,6 +20,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
 import javax.inject.Inject
 
 private const val CONTRIBUTION_PAGE_SIZE = 20
@@ -39,7 +40,17 @@ class GoalDetailViewModel @Inject constructor(
     val uiState: StateFlow<GoalDetailUiState> = _uiState.asStateFlow()
     private var currentGoal: Goal? = null
 
-    init { if (goalId.isNotEmpty()) loadGoalData(goalId) }
+    init {
+        if (goalId.isNotEmpty()) {
+            viewModelScope.launch {
+                // Fix legacy epoch timestamps BEFORE loading data.
+                // This prevents contributions with createdAt=0L from appearing
+                // at wrong positions on the savings activity chart.
+                goalRepository.fixLegacyContributionTimestamps()
+                loadGoalData(goalId)
+            }
+        }
+    }
 
     fun onEvent(event: GoalDetailEvent) {
         when (event) {
@@ -67,6 +78,8 @@ class GoalDetailViewModel @Inject constructor(
             is GoalDetailEvent.UpdateAutoAllocationRule -> updateAutoAllocationRule(event.rule)
             is GoalDetailEvent.DeleteAutoAllocationRule -> deleteAutoAllocationRule(event.ruleId)
             is GoalDetailEvent.ToggleAutoAllocationRule -> toggleAutoAllocationRule(event.ruleId, event.enabled)
+            is GoalDetailEvent.ShowExtendDeadlineDialog -> _uiState.update { it.copy(showExtendDeadlineDialog = true) }
+            is GoalDetailEvent.ConfirmExtendDeadline -> confirmExtendDeadline(event.newDeadline)
         }
     }
 
@@ -111,7 +124,7 @@ class GoalDetailViewModel @Inject constructor(
     }
 
     private fun dismissDialog() {
-        _uiState.update { it.copy(showContributeDialog = false, showWithdrawDialog = false, showEditGoalDialog = false, showDeleteConfirmDialog = false, showArchiveConfirmDialog = false, showAutoAllocationDialog = false, editingAutoAllocationRule = null) }
+        _uiState.update { it.copy(showContributeDialog = false, showWithdrawDialog = false, showEditGoalDialog = false, showDeleteConfirmDialog = false, showArchiveConfirmDialog = false, showAutoAllocationDialog = false, showExtendDeadlineDialog = false, editingAutoAllocationRule = null) }
     }
 
     private fun selectAccount(accountId: String) { _uiState.update { it.copy(selectedAccountId = accountId, isInsufficientFunds = false, shortfall = 0.0) } }
@@ -172,6 +185,18 @@ class GoalDetailViewModel @Inject constructor(
         }
     }
     private fun toggleAutoAllocationRule(ruleId: String, enabled: Boolean) { viewModelScope.launch { goalRepository.setRuleEnabled(ruleId, enabled) } }
+
+    private fun confirmExtendDeadline(newDeadline: LocalDate) {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            val updatedGoal = goal.copy(deadline = newDeadline, updatedAt = Instant.now())
+            goalRepository.updateGoal(updatedGoal).onSuccess {
+                _uiState.update { it.copy(showExtendDeadlineDialog = false, snackbarMessage = context.getString(R.string.goal_deadline_extended)) }
+            }.onFailure { e ->
+                _uiState.update { it.copy(error = e.message ?: context.getString(R.string.goal_deadline_extend_failed)) }
+            }
+        }
+    }
 
     private fun loadMoreContributions() {
         if (_uiState.value.isLoadingMore || !_uiState.value.hasMoreContributions) return

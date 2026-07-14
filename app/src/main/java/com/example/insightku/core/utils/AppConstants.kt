@@ -7,4 +7,11 @@ object AppConstants {
 
     // ── Colors ─────────────────────────────────────────────────────────────────
     const val ERROR_COLOR = 0xFFEF4444
+
+    // ── Date Validation ────────────────────────────────────────────────────────
+    /**
+     * Epoch cutoff in milliseconds (Jan 1, 2000).
+     * Timestamps before this are treated as invalid/missing.
+     */
+    const val EPOCH_CUTOFF_MS = 946684800000L
 }

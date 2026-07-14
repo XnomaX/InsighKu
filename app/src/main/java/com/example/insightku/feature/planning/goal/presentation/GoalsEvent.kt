@@ -25,7 +25,7 @@ sealed class GoalsEvent {
     data class CreateGoal(
         val name: String,
         val targetAmount: Double,
-        val deadline: LocalDate?,
+        val deadline: LocalDate,  // required — goals must have a deadline
         val iconName: String,
         val color: String,
         val notes: String = "",
@@ -35,7 +35,7 @@ sealed class GoalsEvent {
         val id: String,
         val name: String,
         val targetAmount: Double,
-        val deadline: LocalDate?,
+        val deadline: LocalDate,  // required — goals must have a deadline
         val iconName: String,
         val color: String,
         val notes: String
