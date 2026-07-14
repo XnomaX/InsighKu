@@ -1242,6 +1242,16 @@
 
 
 
+    <!-- Savings Activity Chart -->
+    <string name="goal_savings_activity_chart">Aktivitas Tabungan</string>
+    <string name="goal_savings_activity_chart_desc">Saldo kumulatif Anda dari waktu ke waktu</string>
+    <string name="chart_cumulative_balance">Saldo Saat Ini</string>
+    <string name="chart_legend_deposit">Setoran</string>
+    <string name="chart_legend_withdrawal">Penarikan</string>
+    <string name="chart_empty_title">Belum ada aktivitas tabungan</string>
+    <string name="chart_net_change">Perubahan Bersih</string>
+    <string name="chart_empty_desc">Buat setoran pertama Anda untuk melihat perjalanan tabungan di grafik</string>
+
     <!-- Goal Detail Timeline -->
     <string name="goal_timeline_created">Tujuan Dibuat</string>
     <string name="goal_timeline_created_desc">"%1$s" telah dibuat</string>
@@ -1432,6 +1442,15 @@
     <string name="payment_due_in_days_body">"%1$s" jatuh tempo dalam %2$d hari. Jumlah: %3$s</string>
     <string name="payment_recurring">Berulang</string>
     <string name="payment_installment">Cicilan</string>
+
+    <!-- Extend Deadline -->
+    <string name="goal_deadline_urgent">%1$d hari tersisa</string>
+    <string name="goal_deadline_urgent_desc">Tenggat waktumu semakin dekat. Pertimbangkan untuk memperpanjangnya.</string>
+    <string name="goal_deadline_overdue">Tenggat Terlewat</string>
+    <string name="goal_deadline_overdue_desc">Tujuan ini sudah melewati tenggat. Perpanjang untuk melanjutkan.</string>
+    <string name="goal_extend_deadline_btn">Perpanjang</string>
+    <string name="goal_deadline_extended">Tenggat berhasil diperpanjang</string>
+    <string name="goal_deadline_extend_failed">Gagal memperpanjang tenggat</string>
 
     <!-- Goal Repository -->
     <string name="goal_withdraw_title">Tarik: %1$s</string>

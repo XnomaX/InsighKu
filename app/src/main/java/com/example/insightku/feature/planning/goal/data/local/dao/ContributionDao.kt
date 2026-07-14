@@ -144,6 +144,14 @@ interface ContributionDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertContributionsFromRemote(contributions: List<ContributionEntity>)
+
+    // ── Legacy Data Repair ─────────────────────────────────────────────────────
+
+    @Query("SELECT * FROM contributions WHERE createdAt < :cutoffMillis")
+    suspend fun getContributionsWithEpochTimestamps(cutoffMillis: Long): List<ContributionEntity>
+
+    @Query("UPDATE contributions SET createdAt = :newTimestamp WHERE id = :id")
+    suspend fun updateContributionTimestamp(id: String, newTimestamp: Long)
 }
 
 data class GoalAllocation(

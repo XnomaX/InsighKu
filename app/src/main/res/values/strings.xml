@@ -1335,6 +1335,16 @@
     <string name="alloc_notif_channel">Auto Allocation</string>
     <string name="alloc_notif_channel_desc">Notifications for automatic savings allocations</string>
 
+    <!-- Savings Activity Chart -->
+    <string name="goal_savings_activity_chart">Savings Activity</string>
+    <string name="goal_savings_activity_chart_desc">Your cumulative balance over time</string>
+    <string name="chart_cumulative_balance">Current Balance</string>
+    <string name="chart_legend_deposit">Deposit</string>
+    <string name="chart_legend_withdrawal">Withdrawal</string>
+    <string name="chart_empty_title">No savings activity yet</string>
+    <string name="chart_net_change">Net Change</string>
+    <string name="chart_empty_desc">Make your first deposit to see your savings journey on the chart</string>
+
     <!-- Goal Detail Timeline -->
     <string name="goal_timeline_created">Goal Created</string>
     <string name="goal_timeline_created_desc">\"%1$s\" was created</string>
@@ -1526,6 +1536,15 @@
     <string name="payment_due_in_days_body">\"%1$s\" is due in %2$d days. Amount: %3$s</string>
     <string name="payment_recurring">Recurring</string>
     <string name="payment_installment">Installment</string>
+
+    <!-- Extend Deadline -->
+    <string name="goal_deadline_urgent">%1$d days remaining</string>
+    <string name="goal_deadline_urgent_desc">Your deadline is approaching. Consider extending it.</string>
+    <string name="goal_deadline_overdue">Overdue Goal</string>
+    <string name="goal_deadline_overdue_desc">This goal has passed its deadline. Extend to continue.</string>
+    <string name="goal_extend_deadline_btn">Extend</string>
+    <string name="goal_deadline_extended">Deadline extended successfully</string>
+    <string name="goal_deadline_extend_failed">Failed to extend deadline</string>
 
     <!-- Goal Repository -->
     <string name="goal_withdraw_title">Withdraw: %1$s</string>
