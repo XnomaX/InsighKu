@@ -27,12 +27,19 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.feature.planning.goal.domain.model.Contribution
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PaintingStyle
+import androidx.compose.ui.graphics.PathEffect
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import com.patrykandpatrick.vico.compose.cartesian.decoration.Decoration
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
@@ -42,13 +49,12 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
+import com.patrykandpatrick.vico.compose.cartesian.VicoZoomState
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Insets
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
-
-
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -64,13 +70,11 @@ private data class ChartPoint(
     val label: String,
 )
 
-private enum class TimeScale {
-    MINUTES, HOURS, DAYS, WEEKS, MONTHS
-}
-
 // ExtraStore keys for timestamp mapping
 private val timestampKey = ExtraStore.Key<List<Long>>()
-private val timeScaleKey = ExtraStore.Key<TimeScale>()
+private val xRangeStartKey = ExtraStore.Key<Double>()
+private val xRangeEndKey = ExtraStore.Key<Double>()
+
 
 // ─── Main Chart Composable ────────────────────────────────────────────────────────
 
@@ -115,14 +119,21 @@ private fun ChartCard(
     }
 
     val modelProducer = remember { CartesianChartModelProducer() }
-    val timeScale = remember(points) { determineTimeScale(points) }
+
+    // Compute deadline X value (epoch millis as float)
+    val deadlineXMillis = remember(goalDeadline, goalStartDate) {
+        goalDeadline?.atStartOfDay(ZoneId.systemDefault())
+            ?.toInstant()
+            ?.toEpochMilli()
+            ?.toFloat()
+    }
 
     // Timestamp lookup map for marker
     val timestampMap = remember(points) {
         points.associate { it.timestamp.toEpochMilli().toFloat() to it.timestamp }
     }
 
-    LaunchedEffect(points) {
+    LaunchedEffect(points, deadlineXMillis) {
         if (points.isEmpty()) return@LaunchedEffect
         val timestamps = points.map { it.timestamp.toEpochMilli() }
         val balances = points.map { it.balance }
@@ -133,7 +144,8 @@ private fun ChartCard(
             }
             extras {
                 it[timestampKey] = timestamps
-                it[timeScaleKey] = timeScale
+                it[xRangeStartKey] = timestamps.first().toDouble()
+                it[xRangeEndKey] = timestamps.last().toDouble()
             }
         }
     }
@@ -151,8 +163,25 @@ private fun ChartCard(
             ChartSummaryHeader(points = points, goalColor = goalColor)
             Spacer(Modifier.height(12.dp))
 
-            val xAxisFormatter = remember(points, timeScale) {
-                createXAxisFormatter(points, timeScale)
+            val zoomState = rememberVicoZoomState(zoomEnabled = true)
+            val xAxisFormatter = remember {
+                createAdaptiveXAxisFormatter(zoomState)
+            }
+
+            // Build deadline decoration (vertical dashed line)
+            val deadlineXFloat = deadlineXMillis
+            val firstXFloat = points.firstOrNull()?.timestamp?.toEpochMilli()?.toFloat()
+            val deadlineDecoration = remember(goalColor, deadlineXFloat, firstXFloat) {
+                if (deadlineXFloat != null && firstXFloat != null) {
+                    DeadlineVerticalLineDecoration(
+                        startX = firstXFloat,
+                        endX = deadlineXFloat,
+                        deadlineX = deadlineXFloat,
+                        color = goalColor,
+                    )
+                } else {
+                    null
+                }
             }
 
             CartesianChartHost(
@@ -174,6 +203,15 @@ private fun ChartCard(
                                 interpolator = LineCartesianLayer.Interpolator.cubic(),
                             ),
                         ),
+                        rangeProvider = remember(deadlineXMillis) {
+                            object : CartesianLayerRangeProvider {
+                                override fun getMinX(minX: Double, maxX: Double, extraStore: ExtraStore) = minX
+                                override fun getMaxX(minX: Double, maxX: Double, extraStore: ExtraStore) =
+                                    deadlineXMillis?.toDouble() ?: maxX
+                                override fun getMinY(minY: Double, maxY: Double, extraStore: ExtraStore) = minY
+                                override fun getMaxY(minY: Double, maxY: Double, extraStore: ExtraStore) = maxY
+                            }
+                        },
                     ),
                     startAxis = VerticalAxis.rememberStart(
                         valueFormatter = CartesianValueFormatter { _, y, _ ->
@@ -185,7 +223,12 @@ private fun ChartCard(
                         valueFormatter = xAxisFormatter,
                         line = null,
                     ),
-                    marker = rememberSavingsMarker(goalColor, points, timeScale, timestampMap),
+                    decorations = if (deadlineDecoration != null) {
+                        listOf(deadlineDecoration)
+                    } else {
+                        emptyList()
+                    },
+                    marker = rememberSavingsMarker(goalColor, points, timestampMap),
                     markerController = CartesianMarkerController.rememberToggleOnTap(),
                 ),
                 modelProducer = modelProducer,
@@ -193,7 +236,7 @@ private fun ChartCard(
                     .fillMaxWidth()
                     .height(220.dp),
                 scrollState = rememberVicoScrollState(),
-                zoomState = rememberVicoZoomState(zoomEnabled = true),
+                zoomState = zoomState,
             )
         }
     }
@@ -338,41 +381,98 @@ private fun computeChartPoints(
     return withStart
 }
 
-// ─── Time Scale Detection ─────────────────────────────────────────────────────────
+// ─── Time Formatting ─────────────────────────────────────────────────────────────
 
-private fun determineTimeScale(points: List<ChartPoint>): TimeScale {
-    if (points.size < 2) return TimeScale.MONTHS
-    val totalMs = points.last().timestamp.toEpochMilli() - points.first().timestamp.toEpochMilli()
+/**
+ * Formats a timestamp label based on the data duration in milliseconds.
+ */
+private fun formatTimeLabelByDuration(instant: Instant, durationMs: Long): String {
+    val dt = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+    val locale = Locale.getDefault()
     return when {
-        totalMs <= 3_600_000L -> TimeScale.MINUTES
-        totalMs <= 86_400_000L -> TimeScale.HOURS
-        totalMs <= 604_800_000L -> TimeScale.DAYS
-        totalMs <= 2_592_000_000L -> TimeScale.WEEKS
-        else -> TimeScale.MONTHS
+        durationMs <= 3_600_000L ->
+            dt.format(DateTimeFormatter.ofPattern("HH:mm", locale))
+        durationMs <= 86_400_000L ->
+            dt.format(DateTimeFormatter.ofPattern("HH'h'", locale))
+        durationMs <= 604_800_000L ->
+            dt.format(DateTimeFormatter.ofPattern("EEE d", locale))
+        durationMs <= 7_776_000_000L ->
+            dt.format(DateTimeFormatter.ofPattern("d MMM", locale))
+        else ->
+            dt.format(DateTimeFormatter.ofPattern("MMM yyyy", locale))
     }
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────────────────
 
-private fun createXAxisFormatter(
-    points: List<ChartPoint>,
-    timeScale: TimeScale,
+/**
+ * Creates an adaptive X-axis formatter that changes label format based on the data range.
+ * Reads the X range from [ExtraStore] (set during model transaction) to determine the appropriate
+ * time scale: HH:mm → HH'h' → EEE d → d MMM → MMM yyyy.
+ */
+private fun createAdaptiveXAxisFormatter(
+    zoomState: VicoZoomState,
 ): CartesianValueFormatter {
-    return CartesianValueFormatter { _, x, _ ->
+    return CartesianValueFormatter { context, x, _ ->
+        val startMs = context.model.extraStore[xRangeStartKey] ?: 0.0
+        val endMs = context.model.extraStore[xRangeEndKey] ?: 0.0
+        val totalDurationMs = (endMs - startMs).toLong()
+        val zoom = zoomState.value
+        val visibleDurationMs = (totalDurationMs / zoom).toLong()
         val instant = Instant.ofEpochMilli(x.toLong())
-        formatTimeLabel(instant, timeScale)
+        formatTimeLabelByDuration(instant, visibleDurationMs)
     }
 }
 
-private fun formatTimeLabel(instant: Instant, timeScale: TimeScale): String {
-    val dt = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-    return when (timeScale) {
-        TimeScale.MINUTES -> dt.format(DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()))
-        TimeScale.HOURS -> dt.format(DateTimeFormatter.ofPattern("HH'h'", Locale.getDefault()))
-        TimeScale.DAYS -> dt.format(DateTimeFormatter.ofPattern("EEE d", Locale.getDefault()))
-        TimeScale.WEEKS -> dt.format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault()))
-        TimeScale.MONTHS -> dt.format(DateTimeFormatter.ofPattern("MMM", Locale.getDefault()))
+// ─── Deadline Vertical Line Decoration ─────────────────────────────────────────────
+
+/**
+ * A custom [Decoration] that draws a vertical dashed line at the goal deadline X position.
+ * Follows the same pattern as Vico's built-in [com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalLine].
+ */
+private class DeadlineVerticalLineDecoration(
+    private val startX: Float,
+    private val endX: Float,
+    private val deadlineX: Float,
+    private val color: Color,
+) : Decoration {
+    override fun drawOverLayers(context: CartesianDrawingContext) {
+        with(context) {
+            val range = endX - startX
+            if (range <= 0f) return@with
+            val fraction = ((deadlineX - startX) / range).toFloat()
+            val canvasX = layerBounds.left + fraction * layerBounds.width
+
+            val d = density.density
+            val paint = Paint().apply {
+                this.color = this@DeadlineVerticalLineDecoration.color.copy(alpha = 0.7f)
+                strokeWidth = 2f * d
+                style = PaintingStyle.Stroke
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(12f * d, 6f * d),
+                )
+            }
+
+            canvas.drawLine(
+                Offset(canvasX, layerBounds.top),
+                Offset(canvasX, layerBounds.bottom),
+                paint,
+            )
+        }
     }
+
+    override fun drawUnderLayers(context: CartesianDrawingContext) = Unit
+
+    override fun equals(other: Any?): Boolean =
+        this === other ||
+        other is DeadlineVerticalLineDecoration &&
+        startX == other.startX &&
+        endX == other.endX &&
+        deadlineX == other.deadlineX &&
+        color == other.color
+
+    override fun hashCode(): Int =
+        31 * (31 * (31 * startX.hashCode() + endX.hashCode()) + deadlineX.hashCode()) + color.hashCode()
 }
 
 // ─── Marker ───────────────────────────────────────────────────────────────────────
@@ -381,7 +481,6 @@ private fun formatTimeLabel(instant: Instant, timeScale: TimeScale): String {
 private fun rememberSavingsMarker(
     goalColor: Color,
     points: List<ChartPoint>,
-    timeScale: TimeScale,
     timestampMap: Map<Float, Instant>,
 ): DefaultCartesianMarker {
     // Build lookup maps from x-value to balance and transaction type
@@ -415,13 +514,18 @@ private fun rememberSavingsMarker(
             padding = Insets(start = 10.dp, top = 6.dp),
             background = labelBackground,
         ),
-        valueFormatter = DefaultCartesianMarker.ValueFormatter { _, targets ->
+        valueFormatter = DefaultCartesianMarker.ValueFormatter { context, targets ->
             val target = targets.firstOrNull() ?: return@ValueFormatter "—"
             val x = target.x
             val closestTs = timestampMap.keys.minByOrNull { kotlin.math.abs(it - x) }
             val timestamp = timestampMap[closestTs]
             val (balance, isWithdrawal) = lookupMap[closestTs] ?: (0.0 to false)
-            val dateStr = if (timestamp != null) formatTimeLabel(timestamp, timeScale) else ""
+            val dateStr = if (timestamp != null) {
+                val startMs = context.model.extraStore[xRangeStartKey] ?: 0.0
+                val endMs = context.model.extraStore[xRangeEndKey] ?: 0.0
+                val dataDurationMs = (endMs - startMs).toLong()
+                formatTimeLabelByDuration(timestamp, dataDurationMs)
+            } else ""
             val typeStr = if (isWithdrawal) "🔴 Withdrawal" else "🟢 Deposit"
             "$dateStr\n${NumberFormatter.formatCurrency(balance)}\n$typeStr"
         },
