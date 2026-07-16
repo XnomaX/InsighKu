@@ -43,6 +43,9 @@ import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerControl
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
 import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.Insets
+import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 
 
@@ -388,10 +391,32 @@ private fun rememberSavingsMarker(
         }
     }
 
+    val labelBackground = rememberShapeComponent(
+        fill = Fill(AppPalette.card),
+        shape = RoundedCornerShape(8.dp),
+    )
+    val indicatorComponent = rememberShapeComponent(
+        fill = Fill(goalColor),
+        shape = CircleShape,
+    )
+    val guidelineComponent = rememberLineComponent(
+        fill = Fill(goalColor.copy(alpha = 0.35f)),
+        thickness = 1.dp,
+    )
+
     return rememberDefaultCartesianMarker(
-        label = rememberTextComponent(),
+        label = rememberTextComponent(
+            style = TextStyle(
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            ),
+            padding = Insets(start = 10.dp, top = 6.dp),
+            background = labelBackground,
+        ),
         valueFormatter = DefaultCartesianMarker.ValueFormatter { _, targets ->
-            val target = targets.firstOrNull() ?: return@ValueFormatter ""
+            val target = targets.firstOrNull() ?: return@ValueFormatter "—"
             val x = target.x
             val closestTs = timestampMap.keys.minByOrNull { kotlin.math.abs(it - x) }
             val timestamp = timestampMap[closestTs]
@@ -400,6 +425,7 @@ private fun rememberSavingsMarker(
             val typeStr = if (isWithdrawal) "🔴 Withdrawal" else "🟢 Deposit"
             "$dateStr\n${NumberFormatter.formatCurrency(balance)}\n$typeStr"
         },
-        guideline = null,
+        indicator = { indicatorComponent },
+        guideline = guidelineComponent,
     )
 }
