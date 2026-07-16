@@ -71,7 +71,7 @@ class SettingsViewModel @Inject constructor(
                 preferencesDataStore.defaultInputMode,
                 preferencesDataStore.whatsappEnabled,
                 preferencesDataStore.biometricEnabled
-            ) { cur, dark, input, wa, bio -> arrayOf(cur, dark, input, wa, bio) }
+            ) { cur, dark, input, wa, bio -> arrayOf<Any>(cur, dark, input, wa, bio) }
                 .collect { values ->
                     val notification        = preferencesDataStore.notificationEnabled.first()
                     val langCode            = preferencesDataStore.appLanguage.first()
