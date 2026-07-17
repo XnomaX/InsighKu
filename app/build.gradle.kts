@@ -83,6 +83,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
+    ksp(libs.hilt.kotlin.metadata)
     implementation(libs.hilt.navigation.compose)
 
     // WorkManager + Hilt-Work (Issue 2: Offline-First Sync)
