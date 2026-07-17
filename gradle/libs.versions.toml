@@ -1,20 +1,23 @@
 [versions]
-agp = "8.11.1"
-kotlin = "2.1.0"
-ksp = "2.1.0-1.0.29"
+agp = "8.13.2"
+kotlin = "2.3.10"
+ksp = "2.3.10"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 appcompat = "1.7.1"
 material = "1.12.0"
-hilt = "2.55"
+hilt = "2.58"
 hilt_nav_compose = "1.2.0"
+kotlinMetadataJvm = "2.3.10"
 uiText = "1.8.3"
 foundation = "1.8.3"
 firebase-bom = "33.7.0"
 firebase-auth = "23.1.0"
 google-services = "4.4.2"
+desugar = "2.1.5"
+vico = "3.2.3"
 
 
 [libraries]
@@ -33,10 +36,14 @@ firebase-auth = { module = "com.google.firebase:firebase-auth-ktx", version.ref 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt_nav_compose" }
+hilt-kotlin-metadata = { group = "org.jetbrains.kotlin", name = "kotlin-metadata-jvm", version.ref = "kotlinMetadataJvm" }
 
 
 androidx-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar" }
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
