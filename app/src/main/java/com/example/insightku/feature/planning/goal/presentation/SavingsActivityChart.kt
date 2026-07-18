@@ -31,6 +31,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
@@ -66,6 +69,7 @@ import kotlin.math.abs
 private data class ChartPoint(
     val timestamp: Instant,
     val balance: Double,
+    val amount: Double,
     val isWithdrawal: Boolean,
     val label: String,
 )
@@ -84,6 +88,7 @@ fun SavingsActivityChart(
     goalColor: Color,
     goalStartDate: Instant,
     goalDeadline: LocalDate?,
+    targetAmount: Double = 0.0,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -100,6 +105,7 @@ fun SavingsActivityChart(
                 goalColor = goalColor,
                 goalStartDate = goalStartDate,
                 goalDeadline = goalDeadline,
+                targetAmount = targetAmount,
             )
         }
     }
@@ -113,6 +119,7 @@ private fun ChartCard(
     goalColor: Color,
     goalStartDate: Instant,
     goalDeadline: LocalDate?,
+    targetAmount: Double,
 ) {
     val points = remember(contributions, goalStartDate, goalDeadline) {
         computeChartPoints(contributions, goalStartDate, goalDeadline)
@@ -221,6 +228,10 @@ private fun ChartCard(
                     ),
                     bottomAxis = HorizontalAxis.rememberBottom(
                         valueFormatter = xAxisFormatter,
+                        itemPlacer = HorizontalAxis.ItemPlacer.aligned(
+                            spacing = { maxOf(1, points.size / 6) },
+                            addExtremeLabelPadding = true,
+                        ),
                         line = null,
                     ),
                     decorations = if (deadlineDecoration != null) {
@@ -228,8 +239,15 @@ private fun ChartCard(
                     } else {
                         emptyList()
                     },
-                    marker = rememberSavingsMarker(goalColor, points, timestampMap),
-                    markerController = CartesianMarkerController.rememberToggleOnTap(),
+                    marker = rememberSavingsMarker(
+                        goalColor = goalColor,
+                        points = points,
+                        timestampMap = timestampMap,
+                        targetAmount = targetAmount,
+                        balanceLabel = stringResource(R.string.chart_tooltip_balance),
+                        progressLabel = stringResource(R.string.chart_tooltip_progress),
+                    ),
+                    markerController = CartesianMarkerController.rememberShowOnPress(),
                 ),
                 modelProducer = modelProducer,
                 modifier = Modifier
@@ -360,6 +378,7 @@ private fun computeChartPoints(
         ChartPoint(
             timestamp = c.createdAt,
             balance = balance,
+            amount = c.amount,
             isWithdrawal = c.isWithdrawal,
             label = c.notes.ifEmpty { if (c.isWithdrawal) "Withdrawal" else "Deposit" },
         )
@@ -370,6 +389,7 @@ private fun computeChartPoints(
             ChartPoint(
                 timestamp = goalStartDate,
                 balance = 0.0,
+                amount = 0.0,
                 isWithdrawal = points.first().isWithdrawal,
                 label = "Start",
             ),
@@ -401,6 +421,16 @@ private fun formatTimeLabelByDuration(instant: Instant, durationMs: Long): Strin
         else ->
             dt.format(DateTimeFormatter.ofPattern("MMM yyyy", locale))
     }
+}
+
+/**
+ * Formats a timestamp for display in the tooltip with full date and time.
+ * Example: "19 Jul 2026, 14:30"
+ */
+private fun formatTooltipDateTime(instant: Instant): String {
+    val dt = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+    val locale = Locale.getDefault()
+    return dt.format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale))
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────────────────
@@ -482,17 +512,28 @@ private fun rememberSavingsMarker(
     goalColor: Color,
     points: List<ChartPoint>,
     timestampMap: Map<Float, Instant>,
+    targetAmount: Double,
+    balanceLabel: String,
+    progressLabel: String,
 ): DefaultCartesianMarker {
-    // Build lookup maps from x-value to balance and transaction type
+    // Build lookup map from x-value to full point info (balance, amount, type)
     val lookupMap = remember(points) {
         points.associate { p ->
-            p.timestamp.toEpochMilli().toFloat() to (p.balance to p.isWithdrawal)
+            p.timestamp.toEpochMilli().toFloat() to Triple(p.balance, p.amount, p.isWithdrawal)
         }
     }
 
+    val depositColor = SuccessColor
+    val withdrawalColor = ExpenseRed
+    val textPrimary = AppPalette.textPrimary
+    val textMuted = AppPalette.textMuted
+    val cardColor = AppPalette.card
+
     val labelBackground = rememberShapeComponent(
-        fill = Fill(AppPalette.card),
-        shape = RoundedCornerShape(8.dp),
+        fill = Fill(cardColor),
+        shape = RoundedCornerShape(12.dp),
+        strokeFill = Fill(Color.Black.copy(alpha = 0.06f)),
+        strokeThickness = 1.dp,
     )
     val indicatorComponent = rememberShapeComponent(
         fill = Fill(goalColor),
@@ -506,30 +547,91 @@ private fun rememberSavingsMarker(
     return rememberDefaultCartesianMarker(
         label = rememberTextComponent(
             style = TextStyle(
-                color = Color.White,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
+                color = AppPalette.textPrimary,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Start,
+                lineHeight = 16.sp,
             ),
-            padding = Insets(start = 10.dp, top = 6.dp),
+            padding = Insets(start = 12.dp, top = 10.dp, end = 12.dp, bottom = 10.dp),
             background = labelBackground,
         ),
-        valueFormatter = DefaultCartesianMarker.ValueFormatter { context, targets ->
+        valueFormatter = DefaultCartesianMarker.ValueFormatter { _, targets ->
             val target = targets.firstOrNull() ?: return@ValueFormatter "—"
             val x = target.x
-            val closestTs = timestampMap.keys.minByOrNull { kotlin.math.abs(it - x) }
+            val closestTs = timestampMap.keys.minByOrNull { abs(it - x) }
             val timestamp = timestampMap[closestTs]
-            val (balance, isWithdrawal) = lookupMap[closestTs] ?: (0.0 to false)
-            val dateStr = if (timestamp != null) {
-                val startMs = context.model.extraStore[xRangeStartKey] ?: 0.0
-                val endMs = context.model.extraStore[xRangeEndKey] ?: 0.0
-                val dataDurationMs = (endMs - startMs).toLong()
-                formatTimeLabelByDuration(timestamp, dataDurationMs)
-            } else ""
-            val typeStr = if (isWithdrawal) "🔴 Withdrawal" else "🟢 Deposit"
-            "$dateStr\n${NumberFormatter.formatCurrency(balance)}\n$typeStr"
+            val (balance, amount, isWithdrawal) = lookupMap[closestTs]
+                ?: Triple(0.0, 0.0, false)
+
+            val dateStr = timestamp?.let { formatTooltipDateTime(it) }.orEmpty()
+
+            // Sign-prefixed transaction amount (primary info)
+            val amountStr = NumberFormatter.formatCurrencyWithSign(
+                amount = amount,
+                isIncome = !isWithdrawal,
+            )
+            val amountColorLocal = if (isWithdrawal) withdrawalColor else depositColor
+
+            buildAnnotatedString {
+                // Line 1: Transaction amount (primary, bold, colored)
+                withStyle(
+                    SpanStyle(
+                        color = amountColorLocal,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                ) { append(amountStr) }
+                append("\n")
+
+                // Line 2: Full date & time (muted)
+                withStyle(
+                    SpanStyle(
+                        color = textMuted,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Normal,
+                    ),
+                ) { append(dateStr) }
+                append("\n")
+
+                // Line 3: Accumulated balance
+                withStyle(
+                    SpanStyle(
+                        color = textPrimary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                ) {
+                    append("$balanceLabel: ")
+                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                        append(NumberFormatter.formatCurrency(balance))
+                    }
+                }
+
+                // Line 4: Goal progress (only when targetAmount > 0)
+                if (targetAmount > 0.0) {
+                    append("\n")
+                    val progress = (balance / targetAmount * 100).coerceIn(0.0, 100.0)
+                    withStyle(
+                        SpanStyle(
+                            color = textMuted,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Normal,
+                        ),
+                    ) {
+                        append("$progressLabel: ")
+                        withStyle(
+                            SpanStyle(
+                                color = goalColor,
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                        ) { append(String.format(Locale.getDefault(), "%.0f%%", progress)) }
+                    }
+                }
+            }
         },
+        labelPosition = DefaultCartesianMarker.LabelPosition.AroundPoint,
         indicator = { indicatorComponent },
+        indicatorSize = 22.dp,
         guideline = guidelineComponent,
     )
 }
