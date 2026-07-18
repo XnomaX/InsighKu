@@ -1344,6 +1344,8 @@
     <string name="chart_empty_title">No savings activity yet</string>
     <string name="chart_net_change">Net Change</string>
     <string name="chart_empty_desc">Make your first deposit to see your savings journey on the chart</string>
+    <string name="chart_tooltip_balance">Balance</string>
+    <string name="chart_tooltip_progress">Progress</string>
 
     <!-- Goal Detail Timeline -->
     <string name="goal_timeline_created">Goal Created</string>
