@@ -31,6 +31,8 @@ import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.domain.model.Contribution
 import com.example.insightku.core.utils.AppConstants
+import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 @Composable
@@ -79,6 +81,51 @@ internal fun ContributionMiniCard(label: String, value: String, subtitle: String
 }
 
 @Composable
+internal fun ContributionHistoryContent(
+    contributions: List<Contribution>,
+    accountMap: Map<String, Account>,
+    goalColor: Color,
+    isLoadingMore: Boolean,
+    hasMore: Boolean,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (contributions.isEmpty()) {
+        EmptyContributionsCard(goalColor)
+    } else {
+        Column(modifier = modifier) {
+            contributions.forEachIndexed { index, contribution ->
+                val isWithdrawal = contribution.isWithdrawal
+                val itemColor = if (isWithdrawal) ExpenseRed else SuccessColor
+                val account = accountMap[contribution.accountId]
+                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(itemColor.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                        Icon(if (isWithdrawal) Icons.Outlined.ArrowUpward else Icons.Outlined.Add, null, tint = itemColor, modifier = Modifier.size(20.dp))
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(if (isWithdrawal) stringResource(R.string.goal_contrib_withdrawal) else stringResource(R.string.goal_contrib_deposit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
+                        Text(account?.name ?: stringResource(R.string.goal_contrib_unknown_account), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                        val date = contribution.createdAt.atZone(ZoneId.systemDefault()).toLocalDateTime()
+                        Text("${date.dayOfMonth} ${date.month.name.take(3)} · ${date.hour.toString().padStart(2, '0')}:${date.minute.toString().padStart(2, '0')}", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("${if (isWithdrawal) "-" else "+"}${formatCurrencyFull(kotlin.math.abs(contribution.amount))}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = itemColor)
+                        if (contribution.notes.isNotBlank()) { Text(contribution.notes, style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, maxLines = 1) }
+                    }
+                }
+                if (index < contributions.lastIndex) { HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = AppPalette.cardBorder) }
+            }
+            if (hasMore) {
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    if (isLoadingMore) { CircularProgressIndicator(modifier = Modifier.size(24.dp), color = goalColor, strokeWidth = 2.dp) }
+                    else { TextButton(onClick = onLoadMore) { Text(stringResource(R.string.goal_load_more), color = goalColor) } }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 internal fun ContributionHistorySection(contributions: List<Contribution>, accountMap: Map<String, Account>, goalColor: Color, isLoadingMore: Boolean, hasMore: Boolean, onLoadMore: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
         SectionHeader(title = stringResource(R.string.goal_savings_activity), subtitle = stringResource(R.string.goal_savings_activity_desc))
@@ -87,35 +134,14 @@ internal fun ContributionHistorySection(contributions: List<Contribution>, accou
             EmptyContributionsCard(goalColor)
         } else {
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(Dimens.CardRadius), colors = CardDefaults.cardColors(containerColor = AppPalette.card), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp), border = BorderStroke(1.dp, AppPalette.cardBorder)) {
-                Column {
-                    contributions.forEachIndexed { index, contribution ->
-                        val isWithdrawal = contribution.isWithdrawal
-                        val itemColor = if (isWithdrawal) ExpenseRed else SuccessColor
-                        val account = accountMap[contribution.accountId]
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(itemColor.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                                Icon(if (isWithdrawal) Icons.Outlined.ArrowUpward else Icons.Outlined.Add, null, tint = itemColor, modifier = Modifier.size(20.dp))
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(if (isWithdrawal) stringResource(R.string.goal_contrib_withdrawal) else stringResource(R.string.goal_contrib_deposit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
-                                Text(account?.name ?: stringResource(R.string.goal_contrib_unknown_account), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                                val date = contribution.createdAt.atZone(ZoneId.systemDefault()).toLocalDateTime()
-                                Text("${date.dayOfMonth} ${date.month.name.take(3)} · ${date.hour.toString().padStart(2, '0')}:${date.minute.toString().padStart(2, '0')}", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                            }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("${if (isWithdrawal) "-" else "+"}${formatCurrencyFull(kotlin.math.abs(contribution.amount))}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = itemColor)
-                                if (contribution.notes.isNotBlank()) { Text(contribution.notes, style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, maxLines = 1) }
-                            }
-                        }
-                        if (index < contributions.lastIndex) { HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = AppPalette.cardBorder) }
-                    }
-                    if (hasMore) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                            if (isLoadingMore) { CircularProgressIndicator(modifier = Modifier.size(24.dp), color = goalColor, strokeWidth = 2.dp) }
-                            else { TextButton(onClick = onLoadMore) { Text(stringResource(R.string.goal_load_more), color = goalColor) } }
-                        }
-                    }
-                }
+                ContributionHistoryContent(
+                    contributions = contributions,
+                    accountMap = accountMap,
+                    goalColor = goalColor,
+                    isLoadingMore = isLoadingMore,
+                    hasMore = hasMore,
+                    onLoadMore = onLoadMore,
+                )
             }
         }
     }
@@ -131,6 +157,68 @@ internal fun EmptyContributionsCard(goalColor: Color) {
             Spacer(Modifier.height(12.dp))
             Text(stringResource(R.string.goal_no_deposits), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, textAlign = TextAlign.Center)
             Text(stringResource(R.string.goal_no_deposits_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+// ─── Combined Savings Activity Card ───────────────────────────────────────────────
+
+@Composable
+internal fun SavingsActivityCombinedCard(
+    contributions: List<Contribution>,
+    goalColor: Color,
+    goalStartDate: Instant,
+    goalDeadline: LocalDate?,
+    targetAmount: Double,
+    accountMap: Map<String, Account>,
+    isLoadingMore: Boolean,
+    hasMore: Boolean,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        SectionHeader(
+            title = stringResource(R.string.goal_savings_activity),
+            subtitle = stringResource(R.string.goal_savings_activity_desc),
+        )
+        Spacer(Modifier.height(12.dp))
+        if (contributions.isEmpty()) {
+            EmptyContributionsCard(goalColor)
+        } else {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(Dimens.CardRadius),
+                colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, goalColor.copy(alpha = 0.15f)),
+            ) {
+                Column {
+                    // Chart content
+                    ChartCardContent(
+                        contributions = contributions,
+                        goalColor = goalColor,
+                        goalStartDate = goalStartDate,
+                        goalDeadline = goalDeadline,
+                        targetAmount = targetAmount,
+                    )
+
+                    // Divider between chart and history
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = goalColor.copy(alpha = 0.1f),
+                    )
+
+                    // Contribution history content
+                    ContributionHistoryContent(
+                        contributions = contributions,
+                        accountMap = accountMap,
+                        goalColor = goalColor,
+                        isLoadingMore = isLoadingMore,
+                        hasMore = hasMore,
+                        onLoadMore = onLoadMore,
+                    )
+                }
+            }
         }
     }
 }

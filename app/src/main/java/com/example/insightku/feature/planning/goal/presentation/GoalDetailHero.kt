@@ -1,12 +1,14 @@
 package com.example.insightku.feature.planning.goal.presentation
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,46 +28,46 @@ import com.example.insightku.feature.planning.goal.domain.model.Goal
 @Composable
 internal fun PremiumDetailHeader(goal: Goal, goalColor: androidx.compose.ui.graphics.Color, onBack: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Row 1: Back button + Goal icon (centered) + spacer (matching back btn width)
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Back button (left — fixed width, no weight)
-            IconButton(onClick = onBack) {
+        // Back button — top-left row, clearly above the goal icon
+        Box(modifier = Modifier.fillMaxWidth()) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart)
+            ) {
                 Icon(Icons.Outlined.ArrowBack, stringResource(R.string.back), tint = AppPalette.textPrimary)
             }
+        }
 
-            // Goal icon (center — weighted to consume remaining space)
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Box(
-                    modifier = Modifier.size(80.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(
-                            Brush.linearGradient(
-                                listOf(goalColor.copy(alpha = 0.18f), goalColor.copy(alpha = 0.06f)),
-                                start = Offset(0f, 0f),
-                                end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = getGoalIcon(goal.iconName),
-                        contentDescription = null,
-                        tint = goalColor,
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
+        Spacer(Modifier.height(14.dp))
+
+        // Goal icon — centered horizontally, clearly below the arrow
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier.size(80.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(goalColor.copy(alpha = 0.18f), goalColor.copy(alpha = 0.06f)),
+                            start = Offset(0f, 0f),
+                            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getGoalIcon(goal.iconName),
+                    contentDescription = null,
+                    tint = goalColor,
+                    modifier = Modifier.size(36.dp)
+                )
             }
-
-            // Spacer (right) — matches default IconButton touch-target width (48dp)
-            // to keep the Goal icon perfectly centered
-            Spacer(modifier = Modifier.width(48.dp))
         }
 
         // ── Goal Name ───────────────────────────────────────────────────────
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(28.dp))
         Text(
             goal.name,
             style = MaterialTheme.typography.headlineSmall,
@@ -97,46 +99,7 @@ internal fun PremiumDetailHeader(goal: Goal, goalColor: androidx.compose.ui.grap
             modifier = Modifier.fillMaxWidth()
         )
 
-        // ── Progress Chip ───────────────────────────────────────────────────
-        Spacer(Modifier.height(10.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            val chipColor = when { goal.isCompleted -> SuccessColor; else -> goalColor }
-            val chipText = when {
-                goal.isCompleted -> stringResource(R.string.goal_hero_completed)
-                else -> stringResource(R.string.goal_hero_pct_saved, goal.progressPercent.toInt())
-            }
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = chipColor.copy(alpha = 0.12f),
-                border = BorderStroke(1.dp, chipColor.copy(alpha = 0.15f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (!goal.isCompleted) {
-                        val miniProgress = (goal.progressPercent.toFloat() / 100f).coerceIn(0f, 1f)
-                        Box(
-                            modifier = Modifier.width(48.dp).height(5.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(chipColor.copy(alpha = 0.15f))
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth(miniProgress).fillMaxHeight()
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(chipColor)
-                            )
-                        }
-                    } else {
-                        Icon(Icons.Outlined.CheckCircle, null, tint = chipColor, modifier = Modifier.size(14.dp))
-                    }
-                    Text(chipText, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = chipColor)
-                }
-            }
-        }
-
         // Bottom padding before next LazyColumn item
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
     }
 }
