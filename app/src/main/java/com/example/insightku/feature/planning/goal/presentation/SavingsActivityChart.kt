@@ -114,12 +114,13 @@ fun SavingsActivityChart(
 // ─── Chart Card ───────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ChartCard(
+internal fun ChartCardContent(
     contributions: List<Contribution>,
     goalColor: Color,
     goalStartDate: Instant,
     goalDeadline: LocalDate?,
     targetAmount: Double,
+    modifier: Modifier = Modifier,
 ) {
     val points = remember(contributions, goalStartDate, goalDeadline) {
         computeChartPoints(contributions, goalStartDate, goalDeadline)
@@ -127,7 +128,6 @@ private fun ChartCard(
 
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    // Compute deadline X value (epoch millis as float)
     val deadlineXMillis = remember(goalDeadline, goalStartDate) {
         goalDeadline?.atStartOfDay(ZoneId.systemDefault())
             ?.toInstant()
@@ -135,7 +135,6 @@ private fun ChartCard(
             ?.toFloat()
     }
 
-    // Timestamp lookup map for marker
     val timestampMap = remember(points) {
         points.associate { it.timestamp.toEpochMilli().toFloat() to it.timestamp }
     }
@@ -157,6 +156,108 @@ private fun ChartCard(
         }
     }
 
+    Column(
+        modifier = modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 12.dp),
+    ) {
+        ChartSummaryHeader(points = points, goalColor = goalColor)
+        Spacer(Modifier.height(12.dp))
+
+        val zoomState = rememberVicoZoomState(zoomEnabled = true)
+        val xAxisFormatter = remember {
+            createAdaptiveXAxisFormatter(zoomState)
+        }
+
+        val deadlineXFloat = deadlineXMillis
+        val firstXFloat = points.firstOrNull()?.timestamp?.toEpochMilli()?.toFloat()
+        val deadlineDecoration = remember(goalColor, deadlineXFloat, firstXFloat) {
+            if (deadlineXFloat != null && firstXFloat != null) {
+                DeadlineVerticalLineDecoration(
+                    startX = firstXFloat,
+                    endX = deadlineXFloat,
+                    deadlineX = deadlineXFloat,
+                    color = goalColor,
+                )
+            } else {
+                null
+            }
+        }
+
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberLineCartesianLayer(
+                    lineProvider = LineCartesianLayer.LineProvider.series(
+                        LineCartesianLayer.rememberLine(
+                            fill = LineCartesianLayer.LineFill.single(Fill(goalColor)),
+                            areaFill = LineCartesianLayer.AreaFill.single(
+                                fill = Fill(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            goalColor.copy(alpha = 0.25f),
+                                            goalColor.copy(alpha = 0.0f),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            interpolator = LineCartesianLayer.Interpolator.cubic(),
+                        ),
+                    ),
+                    rangeProvider = remember(deadlineXMillis) {
+                        object : CartesianLayerRangeProvider {
+                            override fun getMinX(minX: Double, maxX: Double, extraStore: ExtraStore) = minX
+                            override fun getMaxX(minX: Double, maxX: Double, extraStore: ExtraStore) =
+                                deadlineXMillis?.toDouble() ?: maxX
+                            override fun getMinY(minY: Double, maxY: Double, extraStore: ExtraStore) = minY
+                            override fun getMaxY(minY: Double, maxY: Double, extraStore: ExtraStore) = maxY
+                        }
+                    },
+                ),
+                startAxis = VerticalAxis.rememberStart(
+                    valueFormatter = CartesianValueFormatter { _, y, _ ->
+                        NumberFormatter.formatCurrencyCompact(y.toDouble())
+                    },
+                    line = null,
+                ),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    valueFormatter = xAxisFormatter,
+                    itemPlacer = HorizontalAxis.ItemPlacer.aligned(
+                        spacing = { maxOf(1, points.size / 6) },
+                        addExtremeLabelPadding = true,
+                    ),
+                    line = null,
+                ),
+                decorations = if (deadlineDecoration != null) {
+                    listOf(deadlineDecoration)
+                } else {
+                    emptyList()
+                },
+                marker = rememberSavingsMarker(
+                    goalColor = goalColor,
+                    points = points,
+                    timestampMap = timestampMap,
+                    targetAmount = targetAmount,
+                    balanceLabel = stringResource(R.string.chart_tooltip_balance),
+                    progressLabel = stringResource(R.string.chart_tooltip_progress),
+                ),
+                markerController = CartesianMarkerController.rememberShowOnPress(),
+            ),
+            modelProducer = modelProducer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp),
+            scrollState = rememberVicoScrollState(),
+            zoomState = zoomState,
+        )
+    }
+}
+
+@Composable
+private fun ChartCard(
+    contributions: List<Contribution>,
+    goalColor: Color,
+    goalStartDate: Instant,
+    goalDeadline: LocalDate?,
+    targetAmount: Double,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimens.CardRadius),
@@ -164,99 +265,13 @@ private fun ChartCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(1.dp, goalColor.copy(alpha = 0.15f)),
     ) {
-        Column(
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 12.dp),
-        ) {
-            ChartSummaryHeader(points = points, goalColor = goalColor)
-            Spacer(Modifier.height(12.dp))
-
-            val zoomState = rememberVicoZoomState(zoomEnabled = true)
-            val xAxisFormatter = remember {
-                createAdaptiveXAxisFormatter(zoomState)
-            }
-
-            // Build deadline decoration (vertical dashed line)
-            val deadlineXFloat = deadlineXMillis
-            val firstXFloat = points.firstOrNull()?.timestamp?.toEpochMilli()?.toFloat()
-            val deadlineDecoration = remember(goalColor, deadlineXFloat, firstXFloat) {
-                if (deadlineXFloat != null && firstXFloat != null) {
-                    DeadlineVerticalLineDecoration(
-                        startX = firstXFloat,
-                        endX = deadlineXFloat,
-                        deadlineX = deadlineXFloat,
-                        color = goalColor,
-                    )
-                } else {
-                    null
-                }
-            }
-
-            CartesianChartHost(
-                chart = rememberCartesianChart(
-                    rememberLineCartesianLayer(
-                        lineProvider = LineCartesianLayer.LineProvider.series(
-                            LineCartesianLayer.rememberLine(
-                                fill = LineCartesianLayer.LineFill.single(Fill(goalColor)),
-                                areaFill = LineCartesianLayer.AreaFill.single(
-                                    fill = Fill(
-                                        Brush.verticalGradient(
-                                            listOf(
-                                                goalColor.copy(alpha = 0.25f),
-                                                goalColor.copy(alpha = 0.0f),
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                                interpolator = LineCartesianLayer.Interpolator.cubic(),
-                            ),
-                        ),
-                        rangeProvider = remember(deadlineXMillis) {
-                            object : CartesianLayerRangeProvider {
-                                override fun getMinX(minX: Double, maxX: Double, extraStore: ExtraStore) = minX
-                                override fun getMaxX(minX: Double, maxX: Double, extraStore: ExtraStore) =
-                                    deadlineXMillis?.toDouble() ?: maxX
-                                override fun getMinY(minY: Double, maxY: Double, extraStore: ExtraStore) = minY
-                                override fun getMaxY(minY: Double, maxY: Double, extraStore: ExtraStore) = maxY
-                            }
-                        },
-                    ),
-                    startAxis = VerticalAxis.rememberStart(
-                        valueFormatter = CartesianValueFormatter { _, y, _ ->
-                            NumberFormatter.formatCurrencyCompact(y.toDouble())
-                        },
-                        line = null,
-                    ),
-                    bottomAxis = HorizontalAxis.rememberBottom(
-                        valueFormatter = xAxisFormatter,
-                        itemPlacer = HorizontalAxis.ItemPlacer.aligned(
-                            spacing = { maxOf(1, points.size / 6) },
-                            addExtremeLabelPadding = true,
-                        ),
-                        line = null,
-                    ),
-                    decorations = if (deadlineDecoration != null) {
-                        listOf(deadlineDecoration)
-                    } else {
-                        emptyList()
-                    },
-                    marker = rememberSavingsMarker(
-                        goalColor = goalColor,
-                        points = points,
-                        timestampMap = timestampMap,
-                        targetAmount = targetAmount,
-                        balanceLabel = stringResource(R.string.chart_tooltip_balance),
-                        progressLabel = stringResource(R.string.chart_tooltip_progress),
-                    ),
-                    markerController = CartesianMarkerController.rememberShowOnPress(),
-                ),
-                modelProducer = modelProducer,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp),
-                scrollState = rememberVicoScrollState(),
-                zoomState = zoomState,
-            )
-        }
+        ChartCardContent(
+            contributions = contributions,
+            goalColor = goalColor,
+            goalStartDate = goalStartDate,
+            goalDeadline = goalDeadline,
+            targetAmount = targetAmount,
+        )
     }
 }
 
