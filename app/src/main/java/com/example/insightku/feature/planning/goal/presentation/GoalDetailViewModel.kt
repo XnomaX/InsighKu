@@ -78,6 +78,9 @@ class GoalDetailViewModel @Inject constructor(
             is GoalDetailEvent.UpdateAutoAllocationRule -> updateAutoAllocationRule(event.rule)
             is GoalDetailEvent.DeleteAutoAllocationRule -> deleteAutoAllocationRule(event.ruleId)
             is GoalDetailEvent.ToggleAutoAllocationRule -> toggleAutoAllocationRule(event.ruleId, event.enabled)
+            is GoalDetailEvent.PauseGoal -> pauseGoal()
+            is GoalDetailEvent.ResumeGoal -> resumeGoal()
+            is GoalDetailEvent.CompleteGoal -> completeGoal()
             is GoalDetailEvent.ShowExtendDeadlineDialog -> _uiState.update { it.copy(showExtendDeadlineDialog = true) }
             is GoalDetailEvent.ConfirmExtendDeadline -> confirmExtendDeadline(event.newDeadline)
         }
@@ -159,6 +162,33 @@ class GoalDetailViewModel @Inject constructor(
                 _uiState.update { it.copy(showWithdrawDialog = false, isSubmitting = false, showSuccessAnimation = true, successMessage = context.getString(R.string.goal_withdrawal_success)) }
                 kotlinx.coroutines.delay(2000); _uiState.update { it.copy(showSuccessAnimation = false, successMessage = "") }
             }.onFailure { e -> _uiState.update { it.copy(isSubmitting = false, error = e.message ?: context.getString(R.string.goal_withdrawal_failed)) } }
+        }
+    }
+
+    private fun pauseGoal() {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            goalRepository.updateGoalStatus(goal.id, GoalStatus.PAUSED).onSuccess {
+                _uiState.update { it.copy(snackbarMessage = "Goal paused") }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to pause goal") } }
+        }
+    }
+
+    private fun resumeGoal() {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            goalRepository.updateGoalStatus(goal.id, GoalStatus.ACTIVE).onSuccess {
+                _uiState.update { it.copy(snackbarMessage = "Goal resumed") }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to resume goal") } }
+        }
+    }
+
+    private fun completeGoal() {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            goalRepository.updateGoalStatus(goal.id, GoalStatus.COMPLETED).onSuccess {
+                _uiState.update { it.copy(snackbarMessage = "Congratulations! Goal completed!") }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to complete goal") } }
         }
     }
 

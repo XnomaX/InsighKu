@@ -1,8 +1,10 @@
 package com.example.insightku.feature.planning.goal.presentation
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -10,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
@@ -17,6 +21,7 @@ import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
+import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.core.ui.theme.WarningYellow
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 
@@ -64,6 +69,142 @@ internal fun DangerZoneSection(onArchive: () -> Unit, onDelete: () -> Unit, modi
                     }
                     Icon(Icons.Outlined.ChevronRight, null, tint = AppPalette.textMuted)
                 }
+            }
+        }
+    }
+}
+
+// ─── Status-Aware Quick Actions ───────────────────────────────────────────────────
+
+@Composable
+internal fun StatusActionsSection(
+    goal: Goal,
+    goalColor: Color,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onComplete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        SectionHeader(
+            title = stringResource(R.string.goal_status_actions_title),
+            subtitle = stringResource(R.string.goal_status_actions_subtitle)
+        )
+        Spacer(Modifier.height(12.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(Dimens.CardRadius),
+            colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(1.dp, AppPalette.cardBorder)
+        ) {
+            Column(modifier = Modifier.padding(Dimens.CardInnerPadding)) {
+                // Active goal → Pause
+                if (goal.isActive) {
+                    StatusActionRow(
+                        icon = Icons.Outlined.PauseCircleOutline,
+                        label = stringResource(R.string.goal_pause),
+                        subtitle = stringResource(R.string.goal_pause_desc),
+                        iconTint = WarningYellow,
+                        onClick = onPause
+                    )
+                }
+                // Paused goal → Resume
+                if (goal.isPaused) {
+                    StatusActionRow(
+                        icon = Icons.Outlined.PlayCircleOutline,
+                        label = stringResource(R.string.goal_resume),
+                        subtitle = stringResource(R.string.goal_resume_desc),
+                        iconTint = SuccessColor,
+                        onClick = onResume
+                    )
+                }
+                // Non-completed → Mark Complete
+                if (!goal.isCompleted) {
+                    if (goal.isActive || goal.isPaused) {
+                        HorizontalDivider(color = AppPalette.cardBorder, modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                    StatusActionRow(
+                        icon = Icons.Outlined.CheckCircleOutline,
+                        label = stringResource(R.string.goal_mark_complete),
+                        subtitle = stringResource(R.string.goal_mark_complete_desc),
+                        iconTint = SuccessColor,
+                        onClick = onComplete
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusActionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    subtitle: String,
+    iconTint: Color,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(iconTint.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = iconTint, modifier = Modifier.size(22.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+        }
+        Icon(Icons.Outlined.ChevronRight, null, tint = AppPalette.textMuted, modifier = Modifier.size(18.dp))
+    }
+}
+
+// ─── Completed Goal Banner ──────────────────────────────────────────────────────
+
+@Composable
+internal fun CompletedGoalBanner(goalName: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.CardRadius),
+        color = SuccessColor.copy(alpha = 0.07f),
+        border = BorderStroke(1.dp, SuccessColor.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(SuccessColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.EmojiEvents,
+                    contentDescription = null,
+                    tint = SuccessColor,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.goal_celebration_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = SuccessColor
+                )
+                Text(
+                    text = stringResource(R.string.goal_completed_banner_desc, goalName),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppPalette.textMuted
+                )
             }
         }
     }

@@ -6,8 +6,23 @@ import com.example.insightku.feature.planning.goal.data.model.GoalAccountEntity
 import com.example.insightku.feature.planning.goal.domain.model.*
 import java.time.LocalDate
 
+/**
+ * Filter tabs for the Goals screen.
+ * - [ACTIVE]: Active goals in progress
+ * - [PAUSED]: Paused goals (on hold)
+ */
+enum class GoalFilterTab { ACTIVE, PAUSED }
+
 data class GoalsUiState(
+    // ── Status-separated goal lists ─────────────────────────────────────────
+    val activeGoals: List<Goal> = emptyList(),
+    val pausedGoals: List<Goal> = emptyList(),
+    val completedGoals: List<Goal> = emptyList(),
+    val archivedGoals: List<Goal> = emptyList(),
+
+    // ── Legacy combined list (kept for dialog lookups) ──────────────────────
     val goals: List<Goal> = emptyList(),
+
     val dailyTarget: DailyTarget = DailyTarget.empty(),
     val autoAllocationRules: List<AutoAllocationRule> = emptyList(),
     val goalSummary: GoalSummary? = null,
@@ -20,9 +35,28 @@ data class GoalsUiState(
     val selectedGoal: Goal? = null,
     val selectedGoalContributions: List<Contribution> = emptyList(),
     val linkedAccounts: Map<String, List<GoalAccountEntity>> = emptyMap(),
-    val dialogState: GoalsDialogState = GoalsDialogState.None
+    val dialogState: GoalsDialogState = GoalsDialogState.None,
+
+    // ── Redesigned state ────────────────────────────────────────────────────
+    val selectedTab: GoalFilterTab = GoalFilterTab.ACTIVE,
+    val showArchivedSheet: Boolean = false,
+    val showActionsSheet: Boolean = false,
+    val actionsGoalId: String? = null,
+    val showCompletionCelebration: Boolean = false,
+    val completionGoalName: String = ""
 ) {
     val hasGoals: Boolean get() = goals.isNotEmpty()
+
+    /** Currently displayed goals based on the selected tab. */
+    val displayedGoals: List<Goal>
+        get() = when (selectedTab) {
+            GoalFilterTab.ACTIVE -> activeGoals
+            GoalFilterTab.PAUSED -> pausedGoals
+        }
+
+    val activeGoalCount: Int get() = activeGoals.size
+    val pausedGoalCount: Int get() = pausedGoals.size
+    val archivedGoalCount: Int get() = archivedGoals.size
 
     companion object {
         fun initial() = GoalsUiState()
@@ -42,6 +76,9 @@ sealed class GoalsDialogState {
     data class GoalDetail(val goalId: String) : GoalsDialogState()
     data class LinkAccount(val goalId: String) : GoalsDialogState()
     data class SelectAccount(val goalId: String, val action: AccountAction) : GoalsDialogState()
+    // ── New dialog states for redesign ──────────────────────────────────────
+    data class DeleteGoalConfirm(val goalId: String, val goalName: String) : GoalsDialogState()
+    data class RestoreGoalConfirm(val goalId: String, val goalName: String) : GoalsDialogState()
 }
 
 enum class AccountAction { CONTRIBUTE, WITHDRAW }

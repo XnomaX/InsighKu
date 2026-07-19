@@ -238,25 +238,6 @@ fun BudgetingScreenContent(
             }
         }
 
-        // Overview card (only when there are actual budget categories)
-        if (uiState.hasExpenseCategories || uiState.hasIncomeCategories) {
-            item {
-                BudgetHealthCard(
-                    percentage = uiState.budgetUtilizationPercentage,
-                    totalBudget = uiState.totalBudget,
-                    limitedSpent = uiState.limitedSpent,
-                    remaining = uiState.remainingBudget,
-                    riskyCount = uiState.budgetCategories.count { it.health == BudgetHealth.Warning },
-                    overBudgetCount = uiState.overBudgetCategories.size,
-                    safeCount = uiState.budgetCategories.count { it.health == BudgetHealth.Good },
-                    modifier = Modifier.padding(
-                        horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical = 12.dp
-                    )
-                )
-            }
-        }
-
         // ── EXPENSE BUDGETS SECTION ──────────────────────────────────────
         item {
             BudgetSectionLabel(

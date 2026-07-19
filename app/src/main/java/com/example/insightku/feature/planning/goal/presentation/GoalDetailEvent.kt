@@ -29,6 +29,11 @@ sealed class GoalDetailEvent {
     data object ConfirmArchive : GoalDetailEvent()
     data object ConfirmDelete : GoalDetailEvent()
 
+    // ── Status Actions ───────────────────────────────────────────────────
+    data object PauseGoal : GoalDetailEvent()
+    data object ResumeGoal : GoalDetailEvent()
+    data object CompleteGoal : GoalDetailEvent()
+
     // ── Extend Deadline ────────────────────────────────────────────────────
     data object ShowExtendDeadlineDialog : GoalDetailEvent()
     data class ConfirmExtendDeadline(val newDeadline: java.time.LocalDate) : GoalDetailEvent()

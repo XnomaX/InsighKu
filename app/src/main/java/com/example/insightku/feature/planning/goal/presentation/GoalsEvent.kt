@@ -59,4 +59,16 @@ sealed class GoalsEvent {
     data class SetGoalAutoAllocate(val goalId: String, val enabled: Boolean) : GoalsEvent()
     data class ShowAddBudgetDialog(val categoryType: CategoryType = CategoryType.EXPENSE) : GoalsEvent()
     data class SelectAccount(val accountId: String) : GoalsEvent()
+
+    // ── Redesigned events ───────────────────────────────────────────────────
+    data class SelectTab(val tab: GoalFilterTab) : GoalsEvent()
+    data object ShowArchivedGoals : GoalsEvent()
+    data object DismissArchivedSheet : GoalsEvent()
+    data class ShowGoalActionsSheet(val goalId: String) : GoalsEvent()
+    data object DismissActionsSheet : GoalsEvent()
+    data class RestoreGoal(val goalId: String) : GoalsEvent()
+    data class DeleteGoalPermanently(val goalId: String) : GoalsEvent()
+    data class ShowDeleteGoalConfirm(val goalId: String) : GoalsEvent()
+    data class ShowRestoreGoalConfirm(val goalId: String) : GoalsEvent()
+    data object DismissCompletionCelebration : GoalsEvent()
 }

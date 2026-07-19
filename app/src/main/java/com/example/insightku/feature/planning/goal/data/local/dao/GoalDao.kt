@@ -14,6 +14,26 @@ interface GoalDao {
     @Query("SELECT * FROM goals WHERE isActive = 1 ORDER BY createdAt DESC")
     fun getAllGoals(): Flow<List<GoalEntity>>
 
+    /** Get only goals with ACTIVE status. */
+    @Query("SELECT * FROM goals WHERE status = 'active' AND isActive = 1 ORDER BY createdAt DESC")
+    fun getActiveStatusGoals(): Flow<List<GoalEntity>>
+
+    /** Get only goals with PAUSED status. */
+    @Query("SELECT * FROM goals WHERE status = 'paused' AND isActive = 1 ORDER BY updatedAt DESC")
+    fun getPausedGoals(): Flow<List<GoalEntity>>
+
+    /** Get only goals with COMPLETED status. */
+    @Query("SELECT * FROM goals WHERE status = 'completed' AND isActive = 1 ORDER BY updatedAt DESC")
+    fun getCompletedGoals(): Flow<List<GoalEntity>>
+
+    /** Get only archived goals. */
+    @Query("SELECT * FROM goals WHERE status = 'archived' ORDER BY updatedAt DESC")
+    fun getArchivedGoals(): Flow<List<GoalEntity>>
+
+    /** Restore an archived goal back to active. */
+    @Query("UPDATE goals SET isActive = 1, status = 'active', updatedAt = :updatedAt WHERE id = :id")
+    suspend fun restoreGoal(id: String, updatedAt: Long = System.currentTimeMillis())
+
     @Query("SELECT * FROM goals WHERE id = :id")
     suspend fun getGoalById(id: String): GoalEntity?
 

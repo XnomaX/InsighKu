@@ -45,6 +45,7 @@ class GoalsViewModel @Inject constructor(
     init { loadData() }
 
     private fun loadData() {
+        // ── Core data flow (combined active goals + accounts + rules) ───────
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val coreFlow = combine(
@@ -60,6 +61,9 @@ class GoalsViewModel @Inject constructor(
                 val allocationMap = allocations.associateBy { it.account.id }
                 GoalsUiState(
                     goals = core.goals,
+                    activeGoals = core.goals.filter { it.isActive },
+                    pausedGoals = core.goals.filter { it.isPaused },
+                    completedGoals = core.goals.filter { it.isCompleted },
                     dailyTarget = core.dailyTarget,
                     autoAllocationRules = core.rules,
                     goalSummary = core.summary,
@@ -74,11 +78,27 @@ class GoalsViewModel @Inject constructor(
                     state.copy(
                         selectedGoal = current.selectedGoal,
                         linkedAccounts = current.linkedAccounts,
-                        dialogState = current.dialogState
+                        dialogState = current.dialogState,
+                        selectedTab = current.selectedTab,
+                        showArchivedSheet = current.showArchivedSheet,
+                        showActionsSheet = current.showActionsSheet,
+                        actionsGoalId = current.actionsGoalId,
+                        showCompletionCelebration = current.showCompletionCelebration,
+                        completionGoalName = current.completionGoalName,
+                        archivedGoals = current.archivedGoals
                     )
                 }
             }
         }
+
+        // ── Archived goals (separate flow) ──────────────────────────────────
+        viewModelScope.launch {
+            goalRepository.getArchivedGoals().collect { archived ->
+                _uiState.update { it.copy(archivedGoals = archived) }
+            }
+        }
+
+        // ── Linked accounts for active goals ────────────────────────────────
         viewModelScope.launch {
             goalRepository.getActiveGoals().collect { goals ->
                 val linkedAccountsMap = mutableMapOf<String, List<GoalAccountEntity>>()
@@ -90,6 +110,8 @@ class GoalsViewModel @Inject constructor(
                 _uiState.update { it.copy(linkedAccounts = linkedAccountsMap) }
             }
         }
+
+        // ── Expense categories ──────────────────────────────────────────────
         viewModelScope.launch {
             categoryRepository.getAllCategories().collect { categories ->
                 val expenseInfo = categories.filter { it.type == CategoryType.EXPENSE && !it.isSystemCategory }.map { CategoryInfo(id = it.id, name = it.name) }
@@ -136,6 +158,18 @@ class GoalsViewModel @Inject constructor(
             is GoalsEvent.LoadGoals -> { /* Data auto-loaded in init */ }
             is GoalsEvent.SelectAccount -> { /* Handled by specific dialogs */ }
             is GoalsEvent.ShowAddBudgetDialog -> { /* Not applicable in Goals */ }
+
+            // ── Redesigned events ───────────────────────────────────────────
+            is GoalsEvent.SelectTab -> _uiState.update { it.copy(selectedTab = event.tab) }
+            is GoalsEvent.ShowArchivedGoals -> _uiState.update { it.copy(showArchivedSheet = true) }
+            is GoalsEvent.DismissArchivedSheet -> _uiState.update { it.copy(showArchivedSheet = false) }
+            is GoalsEvent.ShowGoalActionsSheet -> _uiState.update { it.copy(showActionsSheet = true, actionsGoalId = event.goalId) }
+            is GoalsEvent.DismissActionsSheet -> _uiState.update { it.copy(showActionsSheet = false, actionsGoalId = null) }
+            is GoalsEvent.RestoreGoal -> restoreGoal(event.goalId)
+            is GoalsEvent.DeleteGoalPermanently -> deleteGoalPermanently(event.goalId)
+            is GoalsEvent.ShowDeleteGoalConfirm -> showDeleteGoalConfirm(event.goalId)
+            is GoalsEvent.ShowRestoreGoalConfirm -> showRestoreGoalConfirm(event.goalId)
+            is GoalsEvent.DismissCompletionCelebration -> _uiState.update { it.copy(showCompletionCelebration = false, completionGoalName = "") }
         }
     }
 
@@ -167,7 +201,11 @@ class GoalsViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.updateGoalStatus(goalId, status).onSuccess {
                 val message = when (status) { GoalStatus.COMPLETED -> "Congratulations! Goal completed!"; GoalStatus.PAUSED -> "Goal paused"; GoalStatus.ACTIVE -> "Goal resumed"; GoalStatus.ARCHIVED -> "Goal archived" }
-                _uiState.update { it.copy(snackbarMessage = message) }
+                _uiState.update { it.copy(
+                    snackbarMessage = message,
+                    showActionsSheet = false,
+                    actionsGoalId = null
+                ) }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
         }
     }
@@ -175,8 +213,32 @@ class GoalsViewModel @Inject constructor(
     private fun archiveGoal(goalId: String) {
         viewModelScope.launch {
             goalRepository.archiveGoal(goalId).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Goal archived") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, showActionsSheet = false, actionsGoalId = null, snackbarMessage = "Goal archived") }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
+        }
+    }
+
+    private fun restoreGoal(goalId: String) {
+        viewModelScope.launch {
+            goalRepository.restoreGoal(goalId).onSuccess {
+                _uiState.update { it.copy(
+                    dialogState = GoalsDialogState.None,
+                    showArchivedSheet = false,
+                    snackbarMessage = "Goal restored to active"
+                ) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to restore goal") } }
+        }
+    }
+
+    private fun deleteGoalPermanently(goalId: String) {
+        viewModelScope.launch {
+            goalRepository.deleteGoalPermanently(goalId).onSuccess {
+                _uiState.update { it.copy(
+                    dialogState = GoalsDialogState.None,
+                    showArchivedSheet = false,
+                    snackbarMessage = "Goal permanently deleted"
+                ) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to delete goal") } }
         }
     }
 
@@ -294,6 +356,26 @@ class GoalsViewModel @Inject constructor(
                 it.copy(selectedGoal = goal, selectedGoalContributions = contributions, dialogState = GoalsDialogState.GoalDetail(goalId))
             }
         }
+    }
+
+    private fun showDeleteGoalConfirm(goalId: String) {
+        val goal = findGoalAcrossAll(goalId) ?: return
+        _uiState.update { it.copy(dialogState = GoalsDialogState.DeleteGoalConfirm(goalId, goal.name)) }
+    }
+
+    private fun showRestoreGoalConfirm(goalId: String) {
+        val goal = _uiState.value.archivedGoals.find { it.id == goalId } ?: return
+        _uiState.update { it.copy(dialogState = GoalsDialogState.RestoreGoalConfirm(goalId, goal.name)) }
+    }
+
+    /** Find a goal across all lists (active, paused, completed, archived). */
+    private fun findGoalAcrossAll(goalId: String): Goal? {
+        val state = _uiState.value
+        return state.activeGoals.find { it.id == goalId }
+            ?: state.pausedGoals.find { it.id == goalId }
+            ?: state.completedGoals.find { it.id == goalId }
+            ?: state.archivedGoals.find { it.id == goalId }
+            ?: state.goals.find { it.id == goalId }
     }
 
     fun clearError() { _uiState.update { it.copy(error = null) } }
