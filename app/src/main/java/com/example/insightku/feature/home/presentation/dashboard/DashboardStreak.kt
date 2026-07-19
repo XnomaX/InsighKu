@@ -453,11 +453,30 @@ fun StreakDetailSheet(
                                 }
                             }
 
-                            val today = Calendar.getInstance()
-                            val todayDayOfWeek = (today.get(Calendar.DAY_OF_WEEK) + 5) % 7
                             val totalWeeks = 16
-                            val gridStartCal = today.clone() as Calendar
-                            gridStartCal.add(Calendar.DAY_OF_YEAR, -((totalWeeks - 1) * 7 + todayDayOfWeek))
+                            // Pre-compute the 16×7 calendar grid once per streak change instead of
+                            // allocating ~112 Calendar clones on every recomposition.
+                            val gridCells = remember(currentStreak) {
+                                val today = Calendar.getInstance()
+                                val todayDayOfWeek = (today.get(Calendar.DAY_OF_WEEK) + 5) % 7
+                                val gridStartCal = today.clone() as Calendar
+                                gridStartCal.add(Calendar.DAY_OF_YEAR, -((totalWeeks - 1) * 7 + todayDayOfWeek))
+                                buildList {
+                                    for (i in 0 until totalWeeks * 7) {
+                                        val cellCal = gridStartCal.clone() as Calendar
+                                        cellCal.add(Calendar.DAY_OF_YEAR, i)
+                                        val daysFromToday = ((today.timeInMillis - cellCal.timeInMillis) / 86400000L).toInt()
+                                        add(StreakCell(
+                                            dayOfMonth = cellCal.get(Calendar.DAY_OF_MONTH),
+                                            isToday = daysFromToday == 0,
+                                            isFuture = daysFromToday < 0,
+                                            isFirstOfMonth = cellCal.get(Calendar.DAY_OF_MONTH) == 1,
+                                            isTrackedDay = daysFromToday in 1..currentStreak,
+                                            monthLabel = cellCal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.getDefault())?.take(1) ?: ""
+                                        ))
+                                    }
+                                }
+                            }
 
                             Column(
                                 modifier = Modifier
@@ -469,19 +488,12 @@ fun StreakDetailSheet(
                                 for (week in 0 until totalWeeks) {
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                         for (col in 0 until 7) {
-                                            val cellCal = gridStartCal.clone() as Calendar
-                                            cellCal.add(Calendar.DAY_OF_YEAR, week * 7 + col)
-                                            val cellDate = cellCal.get(Calendar.DAY_OF_MONTH)
-                                            val daysFromToday = ((today.timeInMillis - cellCal.timeInMillis) / 86400000L).toInt()
-                                            val isToday  = daysFromToday == 0
-                                            val isFuture = daysFromToday < 0
+                                            val cell = gridCells[week * 7 + col]
                                             val tracked  = when {
-                                                isFuture -> false
-                                                isToday  -> hasTrackedToday
-                                                daysFromToday in 1..currentStreak -> true
-                                                else     -> false
+                                                cell.isFuture -> false
+                                                cell.isToday  -> hasTrackedToday
+                                                else          -> cell.isTrackedDay
                                             }
-                                            val isFirstOfMonth = cellCal.get(Calendar.DAY_OF_MONTH) == 1
 
                                             Box(
                                                 modifier = Modifier
@@ -491,27 +503,25 @@ fun StreakDetailSheet(
                                                     .background(
                                                         when {
                                                             tracked  -> NavPurple.copy(alpha = 0.85f)
-                                                            isFuture -> Color.Transparent
+                                                            cell.isFuture -> Color.Transparent
                                                             else     -> AppPalette.cardBorder
                                                         }
                                                     )
                                                     .then(
-                                                        if (isToday) Modifier.border(1.5.dp, NavPurple, RoundedCornerShape(6.dp))
+                                                        if (cell.isToday) Modifier.border(1.5.dp, NavPurple, RoundedCornerShape(6.dp))
                                                         else Modifier
                                                     ),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                if (!isFuture) {
+                                                if (!cell.isFuture) {
                                                     Text(
-                                                        if (isFirstOfMonth)
-                                                            cellCal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.getDefault())?.take(1) ?: "$cellDate"
-                                                        else "$cellDate",
+                                                        if (cell.isFirstOfMonth && cell.monthLabel.isNotEmpty()) cell.monthLabel else "${cell.dayOfMonth}",
                                                         fontSize = 8.sp,
-                                                        fontWeight = if (isToday || isFirstOfMonth) FontWeight.ExtraBold else FontWeight.Medium,
+                                                        fontWeight = if (cell.isToday || cell.isFirstOfMonth) FontWeight.ExtraBold else FontWeight.Medium,
                                                         color = when {
                                                             tracked         -> Color.White
-                                                            isToday         -> NavPurple
-                                                            isFirstOfMonth  -> NavPurple.copy(alpha = 0.6f)
+                                                            cell.isToday    -> NavPurple
+                                                            cell.isFirstOfMonth  -> NavPurple.copy(alpha = 0.6f)
                                                             else            -> AppPalette.textMuted
                                                         }
                                                     )
@@ -551,3 +561,13 @@ internal fun LegendDot(color: Color, label: String) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
     }
 }
+
+/** Pre-computed immutable data for one cell of the streak momentum grid. */
+private data class StreakCell(
+    val dayOfMonth: Int,
+    val isToday: Boolean,
+    val isFuture: Boolean,
+    val isFirstOfMonth: Boolean,
+    val isTrackedDay: Boolean,
+    val monthLabel: String
+)

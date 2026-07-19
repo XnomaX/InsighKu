@@ -13,8 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.core.ui.components.TransactionCategoryIcon
-import com.example.insightku.core.ui.components.TransactionTypePresentation
+import com.example.insightku.feature.home.presentation.TransactionCategoryIcon
+import com.example.insightku.feature.home.presentation.TransactionTypePresentation
 import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
 import com.example.insightku.core.ui.theme.*

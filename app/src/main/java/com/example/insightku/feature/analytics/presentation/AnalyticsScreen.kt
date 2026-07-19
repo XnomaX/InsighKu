@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +30,7 @@ import com.example.insightku.feature.analytics.presentation.components.*
 fun AnalyticsScreen(
     viewModel: AnalyticsViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -157,7 +158,7 @@ private fun WeeklyContent(insights: AnalyticsInsights) {
             item {
                 AnalyticsSectionHeader(title = stringResource(R.string.analytics_top_categories))
             }
-            items(insights.categorySlices) { slice ->
+            items(insights.categorySlices, key = { it.name }) { slice ->
                 CategoryBar(
                     name = slice.name.ifBlank { stringResource(R.string.analytics_uncategorized) },
                     percentage = slice.proportion,
@@ -182,7 +183,7 @@ private fun WeeklyContent(insights: AnalyticsInsights) {
             item {
                 AnalyticsSectionHeader(title = stringResource(R.string.analytics_biggest_transactions))
             }
-            items(insights.bigDecisions) { decision ->
+            items(insights.bigDecisions, key = { it.transaction.id }) { decision ->
                 NarrativeCard(
                     emoji = "💰",
                     title = decision.transaction.title.ifBlank { decision.transaction.category },
@@ -238,7 +239,7 @@ private fun MonthlyContent(insights: AnalyticsInsights) {
                 item {
                     AnalyticsSectionHeader(title = stringResource(R.string.analytics_where_money_went))
                 }
-                items(health.topCategories) { cat ->
+                items(health.topCategories, key = { it.name }) { cat ->
                     CategoryBar(
                         name = cat.name.ifBlank { stringResource(R.string.analytics_uncategorized) },
                         percentage = cat.percentage.toFloat(),
@@ -326,7 +327,7 @@ private fun MonthlyContent(insights: AnalyticsInsights) {
             item {
                 AnalyticsSectionHeader(title = stringResource(R.string.analytics_notable_transactions))
             }
-            items(insights.bigDecisions) { decision ->
+            items(insights.bigDecisions, key = { it.transaction.id }) { decision ->
                 NarrativeCard(
                     emoji = "💡",
                     title = decision.transaction.title.ifBlank { decision.transaction.category },
@@ -433,7 +434,7 @@ private fun AnnualContent(insights: AnalyticsInsights) {
                 item {
                     AnalyticsSectionHeader(title = stringResource(R.string.analytics_top_categories_year))
                 }
-                items(growth.categoryEvolution) { (name, amount) ->
+                items(growth.categoryEvolution, key = { it.first }) { (name, amount) ->
                     NarrativeCard(
                         emoji = "📂",
                         title = name.ifBlank { stringResource(R.string.analytics_uncategorized) },

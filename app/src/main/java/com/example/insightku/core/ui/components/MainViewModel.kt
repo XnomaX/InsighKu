@@ -3,7 +3,7 @@ package com.example.insightku.core.ui.components
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.model.UserData
-import com.example.insightku.core.datastore.SessionManager
+import com.example.insightku.core.data.local.preferences.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

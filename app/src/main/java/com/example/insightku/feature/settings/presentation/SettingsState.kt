@@ -1,9 +1,7 @@
 
 package com.example.insightku.feature.settings.presentation
 
-import androidx.compose.ui.graphics.Color
 import com.example.insightku.feature.home.domain.MerchantMemory
-import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.VisualDensity
 
@@ -22,7 +20,7 @@ data class SettingsUiState(
     val isDarkMode: Boolean = false,
     val comfortMode: Boolean = false,
     val insightTone: InsightTone = InsightTone.WARM,
-    val accentColor: Color = AppPalette.accent,
+    val accentColorHex: String = "#7C4DFF",
     val visualDensity: VisualDensity = VisualDensity.COMFORTABLE,
     val hideAmounts: Boolean = false,
 

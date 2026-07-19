@@ -356,50 +356,6 @@ fun IconOption(
     }
 }
 
-// ─── Category Type Selector ───────────────────────────────────────────────────
-
-@Composable
-internal fun CategoryTypeSelector(
-    selected: CategoryType,
-    onSelect: (CategoryType) -> Unit
-) {
-    val purple = com.example.insightku.core.ui.theme.AppPalette.accent
-    val green  = com.example.insightku.core.ui.theme.AppPalette.success
-    val border = com.example.insightku.core.ui.theme.AppPalette.cardBorder
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        CategoryType.entries.forEach { type ->
-            val isSelected   = selected == type
-            val activeColor  = if (type == CategoryType.EXPENSE) purple else green
-            val bgColor      = if (isSelected) activeColor else com.example.insightku.core.ui.theme.AppPalette.card
-            val contentColor = if (isSelected) Color.White else com.example.insightku.core.ui.theme.AppPalette.textDialogMuted
-            val borderColor  = if (isSelected) activeColor else border
-
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp)
-                    .clickable { onSelect(type) },
-                shape  = RoundedCornerShape(50.dp),
-                color  = bgColor,
-                border = BorderStroke(1.dp, borderColor)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text       = if (type == CategoryType.EXPENSE) stringResource(R.string.type_expense) else stringResource(R.string.type_income),
-                        style      = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color      = contentColor
-                    )
-                }
-            }
-        }
-    }
-}
-
 // ─── Recurring Period Selector ────────────────────────────────────────────────
 
 @Composable
@@ -586,15 +542,6 @@ fun BudgetLimitInput(
         }
     }
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-internal fun Int.formatCurrency(): String =
-    NumberFormatter.formatInteger(this.toLong())
-
-
-
-
 
 
 

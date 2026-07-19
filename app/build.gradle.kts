@@ -65,6 +65,8 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
     testImplementation("io.kotest:kotest-assertions-core:5.8.0")
     testImplementation("io.kotest:kotest-property:5.8.0")
+    // Run JUnit4 @Test classes on the JUnit Platform (Kotest 5.8 pulls Platform 1.9.3)
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.9.3")
     
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

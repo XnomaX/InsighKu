@@ -41,7 +41,6 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Spa
-import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,7 +54,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -80,7 +79,6 @@ import com.example.insightku.core.ui.theme.VisualDensity
 import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.SupportedLocale
 import com.example.insightku.core.utils.CurrencyUtils
-import com.example.insightku.feature.settings.presentation.SettingsViewModel
 
 @Composable
 fun SettingsScreen(
@@ -90,7 +88,7 @@ fun SettingsScreen(
     onNavigateToAutoDetectionOnboarding: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.userEmail) {
         if (!uiState.isLoading && uiState.userEmail.isEmpty()) onLogout()
@@ -545,7 +543,7 @@ private fun AccentSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> 
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
             ACCENT_PRESETS.forEach { (hex, _) ->
                 val color = Color(android.graphics.Color.parseColor(hex))
-                val isSelected = uiState.accentColor.value == color.value
+                val isSelected = uiState.accentColorHex.equals(hex, ignoreCase = true)
                 Box(
                     Modifier.size(40.dp).clip(CircleShape).background(color)
                         .clickable { onEvent(SettingsEvent.OnAccentChange(hex)) },
@@ -1018,103 +1016,4 @@ private fun AppInfoFooter() {
         Text(stringResource(R.string.app_info_made_with_love), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
     }
 }
-
-@Composable
-fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape           = RoundedCornerShape(Dimens.BottomSheetRadius),
-            color           = MaterialTheme.colorScheme.surface,
-            tonalElevation  = 6.dp,
-            shadowElevation = 0.dp,
-            modifier        = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier            = Modifier.padding(Dimens.CardInnerPaddingLarge),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
-            ) {
-                // ── Icon ─────────────────────────────────────────────────────
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.errorContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector        = Icons.AutoMirrored.Filled.ExitToApp,
-                        contentDescription = null,
-                        tint               = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier           = Modifier.size(28.dp)
-                    )
-                }
-
-                // ── Copy ──────────────────────────────────────────────────────
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)
-                ) {
-                    Text(
-                        text       = stringResource(R.string.settings_logout_title),
-                        style      = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color      = MaterialTheme.colorScheme.onSurface,
-                        textAlign  = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    Text(
-                        text      = stringResource(R.string.settings_logout_message),
-                        style     = MaterialTheme.typography.bodyMedium,
-                        color     = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                }
-
-                // ── Actions ───────────────────────────────────────────────────
-                Column(
-                    modifier            = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
-                ) {
-                    Button(
-                        onClick  = onConfirm,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(Dimens.ButtonHeightPrimary),
-                        shape  = RoundedCornerShape(Dimens.ButtonRadius),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor   = MaterialTheme.colorScheme.onError
-                        )
-                    ) {
-                        Icon(
-                            imageVector        = Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = null,
-                            modifier           = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(Dimens.PaddingMedium))
-                        Text(stringResource(R.string.settings_logout_button), fontWeight = FontWeight.Bold)
-                    }
-                    OutlinedButton(
-                        onClick  = onDismiss,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(Dimens.ButtonHeightSecondary),
-                        shape  = RoundedCornerShape(Dimens.ButtonRadius),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                    ) {
-                        Text(
-                            stringResource(R.string.settings_logout_stay),
-                            fontWeight = FontWeight.Medium,
-                            color      = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-
-
 

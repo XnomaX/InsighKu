@@ -7,7 +7,6 @@ import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.repository.CategoryRepository
-import com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
@@ -31,7 +30,6 @@ class GoalDetailViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
     private val accountRepository: AccountRepository,
     private val categoryRepository: CategoryRepository,
-    private val autoAllocationRuleDao: AutoAllocationRuleDao,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -91,7 +89,7 @@ class GoalDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 launch { goalRepository.hasUnsyncedGoalsFlow().collect { hasUnsynced -> _uiState.update { it.copy(hasUnsyncedChanges = hasUnsynced) } } }
-                launch { autoAllocationRuleDao.getRulesByGoal(goalId).collect { entities -> val rules = entities.map { AutoAllocationRule.fromEntity(it) }; _uiState.update { it.copy(allocationRules = rules) } } }
+                launch { goalRepository.getRulesByGoalFlow(goalId).collect { rules -> _uiState.update { it.copy(allocationRules = rules) } } }
                 launch { categoryRepository.getAllCategories().collect { categories -> val expenseInfo = categories.filter { it.type == CategoryType.EXPENSE && !it.isSystemCategory }.map { CategoryInfo(id = it.id, name = it.name) }; _uiState.update { it.copy(expenseCategories = expenseInfo) } } }
                 combine(
                     goalRepository.getGoalByIdFlow(goalId),

@@ -445,6 +445,23 @@ class GoalRepository @Inject constructor(
         }
     }
 
+    /**
+     * Allocation rules for a single goal, as domain models.
+     * Lets the presentation layer observe rules without depending on the DAO directly.
+     */
+    fun getRulesByGoalFlow(goalId: String): Flow<List<AutoAllocationRule>> {
+        return autoAllocationRuleDao.getRulesByGoal(goalId).map { entities ->
+            entities.map { AutoAllocationRule.fromEntity(it) }
+        }
+    }
+
+    /**
+     * Record that an auto-allocation rule fired, so it is not re-triggered.
+     */
+    suspend fun markRuleExecuted(ruleId: String, timestamp: Long) {
+        autoAllocationRuleDao.setLastExecutedAt(ruleId, timestamp)
+    }
+
     suspend fun addAutoAllocationRule(rule: AutoAllocationRule): Result<Unit> {
         return try { goalDao.updateAutoAllocate(rule.goalId, true); autoAllocationRuleDao.insertRule(rule.toEntity()); Result.success(Unit) }
         catch (e: Exception) { Result.failure(e) }

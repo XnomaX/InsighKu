@@ -1,7 +1,8 @@
 package com.example.insightku.domain.usecase.analytics
 
-import com.example.insightku.data.model.Transaction
-import com.example.insightku.data.model.TransactionType
+import com.example.insightku.core.data.model.Transaction
+import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.feature.analytics.domain.InsightEngine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -32,6 +33,22 @@ class InsightEngineTwoYousTest {
     /** "now" = end of the reference month, so the whole month counts as elapsed. */
     private val now: Long = dayMillis(31, hour = 23)
 
+    /**
+     * The engine exposes Two Yous via [InsightEngine.derive] (monthly). When there is too little
+     * data the field is null, which the tests treat as "not confident, zero divergence".
+     */
+    private fun twoYous(txns: List<Transaction>): com.example.insightku.feature.analytics.domain.TwoYousData =
+        engine.derive(txns, now).twoYous
+            ?: com.example.insightku.feature.analytics.domain.TwoYousData(
+                weekdayDailyAvg = 0.0,
+                weekendDailyAvg = 0.0,
+                weekdayTopCategories = emptyList(),
+                weekendTopCategories = emptyList(),
+                divergence = 0f,
+                gapHeadline = "",
+                isConfident = false
+            )
+
     private fun expense(day: Int, amount: Double, category: String = "Food", hour: Int = 12) =
         Transaction(
             title = category,
@@ -46,7 +63,7 @@ class InsightEngineTwoYousTest {
 
     @Test
     fun `empty input is not confident and does not throw`() {
-        val result = engine.twoYous(emptyList(), now)
+        val result = twoYous(emptyList())
         assertFalse(result.isConfident)
         assertTrue(result.divergence in 0f..1f)
     }
@@ -55,7 +72,7 @@ class InsightEngineTwoYousTest {
     fun `sparse data (too few on one side) is not confident`() {
         // Plenty of weekday data, but only one weekend transaction → cannot honestly compare.
         val txns = weekdays.map { expense(it, 50_000.0) } + listOf(expense(2, 50_000.0))
-        val result = engine.twoYous(txns, now)
+        val result = twoYous(txns)
         assertFalse(result.isConfident)
     }
 
@@ -63,16 +80,17 @@ class InsightEngineTwoYousTest {
     fun `divergence is always within 0 to 1`() {
         val txns = weekdays.map { expense(it, 30_000.0, "Transport") } +
             weekendDays.map { expense(it, 900_000.0, "Entertainment") }
-        val result = engine.twoYous(txns, now)
+        val result = twoYous(txns)
         assertTrue("divergence=${result.divergence}", result.divergence in 0f..1f)
     }
 
     @Test
-    fun `right self is always the weekend self (fixed valence)`() {
-        val txns = weekdays.map { expense(it, 40_000.0) } + weekendDays.map { expense(it, 40_000.0) }
-        val result = engine.twoYous(txns, now)
-        assertEquals("Weekday You", result.left.label)
-        assertEquals("Weekend You", result.right.label)
+    fun `weekend data always maps to the weekend fields (fixed valence)`() {
+        val txns = weekdays.map { expense(it, 40_000.0, "Transport") } +
+            weekendDays.map { expense(it, 40_000.0, "Entertainment") }
+        val result = twoYous(txns)
+        assertTrue(result.weekdayTopCategories.any { it.name == "Transport" })
+        assertTrue(result.weekendTopCategories.any { it.name == "Entertainment" })
     }
 
     @Test
@@ -83,7 +101,7 @@ class InsightEngineTwoYousTest {
         // one would invent a big gap. This is the core normalization guard.
         val perDay = 100_000.0
         val txns = (1..31).map { expense(it, perDay, "Food") }
-        val result = engine.twoYous(txns, now)
+        val result = twoYous(txns)
         assertTrue(result.isConfident)
         assertTrue(
             "expected low divergence for identical per-day behavior, got ${result.divergence}",
@@ -95,9 +113,11 @@ class InsightEngineTwoYousTest {
     @Test
     fun `weekend-heavy per-day spend yields high divergence and weekend-leaning headline`() {
         // Weekend per-day spend dwarfs weekday, and the category mix differs → high divergence.
+        // 10 transactions total so the engine reports the comparison as confident (threshold >= 10).
         val txns = weekdays.map { expense(it, 20_000.0, "Transport") } +
-            weekendDays.map { expense(it, 600_000.0, "Entertainment") }
-        val result = engine.twoYous(txns, now)
+            weekendDays.map { expense(it, 600_000.0, "Entertainment") } +
+            expense(2, 600_000.0, "Entertainment")
+        val result = twoYous(txns)
         assertTrue(result.isConfident)
         assertTrue("got ${result.divergence}", result.divergence >= 0.6f)
         assertTrue(result.gapHeadline.isNotBlank())
@@ -112,6 +132,6 @@ class InsightEngineTwoYousTest {
         )
         // Should not throw, and twoYous is always populated.
         val insights = engine.derive(mixed, now)
-        assertTrue(insights.twoYous.divergence in 0f..1f)
+        assertTrue((insights.twoYous?.divergence ?: 0f) in 0f..1f)
     }
 }

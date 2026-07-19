@@ -1,4 +1,4 @@
-package com.example.insightku.core.ui.components
+package com.example.insightku.feature.home.presentation
 
 import android.content.Context
 import androidx.annotation.StringRes

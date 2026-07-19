@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +39,7 @@ fun BankWhitelistScreen(
     onBack: () -> Unit,
     viewModel: BankWhitelistViewModel = hiltViewModel()
 ) {
-    val apps by viewModel.apps.collectAsState()
+    val apps by viewModel.apps.collectAsStateWithLifecycle()
     val installed = apps.filter { it.isInstalled }
     val others    = apps.filter { !it.isInstalled }
     var showOthers by remember { mutableStateOf(false) }

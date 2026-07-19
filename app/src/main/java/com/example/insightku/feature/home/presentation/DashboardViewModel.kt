@@ -5,28 +5,25 @@ import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.core.data.repository.InstallmentRepository
-import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import com.example.insightku.feature.home.domain.AddTransactionUseCase
 import com.example.insightku.feature.home.domain.BuildInsightMessagesUseCase
 import com.example.insightku.feature.home.domain.CalculateStreakUseCase
 import com.example.insightku.feature.home.domain.GetTransactionsUseCase
+import com.example.insightku.feature.home.domain.MarkPaymentPaidUseCase
 import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.utils.ErrorBus
-import com.example.insightku.core.datastore.SessionManager
+import com.example.insightku.core.utils.normalizedCategoryName
+import com.example.insightku.core.data.local.preferences.SessionManager
 import com.example.insightku.core.utils.TimeUtils
-import android.content.Context
-import com.example.insightku.core.worker.PaymentReminderHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,25 +43,20 @@ class DashboardViewModel @Inject constructor(
     private val addTransactionUseCase: AddTransactionUseCase,
     private val calculateStreakUseCase: CalculateStreakUseCase,
     private val buildInsightMessagesUseCase: BuildInsightMessagesUseCase,
-    private val transactionRepository: TransactionRepository,
+    private val markPaymentPaidUseCase: MarkPaymentPaidUseCase,
     private val categoryRepository: CategoryRepository,
     private val recurringBudgetRepository: RecurringBudgetRepository,
     private val installmentRepository: InstallmentRepository,
     private val draftRepository: DraftTransactionRepository,
-    private val authRepository: AuthRepository,
     private val errorBus: ErrorBus,
     private val sessionManager: SessionManager,
     private val prefs: UserPreferencesDataStore,
     private val goalRepository: GoalRepository,
-    private val accountRepository: AccountRepository,
-    @ApplicationContext private val context: Context
+    private val accountRepository: AccountRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState = _uiState.asStateFlow()
-
-    // Cache categories so mark-paid functions can resolve real category names
-    private var cachedCategories: List<Category> = emptyList()
 
     private var loadJob: Job? = null
     private var userNameJob: Job? = null
@@ -240,39 +232,7 @@ class DashboardViewModel @Inject constructor(
 
     private fun markRecurringPaid(budget: com.example.insightku.core.data.model.RecurringBudget) {
         viewModelScope.launch {
-            val userId = authRepository.getCurrentUserId() ?: return@launch
-            try {
-                val resolvedCategory = budget.categoryId?.let { id ->
-                    cachedCategories.firstOrNull { it.id == id }?.name
-                        ?: cachedCategories.firstOrNull { it.name.trim().lowercase() == id.trim().lowercase() }?.name
-                } ?: budget.name
-
-                val tx = Transaction(
-                    title = budget.name,
-                    amount = budget.amount,
-                    category = resolvedCategory,
-                    type = TransactionType.EXPENSE,
-                    date = System.currentTimeMillis(),
-                    description = "Recurring payment: ${budget.name}",
-                    accountId = budget.accountId ?: ""
-                )
-                transactionRepository.addTransaction(tx, userId)
-
-                val cal = Calendar.getInstance().apply { timeInMillis = budget.nextDue }
-                when (budget.frequency) {
-                    com.example.insightku.core.data.model.BudgetFrequency.WEEKLY -> cal.add(Calendar.WEEK_OF_YEAR, 1)
-                    com.example.insightku.core.data.model.BudgetFrequency.BIWEEKLY -> cal.add(Calendar.WEEK_OF_YEAR, 2)
-                    com.example.insightku.core.data.model.BudgetFrequency.MONTHLY -> cal.add(Calendar.MONTH, 1)
-                    com.example.insightku.core.data.model.BudgetFrequency.QUARTERLY -> cal.add(Calendar.MONTH, 3)
-                    com.example.insightku.core.data.model.BudgetFrequency.YEARLY -> cal.add(Calendar.YEAR, 1)
-                }
-                val updated = budget.copy(
-                    nextDue = cal.timeInMillis,
-                    lastProcessed = System.currentTimeMillis()
-                )
-                recurringBudgetRepository.updateRecurringBudget(updated, userId)
-                PaymentReminderHelper.cancelRemindersForPayment(context, "recurring_${budget.id}")
-            } catch (e: Exception) {
+            markPaymentPaidUseCase.markRecurringPaid(budget).onFailure { e ->
                 val msg = e.message ?: "Gagal menandai pembayaran"
                 _uiState.update { it.copy(error = msg) }
                 errorBus.send(msg)
@@ -282,36 +242,7 @@ class DashboardViewModel @Inject constructor(
 
     private fun markInstallmentPaid(installment: com.example.insightku.core.data.model.Installment) {
         viewModelScope.launch {
-            val userId = authRepository.getCurrentUserId() ?: return@launch
-            try {
-                val resolvedCategory = installment.categoryId?.let { id ->
-                    cachedCategories.firstOrNull { it.id == id }?.name
-                        ?: cachedCategories.firstOrNull { it.name.trim().lowercase() == id.trim().lowercase() }?.name
-                } ?: installment.name
-
-                val tx = Transaction(
-                    title = installment.name,
-                    amount = installment.monthlyPayment,
-                    category = resolvedCategory,
-                    type = TransactionType.EXPENSE,
-                    date = System.currentTimeMillis(),
-                    description = "Installment payment: ${installment.name} (${installment.paidMonths + 1}/${installment.totalMonths})",
-                    accountId = installment.accountId ?: ""
-                )
-                transactionRepository.addTransaction(tx, userId)
-
-                val cal = Calendar.getInstance().apply { timeInMillis = installment.nextDueDate }
-                cal.add(Calendar.MONTH, 1)
-                val newPaid = (installment.paidMonths + 1).coerceAtMost(installment.totalMonths)
-                val isNowComplete = newPaid >= installment.totalMonths
-                val updated = installment.copy(
-                    paidMonths = newPaid,
-                    nextDueDate = cal.timeInMillis,
-                    isActive = newPaid < installment.totalMonths
-                )
-                installmentRepository.updateInstallment(updated, userId)
-                if (isNowComplete) PaymentReminderHelper.cancelRemindersForPayment(context, "installment_${installment.id}")
-            } catch (e: Exception) {
+            markPaymentPaidUseCase.markInstallmentPaid(installment).onFailure { e ->
                 val msg = e.message ?: "Gagal menandai cicilan"
                 _uiState.update { it.copy(error = msg) }
                 errorBus.send(msg)
@@ -429,13 +360,12 @@ class DashboardViewModel @Inject constructor(
         val monthlyExpenses = monthlyTx.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
 
         // Build lookup map
-        val categoryMap = categories.associateBy { it.name.trim().lowercase() }
-        cachedCategories = categories
+        val categoryMap = categories.associateBy { it.name.normalizedCategoryName() }
         val recentTransactions = transactions
             .sortedByDescending { it.date }
             .take(5)
             .map { t ->
-                val matchedCat = categoryMap[t.category.trim().lowercase()]
+                val matchedCat = categoryMap[t.category.normalizedCategoryName()]
                 TransactionItem(
                     id = t.id,
                     title = t.title,
@@ -454,7 +384,7 @@ class DashboardViewModel @Inject constructor(
             .filter { it.type == TransactionType.EXPENSE && it.category.isNotBlank() }
             .groupBy { it.category }
             .map { (cat, txs) ->
-                val matchedCategory = categoryMap[cat.trim().lowercase()]
+                val matchedCategory = categoryMap[cat.normalizedCategoryName()]
                 BudgetSpendingItem(
                     id = matchedCategory?.id ?: cat,
                     categoryName = cat,
@@ -512,7 +442,7 @@ class DashboardViewModel @Inject constructor(
         val allBudgetItems = categories
             .filter { it.budgetLimit != null && it.budgetLimit > 0 && !it.isSystemCategory }
             .map { cat ->
-                val existing = budgetCategorySpending.find { it.categoryName.trim().lowercase() == cat.name.trim().lowercase() }
+                val existing = budgetCategorySpending.find { it.categoryName.normalizedCategoryName() == cat.name.normalizedCategoryName() }
                 BudgetSpendingItem(
                     id = cat.id,
                     categoryName = cat.name,

@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.ui.components.splash.SplashEvent
 import com.example.insightku.core.ui.components.splash.SplashState
 import com.example.insightku.core.ui.components.splash.SplashUiEvent
-import com.example.insightku.core.datastore.SessionManager
-import com.google.firebase.auth.FirebaseAuth
+import com.example.insightku.core.data.local.preferences.SessionManager
+import com.example.insightku.feature.auth.data.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -20,7 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SplashViewModel @Inject constructor(
     private val sessionManager: SessionManager,
-    private val firebaseAuth: FirebaseAuth  // BUG9 FIX: Inject Firebase untuk cek token
+    private val authRepository: AuthRepository  // BUG9 FIX: Auth via repository (Firebase as source of truth)
 ) : ViewModel() {
 
     private val uiState = MutableStateFlow(SplashState())
@@ -52,14 +52,13 @@ class SplashViewModel @Inject constructor(
                 // Loading minimal 2 detik untuk UX yang baik
                 delay(2000)
 
-                // BUG9 FIX: Gunakan FirebaseAuth sebagai sumber kebenaran utama.
+                // BUG9 FIX: Gunakan Firebase (via AuthRepository) sebagai sumber kebenaran utama.
                 // DataStore saja tidak cukup karena:
                 // 1. Token Firebase bisa expired tapi DataStore masih isLoggedIn=true
                 //    → user masuk Home tapi semua Firestore request gagal
                 // 2. Jika clear app data, DataStore terhapus tapi Firebase token masih ada
                 //    → user harus login ulang padahal token masih valid
-                val firebaseUser = firebaseAuth.currentUser
-                val isLoggedIn = firebaseUser != null
+                val isLoggedIn = authRepository.isAuthenticated()
 
                 // Sync DataStore agar konsisten dengan Firebase state
                 if (!isLoggedIn) {

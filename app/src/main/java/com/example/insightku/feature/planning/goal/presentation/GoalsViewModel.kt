@@ -7,6 +7,7 @@ import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.repository.AccountAllocationRepository
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.repository.CategoryRepository
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.model.GoalAccountEntity
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
@@ -246,7 +247,7 @@ class GoalsViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.contribute(goalId = event.goalId, accountId = event.accountId, amount = event.amount, type = ContributionType.MANUAL, notes = event.notes).onSuccess { contribution ->
                 val goal = _uiState.value.goals.find { it.id == event.goalId }
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "$${"%.2f".format(event.amount)} added to ${goal?.name ?: "goal"}") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "${NumberFormatter.formatCurrency(event.amount)} added to ${goal?.name ?: "goal"}") }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to contribute") } }
         }
     }
@@ -254,7 +255,7 @@ class GoalsViewModel @Inject constructor(
     private fun withdraw(event: GoalsEvent.Withdraw) {
         viewModelScope.launch {
             goalRepository.withdraw(goalId = event.goalId, accountId = event.accountId, amount = event.amount, notes = event.notes).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "$${"%.2f".format(event.amount)} withdrawn") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "${NumberFormatter.formatCurrency(event.amount)} withdrawn") }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to withdraw") } }
         }
     }
@@ -292,7 +293,7 @@ class GoalsViewModel @Inject constructor(
     private fun setDailyTarget(amount: Double) {
         viewModelScope.launch {
             goalRepository.setDailyTarget(amount).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = if (amount > 0) "Daily target set to $${"%.2f".format(amount)}" else "Daily target cleared") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = if (amount > 0) "Daily target set to ${NumberFormatter.formatCurrency(amount)}" else "Daily target cleared") }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
         }
     }

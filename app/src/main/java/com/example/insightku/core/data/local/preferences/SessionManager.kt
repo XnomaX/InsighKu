@@ -1,4 +1,4 @@
-package com.example.insightku.core.datastore
+package com.example.insightku.core.data.local.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore

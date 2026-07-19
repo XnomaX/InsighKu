@@ -1,5 +1,5 @@
 package com.example.insightku.feature.home.presentation
-import com.example.insightku.core.ui.components.resolveCategoryIcon
+import com.example.insightku.feature.home.presentation.resolveCategoryIcon
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*

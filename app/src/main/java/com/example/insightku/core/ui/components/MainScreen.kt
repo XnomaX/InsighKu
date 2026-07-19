@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -146,12 +147,12 @@ fun MainScreen(
     val dashboardViewModel: DashboardViewModel           = hiltViewModel()
     val addTransactionViewModel: AddTransactionViewModel = hiltViewModel()
     val budgetingViewModel: BudgetingViewModel           = hiltViewModel()
-    val expenseCategories          by addTransactionViewModel.expenseCategories.collectAsState()
-    val incomeCategories           by addTransactionViewModel.incomeCategories.collectAsState()
-    val addTxUiState               by addTransactionViewModel.uiState.collectAsState()
-    val budgetingUiState           by budgetingViewModel.uiState.collectAsState()
+    val expenseCategories          by addTransactionViewModel.expenseCategories.collectAsStateWithLifecycle()
+    val incomeCategories           by addTransactionViewModel.incomeCategories.collectAsStateWithLifecycle()
+    val addTxUiState               by addTransactionViewModel.uiState.collectAsStateWithLifecycle()
+    val budgetingUiState           by budgetingViewModel.uiState.collectAsStateWithLifecycle()
     val accountsViewModel: AccountsViewModel = hiltViewModel()
-    val accountsUiState by accountsViewModel.uiState.collectAsState()
+    val accountsUiState by accountsViewModel.uiState.collectAsStateWithLifecycle()
     val accounts = accountsUiState.accounts
     var showAddTransactionDialog   by remember { mutableStateOf(false) }
     var pendingStreakPopup          by remember { mutableStateOf(false) }
@@ -685,7 +686,7 @@ private fun MainNavHost(
         composable(Route.TRANSACTION_DETAILS) {
             val txDetailsViewModel: TransactionDetailsViewModel = hiltViewModel()
             val txAccountsViewModel: AccountsViewModel = hiltViewModel()
-            val txAccounts by txAccountsViewModel.uiState.collectAsState()
+            val txAccounts by txAccountsViewModel.uiState.collectAsStateWithLifecycle()
             TransactionDetailsScreen(
                 viewModel           = txDetailsViewModel,
                 initialTransactions = emptyList(),

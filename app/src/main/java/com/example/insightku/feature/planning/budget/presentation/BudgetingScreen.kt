@@ -34,7 +34,7 @@ import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -72,12 +72,12 @@ fun BudgetingScreen(
     initialAction: BudgetingAction? = null,
     onActionConsumed: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val tabs = PlanningTab.entries
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
     val goalsViewModel: GoalsViewModel = hiltViewModel()
-    val goalsUiState by goalsViewModel.uiState.collectAsState()
+    val goalsUiState by goalsViewModel.uiState.collectAsStateWithLifecycle()
 
     // Handle initial action from Home screen CTAs
     LaunchedEffect(initialAction) {

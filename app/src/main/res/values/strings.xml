@@ -223,6 +223,55 @@
     <string name="error">Error</string>
     <string name="success">Success</string>
 
+    <!-- Common Actions -->
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_close">Close</string>
+    <string name="action_back">Back</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_done">Done</string>
+
+    <!-- Dialog - Unsaved Changes -->
+    <string name="dialog_unsaved_changes_title">Unsaved Changes</string>
+    <string name="dialog_unsaved_changes_message">You have unsaved changes. Are you sure you want to leave this page?</string>
+
+    <!-- Common Labels -->
+    <string name="label_amount">Amount</string>
+    <string name="label_category">Category</string>
+    <string name="label_date">Date</string>
+    <string name="label_description">Description</string>
+    <string name="label_notes">Notes</string>
+    <string name="label_account">Account</string>
+    <string name="label_type">Type</string>
+    <string name="label_income">Income</string>
+    <string name="label_expense">Expense</string>
+
+    <!-- Transaction Types (Short) -->
+    <string name="transaction_income">Income</string>
+    <string name="transaction_expense">Expense</string>
+
+    <!-- Messages -->
+    <string name="message_loading">Loading...</string>
+    <string name="message_error">An error occurred</string>
+    <string name="message_success">Success</string>
+    <string name="message_no_data">No data available</string>
+    <string name="message_network_error">Network error. Please check your connection.</string>
+
+    <!-- Logout Dialog -->
+    <string name="logout_title">Log Out?</string>
+    <string name="logout_message">You\'ll need to sign in again to access your financial history.</string>
+    <string name="logout_confirm">Log Out</string>
+    <string name="logout_stay">Stay</string>
+
+    <!-- Settings - Language & Theme -->
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_indonesian">Indonesian</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+
     <!-- Currency -->
     <string name="currency_symbol">Rp</string>
     <string name="currency_format">Rp %1$s</string>

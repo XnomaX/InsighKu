@@ -8,8 +8,10 @@ import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
-import com.example.insightku.data.model.Transaction
-import com.example.insightku.data.model.TransactionType
+import com.example.insightku.core.data.model.Transaction
+import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.feature.home.presentation.AddTransactionStep
+import com.example.insightku.feature.home.presentation.TransactionFormData
 
 /**
  * Preservation Property Tests for AddTransactionDialog UI Fix
@@ -274,7 +276,7 @@ class AddTransactionDialogPreservationTest : StringSpec({
             resetFormData.category shouldBe ""
             resetFormData.description shouldBe ""
             resetFormData.isIncome shouldBe false
-            resetFormData.date shouldNotBe "" // Date should have default value
+            resetFormData.dateMillis shouldNotBe 0L // Date should have default value
         }
     }
     
@@ -314,13 +316,13 @@ class AddTransactionDialogPreservationTest : StringSpec({
     ) {
         checkAll<Boolean>(5, Arb.boolean()) { _ ->
             val formData = TransactionFormData()
-            
-            // Verify default date is set
-            formData.date shouldNotBe ""
-            
-            // Verify date format (YYYY-MM-DD)
-            val datePattern = Regex("""\d{4}-\d{2}-\d{2}""")
-            formData.date.matches(datePattern) shouldBe true
+
+            // Verify default date is set (epoch millis, defaults to today)
+            formData.dateMillis shouldNotBe 0L
+
+            // Verify the default date is "today" (within a day of now)
+            val now = System.currentTimeMillis()
+            (formData.dateMillis in (now - 86_400_000L)..(now + 86_400_000L)) shouldBe true
         }
     }
     

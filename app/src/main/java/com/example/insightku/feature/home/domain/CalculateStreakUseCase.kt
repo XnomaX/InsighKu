@@ -90,7 +90,9 @@ class CalculateStreakUseCase @Inject constructor(
             updatedFreezeCount--
             updatedPerfect = false
             // Return preference update actions for ViewModel to execute
-        } else if (streak == 0 && !hasTrackedToday && !missedYesterday) {
+        } else if (streak == 0 && !hasTrackedToday) {
+            // Repair is offered as a fallback whenever the streak is broken and no freeze was
+            // consumed above (freeze takes precedence via the preceding branch).
             if (!repairAvailable) {
                 repairExpiryMs = System.currentTimeMillis() + 24 * 60 * 60 * 1000L
                 repairAvailable = true

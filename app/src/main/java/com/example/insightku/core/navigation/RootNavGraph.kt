@@ -5,7 +5,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.core.ui.components.ErrorSnackbar
@@ -44,7 +44,7 @@ fun RootNavGraph(notificationData: NotificationTransactionData? = null, allocati
      * Satu instance, satu sumber kebenaran.
      */
     val rootViewModel: RootViewModel = hiltViewModel()
-    val globalError by rootViewModel.globalError.collectAsState()
+    val globalError by rootViewModel.globalError.collectAsStateWithLifecycle()
 
     LaunchedEffect(globalError) {
         globalError?.let {

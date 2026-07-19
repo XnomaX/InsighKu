@@ -1,6 +1,6 @@
 package com.example.insightku.feature.auth.data
 
-import com.example.insightku.core.datastore.SessionManager
+import com.example.insightku.core.data.local.preferences.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
@@ -34,6 +34,12 @@ class AuthRepository @Inject constructor(
     fun getCurrentUserId(): String? = firebaseAuth.currentUser?.uid
 
     fun getCurrentUser() = firebaseAuth.currentUser
+
+    /**
+     * Whether a Firebase user session is currently active.
+     * Firebase is the source of truth for login state (a DataStore flag can drift from it).
+     */
+    fun isAuthenticated(): Boolean = firebaseAuth.currentUser != null
 
     // ─── Login ─────────────────────────────────────────────────────────────────
 
