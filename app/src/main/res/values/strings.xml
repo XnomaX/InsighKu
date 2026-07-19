@@ -1150,6 +1150,9 @@
     <string name="goals_no_active_desc">Create a new goal to start saving towards something meaningful.</string>
     <string name="goals_no_paused">No paused goals</string>
     <string name="goals_no_paused_desc">When you pause a goal, it\'ll appear here.</string>
+    <string name="goals_completed_tab">Completed</string>
+    <string name="goals_no_completed">No completed goals</string>
+    <string name="goals_no_completed_desc">When you complete a goal, it\'ll appear here.</string>
     <string name="goals_no_archived">No archived goals</string>
 
     <!-- Goal Redesign — Completed Card -->

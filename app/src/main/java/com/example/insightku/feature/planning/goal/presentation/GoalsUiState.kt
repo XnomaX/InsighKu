@@ -11,7 +11,7 @@ import java.time.LocalDate
  * - [ACTIVE]: Active goals in progress
  * - [PAUSED]: Paused goals (on hold)
  */
-enum class GoalFilterTab { ACTIVE, PAUSED }
+enum class GoalFilterTab { ACTIVE, PAUSED, COMPLETED }
 
 data class GoalsUiState(
     // ── Status-separated goal lists ─────────────────────────────────────────
@@ -52,10 +52,12 @@ data class GoalsUiState(
         get() = when (selectedTab) {
             GoalFilterTab.ACTIVE -> activeGoals
             GoalFilterTab.PAUSED -> pausedGoals
+            GoalFilterTab.COMPLETED -> completedGoals
         }
 
     val activeGoalCount: Int get() = activeGoals.size
     val pausedGoalCount: Int get() = pausedGoals.size
+    val completedGoalCount: Int get() = completedGoals.size
     val archivedGoalCount: Int get() = archivedGoals.size
 
     companion object {

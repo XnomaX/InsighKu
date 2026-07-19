@@ -119,6 +119,7 @@ private fun GoalsContent(uiState: GoalsUiState, onEvent: (GoalsEvent) -> Unit, m
                     selectedTab = uiState.selectedTab,
                     activeCount = uiState.activeGoalCount,
                     pausedCount = uiState.pausedGoalCount,
+                    completedCount = uiState.completedGoalCount,
                     archivedCount = uiState.archivedGoalCount,
                     onTabSelected = { onEvent(GoalsEvent.SelectTab(it)) },
                     onArchivedClick = { onEvent(GoalsEvent.ShowArchivedGoals) }
@@ -166,6 +167,7 @@ private fun GoalFilterTabs(
     selectedTab: GoalFilterTab,
     activeCount: Int,
     pausedCount: Int,
+    completedCount: Int,
     archivedCount: Int,
     onTabSelected: (GoalFilterTab) -> Unit,
     onArchivedClick: () -> Unit
@@ -188,22 +190,28 @@ private fun GoalFilterTabs(
                 isSelected = selectedTab == GoalFilterTab.PAUSED,
                 onClick = { onTabSelected(GoalFilterTab.PAUSED) }
             )
+            GoalFilterChip(
+                label = stringResource(R.string.goals_completed_tab),
+                count = completedCount,
+                isSelected = selectedTab == GoalFilterTab.COMPLETED,
+                onClick = { onTabSelected(GoalFilterTab.COMPLETED) }
+            )
         }
 
-        // Archive access button
-        if (archivedCount > 0) {
-            Surface(
-                onClick = onArchivedClick,
-                shape = RoundedCornerShape(12.dp),
-                color = AppPalette.cardElevated,
-                border = BorderStroke(1.dp, AppPalette.cardBorder)
+        // Archive access button (always visible)
+        Surface(
+            onClick = onArchivedClick,
+            shape = RoundedCornerShape(12.dp),
+            color = AppPalette.cardElevated,
+            border = BorderStroke(1.dp, AppPalette.cardBorder)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(Icons.Outlined.Archive, null, tint = AppPalette.textMuted, modifier = Modifier.size(16.dp))
+                Icon(Icons.Outlined.Archive, null, tint = AppPalette.textMuted, modifier = Modifier.size(16.dp))
+                if (archivedCount > 0) {
                     Text(stringResource(R.string.goals_archived_count, archivedCount), style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted, fontWeight = FontWeight.Medium)
                 }
             }
@@ -264,6 +272,7 @@ private fun EmptyTabState(tab: GoalFilterTab, onCreateGoal: () -> Unit) {
         val icon = when (tab) {
             GoalFilterTab.PAUSED -> Icons.Outlined.PauseCircleOutline
             GoalFilterTab.ACTIVE -> Icons.Outlined.Flag
+            GoalFilterTab.COMPLETED -> Icons.Outlined.CheckCircleOutline
         }
         Box(modifier = Modifier.size(72.dp).clip(CircleShape).background(AppPalette.cardElevated), contentAlignment = Alignment.Center) {
             Icon(imageVector = icon, contentDescription = null, tint = AppPalette.textMuted, modifier = Modifier.size(36.dp))
@@ -273,6 +282,7 @@ private fun EmptyTabState(tab: GoalFilterTab, onCreateGoal: () -> Unit) {
             text = when (tab) {
                 GoalFilterTab.PAUSED -> stringResource(R.string.goals_no_paused)
                 GoalFilterTab.ACTIVE -> stringResource(R.string.goals_no_active)
+                GoalFilterTab.COMPLETED -> stringResource(R.string.goals_no_completed)
             },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
@@ -283,6 +293,7 @@ private fun EmptyTabState(tab: GoalFilterTab, onCreateGoal: () -> Unit) {
             text = when (tab) {
                 GoalFilterTab.PAUSED -> stringResource(R.string.goals_no_paused_desc)
                 GoalFilterTab.ACTIVE -> stringResource(R.string.goals_no_active_desc)
+                GoalFilterTab.COMPLETED -> stringResource(R.string.goals_no_completed_desc)
             },
             style = MaterialTheme.typography.bodySmall,
             color = AppPalette.textMuted,
