@@ -3,7 +3,7 @@ package com.example.insightku.feature.planning.budget.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,7 +18,7 @@ import com.example.insightku.core.ui.theme.AppPalette
 fun GoalDetailScreenPlaceholder(goalId: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().background(AppPalette.background)) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = stringResource(R.string.cd_back), tint = AppPalette.textPrimary) }
+            IconButton(onClick = onBack) { Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.cd_back), tint = AppPalette.textPrimary) }
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "Goal Detail", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }

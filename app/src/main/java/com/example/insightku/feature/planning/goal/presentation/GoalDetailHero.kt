@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,7 +35,7 @@ internal fun PremiumDetailHeader(goal: Goal, goalColor: androidx.compose.ui.grap
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.TopStart)
             ) {
-                Icon(Icons.Outlined.ArrowBack, stringResource(R.string.back), tint = AppPalette.textPrimary)
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back), tint = AppPalette.textPrimary)
             }
         }
 

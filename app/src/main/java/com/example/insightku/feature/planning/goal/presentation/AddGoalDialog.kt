@@ -13,6 +13,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsBike
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -51,12 +55,12 @@ private val goalIcons = listOf(
     GoalIcon("House", Icons.Default.Home, "Home"), GoalIcon("Apartment", Icons.Default.Apartment, "Home"), GoalIcon("Furniture", Icons.Default.Chair, "Home"), GoalIcon("Construction", Icons.Default.Construction, "Home"),
     GoalIcon("Laptop", Icons.Default.Laptop, "Technology"), GoalIcon("Phone", Icons.Default.Smartphone, "Technology"), GoalIcon("Tablet", Icons.Default.Tablet, "Technology"), GoalIcon("Camera", Icons.Default.CameraAlt, "Technology"), GoalIcon("Headphones", Icons.Default.Headphones, "Technology"), GoalIcon("Gaming", Icons.Default.SportsEsports, "Technology"),
     GoalIcon("Beach", Icons.Default.BeachAccess, "Travel"), GoalIcon("Mountain", Icons.Default.Terrain, "Travel"), GoalIcon("Suitcase", Icons.Default.Luggage, "Travel"), GoalIcon("Hotel", Icons.Default.Hotel, "Travel"),
-    GoalIcon("Graduation", Icons.Default.School, "Education"), GoalIcon("Book", Icons.Default.MenuBook, "Education"), GoalIcon("Course", Icons.Default.OndemandVideo, "Education"),
+    GoalIcon("Graduation", Icons.Default.School, "Education"), GoalIcon("Book", Icons.AutoMirrored.Filled.MenuBook, "Education"), GoalIcon("Course", Icons.Default.OndemandVideo, "Education"),
     GoalIcon("Heart", Icons.Default.Favorite, "Health"), GoalIcon("Hospital", Icons.Default.LocalHospital, "Health"), GoalIcon("Medicine", Icons.Default.MedicalServices, "Health"), GoalIcon("Fitness", Icons.Default.FitnessCenter, "Health"),
     GoalIcon("Shield", Icons.Default.Shield, "Emergency"), GoalIcon("Security", Icons.Default.Security, "Emergency"),
     GoalIcon("Shopping", Icons.Default.ShoppingBag, "Shopping"), GoalIcon("Cart", Icons.Default.ShoppingCart, "Shopping"), GoalIcon("Gift", Icons.Default.CardGiftcard, "Shopping"),
-    GoalIcon("Gold", Icons.Default.Diamond, "Investment"), GoalIcon("Stocks", Icons.Default.TrendingUp, "Investment"), GoalIcon("Bitcoin", Icons.Default.CurrencyBitcoin, "Investment"), GoalIcon("Chart", Icons.Default.ShowChart, "Investment"),
-    GoalIcon("Coffee", Icons.Default.Coffee, "Lifestyle"), GoalIcon("Restaurant", Icons.Default.Restaurant, "Lifestyle"), GoalIcon("Bicycle", Icons.Default.DirectionsBike, "Lifestyle"), GoalIcon("Sports", Icons.Default.Sports, "Lifestyle"),
+    GoalIcon("Gold", Icons.Default.Diamond, "Investment"), GoalIcon("Stocks", Icons.AutoMirrored.Filled.TrendingUp, "Investment"), GoalIcon("Bitcoin", Icons.Default.CurrencyBitcoin, "Investment"), GoalIcon("Chart", Icons.AutoMirrored.Filled.ShowChart, "Investment"),
+    GoalIcon("Coffee", Icons.Default.Coffee, "Lifestyle"), GoalIcon("Restaurant", Icons.Default.Restaurant, "Lifestyle"), GoalIcon("Bicycle", Icons.AutoMirrored.Filled.DirectionsBike, "Lifestyle"), GoalIcon("Sports", Icons.Default.Sports, "Lifestyle"),
     GoalIcon("Star", Icons.Default.Star, "General"), GoalIcon("Rocket", Icons.Default.RocketLaunch, "General"), GoalIcon("Flag", Icons.Default.Flag, "General"), GoalIcon("Target", Icons.Default.GpsFixed, "General"), GoalIcon("Celebration", Icons.Default.Celebration, "General"), GoalIcon("Child", Icons.Default.ChildCare, "General"), GoalIcon("Pet", Icons.Default.Pets, "General"), GoalIcon("Church", Icons.Default.Church, "General"),
 )
 

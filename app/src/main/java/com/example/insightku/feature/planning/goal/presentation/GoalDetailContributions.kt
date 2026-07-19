@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.TrendingDown
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -44,7 +45,7 @@ internal fun ContributionSummarySection(uiState: GoalDetailUiState, goalColor: C
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ContributionMiniCard(label = stringResource(R.string.goal_deposits), value = "${uiState.totalContributions}", subtitle = stringResource(R.string.goal_contrib_total_deposits), icon = Icons.Outlined.Savings, color = goalColor, modifier = Modifier.weight(1f))
                 uiState.latestContribution?.let { latest ->
-                    ContributionMiniCard(label = stringResource(R.string.goal_latest), value = NumberFormatter.formatCurrencyCompact(kotlin.math.abs(latest.amount)), subtitle = stringResource(R.string.goal_contrib_last_deposit), icon = Icons.Outlined.TrendingDown, color = SuccessColor, modifier = Modifier.weight(1f))
+                    ContributionMiniCard(label = stringResource(R.string.goal_latest), value = NumberFormatter.formatCurrencyCompact(kotlin.math.abs(latest.amount)), subtitle = stringResource(R.string.goal_contrib_last_deposit), icon = Icons.AutoMirrored.Outlined.TrendingDown, color = SuccessColor, modifier = Modifier.weight(1f))
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -52,9 +53,8 @@ internal fun ContributionSummarySection(uiState: GoalDetailUiState, goalColor: C
                     ContributionMiniCard(label = stringResource(R.string.goal_average), value = NumberFormatter.formatCurrencyCompact(uiState.averageContribution), subtitle = stringResource(R.string.goal_contrib_per_deposit), icon = Icons.Outlined.Equalizer, color = PurpleViolet, modifier = Modifier.weight(1f))
                 }
                 val lastDate = uiState.lastActivityDate
-                val isValidLastDate = lastDate != null && lastDate.toEpochMilli() > AppConstants.EPOCH_CUTOFF_MS
-                val lastDateValue = if (isValidLastDate) {
-                    DateFormatter.formatShortDate(lastDate!!.toEpochMilli())
+                val lastDateValue = if (lastDate != null && lastDate.toEpochMilli() > AppConstants.EPOCH_CUTOFF_MS) {
+                    DateFormatter.formatShortDate(lastDate.toEpochMilli())
                 } else {
                     "—"
                 }

@@ -64,9 +64,9 @@ class GoalRepository @Inject constructor(
             goalDao.getAllActiveGoals(),
             contributionDao.getAllContributions()
         ) { entities, _ ->
+            val totalsMap = contributionDao.getAllGoalTotals().associate { it.goalId to it.total }
             entities.map { entity ->
-                val currentAmount = contributionDao.getTotalContributed(entity.id)
-                Goal.fromEntity(entity, currentAmount)
+                Goal.fromEntity(entity, totalsMap[entity.id] ?: 0.0)
             }
         }
     }
@@ -127,9 +127,9 @@ class GoalRepository @Inject constructor(
             goalDao.getArchivedGoals(),
             contributionDao.getAllContributions()
         ) { entities, _ ->
+            val totalsMap = contributionDao.getAllGoalTotals().associate { it.goalId to it.total }
             entities.map { entity ->
-                val currentAmount = contributionDao.getTotalContributed(entity.id)
-                Goal.fromEntity(entity, currentAmount)
+                Goal.fromEntity(entity, totalsMap[entity.id] ?: 0.0)
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.example.insightku.feature.planning.goal.presentation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -15,7 +16,7 @@ internal fun getGoalIcon(iconName: String): ImageVector {
         "school", "education", "graduation" -> Icons.Outlined.School
         "health", "health and safety" -> Icons.Outlined.HealthAndSafety
         "warning", "emergency" -> Icons.Outlined.Warning
-        "trending up", "investment", "stocks" -> Icons.Outlined.TrendingUp
+        "trending up", "investment", "stocks" -> Icons.AutoMirrored.Outlined.TrendingUp
         "card giftcard", "gift" -> Icons.Outlined.CardGiftcard
         "celebration" -> Icons.Outlined.Celebration
         "star" -> Icons.Outlined.Star

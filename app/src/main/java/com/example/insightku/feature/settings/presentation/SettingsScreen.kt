@@ -830,7 +830,7 @@ private fun BankNotificationSection(
     onNavigateToAutoDetectionOnboarding: (() -> Unit)? = null
 ) {
     val context   = androidx.compose.ui.platform.LocalContext.current
-    val lifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
 
     // Re-check permission on every ON_RESUME (user may have just granted it in Settings)
     var isListenerEnabled by remember { mutableStateOf(false) }

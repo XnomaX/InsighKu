@@ -268,7 +268,7 @@ private fun InsightDialogAnimatedIcon(
                 if (iconVisible) {
                     scale.animateTo(1f, keyframes {
                         durationMillis = 300
-                        0f at 0 with LinearEasing
+                        0f at 0 using LinearEasing
                         1.1f at 150  // overshoot
                         0.95f at 220 // settle back
                         1f at 300    // final
@@ -384,7 +384,7 @@ private fun InsightDialogAnimatedIcon(
                     }) }
                     launch { rotation.animateTo(360f, keyframes {
                         durationMillis = 500
-                        0f at 0 with LinearEasing
+                        0f at 0 using LinearEasing
                         360f at 500
                     }) }
                 }

@@ -2,6 +2,7 @@
 package com.example.insightku.core.utils
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -57,7 +58,7 @@ object CategoryUtils {
 
             n.contains("invest") || n.contains("stock") || n.contains("crypto") ||
             n.contains("dividend") || n.contains("return") || n.contains("profit") ||
-            n.contains("saving") || n.contains("deposit") -> Icons.Default.TrendingUp
+            n.contains("saving") || n.contains("deposit") -> Icons.AutoMirrored.Filled.TrendingUp
 
             n.contains("business") || n.contains("company") || n.contains("revenue") ||
             n.contains("sales") || n.contains("commerce") -> Icons.Default.BusinessCenter

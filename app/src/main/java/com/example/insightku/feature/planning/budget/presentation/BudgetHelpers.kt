@@ -2,8 +2,8 @@ package com.example.insightku.feature.planning.budget.presentation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -118,7 +118,7 @@ internal fun buildInsights(categories: List<BudgetCategory>): List<InsightData> 
                 text = "${it.name} budget is nearly reached",
                 bgColor = AppPalette.warningBg,
                 iconTint = AppPalette.warning,
-                icon = Icons.Default.TrendingUp
+                icon = Icons.AutoMirrored.Filled.TrendingUp
             )
         )
     }
@@ -128,7 +128,7 @@ internal fun buildInsights(categories: List<BudgetCategory>): List<InsightData> 
                 text = "${safe.size} categories are well within budget",
                 bgColor = AppPalette.success.copy(alpha = 0.08f),
                 iconTint = AppPalette.success,
-                icon = Icons.Default.TrendingDown
+                icon = Icons.AutoMirrored.Filled.TrendingDown
             )
         )
     }

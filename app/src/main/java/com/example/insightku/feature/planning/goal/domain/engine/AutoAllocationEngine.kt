@@ -139,7 +139,7 @@ class AutoAllocationEngine @Inject constructor(
             AllocationTriggerType.INCOME_RECEIVED -> evaluateIncomeRule(rule, transaction, categoryIdToName)
             AllocationTriggerType.ROUND_UP -> evaluateRoundUpRule(rule, transaction)
             AllocationTriggerType.SPENDING_CATEGORY -> evaluateSpendingCategoryRule(rule, transaction, nameToCategoryId)
-            else -> null
+            AllocationTriggerType.BALANCE_ABOVE, AllocationTriggerType.DAILY, AllocationTriggerType.WEEKLY, AllocationTriggerType.BIWEEKLY, AllocationTriggerType.MONTHLY -> null
         }
     }
 

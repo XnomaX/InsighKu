@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -65,7 +66,7 @@ internal fun AutoAllocationSection(goal: Goal, rules: List<AutoAllocationRule>, 
 @Composable
 internal fun AutoAllocationRuleItem(rule: AutoAllocationRule, goalColor: Color, onClick: () -> Unit, onToggle: (Boolean) -> Unit) {
     val triggerIcon = when (rule.triggerType) {
-        AllocationTriggerType.INCOME_RECEIVED -> Icons.Outlined.TrendingUp
+        AllocationTriggerType.INCOME_RECEIVED -> Icons.AutoMirrored.Outlined.TrendingUp
         AllocationTriggerType.SPENDING_CATEGORY -> Icons.Outlined.Category
         AllocationTriggerType.ROUND_UP -> Icons.Outlined.ChangeHistory
         AllocationTriggerType.DAILY, AllocationTriggerType.WEEKLY, AllocationTriggerType.BIWEEKLY, AllocationTriggerType.MONTHLY -> Icons.Outlined.Schedule

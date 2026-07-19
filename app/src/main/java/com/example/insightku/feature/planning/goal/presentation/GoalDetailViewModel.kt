@@ -133,7 +133,7 @@ class GoalDetailViewModel @Inject constructor(
     private fun selectAccount(accountId: String) { _uiState.update { it.copy(selectedAccountId = accountId, isInsufficientFunds = false, shortfall = 0.0) } }
 
     private fun updateAmount(amount: String) {
-        val state = _uiState.value; val account = state.selectedAccountId?.let { state.accountMap[it] }; val enteredAmount = amount.toDoubleOrNull() ?: 0.0; val insufficientFunds = account != null && enteredAmount > 0 && enteredAmount > account.balance; val shortfall = if (insufficientFunds) enteredAmount - (account?.balance ?: 0.0) else 0.0
+        val state = _uiState.value; val account = state.selectedAccountId?.let { state.accountMap[it] }; val enteredAmount = amount.toDoubleOrNull() ?: 0.0; val insufficientFunds = account != null && enteredAmount > 0 && enteredAmount > account.balance; val shortfall = if (insufficientFunds && account != null) enteredAmount - account.balance else 0.0
         _uiState.update { it.copy(contributionAmount = amount, isInsufficientFunds = insufficientFunds, shortfall = shortfall) }
     }
 

@@ -96,7 +96,7 @@ object NumberFormatter {
      */
     fun formatInputThousands(
         raw: String,
-        locale: Locale = Locale("in", "ID")
+        locale: Locale = Locale.forLanguageTag("in-ID")
     ): String {
         val digits = raw.filter { it.isDigit() }
         if (digits.isEmpty()) return ""

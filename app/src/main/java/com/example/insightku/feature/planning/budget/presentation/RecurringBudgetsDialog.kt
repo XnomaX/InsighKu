@@ -241,7 +241,7 @@ fun ColumnScope.AddEditBudgetForm(editingBudget: RecurringBudget?, onSave: (Recu
 fun <T> DropdownField(label: String, options: Map<T, String>, onValueSelected: (T) -> Unit, displayValue: @Composable () -> String) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-        OutlinedTextField(value = displayValue(), onValueChange = {}, readOnly = true, label = { Text(label) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }, modifier = Modifier.fillMaxWidth().menuAnchor())
+        OutlinedTextField(value = displayValue(), onValueChange = {}, readOnly = true, label = { Text(label) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }, modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable))
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) { options.forEach { (value, text) -> DropdownMenuItem(text = { Text(text) }, onClick = { onValueSelected(value); expanded = false }) } }
     }
 }

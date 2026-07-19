@@ -185,7 +185,7 @@ private fun SignUpScreenContent(
                 // Error Card
                 if (uiState.error != null) {
                     AuthErrorCard(
-                        errorMessage = uiState.error!!,
+                        errorMessage = uiState.error,
                         onDismiss = { onEvent(SignUpEvent.ClearError) }
                     )
                     Spacer(modifier = Modifier.height(formSpacing))

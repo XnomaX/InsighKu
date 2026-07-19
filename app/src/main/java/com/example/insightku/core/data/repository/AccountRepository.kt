@@ -4,7 +4,6 @@ import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Transaction
-import com.example.insightku.core.data.model.TransactionType
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
@@ -80,14 +79,8 @@ class AccountRepository @Inject constructor(
      * Also removes account data from Firestore (best-effort).
      */
     suspend fun deleteAccount(accountId: String, userId: String?) {
-        // Step 1: Restore account balances for all transactions in this account
+        // Step 1: Collect transactions for Firestore cleanup
         val transactions = transactionDao.getTransactionsByAccountId(accountId)
-        for (tx in transactions) {
-            if (tx.accountId.isNotBlank()) {
-                val reverseDelta = -TransactionType.balanceDelta(tx.type, tx.amount)
-                accountDao.updateBalance(tx.accountId, reverseDelta)
-            }
-        }
 
         // Step 2: Delete all transactions in this account from Room
         transactionDao.deleteTransactionsByAccountId(accountId)

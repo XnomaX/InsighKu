@@ -28,6 +28,10 @@ interface ContributionDao {
     @Query("SELECT COALESCE(SUM(amount), 0.0) FROM contributions WHERE goalId = :goalId AND amount > 0")
     suspend fun getTotalContributed(goalId: String): Double
 
+    /** Batch query: get total contributed for ALL goals in a single query (avoids N+1). */
+    @Query("SELECT goalId, COALESCE(SUM(amount), 0.0) as total FROM contributions WHERE amount > 0 GROUP BY goalId")
+    suspend fun getAllGoalTotals(): List<GoalAllocation>
+
     @Query("SELECT COALESCE(SUM(amount), 0.0) FROM contributions WHERE goalId = :goalId AND amount > 0")
     fun getTotalContributedFlow(goalId: String): Flow<Double>
 

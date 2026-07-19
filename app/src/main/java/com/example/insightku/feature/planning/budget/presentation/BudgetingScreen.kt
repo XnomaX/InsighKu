@@ -30,9 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -131,19 +129,10 @@ fun BudgetingScreen(
         }
 
         // Tab Row Navigation
-        TabRow(
+        SecondaryTabRow(
             selectedTabIndex = pagerState.currentPage,
             containerColor = AppPalette.background,
-            contentColor = MaterialTheme.colorScheme.onBackground,
-            divider = {},
-            indicator = { tabPositions ->
-                if (pagerState.currentPage < tabPositions.size) {
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                        color = LocalAccent.current
-                    )
-                }
-            }
+            contentColor = LocalAccent.current,
         ) {
             tabs.forEachIndexed { index, tab ->
                 val selected = pagerState.currentPage == index
@@ -402,7 +391,7 @@ private fun BudgetSectionLabel(
             }
             if (onAddCategory != null) {
                 Surface(
-                    modifier = Modifier.clickable { onAddCategory?.invoke() },
+                    modifier = Modifier.clickable { onAddCategory() },
                     shape = RoundedCornerShape(50.dp),
                     color = AppPalette.card,
                     border = androidx.compose.foundation.BorderStroke(1.dp, LocalAccent.current)
@@ -459,7 +448,7 @@ private fun IncomeSectionLabel(
             }
             if (onAddCategory != null) {
                 Surface(
-                    modifier = Modifier.clickable { onAddCategory?.invoke() },
+                    modifier = Modifier.clickable { onAddCategory() },
                     shape = RoundedCornerShape(50.dp),
                     color = AppPalette.card,
                     border = androidx.compose.foundation.BorderStroke(1.dp, AppPalette.success)
