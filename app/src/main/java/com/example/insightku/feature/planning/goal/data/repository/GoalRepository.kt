@@ -122,6 +122,49 @@ class GoalRepository @Inject constructor(
         }
     }
 
+    fun getArchivedGoals(): Flow<List<Goal>> {
+        return combine(
+            goalDao.getArchivedGoals(),
+            contributionDao.getAllContributions()
+        ) { entities, _ ->
+            entities.map { entity ->
+                val currentAmount = contributionDao.getTotalContributed(entity.id)
+                Goal.fromEntity(entity, currentAmount)
+            }
+        }
+    }
+
+    suspend fun restoreGoal(goalId: String): Result<Unit> {
+        return try {
+            goalDao.restoreGoal(goalId)
+            val entity = goalDao.getGoalById(goalId)
+            if (entity != null) {
+                goalDao.updateGoal(entity.copy(isSynced = false))
+            }
+            scheduleGoalSync()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteGoalPermanently(goalId: String): Result<Unit> {
+        return try {
+            database.withTransaction {
+                // Remove linked account allocations
+                goalAccountDao.unlinkAllAccountsFromGoal(goalId)
+                // Remove all contributions for this goal
+                contributionDao.deleteContributionsByGoal(goalId)
+                // Remove the goal itself
+                goalDao.deleteGoalById(goalId)
+            }
+            scheduleGoalSync()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun updateGoalStatus(goalId: String, status: GoalStatus): Result<Unit> {
         return try {
             goalDao.updateGoalStatus(goalId, status.value)

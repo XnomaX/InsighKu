@@ -102,16 +102,48 @@ private fun GoalDetailContent(uiState: GoalDetailUiState, onBack: () -> Unit, on
     LazyColumn(modifier = Modifier.fillMaxSize().background(AppPalette.background), contentPadding = PaddingValues(bottom = 120.dp)) {
         item { PremiumDetailHeader(goal = goal, goalColor = goalColor, onBack = onBack) }
         item { GoalSummaryCard(goal = goal, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+
+        // ── Completed Goal Banner ──────────────────────────────────────────
+        if (goal.isCompleted) {
+            item { Spacer(Modifier.height(12.dp)); CompletedGoalBanner(goalName = goal.name, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        }
+
         item { Spacer(Modifier.height(12.dp)); ProgressSection(goal = goal, goalColor = goalColor, animatedProgress = animatedProgress, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-        // ── Deadline Warning Banner ──────────────────────────────────────
-        item { DeadlineWarningBanner(goal = goal, goalColor = goalColor, onExtend = { onEvent(GoalDetailEvent.ShowExtendDeadlineDialog) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+
+        // ── Deadline Warning Banner (not for completed/archived) ──────────
+        if (!goal.isCompleted && !goal.isArchived) {
+            item { DeadlineWarningBanner(goal = goal, goalColor = goalColor, onExtend = { onEvent(GoalDetailEvent.ShowExtendDeadlineDialog) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        }
+
         item { Spacer(Modifier.height(12.dp)); ContributionSummarySection(uiState = uiState, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         item { Spacer(Modifier.height(12.dp)); SavingsActivityCombinedCard(contributions = uiState.contributions, goalColor = goalColor, goalStartDate = goal.createdAt, goalDeadline = goal.deadline, targetAmount = goal.targetAmount, accountMap = uiState.accountMap, isLoadingMore = uiState.isLoadingMore, hasMore = uiState.hasMoreContributions, onLoadMore = { onEvent(GoalDetailEvent.LoadMoreContributions) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         item { Spacer(Modifier.height(12.dp)); TimelineSection(events = uiState.timelineEvents, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-        item { Spacer(Modifier.height(12.dp)); AutoAllocationSection(goal = goal, rules = uiState.allocationRules, goalColor = goalColor, onAddRule = { onEvent(GoalDetailEvent.ShowAutoAllocationDialog) }, onEditRule = { onEvent(GoalDetailEvent.ShowEditAutoAllocationRule(it)) }, onToggleRule = { ruleId, enabled -> onEvent(GoalDetailEvent.ToggleAutoAllocationRule(ruleId, enabled)) }, onDeleteRule = { onEvent(GoalDetailEvent.DeleteAutoAllocationRule(it)) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-        if (!goal.isPaused) {
+
+        // ── Auto-allocation (not for completed/archived) ──────────────────
+        if (!goal.isCompleted && !goal.isArchived) {
+            item { Spacer(Modifier.height(12.dp)); AutoAllocationSection(goal = goal, rules = uiState.allocationRules, goalColor = goalColor, onAddRule = { onEvent(GoalDetailEvent.ShowAutoAllocationDialog) }, onEditRule = { onEvent(GoalDetailEvent.ShowEditAutoAllocationRule(it)) }, onToggleRule = { ruleId, enabled -> onEvent(GoalDetailEvent.ToggleAutoAllocationRule(ruleId, enabled)) }, onDeleteRule = { onEvent(GoalDetailEvent.DeleteAutoAllocationRule(it)) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        }
+
+        // ── Action buttons (only for active, non-completed goals) ─────────
+        if (!goal.isPaused && !goal.isCompleted && !goal.isArchived) {
             item { Spacer(Modifier.height(12.dp)); ActionButtonsSection(goal = goal, goalColor = goalColor, onContribute = { onEvent(GoalDetailEvent.ShowContributeDialog) }, onWithdraw = { onEvent(GoalDetailEvent.ShowWithdrawDialog) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         }
+
+        // ── Status Actions (for active/paused/non-completed goals) ────────
+        if (goal.isActive || goal.isPaused || !goal.isCompleted) {
+            item {
+                Spacer(Modifier.height(12.dp))
+                StatusActionsSection(
+                    goal = goal,
+                    goalColor = goalColor,
+                    onPause = { onEvent(GoalDetailEvent.PauseGoal) },
+                    onResume = { onEvent(GoalDetailEvent.ResumeGoal) },
+                    onComplete = { onEvent(GoalDetailEvent.CompleteGoal) },
+                    modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
+                )
+            }
+        }
+
         item { Spacer(Modifier.height(24.dp)); DangerZoneSection(onArchive = { onEvent(GoalDetailEvent.ArchiveGoal) }, onDelete = { onEvent(GoalDetailEvent.DeleteGoal) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
     }
 }

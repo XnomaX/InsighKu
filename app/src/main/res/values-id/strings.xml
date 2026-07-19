@@ -1062,6 +1062,47 @@
     <string name="goal_card_withdraw">Tarik</string>
     <string name="goal_card_save">Simpan</string>
 
+    <!-- Goal Redesign — Filter Tabs -->
+    <string name="goals_paused_tab">Dijeda</string>
+    <string name="goals_archived_count">%1$d diarsipkan</string>
+    <string name="goals_no_active">Tidak ada tujuan aktif</string>
+    <string name="goals_no_active_desc">Buat tujuan baru untuk mulai menabung menuju sesuatu yang bermakna.</string>
+    <string name="goals_no_paused">Tidak ada tujuan dijeda</string>
+    <string name="goals_no_paused_desc">Ketika Anda menjeda tujuan, tujuan akan muncul di sini.</string>
+    <string name="goals_no_archived">Tidak ada tujuan yang diarsipkan</string>
+
+    <!-- Goal Redesign — Completed Card -->
+    <string name="goal_completed_target">Target: %1$s tercapai</string>
+    <string name="goal_tap_to_view_history">Ketuk untuk melihat riwayat</string>
+    <string name="goal_archive">Arsipkan</string>
+
+    <!-- Goal Redesign — Actions Bottom Sheet -->
+    <string name="goal_actions_sheet_target">Target %1$s</string>
+    <string name="goal_pause">Jeda Tujuan</string>
+    <string name="goal_pause_desc">Hentikan sementara pelacakan tujuan ini</string>
+    <string name="goal_resume">Lanjutkan Tujuan</string>
+    <string name="goal_resume_desc">Lanjutkan pelacakan menuju target Anda</string>
+    <string name="goal_mark_complete">Tandai Selesai</string>
+    <string name="goal_mark_complete_desc">Rayakan pencapaian tujuan ini</string>
+    <string name="goal_edit">Edit Tujuan</string>
+    <string name="goal_edit_desc">Ubah nama, jumlah, atau tenggat waktu</string>
+    <string name="goal_archive_desc">Sembunyikan dari daftar tujuan aktif</string>
+
+    <!-- Goal Redesign — Archived Goals Sheet -->
+    <string name="goals_archived_title">Tujuan Diarsipkan</string>
+    <string name="goals_archived_subtitle">%1$d tujuan diarsipkan</string>
+    <string name="goal_restore">Pulihkan</string>
+    <string name="goal_restore_title">Pulihkan Tujuan</string>
+    <string name="goal_restore_desc">Pulihkan \"%1$s\" kembali ke tujuan aktif Anda?</string>
+    <string name="goal_delete_permanently">Hapus Permanen</string>
+    <string name="goal_delete_title">Hapus Tujuan Permanen?</string>
+    <string name="goal_delete_permanent_desc">\"%1$s\" dan seluruh riwayatnya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.</string>
+
+    <!-- Goal Redesign — Celebration -->
+    <string name="goal_celebration_title">Tujuan Tercapai! \uD83C\uDF89</string>
+    <string name="goal_celebration_desc">Selamat! Anda telah mencapai target untuk \"%1$s\".</string>
+    <string name="goal_celebration_dismiss">Mantap!</string>
+
     <!-- Contribution Screen -->
     <string name="contribution_screen_title">Simpan ke Tujuan</string>
     <string name="contribution_screen_saving_to">Menabung ke</string>
@@ -1456,4 +1497,9 @@
 
     <!-- Goal Repository -->
     <string name="goal_withdraw_title">Tarik: %1$s</string>
+
+    <!-- Goal Detail - Status Actions Section -->
+    <string name="goal_status_actions_title">Aksi Status</string>
+    <string name="goal_status_actions_subtitle">Kelola kemajuan tujuan ini</string>
+    <string name="goal_completed_banner_desc">%1$s telah tercapai!</string>
 </resources>
