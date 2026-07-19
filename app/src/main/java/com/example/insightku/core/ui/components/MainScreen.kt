@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -94,7 +95,7 @@ private data class NavItem(
 private val navItems = listOf(
     NavItem(Route.HOME,      R.string.nav_home,      Icons.Filled.Home),
     NavItem(Route.ANALYSIS,  R.string.nav_analytics,  Icons.Filled.BarChart),
-    NavItem(Route.BUDGETING, R.string.nav_planning,   Icons.Filled.Assignment),
+    NavItem(Route.BUDGETING, R.string.nav_planning,   Icons.AutoMirrored.Filled.Assignment),
     NavItem(Route.ACCOUNTS,  R.string.nav_accounts,   Icons.Filled.Wallet)
 )
 

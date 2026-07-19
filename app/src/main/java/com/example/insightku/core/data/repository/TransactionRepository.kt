@@ -3,6 +3,7 @@ package com.example.insightku.core.data.repository
 import android.content.Context
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import androidx.room.withTransaction
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -10,6 +11,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.TransactionDao
+import com.example.insightku.core.data.local.database.InsightKuDatabase
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.worker.SyncTransactionWorker
@@ -43,7 +45,8 @@ class TransactionRepository @Inject constructor(
     private val accountDao: AccountDao,
     private val firestore: FirebaseFirestore,
     @ApplicationContext private val context: Context,
-    private val goalRepository: GoalRepository
+    private val goalRepository: GoalRepository,
+    private val database: InsightKuDatabase
 ) {
     companion object {
         private const val TAG = "TransactionRepository"
@@ -88,16 +91,16 @@ class TransactionRepository @Inject constructor(
 
 
     suspend fun addTransaction(transaction: Transaction, userId: String) {
-        // Step 1: Update account balance FIRST (before saving transaction)
-        // This ensures balance is consistent even if transaction save fails
-        if (transaction.accountId.isNotBlank()) {
-            val delta = TransactionType.balanceDelta(transaction.type, transaction.amount)
-            accountDao.updateBalance(transaction.accountId, delta)
-        }
-
-        // Step 2: Simpan ke Room dengan isSynced=false (immediate, tidak butuh network)
+        // Step 1 + 2: Atomic — update balance AND insert transaction together.
+        // If the app crashes mid-way, both operations roll back (no orphan balance change).
         val localTransaction = transaction.copy(isSynced = false)
-        transactionDao.insertTransaction(localTransaction)
+        database.withTransaction {
+            if (transaction.accountId.isNotBlank()) {
+                val delta = TransactionType.balanceDelta(transaction.type, transaction.amount)
+                accountDao.updateBalance(transaction.accountId, delta)
+            }
+            transactionDao.insertTransaction(localTransaction)
+        }
 
         // Step 3: Coba sync ke Firestore
         try {
@@ -138,13 +141,22 @@ class TransactionRepository @Inject constructor(
         val original = transactionDao.getTransactionByIdWithAccount(transaction.id)
 
         if (original != null) {
-            val originalDelta = -TransactionType.balanceDelta(original.type, original.amount)
+            val reverseDelta = -TransactionType.balanceDelta(original.type, original.amount)
             val newDelta = TransactionType.balanceDelta(transaction.type, transaction.amount)
 
-            if (original.accountId.isNotBlank()) {
-                accountDao.updateBalance(original.accountId, originalDelta + newDelta)
-            } else if (transaction.accountId.isNotBlank()) {
-                accountDao.updateBalance(transaction.accountId, newDelta)
+            if (original.accountId == transaction.accountId) {
+                // Same account: apply net delta (reverse old + apply new)
+                if (original.accountId.isNotBlank()) {
+                    accountDao.updateBalance(original.accountId, reverseDelta + newDelta)
+                }
+            } else {
+                // Account changed: reverse on old account, apply on new account
+                if (original.accountId.isNotBlank()) {
+                    accountDao.updateBalance(original.accountId, reverseDelta)
+                }
+                if (transaction.accountId.isNotBlank()) {
+                    accountDao.updateBalance(transaction.accountId, newDelta)
+                }
             }
 
             // ── Reconciliation: reverse auto-allocation if income transaction changed ──

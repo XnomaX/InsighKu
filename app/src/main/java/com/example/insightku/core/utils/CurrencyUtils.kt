@@ -16,11 +16,11 @@ data class CurrencyOption(
 object CurrencyUtils {
 
     val SUPPORTED_CURRENCIES: List<CurrencyOption> = listOf(
-        CurrencyOption("IDR", "Rp",  "IDR – Rupiah (Rp)",            Locale("in", "ID"), fractionDigits = 0, flag = "🇮🇩", region = "Indonesian Rupiah"),
+        CurrencyOption("IDR", "Rp",  "IDR – Rupiah (Rp)",            Locale.forLanguageTag("in-ID"), fractionDigits = 0, flag = "🇮🇩", region = "Indonesian Rupiah"),
         CurrencyOption("USD", "$",   "USD – Dollar ($)",             Locale.US,          fractionDigits = 2, flag = "🇺🇸", region = "US Dollar"),
         CurrencyOption("EUR", "€",   "EUR – Euro (€)",               Locale.GERMANY,     fractionDigits = 2, flag = "🇪🇺", region = "Euro"),
-        CurrencyOption("SGD", "S\$", "SGD – Singapore Dollar (S\$)", Locale("en", "SG"), fractionDigits = 2, flag = "🇸🇬", region = "Singapore Dollar"),
-        CurrencyOption("MYR", "RM",  "MYR – Ringgit (RM)",           Locale("ms", "MY"), fractionDigits = 2, flag = "🇲🇾", region = "Malaysian Ringgit"),
+        CurrencyOption("SGD", "S\$", "SGD – Singapore Dollar (S\$)", Locale.forLanguageTag("en-SG"), fractionDigits = 2, flag = "🇸🇬", region = "Singapore Dollar"),
+        CurrencyOption("MYR", "RM",  "MYR – Ringgit (RM)",           Locale.forLanguageTag("ms-MY"), fractionDigits = 2, flag = "🇲🇾", region = "Malaysian Ringgit"),
         CurrencyOption("JPY", "¥",   "JPY – Yen (¥)",                Locale.JAPAN,       fractionDigits = 0, flag = "🇯🇵", region = "Japanese Yen"),
     )
 
@@ -76,7 +76,7 @@ object CurrencyUtils {
         val digits = raw.filter { it.isDigit() }
         if (digits.isEmpty()) return ""
         val number = digits.toLongOrNull() ?: return digits
-        return NumberFormat.getNumberInstance(Locale("in", "ID")).apply {
+        return NumberFormat.getNumberInstance(Locale.forLanguageTag("in-ID")).apply {
             maximumFractionDigits = 0; minimumFractionDigits = 0; isGroupingUsed = true
         }.format(number)
     }
@@ -84,8 +84,27 @@ object CurrencyUtils {
     fun stripThousands(formatted: String): String = formatted.filter { it.isDigit() }
 
     fun parseAmount(amountString: String): Double? = try {
-        amountString.replace(Regex("^[A-Za-z$€¥₩Rp.\\s]+"), "")
-            .replace(".", "").replace(",", ".").trim().toDoubleOrNull()
+        val cleaned = amountString.replace(Regex("^[A-Za-z$€¥₩Rp.\\s]+"), "").trim()
+        if (cleaned.isEmpty()) return null
+        // Detect format: if both '.' and ',' exist, the LAST one is the decimal separator.
+        // e.g. "1.500,00" (ID) → decimal=',' | "1,500.00" (US) → decimal='.'
+        val lastDot = cleaned.lastIndexOf('.')
+        val lastComma = cleaned.lastIndexOf(',')
+        val normalized = when {
+            lastDot > lastComma -> {
+                // US format: comma=thousands, dot=decimal → "1,500.00"
+                cleaned.replace(",", "")
+            }
+            lastComma > lastDot -> {
+                // ID format: dot=thousands, comma=decimal → "1.500,00"
+                cleaned.replace(".", "").replace(",", ".")
+            }
+            else -> {
+                // Only one separator or none — just try direct parse
+                cleaned.replace(",", ".")
+            }
+        }
+        normalized.toDoubleOrNull()
     } catch (e: Exception) { null }
 
     fun formatAmountWithSign(amount: Double, isIncome: Boolean, currencyCode: String = "IDR"): String {
@@ -100,7 +119,9 @@ object CurrencyUtils {
 
     fun roundToTwoDecimals(amount: Double): Double = Math.round(amount * 100.0) / 100.0
 
-    fun isValidAmount(amount: String): Boolean =
-        parseAmount(amount) != null && parseAmount(amount)!! >= 0
+    fun isValidAmount(amount: String): Boolean {
+        val parsed = parseAmount(amount) ?: return false
+        return parsed >= 0
+    }
 }
 

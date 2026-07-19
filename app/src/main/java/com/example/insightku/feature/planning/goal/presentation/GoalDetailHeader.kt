@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -24,7 +25,7 @@ internal fun DetailTopBar(onBack: () -> Unit, title: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.Outlined.ArrowBack, stringResource(R.string.back), tint = AppPalette.textPrimary)
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back), tint = AppPalette.textPrimary)
         }
         if (title.isNotEmpty()) {
             Spacer(Modifier.width(8.dp))

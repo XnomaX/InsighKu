@@ -27,8 +27,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.CreditCard
@@ -273,7 +273,7 @@ private fun ContributionHeader(onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = stringResource(R.string.back), tint = AppPalette.textPrimary)
+            Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back), tint = AppPalette.textPrimary)
         }
         Spacer(Modifier.width(8.dp))
         Text(
@@ -587,5 +587,4 @@ private fun getAccountIcon(accountType: AccountType) = when (accountType) {
     AccountType.BANK_ACCOUNT -> Icons.Filled.AccountBalance
     AccountType.E_WALLET -> Icons.Outlined.Wallet
     AccountType.CREDIT_CARD -> Icons.Outlined.CreditCard
-    else -> Icons.Filled.AccountBalance
 }

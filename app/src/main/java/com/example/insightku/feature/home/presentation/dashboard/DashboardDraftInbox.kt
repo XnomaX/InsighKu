@@ -110,13 +110,13 @@ private fun AllocationDraftInboxRow(
     onOpen: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDismiss(); true
-            } else false
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            onDismiss()
         }
-    )
+    }
 
     SwipeToDismissBox(
         state = dismissState,
@@ -189,13 +189,13 @@ private fun DraftInboxRow(
     onOpen: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDismiss(); true
-            } else false
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            onDismiss()
         }
-    )
+    }
 
     SwipeToDismissBox(
         state = dismissState,

@@ -213,7 +213,7 @@ internal fun ChartCardContent(
                 ),
                 startAxis = VerticalAxis.rememberStart(
                     valueFormatter = CartesianValueFormatter { _, y, _ ->
-                        NumberFormatter.formatCurrencyCompact(y.toDouble())
+                        NumberFormatter.formatCurrencyCompact(y)
                     },
                     line = null,
                 ),
@@ -459,8 +459,8 @@ private fun createAdaptiveXAxisFormatter(
     zoomState: VicoZoomState,
 ): CartesianValueFormatter {
     return CartesianValueFormatter { context, x, _ ->
-        val startMs = context.model.extraStore[xRangeStartKey] ?: 0.0
-        val endMs = context.model.extraStore[xRangeEndKey] ?: 0.0
+        val startMs = context.model.extraStore[xRangeStartKey]
+        val endMs = context.model.extraStore[xRangeEndKey]
         val totalDurationMs = (endMs - startMs).toLong()
         val zoom = zoomState.value
         val visibleDurationMs = (totalDurationMs / zoom).toLong()
@@ -485,7 +485,7 @@ private class DeadlineVerticalLineDecoration(
         with(context) {
             val range = endX - startX
             if (range <= 0f) return@with
-            val fraction = ((deadlineX - startX) / range).toFloat()
+            val fraction = (deadlineX - startX) / range
             val canvasX = layerBounds.left + fraction * layerBounds.width
 
             val d = density.density

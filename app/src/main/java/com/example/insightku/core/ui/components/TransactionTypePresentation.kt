@@ -3,6 +3,8 @@ package com.example.insightku.core.ui.components
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -27,7 +29,7 @@ enum class TransactionTypePresentation(
     val showCategory: Boolean = false
 ) {
     INCOME(
-        icon = Icons.Default.TrendingUp,
+        icon = Icons.AutoMirrored.Filled.TrendingUp,
         color = AppPalette.success,
         labelRes = R.string.type_income,
         showAmountPrefix = true,
@@ -36,7 +38,7 @@ enum class TransactionTypePresentation(
         showCategory = true
     ),
     EXPENSE(
-        icon = Icons.Default.TrendingDown,
+        icon = Icons.AutoMirrored.Filled.TrendingDown,
         color = AppPalette.error,
         labelRes = R.string.type_expense,
         showAmountPrefix = true,

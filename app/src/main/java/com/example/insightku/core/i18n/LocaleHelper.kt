@@ -65,7 +65,7 @@ object LocaleHelper {
      */
     fun wrapContext(context: Context): Context {
         val localeCode = getCurrentLanguageCode(context)
-        val locale = Locale(localeCode)
+        val locale = Locale.forLanguageTag(localeCode)
         val config = Configuration(context.resources.configuration)
         config.setLocale(locale)
         return context.createConfigurationContext(config)
@@ -75,7 +75,7 @@ object LocaleHelper {
      * Get the display name for a language code in the current locale.
      */
     fun getDisplayName(languageCode: String): String {
-        val locale = Locale(languageCode)
+        val locale = Locale.forLanguageTag(languageCode)
         return locale.getDisplayLanguage(locale).replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(locale) else it.toString()
         }

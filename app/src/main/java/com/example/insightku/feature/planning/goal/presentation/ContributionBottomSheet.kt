@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -99,7 +100,7 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
                             Text("${currentPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
                         }
                         if (showPreview) {
-                            Icon(Icons.Outlined.ArrowForward, null, tint = AppPalette.textMuted.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                            Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = AppPalette.textMuted.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("${stringResource(R.string.goal_dialog_after)} ${stringResource(R.string.goal_dialog_after_contribution)}", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                                 Text("${newPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = goalColor)
@@ -241,7 +242,7 @@ fun WithdrawalBottomSheet(goal: Goal, accounts: List<Account>, accountAllocation
                             Text("${currentPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
                         }
                         if (showPreview) {
-                            Icon(Icons.Outlined.ArrowForward, null, tint = AppPalette.textMuted.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                            Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = AppPalette.textMuted.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("${stringResource(R.string.goal_dialog_after)} ${stringResource(R.string.goal_dialog_after_withdrawal)}", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                                 Text("${newPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = goalColor)

@@ -57,7 +57,6 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.OnCategoryLearningToggle  -> _uiState.update { it.copy(categoryLearningEnabled = event.enabled) }
             is SettingsEvent.OnForgetMemory            -> { /* TODO: remove from DataStore */ }
             is SettingsEvent.OnBankNotificationToggle  -> saveAndUpdateBankNotification(event.enabled)
-            else                                       -> {}
         }
     }
 

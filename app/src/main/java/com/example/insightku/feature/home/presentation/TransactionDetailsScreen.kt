@@ -24,9 +24,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -916,7 +918,7 @@ private fun PremiumEmptyState(modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                Icons.Outlined.ReceiptLong, null,
+                Icons.AutoMirrored.Outlined.ReceiptLong, null,
                 tint     = accent.copy(alpha = 0.5f),
                 modifier = Modifier.size(40.dp)
             )
@@ -1085,7 +1087,7 @@ fun TransactionDetailOverlay(
                         )
                     }
                 }
-                if (!transaction.description.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.Notes, stringResource(R.string.tx_detail_notes), transaction.description, AppPalette.notesPurple)
+                if (!transaction.description.isNullOrBlank()) PremiumInfoTileWide(Icons.AutoMirrored.Filled.Notes, stringResource(R.string.tx_detail_notes), transaction.description, AppPalette.notesPurple)
                 if (!transaction.location.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.LocationOn, stringResource(R.string.tx_detail_location), transaction.location, AppPalette.locationPink)
             }
 

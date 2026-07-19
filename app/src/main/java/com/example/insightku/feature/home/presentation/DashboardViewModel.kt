@@ -517,7 +517,7 @@ class DashboardViewModel @Inject constructor(
                     id = cat.id,
                     categoryName = cat.name,
                     iconName = cat.icon ?: cat.name,
-                    colorHex = cat.color ?: "",
+                    colorHex = cat.color,
                     spent = existing?.spent ?: 0.0,
                     limit = cat.budgetLimit
                 )
