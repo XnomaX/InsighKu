@@ -47,7 +47,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -83,7 +83,7 @@ fun AccountsScreen(
     onNavigateToBudgeting: () -> Unit = {},
     viewModel: AccountsViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddAccountDialog by remember { mutableStateOf(false) }
     var accountToEdit by remember { mutableStateOf<Account?>(null) }
     var accountToView by remember { mutableStateOf<Account?>(null) }
@@ -260,7 +260,7 @@ private fun AccountsList(
     onDeleteAccount: (Account) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val groupedAccounts = accounts.groupBy { it.type }
+    val groupedAccounts = remember(accounts) { accounts.groupBy { it.type } }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),

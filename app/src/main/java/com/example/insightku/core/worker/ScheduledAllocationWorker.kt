@@ -8,7 +8,6 @@ import androidx.work.WorkerParameters
 import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.core.notification.AutoAllocationNotificationHelper
 import com.example.insightku.core.notification.DraftTransactionManager
-import com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import com.example.insightku.feature.planning.goal.domain.engine.AutoAllocationEngine
@@ -32,7 +31,6 @@ class ScheduledAllocationWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val autoAllocationEngine: AutoAllocationEngine,
     private val goalRepository: GoalRepository,
-    private val autoAllocationRuleDao: AutoAllocationRuleDao,
     private val notificationHelper: AutoAllocationNotificationHelper,
     private val draftRepository: DraftTransactionRepository
 ) : CoroutineWorker(appContext, workerParams) {
@@ -139,7 +137,7 @@ class ScheduledAllocationWorker @AssistedInject constructor(
         if (ruleId == null) return
         try {
             val now = System.currentTimeMillis()
-            autoAllocationRuleDao.setLastExecutedAt(ruleId, now)
+            goalRepository.markRuleExecuted(ruleId, now)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update lastExecutedAt for rule $ruleId: ${e.message}")
         }

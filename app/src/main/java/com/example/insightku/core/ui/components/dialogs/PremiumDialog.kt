@@ -798,26 +798,6 @@ fun PremiumDialog(
 // SPECIALIZED DIALOG COMPOSABLES
 // ══════════════════════════════════════════════════════════════════════════════
 
-// ─── Success ──────────────────────────────────────────────────────────────────
-
-@Composable
-fun InsightSuccessDialog(
-    title: String = stringResource(R.string.success),
-    message: String,
-    onDismiss: () -> Unit,
-    confirmText: String = stringResource(R.string.dialog_ok)
-) {
-    InsightDialog(
-        type = DialogType.SUCCESS,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText,
-        onConfirm = { },
-        showDismissButton = false
-    )
-}
-
 // ─── Warning ──────────────────────────────────────────────────────────────────
 
 @Composable
@@ -902,91 +882,6 @@ fun InsightArchiveDialog(
     )
 }
 
-// ─── Allocation ───────────────────────────────────────────────────────────────
-
-@Composable
-fun InsightAllocationDialog(
-    title: String = stringResource(R.string.allocation_review_title),
-    message: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    confirmText: String = stringResource(R.string.dialog_allocate)
-) {
-    InsightDialog(
-        type = DialogType.ALLOCATION,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText,
-        onConfirm = onConfirm,
-        dismissText = stringResource(R.string.cancel)
-    )
-}
-
-// ─── Goal ─────────────────────────────────────────────────────────────────────
-
-@Composable
-fun InsightGoalDialog(
-    title: String = stringResource(R.string.goals_title),
-    message: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    confirmText: String = stringResource(R.string.dialog_confirm),
-    dismissText: String = stringResource(R.string.cancel)
-) {
-    InsightDialog(
-        type = DialogType.GOAL,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText,
-        onConfirm = onConfirm,
-        dismissText = dismissText
-    )
-}
-
-// ─── Budget ───────────────────────────────────────────────────────────────────
-
-@Composable
-fun InsightBudgetDialog(
-    title: String = stringResource(R.string.budgeting_title),
-    message: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    confirmText: String = stringResource(R.string.dialog_confirm)
-) {
-    InsightDialog(
-        type = DialogType.BUDGET,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText,
-        onConfirm = onConfirm,
-        dismissText = stringResource(R.string.cancel)
-    )
-}
-
-// ─── Account ──────────────────────────────────────────────────────────────────
-
-@Composable
-fun InsightAccountDialog(
-    title: String = stringResource(R.string.accounts_title),
-    message: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    confirmText: String = stringResource(R.string.dialog_confirm)
-) {
-    InsightDialog(
-        type = DialogType.ACCOUNT,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText,
-        onConfirm = onConfirm,
-        dismissText = stringResource(R.string.cancel)
-    )
-}
-
 // ─── Information ──────────────────────────────────────────────────────────────
 
 @Composable
@@ -1038,73 +933,6 @@ fun PremiumArchiveConfirmDialog(
         message = message,
         onDismiss = onDismiss,
         onConfirm = onConfirm
-    )
-}
-
-@Composable
-fun PremiumWarningDialog(
-    title: String,
-    message: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    confirmText: String = stringResource(R.string.dialog_confirm),
-    dismissText: String = stringResource(R.string.cancel)
-) {
-    InsightWarningDialog(
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        onConfirm = onConfirm,
-        confirmText = confirmText,
-        dismissText = dismissText
-    )
-}
-
-@Composable
-fun PremiumErrorDialog(
-    title: String = stringResource(R.string.error),
-    message: String,
-    onDismiss: () -> Unit,
-    onRetry: (() -> Unit)? = null,
-    retryText: String = stringResource(R.string.transaction_retry)
-) {
-    InsightErrorDialog(
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        onRetry = onRetry,
-        retryText = retryText
-    )
-}
-
-@Composable
-fun PremiumInfoDialog(
-    title: String = stringResource(R.string.dialog_information),
-    message: String,
-    onDismiss: () -> Unit,
-    confirmText: String = stringResource(R.string.dialog_got_it)
-) {
-    InsightInfoDialog(
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText
-    )
-}
-
-@Composable
-fun PremiumLogoutDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    InsightDialog(
-        type = DialogType.DELETE,
-        title = stringResource(R.string.dialog_logout_title),
-        message = stringResource(R.string.dialog_logout_message),
-        onDismiss = onDismiss,
-        confirmText = stringResource(R.string.dialog_logout_confirm),
-        onConfirm = onConfirm,
-        dismissText = stringResource(R.string.dialog_stay)
     )
 }
 

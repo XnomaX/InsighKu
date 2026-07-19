@@ -9,11 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.core.i18n.LocaleHelper
@@ -62,7 +63,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun InsightKuMainApp(intent: Intent?, allocationDraftId: String? = null) {
     val settingsViewModel: SettingsViewModel = hiltViewModel()
-    val settingsState by settingsViewModel.uiState.collectAsState()
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     val notificationData = remember(intent?.data) {
         extractNotificationData(intent)
@@ -73,7 +74,7 @@ private fun InsightKuMainApp(intent: Intent?, allocationDraftId: String? = null)
         currencyCode  = settingsState.currencyCode,
         comfortMode   = settingsState.comfortMode,
         insightTone   = settingsState.insightTone,
-        accent        = settingsState.accentColor,
+        accent        = Color(android.graphics.Color.parseColor(settingsState.accentColorHex)),
         visualDensity = settingsState.visualDensity,
         hideAmounts   = settingsState.hideAmounts
     ) {

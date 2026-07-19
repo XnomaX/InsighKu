@@ -3,7 +3,7 @@ package com.example.insightku.feature.settings.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
-import com.example.insightku.core.datastore.SessionManager
+import com.example.insightku.core.data.local.preferences.SessionManager
 import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.LogoutUseCase
@@ -49,7 +49,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.OnLanguageChange          -> saveLanguage(event.language)
             is SettingsEvent.OnComfortModeToggle       -> _uiState.update { it.copy(comfortMode = event.enabled) }
             is SettingsEvent.OnInsightToneChange       -> _uiState.update { it.copy(insightTone = event.tone) }
-            is SettingsEvent.OnAccentChange            -> _uiState.update { it.copy(accentColor = androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(event.hex))) }
+            is SettingsEvent.OnAccentChange            -> _uiState.update { it.copy(accentColorHex = event.hex) }
             is SettingsEvent.OnVisualDensityChange     -> _uiState.update { it.copy(visualDensity = event.density) }
             is SettingsEvent.OnHideAmountsToggle       -> _uiState.update { it.copy(hideAmounts = event.hidden) }
             is SettingsEvent.OnHabitGoalChange         -> _uiState.update { it.copy(habitGoal = event.goal) }

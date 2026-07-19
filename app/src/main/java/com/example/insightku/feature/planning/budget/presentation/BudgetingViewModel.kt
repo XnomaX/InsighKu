@@ -16,7 +16,8 @@ import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.core.data.repository.InstallmentRepository
 
 import com.example.insightku.core.utils.ErrorBus
-import com.example.insightku.core.datastore.SessionManager
+import com.example.insightku.core.utils.normalizedCategoryName
+import com.example.insightku.core.data.local.preferences.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -462,8 +463,6 @@ class BudgetingViewModel @Inject constructor(
         }
         return start.timeInMillis..end.timeInMillis
     }
-
-    private fun String.normalizedCategoryName(): String = trim().lowercase()
 
     private fun defaultColorForCategory(categoryName: String): String {
         return when {

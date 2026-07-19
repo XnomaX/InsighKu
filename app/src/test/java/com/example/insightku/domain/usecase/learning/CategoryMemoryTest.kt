@@ -1,7 +1,8 @@
 package com.example.insightku.domain.usecase.learning
 
-import com.example.insightku.data.model.Transaction
-import com.example.insightku.data.model.TransactionType
+import com.example.insightku.core.data.model.Transaction
+import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.feature.home.domain.CategoryMemory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

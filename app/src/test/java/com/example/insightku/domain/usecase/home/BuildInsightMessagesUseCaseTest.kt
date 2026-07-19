@@ -76,6 +76,6 @@ class BuildInsightMessagesUseCaseTest {
     @Test
     fun `expenses exceeding income shows recurring payment warning`() {
         val messages = useCase(income = 500000.0, expenses = 600000.0, savings = -100000.0, streak = 5)
-        assertTrue(messages.any { it.contains("review recurring payments") })
+        assertTrue(messages.any { it.contains("reviewing recurring payments") })
     }
 }
