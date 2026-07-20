@@ -1106,7 +1106,16 @@
     <string name="add_goal_icon_label">ICON</string>
     <string name="add_goal_color_label">COLOR</string>
     <string name="add_goal_create">Create Goal</string>
+    <string name="add_goal_save">Save Changes</string>
+    <string name="add_goal_edit_title">Edit Goal</string>
+    <string name="add_goal_edit_subtitle">Update your goal details</string>
     <string name="add_goal_name_error">Name must be at least 2 characters</string>
+    <string name="add_goal_amount_error">Target must be at least the saved amount</string>
+    <string name="add_goal_notes_label">NOTES</string>
+    <string name="add_goal_notes_placeholder">e.g. Save Rp500k every payday</string>
+    <string name="add_goal_saved_label">SAVED</string>
+    <string name="add_goal_reminder_label">Deadline Reminder</string>
+    <string name="add_goal_reminder_desc">Get notified as the deadline approaches</string>
 
     <!-- Auto Allocation Dialog -->
     <string name="auto_alloc_chip">Auto Allocation</string>
@@ -1230,6 +1239,18 @@
     <string name="goal_delete_permanently">Delete Permanently</string>
     <string name="goal_delete_title">Delete Goal Permanently?</string>
     <string name="goal_delete_permanent_desc">\"%1$s\" and all its history will be permanently deleted. This cannot be undone.</string>
+    <string name="goal_complete_funds_title">Goal Completed</string>
+    <string name="goal_complete_funds_desc">This goal still contains allocated funds. Choose what you would like to do with the reserved amount.</string>
+    <string name="goal_delete_funds_title">Delete Goal</string>
+    <string name="goal_delete_funds_desc">This goal still contains allocated funds. Choose what should happen before deleting it.</string>
+    <string name="goal_funds_keep">Keep funds in current account</string>
+    <string name="goal_funds_return">Return funds to current account</string>
+    <string name="goal_funds_transfer">Transfer funds to another account</string>
+    <string name="goal_funds_total">Total allocated funds</string>
+    <string name="goal_funds_select_account">Select destination account</string>
+    <string name="goal_funds_confirm_transfer">Confirm Transfer</string>
+    <string name="goal_funds_no_other_account">No other active account available</string>
+    <string name="goal_status_paused">Paused</string>
 
     <!-- Goal Redesign — Celebration -->
     <string name="goal_celebration_title">Goal Achieved! \uD83C\uDF89</string>
@@ -1631,6 +1652,18 @@
     <string name="payment_due_in_days_body">\"%1$s\" is due in %2$d days. Amount: %3$s</string>
     <string name="payment_recurring">Recurring</string>
     <string name="payment_installment">Installment</string>
+
+    <!-- Goal Deadline Reminders -->
+    <string name="goal_reminder_channel_name">Goal Reminders</string>
+    <string name="goal_reminder_channel_desc">Reminders for upcoming and overdue goal deadlines</string>
+    <string name="goal_reminder_overdue_title">Deadline passed: %1$s</string>
+    <string name="goal_reminder_overdue_body">\"%1$s\" deadline was %2$d day(s) ago. Still need %3$s</string>
+    <string name="goal_reminder_today_title">Due today: %1$s</string>
+    <string name="goal_reminder_today_body">\"%1$s\" deadline is today. Still need %2$s</string>
+    <string name="goal_reminder_tomorrow_title">Due tomorrow: %1$s</string>
+    <string name="goal_reminder_tomorrow_body">\"%1$s\" deadline is tomorrow. Still need %2$s</string>
+    <string name="goal_reminder_in_days_title">%1$d days left: %2$s</string>
+    <string name="goal_reminder_in_days_body">\"%1$s\" deadline is in %2$d days. Still need %3$s</string>
 
     <!-- Extend Deadline -->
     <string name="goal_deadline_urgent">%1$d days remaining</string>

@@ -29,6 +29,7 @@ sealed class GoalsEvent {
         val iconName: String,
         val color: String,
         val notes: String = "",
+        val reminderEnabled: Boolean = false,
         val linkedAccountIds: List<String> = emptyList()
     ) : GoalsEvent()
     data class UpdateGoal(
@@ -38,7 +39,8 @@ sealed class GoalsEvent {
         val deadline: LocalDate,  // required — goals must have a deadline
         val iconName: String,
         val color: String,
-        val notes: String
+        val notes: String,
+        val reminderEnabled: Boolean
     ) : GoalsEvent()
     data class DeleteGoal(val goalId: String) : GoalsEvent()
     data class UpdateGoalStatus(val goalId: String, val status: GoalStatus) : GoalsEvent()
@@ -71,4 +73,16 @@ sealed class GoalsEvent {
     data class ShowDeleteGoalConfirm(val goalId: String) : GoalsEvent()
     data class ShowRestoreGoalConfirm(val goalId: String) : GoalsEvent()
     data object DismissCompletionCelebration : GoalsEvent()
+
+    // ── Funds flows (envelope model) ────────────────────────────────────────
+    /** Entry point for completing a goal — checks for allocated funds first. */
+    data class RequestCompleteGoal(val goalId: String) : GoalsEvent()
+    /** Complete keeping funds in their current accounts (envelope release). */
+    data class CompleteGoalKeepFunds(val goalId: String) : GoalsEvent()
+    /** Complete and transfer allocated funds to another account. */
+    data class CompleteGoalTransferFunds(val goalId: String, val targetAccountId: String) : GoalsEvent()
+    /** Delete returning funds to their original accounts (envelope release). */
+    data class DeleteGoalReturnFunds(val goalId: String) : GoalsEvent()
+    /** Delete after transferring allocated funds to another account. */
+    data class DeleteGoalTransferFunds(val goalId: String, val targetAccountId: String) : GoalsEvent()
 }

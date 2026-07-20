@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.utils.CurrencyUtils
+import com.example.insightku.core.utils.digitsToLong
 import kotlin.math.roundToInt
 
 // ─── Icon Data ────────────────────────────────────────────────────────────────
@@ -439,7 +440,7 @@ fun BudgetLimitInput(
 ) {
     val purple      = com.example.insightku.core.ui.theme.AppPalette.accent
     val border      = com.example.insightku.core.ui.theme.AppPalette.cardBorder
-    val parsedLimit = budgetLimitText.filter { it.isDigit() }.toLongOrNull() ?: 0L
+    val parsedLimit = budgetLimitText.digitsToLong()
 
     Surface(
         shape  = RoundedCornerShape(14.dp),

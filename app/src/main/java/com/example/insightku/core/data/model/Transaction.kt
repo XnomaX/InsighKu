@@ -123,6 +123,8 @@ enum class TransactionType {
         /**
          * Calculate the balance delta for a given transaction type.
          * Positive = money comes in, negative = money goes out.
+         * Goal contributions/withdrawals/auto-allocation are informational only
+         * (envelope model: they set money aside without moving the balance).
          * Used by TransactionRepository, AccountDao, and AccountsViewModel.
          */
         fun balanceDelta(type: TransactionType, amount: Double): Double = when (type) {
@@ -130,9 +132,9 @@ enum class TransactionType {
             EXPENSE -> -amount
             TRANSFER_IN -> amount
             TRANSFER_OUT -> -amount
-            GOAL_CONTRIBUTION -> -amount
-            GOAL_WITHDRAWAL -> amount
-            AUTO_ALLOCATION -> -amount
+            GOAL_CONTRIBUTION -> 0.0
+            GOAL_WITHDRAWAL -> 0.0
+            AUTO_ALLOCATION -> 0.0
             BALANCE_ADJUSTMENT -> amount
         }
     }

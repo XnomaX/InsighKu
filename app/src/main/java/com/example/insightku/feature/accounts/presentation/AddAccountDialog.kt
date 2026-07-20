@@ -485,7 +485,7 @@ private fun AccountTypeChip(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ColorPicker(
+internal fun ColorPicker(
     selectedColor: String,
     onColorSelected: (String) -> Unit
 ) {

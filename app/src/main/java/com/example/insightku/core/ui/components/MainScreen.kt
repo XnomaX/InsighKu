@@ -111,13 +111,13 @@ private val tabRootRoutes = setOf(
 )
 
 /** Nested routes that belong to the Home tab. */
-private val homeNestedRoutes = setOf(Route.TRANSACTION_DETAILS)
+private val homeNestedRoutes = setOf(Route.TRANSACTION_DETAILS, Route.SETTINGS, Route.BANK_WHITELIST, Route.AUTO_DETECTION_ONBOARDING)
 
 /** Nested routes that belong to the Budgeting tab. */
 private val budgetingNestedRoutes = setOf(Route.GOAL_DETAIL)
 
 /** Nested routes that belong to the Accounts tab. */
-private val accountsNestedRoutes = setOf(Route.SETTINGS, Route.BANK_WHITELIST, Route.AUTO_DETECTION_ONBOARDING)
+private val accountsNestedRoutes = emptySet<String>()
 
 /**
  * Returns the root route of the tab that the given route belongs to,
@@ -755,10 +755,6 @@ private fun MainNavHost(
             GoalDetailScreen(
                 goalId = goalId,
                 onBack = { navController.popBackStack() },
-                onNavigateToEditGoal = { id ->
-                    // Navigate to edit - will be implemented when EditGoalDialog is available
-                    navController.popBackStack()
-                },
                 onNavigateToAccounts = {
                     navController.navigate(Route.ACCOUNTS) {
                         popUpTo(navController.graph.findStartDestination().id) { saveState = true }

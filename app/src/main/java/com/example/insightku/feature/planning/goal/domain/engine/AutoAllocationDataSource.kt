@@ -1,5 +1,6 @@
 package com.example.insightku.feature.planning.goal.domain.engine
 
+import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.feature.planning.goal.data.model.AutoAllocationRuleEntity
@@ -13,4 +14,8 @@ interface AutoAllocationDataSource {
     fun getAllCategories(): Flow<List<Category>>
     suspend fun getTransactionsByDateRange(startTime: Long, endTime: Long): List<Transaction>
     suspend fun getCategoryIdByName(categoryName: String): String?
+    suspend fun getAccountById(id: String): Account?
+
+    /** Available cash for allocation: balance minus funds set aside in non-completed goals. */
+    suspend fun getAvailableCash(accountId: String): Double
 }

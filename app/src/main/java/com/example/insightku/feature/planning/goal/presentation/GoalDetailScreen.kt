@@ -44,7 +44,6 @@ import java.time.temporal.ChronoUnit
 fun GoalDetailScreen(
     goalId: String,
     onBack: () -> Unit,
-    onNavigateToEditGoal: (String) -> Unit,
     onNavigateToAccounts: () -> Unit,
     onGoalArchived: () -> Unit,
     onGoalDeleted: () -> Unit,
@@ -64,7 +63,7 @@ fun GoalDetailScreen(
             when {
                 uiState.isLoading -> LoadingContent(onBack = onBack)
                 uiState.error != null && !uiState.hasGoal -> ErrorContent(message = uiState.error!!, onBack = onBack, onRetry = { viewModel.onEvent(GoalDetailEvent.LoadGoal(goalId)) })
-                uiState.goal != null -> GoalDetailContent(uiState = uiState, onBack = onBack, onEvent = viewModel::onEvent, onNavigateToEditGoal = onNavigateToEditGoal)
+                uiState.goal != null -> GoalDetailContent(uiState = uiState, onBack = onBack, onEvent = viewModel::onEvent)
             }
             if (uiState.showContributeDialog || uiState.showWithdrawDialog) { GoalDetailContributionDialog(uiState = uiState, onEvent = viewModel::onEvent) }
             if (uiState.showSuccessAnimation) { GoalDetailSuccessOverlay(message = uiState.successMessage) }
@@ -73,6 +72,45 @@ fun GoalDetailScreen(
             if (uiState.showAutoAllocationDialog) { AutoAllocationDialog(rule = uiState.editingAutoAllocationRule, goal = uiState.goal, accounts = uiState.accountMap.values.toList(), expenseCategories = uiState.expenseCategories, onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) }, onSave = { rule -> if (uiState.editingAutoAllocationRule != null) viewModel.onEvent(GoalDetailEvent.UpdateAutoAllocationRule(rule)) else viewModel.onEvent(GoalDetailEvent.AddAutoAllocationRule(rule)) }, onDelete = uiState.editingAutoAllocationRule?.let { rule -> { viewModel.onEvent(GoalDetailEvent.DeleteAutoAllocationRule(rule.id)) } }, onNavigateToAccounts = onNavigateToAccounts) }
             if (uiState.showExtendDeadlineDialog) {
                 ExtendDeadlineDialog(goalDeadline = uiState.goal?.deadline, onConfirm = { newDeadline -> viewModel.onEvent(GoalDetailEvent.ConfirmExtendDeadline(newDeadline)) }, onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) })
+            }
+            if (uiState.showEditGoalDialog) {
+                uiState.goal?.let { goal ->
+                    AddGoalDialog(
+                        initialDeadline = goal.deadline,
+                        initialName = goal.name,
+                        initialAmount = goal.targetAmount,
+                        initialIcon = goal.iconName,
+                        initialColor = goal.color,
+                        initialNotes = goal.notes,
+                        initialReminderEnabled = goal.reminderEnabled,
+                        currentAmount = goal.currentAmount,
+                        isEditing = true,
+                        onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) },
+                        onCreateGoal = { name, amount, deadline, icon, color, notes, reminder ->
+                            viewModel.onEvent(GoalDetailEvent.SaveGoalEdit(name, amount, deadline, icon, color, notes, reminder))
+                        }
+                    )
+                }
+            }
+            uiState.completeFunds?.let { funds ->
+                uiState.goal?.let { goal ->
+                    GoalFundsBottomSheet(goalName = goal.name, goalIcon = goal.iconName, goalColor = goal.color,
+                        totalFunds = funds.values.sum(), fundsByAccount = funds,
+                        accounts = uiState.accountMap.values.toList(), isDelete = false,
+                        onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) },
+                        onKeepOrReturn = { viewModel.onEvent(GoalDetailEvent.CompleteGoalKeepFunds) },
+                        onTransfer = { targetId -> viewModel.onEvent(GoalDetailEvent.CompleteGoalTransferFunds(targetId)) })
+                }
+            }
+            uiState.deleteFunds?.let { funds ->
+                uiState.goal?.let { goal ->
+                    GoalFundsBottomSheet(goalName = goal.name, goalIcon = goal.iconName, goalColor = goal.color,
+                        totalFunds = funds.values.sum(), fundsByAccount = funds,
+                        accounts = uiState.accountMap.values.toList(), isDelete = true,
+                        onDismiss = { viewModel.onEvent(GoalDetailEvent.DismissDialog) },
+                        onKeepOrReturn = { viewModel.onEvent(GoalDetailEvent.DeleteGoalReturnFunds) },
+                        onTransfer = { targetId -> viewModel.onEvent(GoalDetailEvent.DeleteGoalTransferFunds(targetId)) })
+                }
             }
         }
     }
@@ -95,13 +133,13 @@ fun GoalDetailScreen(goal: Goal, dailyTarget: DailyTarget, contributions: List<C
 // ─── Main Content ────────────────────────────────────────────────────────────────
 
 @Composable
-private fun GoalDetailContent(uiState: GoalDetailUiState, onBack: () -> Unit, onEvent: (GoalDetailEvent) -> Unit, onNavigateToEditGoal: (String) -> Unit) {
+private fun GoalDetailContent(uiState: GoalDetailUiState, onBack: () -> Unit, onEvent: (GoalDetailEvent) -> Unit) {
     val goal = uiState.goal ?: return
     val goalColor = remember(goal.color) { try { Color(android.graphics.Color.parseColor(goal.color)) } catch (e: Exception) { PurpleViolet } }
     val animatedProgress by animateFloatAsState(targetValue = goal.progressPercent.toFloat() / 100f, animationSpec = spring(dampingRatio = 0.8f, stiffness = 200f), label = "progress")
 
     LazyColumn(modifier = Modifier.fillMaxSize().background(AppPalette.background), contentPadding = PaddingValues(bottom = 120.dp)) {
-        item { PremiumDetailHeader(goal = goal, goalColor = goalColor, onBack = onBack) }
+        item { PremiumDetailHeader(goal = goal, goalColor = goalColor, onBack = onBack, onEdit = { onEvent(GoalDetailEvent.EditGoal) }) }
         item { GoalSummaryCard(goal = goal, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
 
         // ── Completed Goal Banner ──────────────────────────────────────────

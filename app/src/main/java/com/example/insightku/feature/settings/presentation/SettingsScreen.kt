@@ -45,10 +45,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet
-import com.example.insightku.core.ui.components.bottomsheet.DefaultDragHandle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -76,8 +74,6 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.LocalResponsiveDimens
 import com.example.insightku.core.ui.theme.VisualDensity
-import com.example.insightku.core.i18n.LocaleHelper
-import com.example.insightku.core.i18n.SupportedLocale
 import com.example.insightku.core.utils.CurrencyUtils
 
 @Composable

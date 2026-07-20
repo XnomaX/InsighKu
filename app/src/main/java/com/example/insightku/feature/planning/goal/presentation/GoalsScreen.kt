@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
 import com.example.insightku.feature.planning.goal.domain.model.Goal
@@ -73,7 +75,7 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel(), onNavigateToGoalDet
                 goal = actionsGoal,
                 onPause = { viewModel.onEvent(GoalsEvent.PauseGoal(actionsGoal.id)) },
                 onResume = { viewModel.onEvent(GoalsEvent.ResumeGoal(actionsGoal.id)) },
-                onComplete = { viewModel.onEvent(GoalsEvent.UpdateGoalStatus(actionsGoal.id, com.example.insightku.feature.planning.goal.data.model.GoalStatus.COMPLETED)) },
+                onComplete = { viewModel.onEvent(GoalsEvent.RequestCompleteGoal(actionsGoal.id)) },
                 onArchive = { viewModel.onEvent(GoalsEvent.ArchiveGoal(actionsGoal.id)) },
                 onEdit = { viewModel.onEvent(GoalsEvent.ShowEditGoalDialog(actionsGoal.id)) },
                 onDismiss = { viewModel.onEvent(GoalsEvent.DismissActionsSheet) }
@@ -110,7 +112,7 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel(), onNavigateToGoalDet
 private fun GoalsContent(uiState: GoalsUiState, onEvent: (GoalsEvent) -> Unit, modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 100.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = Dimens.ContentBottomPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // ── Tab Filter (Active / Paused) + Archive Access ─────────────────
@@ -175,34 +177,43 @@ private fun GoalFilterTabs(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            GoalFilterChip(
-                label = stringResource(R.string.goals_active),
-                count = activeCount,
-                isSelected = selectedTab == GoalFilterTab.ACTIVE,
-                onClick = { onTabSelected(GoalFilterTab.ACTIVE) }
-            )
-            GoalFilterChip(
-                label = stringResource(R.string.goals_paused_tab),
-                count = pausedCount,
-                isSelected = selectedTab == GoalFilterTab.PAUSED,
-                onClick = { onTabSelected(GoalFilterTab.PAUSED) }
-            )
-            GoalFilterChip(
-                label = stringResource(R.string.goals_completed_tab),
-                count = completedCount,
-                isSelected = selectedTab == GoalFilterTab.COMPLETED,
-                onClick = { onTabSelected(GoalFilterTab.COMPLETED) }
-            )
+        LazyRow(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                GoalFilterChip(
+                    label = stringResource(R.string.goals_active),
+                    count = activeCount,
+                    isSelected = selectedTab == GoalFilterTab.ACTIVE,
+                    onClick = { onTabSelected(GoalFilterTab.ACTIVE) }
+                )
+            }
+            item {
+                GoalFilterChip(
+                    label = stringResource(R.string.goals_paused_tab),
+                    count = pausedCount,
+                    isSelected = selectedTab == GoalFilterTab.PAUSED,
+                    onClick = { onTabSelected(GoalFilterTab.PAUSED) }
+                )
+            }
+            item {
+                GoalFilterChip(
+                    label = stringResource(R.string.goals_completed_tab),
+                    count = completedCount,
+                    isSelected = selectedTab == GoalFilterTab.COMPLETED,
+                    onClick = { onTabSelected(GoalFilterTab.COMPLETED) }
+                )
+            }
         }
 
         // Archive access button (always visible)
         Surface(
             onClick = onArchivedClick,
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
             color = AppPalette.cardElevated,
             border = BorderStroke(1.dp, AppPalette.cardBorder)
         ) {
@@ -237,7 +248,7 @@ private fun GoalFilterChip(label: String, count: Int, isSelected: Boolean, onCli
     )
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
         color = bgColor,
         border = BorderStroke(1.dp, borderColor)
     ) {
@@ -300,6 +311,17 @@ private fun EmptyTabState(tab: GoalFilterTab, onCreateGoal: () -> Unit) {
             color = AppPalette.textMuted,
             textAlign = TextAlign.Center
         )
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = onCreateGoal,
+            modifier = Modifier.fillMaxWidth(0.8f).height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = LocalAccent.current)
+        ) {
+            Icon(imageVector = Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.goals_create), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        }
     }
 }
 
@@ -357,8 +379,8 @@ private fun AutoAllocationRulesSection(rules: List<AutoAllocationRule>, onToggle
 private fun DialogHost(dialogState: GoalsDialogState, onEvent: (GoalsEvent) -> Unit, uiState: GoalsUiState) {
     when (dialogState) {
         is GoalsDialogState.None -> {}
-        is GoalsDialogState.AddGoal -> { AddGoalDialog(initialDeadline = dialogState.deadline, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onCreateGoal = { name, amount, deadline, icon, color -> onEvent(GoalsEvent.CreateGoal(name, amount, deadline, icon, color)) }) }
-        is GoalsDialogState.EditGoal -> { EditGoalDialog(goal = dialogState.goal, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onSave = { name, amount, deadline, icon, color, notes -> onEvent(GoalsEvent.UpdateGoal(dialogState.goal.id, name, amount, deadline, icon, color, notes)) }, onArchive = { onEvent(GoalsEvent.ShowArchiveGoalDialog(dialogState.goal.id)) }, onPause = { onEvent(GoalsEvent.PauseGoal(dialogState.goal.id)) }, onResume = { onEvent(GoalsEvent.ResumeGoal(dialogState.goal.id)) }) }
+        is GoalsDialogState.AddGoal -> { AddGoalDialog(initialDeadline = dialogState.deadline, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onCreateGoal = { name, amount, deadline, icon, color, notes, reminder -> onEvent(GoalsEvent.CreateGoal(name, amount, deadline, icon, color, notes, reminder)) }) }
+        is GoalsDialogState.EditGoal -> { EditGoalDialog(goal = dialogState.goal, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onSave = { name, amount, deadline, icon, color, notes, reminder -> onEvent(GoalsEvent.UpdateGoal(dialogState.goal.id, name, amount, deadline, icon, color, notes, reminder)) }, onArchive = { onEvent(GoalsEvent.ShowArchiveGoalDialog(dialogState.goal.id)) }, onPause = { onEvent(GoalsEvent.PauseGoal(dialogState.goal.id)) }, onResume = { onEvent(GoalsEvent.ResumeGoal(dialogState.goal.id)) }) }
         is GoalsDialogState.ArchiveGoal -> {
             PremiumDialog(type = PremiumDialogType.ARCHIVE, customIcon = Icons.Outlined.Archive, title = stringResource(R.string.goals_archive),
                 message = stringResource(R.string.archive_goal_desc, dialogState.goalName),
@@ -386,6 +408,22 @@ private fun DialogHost(dialogState: GoalsDialogState, onEvent: (GoalsEvent) -> U
                 dismissText = stringResource(R.string.cancel),
                 onConfirm = { onEvent(GoalsEvent.RestoreGoal(dialogState.goalId)) },
                 onDismiss = { onEvent(GoalsEvent.DismissDialog) })
+        }
+        is GoalsDialogState.CompleteGoalFunds -> {
+            GoalFundsBottomSheet(goalName = dialogState.goalName, goalIcon = dialogState.goalIcon, goalColor = dialogState.goalColor,
+                totalFunds = dialogState.fundsByAccount.values.sum(), fundsByAccount = dialogState.fundsByAccount,
+                accounts = uiState.accounts, isDelete = false,
+                onDismiss = { onEvent(GoalsEvent.DismissDialog) },
+                onKeepOrReturn = { onEvent(GoalsEvent.CompleteGoalKeepFunds(dialogState.goalId)) },
+                onTransfer = { targetId -> onEvent(GoalsEvent.CompleteGoalTransferFunds(dialogState.goalId, targetId)) })
+        }
+        is GoalsDialogState.DeleteGoalFunds -> {
+            GoalFundsBottomSheet(goalName = dialogState.goalName, goalIcon = dialogState.goalIcon, goalColor = dialogState.goalColor,
+                totalFunds = dialogState.fundsByAccount.values.sum(), fundsByAccount = dialogState.fundsByAccount,
+                accounts = uiState.accounts, isDelete = true,
+                onDismiss = { onEvent(GoalsEvent.DismissDialog) },
+                onKeepOrReturn = { onEvent(GoalsEvent.DeleteGoalReturnFunds(dialogState.goalId)) },
+                onTransfer = { targetId -> onEvent(GoalsEvent.DeleteGoalTransferFunds(dialogState.goalId, targetId)) })
         }
     }
 }
@@ -417,7 +455,18 @@ private fun SetDailyTargetDialog(currentAmount: String, onDismiss: () -> Unit, o
 }
 
 @Composable
-private fun EditGoalDialog(goal: Goal, onDismiss: () -> Unit, onSave: (name: String, amount: Double, deadline: java.time.LocalDate, icon: String, color: String, notes: String) -> Unit, onArchive: () -> Unit, onPause: () -> Unit, onResume: () -> Unit) {
-    val defaultDeadline = goal.deadline ?: java.time.LocalDate.now().plusMonths(3)
-    AddGoalDialog(initialDeadline = defaultDeadline, onDismiss = onDismiss, onCreateGoal = { name, amount, deadline, icon, color -> onSave(name, amount, deadline, icon, color, goal.notes) })
+private fun EditGoalDialog(goal: Goal, onDismiss: () -> Unit, onSave: (name: String, amount: Double, deadline: java.time.LocalDate, icon: String, color: String, notes: String, reminderEnabled: Boolean) -> Unit, onArchive: () -> Unit, onPause: () -> Unit, onResume: () -> Unit) {
+    AddGoalDialog(
+        initialDeadline = goal.deadline,
+        initialName = goal.name,
+        initialAmount = goal.targetAmount,
+        initialIcon = goal.iconName,
+        initialColor = goal.color,
+        initialNotes = goal.notes,
+        initialReminderEnabled = goal.reminderEnabled,
+        currentAmount = goal.currentAmount,
+        isEditing = true,
+        onDismiss = onDismiss,
+        onCreateGoal = { name, amount, deadline, icon, color, notes, reminder -> onSave(name, amount, deadline, icon, color, notes, reminder) }
+    )
 }

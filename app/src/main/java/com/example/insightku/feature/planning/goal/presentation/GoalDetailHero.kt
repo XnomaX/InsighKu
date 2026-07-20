@@ -27,7 +27,7 @@ import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 
 @Composable
-internal fun PremiumDetailHeader(goal: Goal, goalColor: androidx.compose.ui.graphics.Color, onBack: () -> Unit) {
+internal fun PremiumDetailHeader(goal: Goal, goalColor: androidx.compose.ui.graphics.Color, onBack: () -> Unit, onEdit: (() -> Unit)? = null) {
     Column(modifier = Modifier.fillMaxWidth()) {
         // Back button — top-left row, clearly above the goal icon
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -36,6 +36,14 @@ internal fun PremiumDetailHeader(goal: Goal, goalColor: androidx.compose.ui.grap
                 modifier = Modifier.align(Alignment.TopStart)
             ) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back), tint = AppPalette.textPrimary)
+            }
+            if (onEdit != null) {
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    Icon(Icons.Outlined.Edit, stringResource(R.string.add_goal_edit_title), tint = AppPalette.textPrimary)
+                }
             }
         }
 

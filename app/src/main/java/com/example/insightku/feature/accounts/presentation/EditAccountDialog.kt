@@ -243,7 +243,7 @@ fun EditAccountDialog(
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textMuted
                 )
-                ColorPickerEdit(
+                ColorPicker(
                     selectedColor = uiState.selectedColor,
                     onColorSelected = { viewModel.onEvent(EditAccountEvent.UpdateColor(it)) }
                 )
@@ -511,50 +511,4 @@ private fun AccountTypeChipEdit(
 }
 
 // ── Color Picker ───────────────────────────────────────────────────────────────
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ColorPickerEdit(
-    selectedColor: String,
-    onColorSelected: (String) -> Unit
-) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        accountColors.forEach { color ->
-            val isSelected = selectedColor == color
-            val parsedColor = try {
-                Color(android.graphics.Color.parseColor(color))
-            } catch (e: Exception) {
-                SheetPurple
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(parsedColor)
-                    .then(
-                        if (isSelected) {
-                            Modifier.border(3.dp, Color.White, CircleShape)
-                                .border(2.dp, parsedColor, CircleShape)
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .clickable { onColorSelected(color) },
-                contentAlignment = Alignment.Center
-            ) {
-                if (isSelected) {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                    )
-                }
-            }
-        }
-    }
-}
+// Uses the shared ColorPicker from AddAccountDialog.kt (identical implementation).

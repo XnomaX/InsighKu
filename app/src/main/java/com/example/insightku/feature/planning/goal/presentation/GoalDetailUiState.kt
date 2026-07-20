@@ -10,6 +10,7 @@ data class GoalDetailUiState(
     val allocationRules: List<AutoAllocationRule> = emptyList(),
     val linkedAccounts: List<com.example.insightku.core.data.model.Account> = emptyList(),
     val accountMap: Map<String, com.example.insightku.core.data.model.Account> = emptyMap(),
+    val accountAllocations: Map<String, com.example.insightku.core.domain.model.AccountAllocation> = emptyMap(),
     val totalContributions: Int = 0,
     val latestContribution: Contribution? = null,
     val averageContribution: Double = 0.0,
@@ -37,7 +38,10 @@ data class GoalDetailUiState(
     val isLoadingMore: Boolean = false,
     val hasMoreContributions: Boolean = false,
     val showExtendDeadlineDialog: Boolean = false,
-    val expenseCategories: List<CategoryInfo> = emptyList()
+    val expenseCategories: List<CategoryInfo> = emptyList(),
+    // ── Funds dialogs (envelope model): non-null = show dialog ──────────────
+    val completeFunds: Map<String, Double>? = null,
+    val deleteFunds: Map<String, Double>? = null
 ) {
     companion object { fun initial() = GoalDetailUiState() }
 }

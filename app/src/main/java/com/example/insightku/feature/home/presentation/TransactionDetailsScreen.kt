@@ -27,9 +27,10 @@ fun TransactionDetailsScreen(
     onEditTransaction: (Transaction) -> Unit = {},
     onDeleteTransaction: (String) -> Unit = {}
 ) {
-    val dbTransactions by viewModel.transactions.collectAsStateWithLifecycle()
-    val isLoading      by viewModel.isLoading.collectAsStateWithLifecycle()
-    val categories     by viewModel.categories.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val dbTransactions = uiState.transactions
+    val isLoading      = uiState.isLoading
+    val categories     = uiState.categories
     val allTransactions = dbTransactions.ifEmpty { initialTransactions }
 
     // Build category icon/color lookup: name.lowercase() → Category

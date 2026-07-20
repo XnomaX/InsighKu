@@ -17,6 +17,7 @@ data class Goal(
     val iconName: String,
     val color: String,
     val notes: String,
+    val reminderEnabled: Boolean = false,
     val currentAmount: Double = 0.0,
     val linkedAccountIds: List<String> = emptyList(),
     val createdAt: Instant,
@@ -52,7 +53,8 @@ data class Goal(
                 deadline = entity.deadline?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate() },
                 status = entity.goalStatus, autoAllocate = entity.autoAllocate,
                 allocationPriority = entity.allocationPriority, iconName = entity.iconName,
-                color = entity.color, notes = entity.notes, currentAmount = currentAmount,
+                color = entity.color, notes = entity.notes, reminderEnabled = entity.reminderEnabled,
+                currentAmount = currentAmount,
                 createdAt = Instant.ofEpochMilli(entity.createdAt), updatedAt = Instant.ofEpochMilli(entity.updatedAt)
             )
         }
@@ -63,8 +65,8 @@ data class Goal(
             id = id, name = name, targetAmount = targetAmount,
             deadline = deadline?.atStartOfDay(ZoneId.systemDefault())?.toInstant()?.toEpochMilli(),
             status = status.value, autoAllocate = autoAllocate, allocationPriority = allocationPriority,
-            iconName = iconName, color = color, notes = notes,
-            createdAt = createdAt.toEpochMilli(), updatedAt = System.currentTimeMillis()
+            iconName = iconName, color = color, notes = notes, reminderEnabled = reminderEnabled,
+            createdAt = createdAt.toEpochMilli(), updatedAt = updatedAt.toEpochMilli()
         )
     }
 }

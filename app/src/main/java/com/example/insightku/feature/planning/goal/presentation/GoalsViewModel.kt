@@ -99,16 +99,10 @@ class GoalsViewModel @Inject constructor(
             }
         }
 
-        // ── Linked accounts for active goals ────────────────────────────────
+        // ── Linked accounts for active goals (streamed — re-emits on any link change) ──
         viewModelScope.launch {
-            goalRepository.getActiveGoals().collect { goals ->
-                val linkedAccountsMap = mutableMapOf<String, List<GoalAccountEntity>>()
-                goals.forEach { goal ->
-                    goalRepository.getLinkedAccounts(goal.id).first().let { accounts ->
-                        linkedAccountsMap[goal.id] = accounts
-                    }
-                }
-                _uiState.update { it.copy(linkedAccounts = linkedAccountsMap) }
+            goalRepository.getAllGoalAccountLinks().collect { links ->
+                _uiState.update { it.copy(linkedAccounts = links.groupBy { link -> link.goalId }) }
             }
         }
 
@@ -171,6 +165,13 @@ class GoalsViewModel @Inject constructor(
             is GoalsEvent.ShowDeleteGoalConfirm -> showDeleteGoalConfirm(event.goalId)
             is GoalsEvent.ShowRestoreGoalConfirm -> showRestoreGoalConfirm(event.goalId)
             is GoalsEvent.DismissCompletionCelebration -> _uiState.update { it.copy(showCompletionCelebration = false, completionGoalName = "") }
+
+            // ── Funds flows (envelope model) ────────────────────────────────
+            is GoalsEvent.RequestCompleteGoal -> requestCompleteGoal(event.goalId)
+            is GoalsEvent.CompleteGoalKeepFunds -> completeGoalKeepFunds(event.goalId)
+            is GoalsEvent.CompleteGoalTransferFunds -> completeGoalTransferFunds(event.goalId, event.targetAccountId)
+            is GoalsEvent.DeleteGoalReturnFunds -> deleteGoalPermanently(event.goalId)
+            is GoalsEvent.DeleteGoalTransferFunds -> deleteGoalTransferFunds(event.goalId, event.targetAccountId)
         }
     }
 
@@ -179,7 +180,8 @@ class GoalsViewModel @Inject constructor(
             val goal = Goal(
                 id = UUID.randomUUID().toString(), name = event.name, targetAmount = event.targetAmount,
                 deadline = event.deadline, status = GoalStatus.ACTIVE, autoAllocate = false,
-                allocationPriority = 0, iconName = event.iconName, color = event.color, notes = "",
+                allocationPriority = 0, iconName = event.iconName, color = event.color, notes = event.notes,
+                reminderEnabled = event.reminderEnabled,
                 createdAt = Instant.now(), updatedAt = Instant.now()
             )
             goalRepository.createGoal(goal).onSuccess {
@@ -190,8 +192,12 @@ class GoalsViewModel @Inject constructor(
 
     private fun updateGoal(event: GoalsEvent.UpdateGoal) {
         viewModelScope.launch {
-            val existingGoal = _uiState.value.goals.find { it.id == event.id } ?: return@launch
-            val updatedGoal = existingGoal.copy(name = event.name, targetAmount = event.targetAmount, deadline = event.deadline, iconName = event.iconName, color = event.color, notes = event.notes, updatedAt = Instant.now())
+            val existingGoal = findGoalAcrossAll(event.id)
+            if (existingGoal == null) {
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, error = "Goal not found") }
+                return@launch
+            }
+            val updatedGoal = existingGoal.copy(name = event.name, targetAmount = event.targetAmount, deadline = event.deadline, iconName = event.iconName, color = event.color, notes = event.notes, reminderEnabled = event.reminderEnabled, updatedAt = Instant.now())
             goalRepository.updateGoal(updatedGoal).onSuccess {
                 _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Goal updated") }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to update goal") } }
@@ -243,11 +249,80 @@ class GoalsViewModel @Inject constructor(
         }
     }
 
+    // ── Funds flows (envelope model) ────────────────────────────────────────
+
+    /** Complete a goal: if it still holds allocated funds, ask what to do with them first. */
+    private fun requestCompleteGoal(goalId: String) {
+        viewModelScope.launch {
+            val goal = findGoalAcrossAll(goalId) ?: return@launch
+            val funds = goalRepository.getGoalFundsByAccount(goalId)
+            if (funds.isEmpty()) {
+                completeGoalKeepFunds(goalId)
+            } else {
+                _uiState.update { it.copy(
+                    showActionsSheet = false, actionsGoalId = null,
+                    dialogState = GoalsDialogState.CompleteGoalFunds(goalId, goal.name, goal.iconName, goal.color, funds)
+                ) }
+            }
+        }
+    }
+
+    private fun completeGoalKeepFunds(goalId: String) {
+        viewModelScope.launch {
+            val goal = findGoalAcrossAll(goalId)
+            goalRepository.updateGoalStatus(goalId, GoalStatus.COMPLETED).onSuccess {
+                _uiState.update { it.copy(
+                    dialogState = GoalsDialogState.None,
+                    showActionsSheet = false, actionsGoalId = null,
+                    snackbarMessage = "Congratulations! Goal completed!",
+                    showCompletionCelebration = true,
+                    completionGoalName = goal?.name ?: ""
+                ) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to complete goal") } }
+        }
+    }
+
+    private fun completeGoalTransferFunds(goalId: String, targetAccountId: String) {
+        viewModelScope.launch {
+            val goal = findGoalAcrossAll(goalId)
+            goalRepository.completeGoalWithTransfer(goalId, targetAccountId).onSuccess {
+                _uiState.update { it.copy(
+                    dialogState = GoalsDialogState.None,
+                    showActionsSheet = false, actionsGoalId = null,
+                    snackbarMessage = "Goal completed — funds transferred",
+                    showCompletionCelebration = true,
+                    completionGoalName = goal?.name ?: ""
+                ) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to transfer funds") } }
+        }
+    }
+
+    private fun deleteGoalTransferFunds(goalId: String, targetAccountId: String) {
+        viewModelScope.launch {
+            goalRepository.deleteGoalWithTransfer(goalId, targetAccountId).onSuccess {
+                _uiState.update { it.copy(
+                    dialogState = GoalsDialogState.None,
+                    showArchivedSheet = false,
+                    snackbarMessage = "Goal deleted — funds transferred"
+                ) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to delete goal") } }
+        }
+    }
+
     private fun contribute(event: GoalsEvent.Contribute) {
         viewModelScope.launch {
             goalRepository.contribute(goalId = event.goalId, accountId = event.accountId, amount = event.amount, type = ContributionType.MANUAL, notes = event.notes).onSuccess { contribution ->
                 val goal = _uiState.value.goals.find { it.id == event.goalId }
                 _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "${NumberFormatter.formatCurrency(event.amount)} added to ${goal?.name ?: "goal"}") }
+                // The repository auto-completes a goal when it reaches its target.
+                // If that happened and funds are allocated, ask what to do with them.
+                val refreshed = goalRepository.getGoalById(event.goalId)
+                if (refreshed != null && refreshed.isCompleted && !(goal?.isCompleted ?: false)) {
+                    val funds = goalRepository.getGoalFundsByAccount(event.goalId)
+                    if (funds.isNotEmpty()) {
+                        _uiState.update { it.copy(dialogState = GoalsDialogState.CompleteGoalFunds(event.goalId, refreshed.name, refreshed.iconName, refreshed.color, funds)) }
+                    }
+                }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to contribute") } }
         }
     }
@@ -340,7 +415,7 @@ class GoalsViewModel @Inject constructor(
 
     private fun dismissDialog() { _uiState.update { it.copy(dialogState = GoalsDialogState.None) } }
     private fun showAddGoalDialog(prefillDeadline: LocalDate?) { _uiState.update { it.copy(dialogState = GoalsDialogState.AddGoal(deadline = prefillDeadline)) } }
-    private fun showEditGoalDialog(goalId: String) { val goal = _uiState.value.goals.find { it.id == goalId } ?: return; _uiState.update { it.copy(dialogState = GoalsDialogState.EditGoal(goal)) } }
+    private fun showEditGoalDialog(goalId: String) { val goal = findGoalAcrossAll(goalId) ?: return; _uiState.update { it.copy(dialogState = GoalsDialogState.EditGoal(goal)) } }
     private fun showArchiveGoalDialog(goalId: String) { val goal = _uiState.value.goals.find { it.id == goalId } ?: return; _uiState.update { it.copy(dialogState = GoalsDialogState.ArchiveGoal(goalId, goal.name)) } }
     private fun showContributeDialog(goalId: String) { val defaultAccountId = _uiState.value.accounts.firstOrNull()?.id; _uiState.update { it.copy(dialogState = GoalsDialogState.Contribute(goalId, defaultAccountId)) } }
     private fun showWithdrawDialog(goalId: String) { val defaultAccountId = _uiState.value.accounts.firstOrNull()?.id; _uiState.update { it.copy(dialogState = GoalsDialogState.Withdraw(goalId, defaultAccountId)) } }
@@ -360,8 +435,17 @@ class GoalsViewModel @Inject constructor(
     }
 
     private fun showDeleteGoalConfirm(goalId: String) {
-        val goal = findGoalAcrossAll(goalId) ?: return
-        _uiState.update { it.copy(dialogState = GoalsDialogState.DeleteGoalConfirm(goalId, goal.name)) }
+        viewModelScope.launch {
+            val goal = findGoalAcrossAll(goalId) ?: return@launch
+            val funds = goalRepository.getGoalFundsByAccount(goalId)
+            _uiState.update {
+                it.copy(dialogState = if (funds.isEmpty()) {
+                    GoalsDialogState.DeleteGoalConfirm(goalId, goal.name)
+                } else {
+                    GoalsDialogState.DeleteGoalFunds(goalId, goal.name, goal.iconName, goal.color, funds)
+                })
+            }
+        }
     }
 
     private fun showRestoreGoalConfirm(goalId: String) {

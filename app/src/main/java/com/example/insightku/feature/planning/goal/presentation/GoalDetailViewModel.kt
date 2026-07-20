@@ -13,6 +13,8 @@ import com.example.insightku.feature.planning.goal.data.repository.GoalRepositor
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
 import com.example.insightku.feature.planning.goal.domain.model.Contribution
 import com.example.insightku.feature.planning.goal.domain.model.Goal
+import com.example.insightku.feature.planning.goal.domain.ContributionSummary
+import com.example.insightku.feature.planning.goal.domain.GoalContributionStats
 import android.content.Context
 import com.example.insightku.R
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +32,7 @@ class GoalDetailViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
     private val accountRepository: AccountRepository,
     private val categoryRepository: CategoryRepository,
+    private val accountAllocationRepository: com.example.insightku.core.data.repository.AccountAllocationRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -57,10 +60,11 @@ class GoalDetailViewModel @Inject constructor(
             is GoalDetailEvent.ClearError -> _uiState.update { it.copy(error = null) }
             is GoalDetailEvent.ClearSnackbar -> _uiState.update { it.copy(snackbarMessage = null) }
             is GoalDetailEvent.EditGoal -> _uiState.update { it.copy(showEditGoalDialog = true) }
+            is GoalDetailEvent.SaveGoalEdit -> saveGoalEdit(event)
             is GoalDetailEvent.ArchiveGoal -> _uiState.update { it.copy(showArchiveConfirmDialog = true) }
-            is GoalDetailEvent.DeleteGoal -> _uiState.update { it.copy(showDeleteConfirmDialog = true) }
+            is GoalDetailEvent.DeleteGoal -> requestDeleteGoal()
             is GoalDetailEvent.ConfirmArchive -> archiveGoal()
-            is GoalDetailEvent.ConfirmDelete -> deleteGoal()
+            is GoalDetailEvent.ConfirmDelete -> deleteGoalPermanently()
             is GoalDetailEvent.ShowContributeDialog -> showContributeDialog()
             is GoalDetailEvent.ShowWithdrawDialog -> showWithdrawDialog()
             is GoalDetailEvent.DismissDialog -> dismissDialog()
@@ -81,6 +85,10 @@ class GoalDetailViewModel @Inject constructor(
             is GoalDetailEvent.CompleteGoal -> completeGoal()
             is GoalDetailEvent.ShowExtendDeadlineDialog -> _uiState.update { it.copy(showExtendDeadlineDialog = true) }
             is GoalDetailEvent.ConfirmExtendDeadline -> confirmExtendDeadline(event.newDeadline)
+            is GoalDetailEvent.CompleteGoalKeepFunds -> completeGoalKeepFunds()
+            is GoalDetailEvent.CompleteGoalTransferFunds -> completeGoalTransferFunds(event.targetAccountId)
+            is GoalDetailEvent.DeleteGoalReturnFunds -> deleteGoalReturningFunds()
+            is GoalDetailEvent.DeleteGoalTransferFunds -> deleteGoalTransferFunds(event.targetAccountId)
         }
     }
 
@@ -90,6 +98,7 @@ class GoalDetailViewModel @Inject constructor(
             try {
                 launch { goalRepository.hasUnsyncedGoalsFlow().collect { hasUnsynced -> _uiState.update { it.copy(hasUnsyncedChanges = hasUnsynced) } } }
                 launch { goalRepository.getRulesByGoalFlow(goalId).collect { rules -> _uiState.update { it.copy(allocationRules = rules) } } }
+                launch { accountAllocationRepository.getAllAccountAllocations().collect { allocations -> _uiState.update { it.copy(accountAllocations = allocations.associateBy { allocation -> allocation.account.id }) } } }
                 launch { categoryRepository.getAllCategories().collect { categories -> val expenseInfo = categories.filter { it.type == CategoryType.EXPENSE && !it.isSystemCategory }.map { CategoryInfo(id = it.id, name = it.name) }; _uiState.update { it.copy(expenseCategories = expenseInfo) } } }
                 combine(
                     goalRepository.getGoalByIdFlow(goalId),
@@ -99,7 +108,7 @@ class GoalDetailViewModel @Inject constructor(
                 ) { goal, contributions, linkedAccountEntities, allAccounts ->
                     val accountMap = allAccounts.associateBy { it.id }
                     val linkedAccountList = linkedAccountEntities.mapNotNull { entity -> accountMap[entity.accountId] }
-                    val contributionSummary = calculateContributionSummary(contributions)
+                    val contributionSummary = GoalContributionStats.summarize(contributions)
                     val timelineEvents = if (goal != null) generateTimelineEvents(goal, contributions) else emptyList()
                     GoalDetailUpdate(goal, accountMap, linkedAccountList, contributions, contributionSummary, timelineEvents)
                 }.collect { update ->
@@ -125,13 +134,18 @@ class GoalDetailViewModel @Inject constructor(
     }
 
     private fun dismissDialog() {
-        _uiState.update { it.copy(showContributeDialog = false, showWithdrawDialog = false, showEditGoalDialog = false, showDeleteConfirmDialog = false, showArchiveConfirmDialog = false, showAutoAllocationDialog = false, showExtendDeadlineDialog = false, editingAutoAllocationRule = null) }
+        _uiState.update { it.copy(showContributeDialog = false, showWithdrawDialog = false, showEditGoalDialog = false, showDeleteConfirmDialog = false, showArchiveConfirmDialog = false, showAutoAllocationDialog = false, showExtendDeadlineDialog = false, editingAutoAllocationRule = null, completeFunds = null, deleteFunds = null) }
     }
 
     private fun selectAccount(accountId: String) { _uiState.update { it.copy(selectedAccountId = accountId, isInsufficientFunds = false, shortfall = 0.0) } }
 
     private fun updateAmount(amount: String) {
-        val state = _uiState.value; val account = state.selectedAccountId?.let { state.accountMap[it] }; val enteredAmount = amount.toDoubleOrNull() ?: 0.0; val insufficientFunds = account != null && enteredAmount > 0 && enteredAmount > account.balance; val shortfall = if (insufficientFunds && account != null) enteredAmount - account.balance else 0.0
+        val state = _uiState.value
+        val enteredAmount = amount.toDoubleOrNull() ?: 0.0
+        // Envelope model: validate against available cash, not raw balance
+        val availableCash = state.selectedAccountId?.let { id -> state.accountAllocations[id]?.availableCash }
+        val insufficientFunds = availableCash != null && enteredAmount > 0 && enteredAmount > availableCash
+        val shortfall = if (insufficientFunds && availableCash != null) enteredAmount - availableCash else 0.0
         _uiState.update { it.copy(contributionAmount = amount, isInsufficientFunds = insufficientFunds, shortfall = shortfall) }
     }
 
@@ -140,8 +154,9 @@ class GoalDetailViewModel @Inject constructor(
     private fun submitContribution() {
         val state = _uiState.value; val goal = state.goal ?: return; val accountId = state.selectedAccountId ?: return; val amount = state.contributionAmount.toDoubleOrNull() ?: return
         if (amount <= 0) { _uiState.update { it.copy(error = context.getString(R.string.goal_amount_zero)) }; return }
-        val account = state.accountMap[accountId]
-        if (account != null && amount > account.balance) { _uiState.update { it.copy(isInsufficientFunds = true, shortfall = amount - account.balance) }; return }
+        // Envelope model: validate against available cash, not raw balance
+        val availableCash = state.accountAllocations[accountId]?.availableCash ?: state.accountMap[accountId]?.balance ?: 0.0
+        if (amount > availableCash) { _uiState.update { it.copy(isInsufficientFunds = true, shortfall = amount - availableCash) }; return }
         _uiState.update { it.copy(isSubmitting = true, isInsufficientFunds = false, shortfall = 0.0) }
         viewModelScope.launch {
             goalRepository.contribute(goalId = goal.id, accountId = accountId, amount = amount, type = ContributionType.MANUAL, notes = state.contributionNotes).onSuccess {
@@ -184,20 +199,64 @@ class GoalDetailViewModel @Inject constructor(
     private fun completeGoal() {
         val goal = _uiState.value.goal ?: return
         viewModelScope.launch {
+            val funds = goalRepository.getGoalFundsByAccount(goal.id)
+            if (funds.isEmpty()) completeGoalKeepFunds()
+            else _uiState.update { it.copy(completeFunds = funds) }
+        }
+    }
+
+    private fun completeGoalKeepFunds() {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
             goalRepository.updateGoalStatus(goal.id, GoalStatus.COMPLETED).onSuccess {
-                _uiState.update { it.copy(snackbarMessage = "Congratulations! Goal completed!") }
+                _uiState.update { it.copy(completeFunds = null, snackbarMessage = "Congratulations! Goal completed!") }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to complete goal") } }
+        }
+    }
+
+    private fun completeGoalTransferFunds(targetAccountId: String) {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            goalRepository.completeGoalWithTransfer(goal.id, targetAccountId).onSuccess {
+                _uiState.update { it.copy(completeFunds = null, snackbarMessage = "Goal completed — funds transferred") }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to transfer funds") } }
+        }
+    }
+
+    /** Delete entry point: if the goal still holds funds, ask what to do with them first. */
+    private fun requestDeleteGoal() {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            val funds = goalRepository.getGoalFundsByAccount(goal.id)
+            if (funds.isEmpty()) _uiState.update { it.copy(showDeleteConfirmDialog = true) }
+            else _uiState.update { it.copy(deleteFunds = funds) }
+        }
+    }
+
+    /** Permanently delete the goal — funds return to their original accounts (envelope release). */
+    private fun deleteGoalPermanently() {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            goalRepository.deleteGoalPermanently(goal.id).onSuccess {
+                _uiState.update { it.copy(showDeleteConfirmDialog = false, deleteFunds = null, snackbarMessage = context.getString(R.string.goal_deleted)) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.goal_delete_failed)) } }
+        }
+    }
+
+    private fun deleteGoalReturningFunds() = deleteGoalPermanently()
+
+    private fun deleteGoalTransferFunds(targetAccountId: String) {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            goalRepository.deleteGoalWithTransfer(goal.id, targetAccountId).onSuccess {
+                _uiState.update { it.copy(deleteFunds = null, snackbarMessage = context.getString(R.string.goal_deleted)) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.goal_delete_failed)) } }
         }
     }
 
     private fun archiveGoal() {
         val goal = _uiState.value.goal ?: return
         viewModelScope.launch { goalRepository.archiveGoal(goal.id).onSuccess { _uiState.update { it.copy(showArchiveConfirmDialog = false, snackbarMessage = context.getString(R.string.goal_archived)) } }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.goal_archive_failed)) } } }
-    }
-
-    private fun deleteGoal() {
-        val goal = _uiState.value.goal ?: return
-        viewModelScope.launch { goalRepository.updateGoalStatus(goal.id, GoalStatus.ARCHIVED).onSuccess { _uiState.update { it.copy(showDeleteConfirmDialog = false, snackbarMessage = context.getString(R.string.goal_deleted)) } }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.goal_delete_failed)) } } }
     }
 
     private fun showAutoAllocationDialog() { _uiState.update { it.copy(showAutoAllocationDialog = true, editingAutoAllocationRule = null) } }
@@ -213,6 +272,22 @@ class GoalDetailViewModel @Inject constructor(
         }
     }
     private fun toggleAutoAllocationRule(ruleId: String, enabled: Boolean) { viewModelScope.launch { goalRepository.setRuleEnabled(ruleId, enabled) } }
+
+    private fun saveGoalEdit(event: GoalDetailEvent.SaveGoalEdit) {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            val updatedGoal = goal.copy(
+                name = event.name, targetAmount = event.targetAmount, deadline = event.deadline,
+                iconName = event.iconName, color = event.color, notes = event.notes,
+                reminderEnabled = event.reminderEnabled, updatedAt = Instant.now()
+            )
+            goalRepository.updateGoal(updatedGoal).onSuccess {
+                _uiState.update { it.copy(showEditGoalDialog = false, snackbarMessage = "Goal updated") }
+            }.onFailure { e ->
+                _uiState.update { it.copy(error = e.message ?: "Failed to update goal") }
+            }
+        }
+    }
 
     private fun confirmExtendDeadline(newDeadline: LocalDate) {
         val goal = _uiState.value.goal ?: return
@@ -237,14 +312,6 @@ class GoalDetailViewModel @Inject constructor(
         }
     }
 
-    private fun calculateContributionSummary(contributions: List<Contribution>): ContributionSummary {
-        if (contributions.isEmpty()) return ContributionSummary(0, null, 0.0, null)
-        val additions = contributions.filter { it.isAddition }; val totalCount = additions.size
-        val sorted = contributions.sortedByDescending { it.createdAt }; val latest = sorted.firstOrNull(); val lastActivity = latest?.createdAt
-        val average = if (additions.isNotEmpty()) additions.sumOf { kotlin.math.abs(it.amount) } / additions.size else 0.0
-        return ContributionSummary(totalCount = totalCount, latest = latest, average = average, lastActivity = lastActivity)
-    }
-
     private fun generateTimelineEvents(goal: Goal, contributions: List<Contribution>): List<GoalTimelineEvent> {
         val events = mutableListOf<GoalTimelineEvent>()
         events.add(GoalTimelineEvent(id = "created-${goal.id}", type = TimelineEventType.GOAL_CREATED, title = context.getString(R.string.goal_timeline_created), description = context.getString(R.string.goal_timeline_created_desc, goal.name), date = goal.createdAt))
@@ -252,18 +319,12 @@ class GoalDetailViewModel @Inject constructor(
         val firstContribution = sortedContributions.firstOrNull { it.isAddition }
         if (firstContribution != null) events.add(GoalTimelineEvent(id = "first-${goal.id}", type = TimelineEventType.FIRST_CONTRIBUTION, title = context.getString(R.string.goal_timeline_first_contribution), description = context.getString(R.string.goal_timeline_first_contribution_desc), date = firstContribution.createdAt, amount = firstContribution.amount))
         val progressPercent = goal.progressPercent
-        if (progressPercent >= 25) { sortedContributions.find { calculateProgressAtTime(it, goal.targetAmount, contributions) in 25.0..49.99 }?.let { events.add(createMilestoneEvent(it, TimelineEventType.MILESTONE_25, 25)) } }
-        if (progressPercent >= 50) { sortedContributions.find { calculateProgressAtTime(it, goal.targetAmount, contributions) in 50.0..74.99 }?.let { events.add(createMilestoneEvent(it, TimelineEventType.MILESTONE_50, 50)) } }
-        if (progressPercent >= 75) { sortedContributions.find { calculateProgressAtTime(it, goal.targetAmount, contributions) in 75.0..89.99 }?.let { events.add(createMilestoneEvent(it, TimelineEventType.MILESTONE_75, 75)) } }
-        if (progressPercent >= 90 && progressPercent < 100) { sortedContributions.find { calculateProgressAtTime(it, goal.targetAmount, contributions) in 90.0..99.99 }?.let { events.add(createMilestoneEvent(it, TimelineEventType.MILESTONE_90, 90)) } }
+        if (progressPercent >= 25) { sortedContributions.find { GoalContributionStats.progressAtTime(it, goal.targetAmount, contributions) in 25.0..49.99 }?.let { events.add(createMilestoneEvent(it, TimelineEventType.MILESTONE_25, 25)) } }
+        if (progressPercent >= 50) { sortedContributions.find { GoalContributionStats.progressAtTime(it, goal.targetAmount, contributions) in 50.0..74.99 }?.let { events.add(createMilestoneEvent(it, TimelineEventType.MILESTONE_50, 50)) } }
+        if (progressPercent >= 75) { sortedContributions.find { GoalContributionStats.progressAtTime(it, goal.targetAmount, contributions) in 75.0..89.99 }?.let { events.add(createMilestoneEvent(it, TimelineEventType.MILESTONE_75, 75)) } }
+        if (progressPercent >= 90 && progressPercent < 100) { sortedContributions.find { GoalContributionStats.progressAtTime(it, goal.targetAmount, contributions) in 90.0..99.99 }?.let { events.add(createMilestoneEvent(it, TimelineEventType.MILESTONE_90, 90)) } }
         if (goal.isCompleted) { val completedContribution = sortedContributions.lastOrNull { it.isAddition }; events.add(GoalTimelineEvent(id = "completed-${goal.id}", type = TimelineEventType.GOAL_COMPLETED, title = context.getString(R.string.goal_timeline_completed), description = context.getString(R.string.goal_timeline_completed_desc), date = completedContribution?.createdAt ?: goal.updatedAt)) }
         return events.sortedByDescending { it.date }
-    }
-
-    private fun calculateProgressAtTime(contribution: Contribution, targetAmount: Double, allContributions: List<Contribution>): Double {
-        val contributionsUpTo = allContributions.filter { it.createdAt <= contribution.createdAt && it.type != ContributionType.WITHDRAWAL }
-        val amount = contributionsUpTo.sumOf { kotlin.math.abs(it.amount) }
-        return if (targetAmount > 0) (amount / targetAmount) * 100 else 0.0
     }
 
     private fun createMilestoneEvent(contribution: Contribution, type: TimelineEventType, percent: Int): GoalTimelineEvent {
@@ -279,5 +340,3 @@ private data class GoalDetailUpdate(
     val contributionSummary: ContributionSummary,
     val timelineEvents: List<GoalTimelineEvent>
 )
-
-private data class ContributionSummary(val totalCount: Int, val latest: Contribution?, val average: Double, val lastActivity: Instant?)

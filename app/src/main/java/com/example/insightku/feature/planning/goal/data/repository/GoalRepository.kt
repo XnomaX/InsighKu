@@ -23,6 +23,7 @@ import com.example.insightku.feature.planning.goal.data.model.*
 import com.example.insightku.feature.planning.goal.domain.model.*
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -62,13 +63,13 @@ class GoalRepository @Inject constructor(
     fun getActiveGoals(): Flow<List<Goal>> {
         return combine(
             goalDao.getAllActiveGoals(),
-            contributionDao.getAllContributions()
+            contributionDao.getTotalAllocatedFromAccountFlow("")  // invalidation trigger
         ) { entities, _ ->
             val totalsMap = contributionDao.getAllGoalTotals().associate { it.goalId to it.total }
             entities.map { entity ->
                 Goal.fromEntity(entity, totalsMap[entity.id] ?: 0.0)
             }
-        }
+        }.flowOn(Dispatchers.IO)
     }
 
     suspend fun getGoalById(goalId: String): Goal? {
@@ -125,13 +126,13 @@ class GoalRepository @Inject constructor(
     fun getArchivedGoals(): Flow<List<Goal>> {
         return combine(
             goalDao.getArchivedGoals(),
-            contributionDao.getAllContributions()
+            contributionDao.getTotalAllocatedFromAccountFlow("")  // invalidation trigger
         ) { entities, _ ->
             val totalsMap = contributionDao.getAllGoalTotals().associate { it.goalId to it.total }
             entities.map { entity ->
                 Goal.fromEntity(entity, totalsMap[entity.id] ?: 0.0)
             }
-        }
+        }.flowOn(Dispatchers.IO)
     }
 
     suspend fun restoreGoal(goalId: String): Result<Unit> {
@@ -155,6 +156,10 @@ class GoalRepository @Inject constructor(
                 goalAccountDao.unlinkAllAccountsFromGoal(goalId)
                 // Remove all contributions for this goal
                 contributionDao.deleteContributionsByGoal(goalId)
+                // Remove goal-related transactions (contributions/withdrawals)
+                transactionDao.deleteTransactionsByGoalId(goalId)
+                // Remove auto-allocation rules targeting this goal
+                autoAllocationRuleDao.deleteRulesByGoal(goalId)
                 // Remove the goal itself
                 goalDao.deleteGoalById(goalId)
             }
@@ -162,6 +167,91 @@ class GoalRepository @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    /** Net funds this goal holds per account (for the Complete/Delete funds dialogs). */
+    suspend fun getGoalFundsByAccount(goalId: String): Map<String, Double> =
+        contributionDao.getNetAllocationsByGoal(goalId).associate { it.accountId to it.total }
+
+    /** Available cash in an account: balance minus funds set aside in non-completed goals. */
+    suspend fun getAvailableCash(accountId: String): Double {
+        val account = accountDao.getAccountById(accountId) ?: return 0.0
+        return (account.balance - contributionDao.getSetAsideByAccount(accountId)).coerceAtLeast(0.0)
+    }
+
+    /**
+     * Complete a goal and physically transfer its set-aside funds to another account.
+     * Atomic: all per-account transfers + status change in one transaction.
+     */
+    suspend fun completeGoalWithTransfer(goalId: String, targetAccountId: String): Result<Unit> {
+        return try {
+            val goal = goalDao.getGoalById(goalId) ?: return Result.failure(IllegalArgumentException("Goal not found"))
+            val funds = contributionDao.getNetAllocationsByGoal(goalId)
+            database.withTransaction {
+                transferFunds(goal, funds, targetAccountId)
+                goalDao.updateGoalStatus(goalId, GoalStatus.COMPLETED.value)
+                val updated = goalDao.getGoalById(goalId)
+                if (updated != null) goalDao.updateGoal(updated.copy(isSynced = false))
+            }
+            scheduleGoalSync()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Delete a goal after physically transferring its set-aside funds to another account.
+     * Atomic: transfers + full cleanup in one transaction.
+     */
+    suspend fun deleteGoalWithTransfer(goalId: String, targetAccountId: String): Result<Unit> {
+        return try {
+            val goal = goalDao.getGoalById(goalId) ?: return Result.failure(IllegalArgumentException("Goal not found"))
+            val funds = contributionDao.getNetAllocationsByGoal(goalId)
+            database.withTransaction {
+                transferFunds(goal, funds, targetAccountId)
+                goalAccountDao.unlinkAllAccountsFromGoal(goalId)
+                contributionDao.deleteContributionsByGoal(goalId)
+                transactionDao.deleteTransactionsByGoalId(goalId)
+                autoAllocationRuleDao.deleteRulesByGoal(goalId)
+                goalDao.deleteGoalById(goalId)
+            }
+            scheduleGoalSync()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Move each account's net allocation to the target account (real balance movement + transfer transaction pair). */
+    private suspend fun transferFunds(goal: GoalEntity, funds: List<AccountAllocationRow>, targetAccountId: String) {
+        val now = System.currentTimeMillis()
+        for (row in funds) {
+            if (row.accountId == targetAccountId || row.total <= 0) continue
+            // Skip sources that no longer exist or are deactivated (e.g. a deleted account
+            // whose contributions remain as goal history) — their funds can't be moved.
+            val source = accountDao.getAccountById(row.accountId)
+            if (source == null || !source.isActive) continue
+            accountDao.updateBalance(row.accountId, -row.total)
+            accountDao.updateBalance(targetAccountId, row.total)
+            val transferId = java.util.UUID.randomUUID().toString()
+            transactionDao.insertTransaction(Transaction(
+                title = "Transfer: ${goal.name}", amount = row.total, category = "Transfer",
+                date = now, type = TransactionType.TRANSFER_OUT,
+                description = "Funds from completed goal \"${goal.name}\"",
+                accountId = row.accountId, relatedAccountId = targetAccountId,
+                goalId = goal.id, goalName = goal.name,
+                transferId = transferId, sourceModule = "transfer", isSynced = false
+            ))
+            transactionDao.insertTransaction(Transaction(
+                title = "Transfer: ${goal.name}", amount = row.total, category = "Transfer",
+                date = now, type = TransactionType.TRANSFER_IN,
+                description = "Funds from completed goal \"${goal.name}\"",
+                accountId = targetAccountId, relatedAccountId = row.accountId,
+                goalId = goal.id, goalName = goal.name,
+                transferId = transferId, sourceModule = "transfer", isSynced = false
+            ))
         }
     }
 
@@ -182,6 +272,11 @@ class GoalRepository @Inject constructor(
     suspend fun setAutoAllocate(goalId: String, enabled: Boolean): Result<Unit> {
         return try {
             goalDao.updateAutoAllocate(goalId, enabled)
+            val entity = goalDao.getGoalById(goalId)
+            if (entity != null) {
+                goalDao.updateGoal(entity.copy(isSynced = false))
+            }
+            scheduleGoalSync()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -233,7 +328,10 @@ class GoalRepository @Inject constructor(
 
         val goal = goalDao.getGoalById(goalId) ?: return Result.failure(IllegalArgumentException("Goal not found"))
         val account = accountDao.getAccountById(accountId) ?: return Result.failure(IllegalArgumentException("Account not found"))
-        if (account.balance < amount) return Result.failure(IllegalArgumentException("Insufficient balance"))
+        if (!account.isActive) return Result.failure(IllegalArgumentException("Account is no longer active"))
+        // Envelope model: contributions set money aside — check available cash, not raw balance
+        val availableCash = account.balance - contributionDao.getSetAsideByAccount(accountId)
+        if (availableCash < amount) return Result.failure(IllegalArgumentException("Insufficient available cash"))
 
         val contribution = atomicContribute(goalId, accountId, amount, type, transactionId, notes, goal)
         scheduleGoalSync()
@@ -252,7 +350,7 @@ class GoalRepository @Inject constructor(
                 createdAt = now
             )
             contributionDao.insertContribution(contribution)
-            accountDao.updateBalance(accountId, -amount)
+            // Envelope model: balance is the total pool — contributions only set money aside.
 
             val currentAmount = contributionDao.getTotalContributed(goalId)
             if (currentAmount >= goal.targetAmount && goal.goalStatus != GoalStatus.COMPLETED) {
@@ -294,16 +392,13 @@ class GoalRepository @Inject constructor(
             try {
                 mutexForAccount(contribution.accountId).withLock {
                     database.withTransaction {
-                        // 1. Credit back to account
-                        accountDao.updateBalance(contribution.accountId, contribution.amount)
-
-                        // 2. Delete the contribution
+                        // 1. Delete the contribution (envelope model: set-aside shrinks automatically)
                         contributionDao.deleteContribution(contribution)
 
-                        // 3. Delete the auto-allocation transaction record
+                        // 2. Delete the auto-allocation transaction record
                         transactionDao.deleteTransactionByReferenceId(contribution.id)
 
-                        // 4. Re-evaluate goal completion status
+                        // 3. Re-evaluate goal completion status
                         val goal = goalDao.getGoalById(contribution.goalId)
                         if (goal != null) {
                             val currentAmount = contributionDao.getTotalContributed(contribution.goalId)
@@ -351,7 +446,7 @@ class GoalRepository @Inject constructor(
                 createdAt = now
             )
             contributionDao.insertContribution(contribution)
-            accountDao.updateBalance(accountId, amount)
+            // Envelope model: withdrawing frees set-aside — balance (the pool) never changed.
 
             val tx = Transaction(
                 title = context.getString(R.string.goal_withdraw_title, goal?.name ?: context.getString(R.string.goals_title)), amount = amount,
@@ -408,6 +503,9 @@ class GoalRepository @Inject constructor(
 
     fun getLinkedAccounts(goalId: String): Flow<List<GoalAccountEntity>> = goalAccountDao.getGoalAccountsByGoal(goalId)
 
+    /** All goal↔account links as a stream (re-emits on any link change). */
+    fun getAllGoalAccountLinks(): Flow<List<GoalAccountEntity>> = goalAccountDao.getAllGoalAccounts()
+
     fun getLinkedAccountsWithInfo(goalId: String): Flow<List<Pair<GoalAccountEntity, Account?>>> {
         return goalAccountDao.getGoalAccountsByGoal(goalId).map { entities ->
             entities.map { entity -> entity to accountDao.getAccountById(entity.accountId) }
@@ -434,15 +532,23 @@ class GoalRepository @Inject constructor(
     }
 
     fun getAutoAllocationRules(): Flow<List<AutoAllocationRule>> {
-        return autoAllocationRuleDao.getAllRules().map { entities ->
-            entities.map { entity -> AutoAllocationRule.fromEntity(entity, goalDao.getGoalById(entity.goalId)?.name ?: "") }
-        }
+        return combine(
+            autoAllocationRuleDao.getAllRules(),
+            goalDao.getAllGoalsIncludingArchived()
+        ) { entities, goals ->
+            val goalMap = goals.associateBy { it.id }
+            entities.map { entity -> AutoAllocationRule.fromEntity(entity, goalMap[entity.goalId]?.name ?: "") }
+        }.flowOn(Dispatchers.IO)
     }
 
     fun getEnabledRules(): Flow<List<AutoAllocationRule>> {
-        return autoAllocationRuleDao.getEnabledRules().map { entities ->
-            entities.map { entity -> AutoAllocationRule.fromEntity(entity, goalDao.getGoalById(entity.goalId)?.name ?: "") }
-        }
+        return combine(
+            autoAllocationRuleDao.getEnabledRules(),
+            goalDao.getAllGoalsIncludingArchived()
+        ) { entities, goals ->
+            val goalMap = goals.associateBy { it.id }
+            entities.map { entity -> AutoAllocationRule.fromEntity(entity, goalMap[entity.goalId]?.name ?: "") }
+        }.flowOn(Dispatchers.IO)
     }
 
     /**
@@ -501,14 +607,18 @@ class GoalRepository @Inject constructor(
     }
 
     fun getGoalsSummary(): Flow<GoalSummary> {
-        return combine(goalDao.getAllActiveGoals(), contributionDao.getAllContributions()) { entities, _ ->
+        return combine(
+            goalDao.getAllActiveGoals(),
+            contributionDao.getTotalAllocatedFromAccountFlow("")  // invalidation trigger
+        ) { entities, _ ->
             val activeGoals = entities.filter { it.goalStatus != GoalStatus.ARCHIVED }
-            val totalSaved = activeGoals.sumOf { contributionDao.getTotalContributed(it.id) }
+            val totalsMap = contributionDao.getAllGoalTotals().associate { it.goalId to it.total }
+            val totalSaved = activeGoals.sumOf { totalsMap[it.id] ?: 0.0 }
             val totalTarget = activeGoals.sumOf { it.targetAmount }
             GoalSummary(entities.size, activeGoals.count { it.goalStatus == GoalStatus.ACTIVE },
                 activeGoals.count { it.goalStatus == GoalStatus.COMPLETED }, totalSaved, totalTarget,
                 if (totalTarget > 0) (totalSaved / totalTarget) * 100 else 0.0)
-        }
+        }.flowOn(Dispatchers.IO)
     }
 
     fun hasUnsyncedGoalsFlow(): Flow<Boolean> = goalDao.getUnsyncedGoalsFlow().map { it.isNotEmpty() }
@@ -602,6 +712,7 @@ class GoalRepository @Inject constructor(
                         iconName = data["iconName"] as? String ?: "savings",
                         color = data["color"] as? String ?: "#7C4DFF",
                         notes = data["notes"] as? String ?: "",
+                        reminderEnabled = data["reminderEnabled"] as? Boolean ?: false,
                         createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L,
                         updatedAt = (data["updatedAt"] as? Number)?.toLong() ?: 0L, isSynced = true)
                 }
@@ -629,6 +740,6 @@ private fun Goal.toFirestoreMap(): Map<String, Any?> = mapOf(
     "id" to id, "name" to name, "targetAmount" to targetAmount,
     "deadline" to deadline?.atStartOfDay(ZoneId.systemDefault())?.toInstant()?.toEpochMilli(),
     "status" to status.value, "autoAllocate" to autoAllocate, "allocationPriority" to allocationPriority,
-    "iconName" to iconName, "color" to color, "notes" to notes,
-    "createdAt" to createdAt.toEpochMilli(), "updatedAt" to System.currentTimeMillis()
+    "iconName" to iconName, "color" to color, "notes" to notes, "reminderEnabled" to reminderEnabled,
+    "createdAt" to createdAt.toEpochMilli(), "updatedAt" to updatedAt.toEpochMilli()
 )

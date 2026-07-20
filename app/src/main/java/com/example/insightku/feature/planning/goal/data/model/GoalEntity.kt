@@ -33,6 +33,8 @@ data class GoalEntity(
     val color: String = "#7C4DFF",
     @ColumnInfo(defaultValue = "''")
     val notes: String = "",
+    @ColumnInfo(defaultValue = "0")
+    val reminderEnabled: Boolean = false,
     val isActive: Boolean = true,
     @ColumnInfo(defaultValue = "0")
     val createdAt: Long = 0L,
