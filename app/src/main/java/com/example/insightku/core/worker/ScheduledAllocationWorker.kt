@@ -13,6 +13,7 @@ import com.example.insightku.feature.planning.goal.data.repository.GoalRepositor
 import com.example.insightku.feature.planning.goal.domain.engine.AutoAllocationEngine
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 
 /**
  * ScheduledAllocationWorker — Periodic worker for scheduled auto-allocation rules.
@@ -58,6 +59,8 @@ class ScheduledAllocationWorker @AssistedInject constructor(
 
             Log.d(TAG, "Scheduled allocation processing complete")
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error processing scheduled allocations", e)
             Result.retry()
@@ -96,6 +99,8 @@ class ScheduledAllocationWorker @AssistedInject constructor(
                         accountName = suggestion.sourceAccountName
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "[AutoExec] EXCEPTION — ${e.message}", e)
             }
@@ -124,6 +129,8 @@ class ScheduledAllocationWorker @AssistedInject constructor(
                 }
                 // Update lastExecutedAt to prevent duplicate fires even for confirmation rules
                 updateLastExecutedForRule(suggestion.ruleId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "[ConfirmFirst] EXCEPTION creating draft — ${e.message}", e)
             }
@@ -138,6 +145,8 @@ class ScheduledAllocationWorker @AssistedInject constructor(
         try {
             val now = System.currentTimeMillis()
             goalRepository.markRuleExecuted(ruleId, now)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update lastExecutedAt for rule $ruleId: ${e.message}")
         }

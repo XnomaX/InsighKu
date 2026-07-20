@@ -1,7 +1,9 @@
 package com.example.insightku.feature.accounts.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.TransactionType
@@ -9,6 +11,8 @@ import com.example.insightku.core.data.repository.AccountAllocationRepository
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.feature.auth.data.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -19,6 +23,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AccountsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val accountRepository: AccountRepository,
     private val authRepository: AuthRepository,
     private val accountAllocationRepository: AccountAllocationRepository
@@ -66,7 +71,7 @@ class AccountsViewModel @Inject constructor(
                 .catch { e ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = e.message ?: "Failed to load accounts"
+                        error = e.message ?: context.getString(R.string.error_load_accounts)
                     )
                 }
                 .collect { state ->
@@ -86,9 +91,11 @@ class AccountsViewModel @Inject constructor(
                 accountRepository.getTransactionsByAccountIdFlow(accountId).collect { transactions ->
                     _uiState.value = _uiState.value.copy(accountTransactions = transactions)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "Failed to load account transactions"
+                    error = e.message ?: context.getString(R.string.error_load_account_transactions)
                 )
             }
         }
@@ -114,9 +121,11 @@ class AccountsViewModel @Inject constructor(
                 if (_uiState.value.selectedAccountId == accountId) {
                     clearSelectedAccount()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "Failed to delete account"
+                    error = e.message ?: context.getString(R.string.error_delete_account)
                 )
             }
         }
@@ -126,9 +135,11 @@ class AccountsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 accountRepository.setAsDefault(accountId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "Failed to set default account"
+                    error = e.message ?: context.getString(R.string.error_set_default_account)
                 )
             }
         }

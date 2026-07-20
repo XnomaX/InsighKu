@@ -14,6 +14,7 @@ import com.example.insightku.core.utils.normalizedCategoryName
 import com.example.insightku.core.worker.PaymentReminderHelper
 import com.example.insightku.feature.auth.data.AuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
 import javax.inject.Inject
@@ -80,6 +81,8 @@ class MarkPaymentPaidUseCase @Inject constructor(
         recurringBudgetRepository.updateRecurringBudget(updated, userId)
         PaymentReminderHelper.cancelRemindersForPayment(context, "recurring_${budget.id}")
         Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Result.failure(e)
     }
@@ -115,6 +118,8 @@ class MarkPaymentPaidUseCase @Inject constructor(
         installmentRepository.updateInstallment(updated, userId)
         if (isNowComplete) PaymentReminderHelper.cancelRemindersForPayment(context, "installment_${installment.id}")
         Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Result.failure(e)
     }

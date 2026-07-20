@@ -18,6 +18,7 @@ import com.example.insightku.feature.planning.goal.domain.GoalContributionStats
 import android.content.Context
 import com.example.insightku.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -117,7 +118,7 @@ class GoalDetailViewModel @Inject constructor(
                     val allContributions = update.contributions
                     _uiState.update { current -> current.copy(goal = update.goal, contributions = if (current.contributionPage == 0) allContributions.take(CONTRIBUTION_PAGE_SIZE) else current.contributions, linkedAccounts = update.linkedAccountList, accountMap = update.accountMap, totalContributions = update.contributionSummary.totalCount, latestContribution = update.contributionSummary.latest, averageContribution = update.contributionSummary.average, lastActivityDate = update.contributionSummary.lastActivity, timelineEvents = update.timelineEvents, isLoading = false, hasMoreContributions = allContributions.size > CONTRIBUTION_PAGE_SIZE, hasUnsyncedChanges = current.hasUnsyncedChanges) }
                 }
-            } catch (e: Exception) { _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load goal") } }
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { _uiState.update { it.copy(isLoading = false, error = e.message ?: context.getString(R.string.error_load_goal)) } }
         }
     }
 
@@ -183,7 +184,7 @@ class GoalDetailViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.updateGoalStatus(goal.id, GoalStatus.PAUSED).onSuccess {
                 _uiState.update { it.copy(snackbarMessage = "Goal paused") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to pause goal") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_pause_goal)) } }
         }
     }
 
@@ -192,7 +193,7 @@ class GoalDetailViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.updateGoalStatus(goal.id, GoalStatus.ACTIVE).onSuccess {
                 _uiState.update { it.copy(snackbarMessage = "Goal resumed") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to resume goal") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_resume_goal)) } }
         }
     }
 
@@ -210,7 +211,7 @@ class GoalDetailViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.updateGoalStatus(goal.id, GoalStatus.COMPLETED).onSuccess {
                 _uiState.update { it.copy(completeFunds = null, snackbarMessage = "Congratulations! Goal completed!") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to complete goal") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_complete_goal)) } }
         }
     }
 
@@ -219,7 +220,7 @@ class GoalDetailViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.completeGoalWithTransfer(goal.id, targetAccountId).onSuccess {
                 _uiState.update { it.copy(completeFunds = null, snackbarMessage = "Goal completed — funds transferred") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to transfer funds") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_transfer_funds)) } }
         }
     }
 
@@ -284,7 +285,7 @@ class GoalDetailViewModel @Inject constructor(
             goalRepository.updateGoal(updatedGoal).onSuccess {
                 _uiState.update { it.copy(showEditGoalDialog = false, snackbarMessage = "Goal updated") }
             }.onFailure { e ->
-                _uiState.update { it.copy(error = e.message ?: "Failed to update goal") }
+                _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_update_goal)) }
             }
         }
     }

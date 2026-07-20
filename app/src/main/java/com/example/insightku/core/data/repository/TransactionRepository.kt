@@ -17,6 +17,7 @@ import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.worker.SyncTransactionWorker
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -108,6 +109,8 @@ class TransactionRepository @Inject constructor(
                 .collection("transactions").document(transaction.id).set(transaction).await()
             // Step 4: Tandai sudah disync
             transactionDao.markAsSynced(transaction.id)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Offline atau Firestore error — data sudah aman di Room.
             // Jadwalkan one-shot recovery worker agar sync segera terjadi saat
@@ -180,6 +183,8 @@ class TransactionRepository @Inject constructor(
         try {
             firestore.collection("users").document(userId)
                 .collection("transactions").document(transaction.id).set(unsyncedTransaction).await()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Offline — update sudah ada di Room (isSynced=false), akan sync saat network kembali
         }
@@ -205,6 +210,8 @@ class TransactionRepository @Inject constructor(
         try {
             firestore.collection("users").document(userId)
                 .collection("transactions").document(transactionId).delete().await()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Offline — hapus sudah terjadi di Room lokal
         }
@@ -247,6 +254,8 @@ class TransactionRepository @Inject constructor(
                 firestore.collection("users").document(userId)
                     .collection("transactions").document(tx.id).set(tx).await()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Offline — Room already updated
         }

@@ -117,7 +117,8 @@ object CurrencyUtils {
 
     fun formatPercentage(percentage: Double): String = String.format("%.1f%%", percentage)
 
-    fun roundToTwoDecimals(amount: Double): Double = Math.round(amount * 100.0) / 100.0
+    // ponytail: IDR has no decimal subunits — round to whole rupiah, not 2 decimals
+    fun roundToTwoDecimals(amount: Double): Double = Math.round(amount).toDouble()
 
     fun isValidAmount(amount: String): Boolean {
         val parsed = parseAmount(amount) ?: return false

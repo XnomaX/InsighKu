@@ -1,10 +1,14 @@
 package com.example.insightku.feature.home.domain
 
+import android.content.Context
+import com.example.insightku.R
 import com.example.insightku.core.data.model.DraftType
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 /**
@@ -15,6 +19,7 @@ import javax.inject.Inject
  * the ViewModel only maps the [Outcome] to UI state.
  */
 class ApproveAllocationDraftUseCase @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val draftRepository: DraftTransactionRepository,
     private val accountRepository: AccountRepository,
     private val goalRepository: GoalRepository
@@ -71,9 +76,11 @@ class ApproveAllocationDraftUseCase @Inject constructor(
             draftRepository.confirmAndRemove(draftId)
             Outcome.Allocated(amount, draft.goalName)
         } else {
-            Outcome.Failed(result.exceptionOrNull()?.message ?: "Failed to allocate")
+            Outcome.Failed(result.exceptionOrNull()?.message ?: context.getString(R.string.error_allocate))
         }
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        Outcome.Failed(e.message ?: "Failed to approve allocation")
+        Outcome.Failed(e.message ?: context.getString(R.string.error_approve_allocation))
     }
 }

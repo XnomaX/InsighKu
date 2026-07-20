@@ -29,25 +29,75 @@ class CalculateStreakUseCase @Inject constructor(
      */
     suspend operator fun invoke(transactions: List<Transaction>): StreakResult {
         val dayFmt = SimpleDateFormat("yyyyMMdd", Locale.US)
-        val trackedDayKeys: Set<String> = transactions.map { dayFmt.format(Date(it.date)) }.toSet()
+        val txDayKeys: Set<String> = transactions.map { dayFmt.format(Date(it.date)) }.toSet()
 
         fun dayKey(cal: Calendar): String = dayFmt.format(cal.time)
 
         val today = Calendar.getInstance()
         val todayKey = dayKey(today)
-        val hasTrackedToday = todayKey in trackedDayKeys
+        val hasTrackedToday = todayKey in txDayKeys
 
-        // Current streak — walk backwards from today
+        val yesterday = today.clone() as Calendar
+        yesterday.add(Calendar.DAY_OF_YEAR, -1)
+        val yesterdayKey = dayKey(yesterday)
+
+        // Read current prefs
+        val freezeCount = prefs.freezeCount.first()
+        val lastFreezeDate = prefs.lastFreezeDate.first()
+        val isPerfect = prefs.isPerfectStreak.first()
+        val streakGoal = prefs.streakGoal.first()
+        val repairAvail = prefs.repairAvailable.first()
+        val repairExpiry = prefs.repairExpiry.first()
+        val overrideDays = prefs.overrideDays.first()
+        val awardedMilestones = prefs.awardedMilestones.first()
+
+        // Determine if freeze should be consumed BEFORE computing final streak.
+        // Freeze fires when yesterday was missed (no tx, no prior override), today not
+        // yet tracked, and a freeze pass is available.
+        var updatedFreezeCount = freezeCount
+        var updatedPerfect = isPerfect
+        var repairAvailable = repairAvail
+        var repairExpiryMs = repairExpiry
+        val newOverrides = mutableSetOf<String>()
+
+        val needsFreeze = yesterdayKey !in txDayKeys && yesterdayKey !in overrideDays &&
+            !hasTrackedToday && updatedFreezeCount > 0 && lastFreezeDate != yesterdayKey
+        if (needsFreeze) {
+            updatedFreezeCount--
+            updatedPerfect = false
+            newOverrides.add(yesterdayKey)
+        }
+
+        // Effective tracked days = transactions + persisted overrides + just-consumed freeze
+        val effectiveDays = txDayKeys + overrideDays + newOverrides
+
+        // Current streak — walk backwards from today (or yesterday if today not tracked)
         var streak = 0
         val check = today.clone() as Calendar
         if (!hasTrackedToday) check.add(Calendar.DAY_OF_YEAR, -1)
-        while (dayKey(check) in trackedDayKeys) {
+        while (dayKey(check) in effectiveDays) {
             streak++
             check.add(Calendar.DAY_OF_YEAR, -1)
         }
 
-        // Best streak — scan all tracked days
-        val sortedDays = trackedDayKeys.sorted()
+        // Repair: offered when streak is still broken after freeze attempt (or no freeze).
+        // repairDayKey = the gap day the walk stopped at (what repair would fill).
+        var repairDayKey: String? = null
+        if (streak == 0 && !hasTrackedToday) {
+            repairDayKey = dayKey(check)
+            if (!repairAvailable) {
+                repairExpiryMs = System.currentTimeMillis() + 24 * 60 * 60 * 1000L
+                repairAvailable = true
+            }
+        }
+
+        // Expire repair if window passed
+        if (repairAvailable && System.currentTimeMillis() > repairExpiryMs) {
+            repairAvailable = false
+        }
+
+        // Best streak — scan all effective days
+        val sortedDays = effectiveDays.sorted()
         var bestStreak = 0
         var runStreak = 0
         var prevCal: Calendar? = null
@@ -66,52 +116,18 @@ class CalculateStreakUseCase @Inject constructor(
             prevCal = cal
         }
 
-        // Read current prefs
-        val freezeCount = prefs.freezeCount.first()
-        val lastFreezeDate = prefs.lastFreezeDate.first()
-        val isPerfect = prefs.isPerfectStreak.first()
-        val streakGoal = prefs.streakGoal.first()
-        val repairAvail = prefs.repairAvailable.first()
-        val repairExpiry = prefs.repairExpiry.first()
-
-        // Yesterday key — used to detect missed day
-        val yesterday = today.clone() as Calendar
-        yesterday.add(Calendar.DAY_OF_YEAR, -1)
-        val yesterdayKey = dayKey(yesterday)
-
-        // Auto-consume freeze if yesterday was missed and freeze available
-        var updatedFreezeCount = freezeCount
-        var updatedPerfect = isPerfect
-        var repairAvailable = repairAvail
-        var repairExpiryMs = repairExpiry
-
-        val missedYesterday = yesterdayKey !in trackedDayKeys && streak == 0 && !hasTrackedToday
-        if (missedYesterday && updatedFreezeCount > 0 && lastFreezeDate != yesterdayKey) {
-            updatedFreezeCount--
-            updatedPerfect = false
-            // Return preference update actions for ViewModel to execute
-        } else if (streak == 0 && !hasTrackedToday) {
-            // Repair is offered as a fallback whenever the streak is broken and no freeze was
-            // consumed above (freeze takes precedence via the preceding branch).
-            if (!repairAvailable) {
-                repairExpiryMs = System.currentTimeMillis() + 24 * 60 * 60 * 1000L
-                repairAvailable = true
-            }
-        }
-
-        // Expire repair if window passed
-        if (repairAvailable && System.currentTimeMillis() > repairExpiryMs) {
-            repairAvailable = false
-        }
-
         // Perfect streak — true only if streak > 0 and no freeze ever used
         if (hasTrackedToday && streak > 0 && lastFreezeDate.isEmpty()) {
             updatedPerfect = true
         }
 
-        // Award freeze at milestones (7, 30 days) — max 2
-        if (hasTrackedToday && (streak == 7 || streak == 30) && updatedFreezeCount < 2) {
-            updatedFreezeCount = (updatedFreezeCount + 1).coerceAtMost(2)
+        // Award freeze at every multiple of 7 — cap 3 total, tracked via awardedMilestones
+        var awardedMilestone: Int? = null
+        if (hasTrackedToday && streak > 0 && streak % 7 == 0 && updatedFreezeCount < 3) {
+            if (streak.toString() !in awardedMilestones) {
+                updatedFreezeCount = (updatedFreezeCount + 1).coerceAtMost(3)
+                awardedMilestone = streak
+            }
         }
 
         val milestone = StreakMilestone.forStreak(streak)
@@ -125,11 +141,12 @@ class CalculateStreakUseCase @Inject constructor(
             streakGoal = streakGoal,
             repairAvailable = repairAvailable,
             repairExpiryMs = repairExpiryMs,
+            repairDayKey = repairDayKey,
             streakMilestone = milestone,
-            // Preference updates that should be persisted
             prefUpdates = buildList {
-                if (missedYesterday && freezeCount > updatedFreezeCount) {
+                if (needsFreeze) {
                     add(PrefUpdate.FreezeConsumed(updatedFreezeCount, yesterdayKey))
+                    add(PrefUpdate.OverrideDayAdded(yesterdayKey))
                 }
                 if (repairAvailable && !repairAvail) {
                     add(PrefUpdate.RepairEnabled(repairExpiryMs))
@@ -142,6 +159,9 @@ class CalculateStreakUseCase @Inject constructor(
                 }
                 if (updatedFreezeCount > freezeCount) {
                     add(PrefUpdate.FreezeAwarded(updatedFreezeCount))
+                }
+                if (awardedMilestone != null) {
+                    add(PrefUpdate.MilestoneAwarded(awardedMilestone))
                 }
             }
         )
@@ -159,6 +179,7 @@ class CalculateStreakUseCase @Inject constructor(
         val streakGoal: Int,
         val repairAvailable: Boolean,
         val repairExpiryMs: Long,
+        val repairDayKey: String?,
         val streakMilestone: StreakMilestone?,
         val prefUpdates: List<PrefUpdate>
     )
@@ -170,9 +191,11 @@ class CalculateStreakUseCase @Inject constructor(
      */
     sealed class PrefUpdate {
         data class FreezeConsumed(val newCount: Int, val lastFreezeDate: String) : PrefUpdate()
+        data class OverrideDayAdded(val dayKey: String) : PrefUpdate()
         data class RepairEnabled(val expiryMs: Long) : PrefUpdate()
         data object RepairDisabled : PrefUpdate()
         data object PerfectStreakEnabled : PrefUpdate()
         data class FreezeAwarded(val newCount: Int) : PrefUpdate()
+        data class MilestoneAwarded(val milestone: Int) : PrefUpdate()
     }
 }

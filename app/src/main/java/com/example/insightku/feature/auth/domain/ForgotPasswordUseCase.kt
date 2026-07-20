@@ -1,6 +1,9 @@
 package com.example.insightku.feature.auth.domain
 
+import android.content.Context
+import com.example.insightku.R
 import com.example.insightku.feature.auth.data.AuthRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 /**
@@ -15,10 +18,11 @@ import javax.inject.Inject
  * SEKARANG: Email reset sungguhan via Firebase Auth.
  */
 class ForgotPasswordUseCase @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository
 ) {
     suspend operator fun invoke(email: String): Result<Unit> {
-        if (email.isBlank()) return Result.failure(Exception("Email tidak boleh kosong"))
+        if (email.isBlank()) return Result.failure(Exception(context.getString(R.string.error_email_empty)))
         return authRepository.sendPasswordResetEmail(email)
     }
 }

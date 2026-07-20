@@ -8,6 +8,7 @@ import android.util.Log
 import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.feature.auth.data.AuthRepository
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -47,6 +48,8 @@ class DeleteTransactionReceiver : BroadcastReceiver() {
                 }
                 transactionRepository.deleteTransaction(txId, userId)
                 Log.d(TAG, "Delete success: txId=$txId")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Delete failed: txId=$txId, error=${e.message}")
             } finally {

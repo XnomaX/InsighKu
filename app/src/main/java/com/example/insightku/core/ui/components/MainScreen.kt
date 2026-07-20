@@ -39,6 +39,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.insightku.BuildConfig
 import com.example.insightku.core.navigation.Route
 import com.example.insightku.feature.analytics.presentation.AnalyticsScreen
 import com.example.insightku.feature.accounts.presentation.AccountsScreen
@@ -730,13 +731,17 @@ private fun MainNavHost(
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onNavigateToNotificationDebug = { navController.navigate(Route.NOTIFICATION_DEBUG) },
+                onNavigateToNotificationDebug = if (BuildConfig.DEBUG) {
+                    { navController.navigate(Route.NOTIFICATION_DEBUG) }
+                } else null,
                 onNavigateToBankWhitelist = { navController.navigate(Route.BANK_WHITELIST) },
                 onNavigateToAutoDetectionOnboarding = { navController.navigate(Route.AUTO_DETECTION_ONBOARDING) }
             )
         }
-        composable(Route.NOTIFICATION_DEBUG) {
-            com.example.insightku.core.notification.NotificationDebugScreen()
+        if (BuildConfig.DEBUG) {
+            composable(Route.NOTIFICATION_DEBUG) {
+                com.example.insightku.core.notification.NotificationDebugScreen()
+            }
         }
         composable(Route.BANK_WHITELIST) {
             com.example.insightku.feature.settings.presentation.BankWhitelistScreen(

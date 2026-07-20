@@ -1,7 +1,9 @@
 package com.example.insightku.feature.planning.budget.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
@@ -21,6 +23,7 @@ import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.core.utils.normalizedCategoryName
 import com.example.insightku.core.data.local.preferences.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +36,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BudgetingViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository,
     private val recurringBudgetRepository: RecurringBudgetRepository,
@@ -152,7 +156,7 @@ class BudgetingViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal memuat data budget"
+                val errorMessage = e.message ?: context.getString(R.string.error_load_budget)
                 _uiState.update { it.copy(isLoading = false, error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -283,8 +287,10 @@ class BudgetingViewModel @Inject constructor(
             try {
                 categoryRepository.insertCategory(category, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal menambah kategori"
+                val errorMessage = e.message ?: context.getString(R.string.error_add_category)
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -303,8 +309,10 @@ class BudgetingViewModel @Inject constructor(
                     categoryRepository.updateCategory(category, userId)
                 }
                 _uiState.update { it.copy(dialogState = DialogState.None) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal update kategori"
+                val errorMessage = e.message ?: context.getString(R.string.error_update_category)
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -341,10 +349,12 @@ class BudgetingViewModel @Inject constructor(
                 }
                 pendingDeleteIds.remove(categoryId)
                 pendingDeleteNames.remove(categoryName.trim().lowercase())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 pendingDeleteIds.remove(categoryId)
                 pendingDeleteNames.remove(categoryName.trim().lowercase())
-                val errorMessage = e.message ?: "Gagal hapus kategori"
+                val errorMessage = e.message ?: context.getString(R.string.error_delete_category)
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -357,8 +367,10 @@ class BudgetingViewModel @Inject constructor(
             try {
                 recurringBudgetRepository.insertRecurringBudget(budget, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal menambah budget berulang"
+                val errorMessage = e.message ?: context.getString(R.string.error_add_recurring_budget)
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -371,8 +383,10 @@ class BudgetingViewModel @Inject constructor(
             try {
                 recurringBudgetRepository.updateRecurringBudget(budget, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal update budget berulang"
+                val errorMessage = e.message ?: context.getString(R.string.error_update_recurring_budget)
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -384,8 +398,10 @@ class BudgetingViewModel @Inject constructor(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
                 recurringBudgetRepository.deleteRecurringBudget(budget.id.toString(), userId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal hapus budget berulang"
+                val errorMessage = e.message ?: context.getString(R.string.error_delete_recurring_budget)
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -398,8 +414,10 @@ class BudgetingViewModel @Inject constructor(
             try {
                 installmentRepository.insertInstallment(installment, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal menambah cicilan"
+                val errorMessage = e.message ?: context.getString(R.string.error_add_installment)
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -412,8 +430,10 @@ class BudgetingViewModel @Inject constructor(
             try {
                 installmentRepository.updateInstallment(installment, userId)
                 _uiState.update { it.copy(dialogState = DialogState.None) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal update cicilan"
+                val errorMessage = e.message ?: context.getString(R.string.error_update_installment)
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -431,8 +451,10 @@ class BudgetingViewModel @Inject constructor(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
                 installmentRepository.deleteInstallment(installmentId, userId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                val errorMessage = e.message ?: "Gagal hapus cicilan"
+                val errorMessage = e.message ?: context.getString(R.string.error_delete_installment)
                 _uiState.update { it.copy(error = errorMessage) }
                 errorBus.send(errorMessage)
             }
@@ -441,7 +463,7 @@ class BudgetingViewModel @Inject constructor(
 
     private suspend fun seedDefaultCategories(userId: String) {
         DefaultBudgetCategories.all.forEach { category ->
-            try { categoryRepository.insertCategory(category, userId) } catch (e: Exception) { }
+            try { categoryRepository.insertCategory(category, userId) } catch (e: CancellationException) { throw e } catch (e: Exception) { }
         }
     }
 

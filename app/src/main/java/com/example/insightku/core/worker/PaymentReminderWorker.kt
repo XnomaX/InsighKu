@@ -11,6 +11,7 @@ import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.i18n.DateFormatter
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
@@ -87,6 +88,8 @@ class PaymentReminderWorker @AssistedInject constructor(
             }
 
             Log.d(TAG, "Checked ${activeRecurring.size} recurring + ${activeInstallments.size} installments")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error checking payments: ${e.message}")
             return Result.retry()

@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.data.local.preferences.SessionManager
 import com.example.insightku.core.i18n.LocaleHelper
+import com.example.insightku.core.ui.theme.InsightTone
+import com.example.insightku.core.ui.theme.VisualDensity
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.LogoutUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,11 +49,11 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.OnBiometricToggle         -> saveAndUpdateBiometric(event.enabled)
             is SettingsEvent.OnCurrencyChange          -> saveCurrency(event.currencyCode)
             is SettingsEvent.OnLanguageChange          -> saveLanguage(event.language)
-            is SettingsEvent.OnComfortModeToggle       -> _uiState.update { it.copy(comfortMode = event.enabled) }
-            is SettingsEvent.OnInsightToneChange       -> _uiState.update { it.copy(insightTone = event.tone) }
-            is SettingsEvent.OnAccentChange            -> _uiState.update { it.copy(accentColorHex = event.hex) }
-            is SettingsEvent.OnVisualDensityChange     -> _uiState.update { it.copy(visualDensity = event.density) }
-            is SettingsEvent.OnHideAmountsToggle       -> _uiState.update { it.copy(hideAmounts = event.hidden) }
+            is SettingsEvent.OnComfortModeToggle       -> saveAndUpdateComfortMode(event.enabled)
+            is SettingsEvent.OnInsightToneChange       -> saveAndUpdateInsightTone(event.tone)
+            is SettingsEvent.OnAccentChange            -> saveAndUpdateAccent(event.hex)
+            is SettingsEvent.OnVisualDensityChange     -> saveAndUpdateVisualDensity(event.density)
+            is SettingsEvent.OnHideAmountsToggle       -> saveAndUpdateHideAmounts(event.hidden)
             is SettingsEvent.OnHabitGoalChange         -> _uiState.update { it.copy(habitGoal = event.goal) }
             is SettingsEvent.OnSmartCaptureToggle      -> _uiState.update { it.copy(smartCaptureEnabled = event.enabled) }
             is SettingsEvent.OnCategoryLearningToggle  -> _uiState.update { it.copy(categoryLearningEnabled = event.enabled) }
@@ -64,13 +66,18 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val (userEmail, userName, _) = sessionManager.getUserData()
-            combine(
+            combine<Any, Array<Any>>(
                 preferencesDataStore.currencyCode,
                 preferencesDataStore.isDarkMode,
                 preferencesDataStore.defaultInputMode,
                 preferencesDataStore.whatsappEnabled,
-                preferencesDataStore.biometricEnabled
-            ) { cur, dark, input, wa, bio -> arrayOf<Any>(cur, dark, input, wa, bio) }
+                preferencesDataStore.biometricEnabled,
+                preferencesDataStore.accentColor,
+                preferencesDataStore.visualDensity,
+                preferencesDataStore.hideAmounts,
+                preferencesDataStore.comfortMode,
+                preferencesDataStore.insightTone
+            ) { values -> values }
                 .collect { values ->
                     val notification        = preferencesDataStore.notificationEnabled.first()
                     val langCode            = preferencesDataStore.appLanguage.first()
@@ -83,6 +90,11 @@ class SettingsViewModel @Inject constructor(
                             defaultInputMode         = if ((values[2] as String) == "ocr") InputMode.OCR else InputMode.MANUAL,
                             whatsappEnabled          = values[3] as Boolean,
                             biometricEnabled         = values[4] as Boolean,
+                            accentColorHex           = values[5] as String,
+                            visualDensity            = VisualDensity.fromKey(values[6] as String),
+                            hideAmounts              = values[7] as Boolean,
+                            comfortMode              = values[8] as Boolean,
+                            insightTone              = InsightTone.fromKey(values[9] as String),
                             pushNotificationsEnabled = notification,
                             appLanguage              = if (langCode == "en") AppLanguage.EN else AppLanguage.ID,
                             userEmail                = userEmail,
@@ -122,6 +134,31 @@ class SettingsViewModel @Inject constructor(
     private fun saveAndUpdateBankNotification(enabled: Boolean) {
         _uiState.update { it.copy(bankNotificationEnabled = enabled) }
         viewModelScope.launch { preferencesDataStore.setBankNotificationEnabled(enabled) }
+    }
+
+    private fun saveAndUpdateComfortMode(enabled: Boolean) {
+        _uiState.update { it.copy(comfortMode = enabled) }
+        viewModelScope.launch { preferencesDataStore.setComfortMode(enabled) }
+    }
+
+    private fun saveAndUpdateInsightTone(tone: InsightTone) {
+        _uiState.update { it.copy(insightTone = tone) }
+        viewModelScope.launch { preferencesDataStore.setInsightTone(tone.key) }
+    }
+
+    private fun saveAndUpdateAccent(hex: String) {
+        _uiState.update { it.copy(accentColorHex = hex) }
+        viewModelScope.launch { preferencesDataStore.setAccentColor(hex) }
+    }
+
+    private fun saveAndUpdateVisualDensity(density: VisualDensity) {
+        _uiState.update { it.copy(visualDensity = density) }
+        viewModelScope.launch { preferencesDataStore.setVisualDensity(density.key) }
+    }
+
+    private fun saveAndUpdateHideAmounts(hidden: Boolean) {
+        _uiState.update { it.copy(hideAmounts = hidden) }
+        viewModelScope.launch { preferencesDataStore.setHideAmounts(hidden) }
     }
 
     private fun saveCurrency(code: String) {

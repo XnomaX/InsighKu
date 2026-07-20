@@ -40,6 +40,7 @@ import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.PremiumDatePicker
+import com.example.insightku.core.utils.toAmountOrZero
 import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
 import com.example.insightku.core.i18n.DateFormatter
@@ -255,7 +256,7 @@ fun AddTransactionDialog(
                             onCreateCategory = onCreateCategory,
                             onShowDatePicker = { showDatePicker = true },
                             onSubmit = {
-                                val amount = formData.amount.toLongOrNull()?.toDouble() ?: 0.0
+                                val amount = formData.amount.toAmountOrZero()
                                 onTransactionAdded(
                                     Transaction(
                                         title         = formData.merchant,

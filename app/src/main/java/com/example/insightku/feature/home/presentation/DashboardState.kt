@@ -30,6 +30,7 @@ data class DashboardUiState(
     val streakGoal: Int = 7,
     val repairAvailable: Boolean = false,
     val repairExpiryMs: Long = 0L,
+    val repairDayKey: String? = null,
     val streakMilestone: StreakMilestone? = null,
     // ──────────────────────────────────────────────────────────────────────────
     val forecastPeriod: ForecastPeriod = ForecastPeriod.WEEKLY,

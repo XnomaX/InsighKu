@@ -1,10 +1,13 @@
 package com.example.insightku.feature.analytics.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
 import com.example.insightku.feature.analytics.domain.AnalyticsPeriodType
 import com.example.insightku.feature.analytics.domain.GetAnalyticsInsightsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getAnalyticsInsights: GetAnalyticsInsightsUseCase
 ) : ViewModel() {
 
@@ -69,7 +73,7 @@ class AnalyticsViewModel @Inject constructor(
                             _uiState.update {
                                 it.copy(
                                     isLoading = false,
-                                    error = throwable.message ?: "Something went wrong"
+                                    error = throwable.message ?: context.getString(R.string.error_something_went_wrong)
                                 )
                             }
                         }

@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.insightku.core.data.local.dao.RecurringBudgetDao
 import com.example.insightku.core.data.model.RecurringBudget
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -72,6 +73,8 @@ class RecurringBudgetRepository @Inject constructor(
             try {
                 firestore.collection("users").document(userId)
                     .collection("recurring_budgets").document(doc.id).delete().await()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("InsightKu_Recurring", "Failed to delete invalid doc ${doc.id}: ${e.message}")
             }

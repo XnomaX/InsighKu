@@ -156,7 +156,7 @@ class DraftTransactionManager {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("$typeLabel terdeteksi")
+            .setContentTitle(ctx.getString(R.string.notification_detected, typeLabel))
             .setContentText("$amountText - ${parsed.bankName}")
             .setStyle(NotificationCompat.BigTextStyle().bigText(bodyText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -290,7 +290,7 @@ class DraftTransactionManager {
         val notification = NotificationCompat.Builder(ctx, ALLOCATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(ctx.getString(R.string.draft_alloc_review_title))
-            .setContentText("$amountText → $goalName")
+            .setContentText(ctx.getString(R.string.notification_transfer_to, amountText, goalName))
             .setStyle(NotificationCompat.BigTextStyle().bigText(bodyText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)

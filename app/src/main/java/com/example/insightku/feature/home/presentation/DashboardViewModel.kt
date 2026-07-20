@@ -1,7 +1,9 @@
 package com.example.insightku.feature.home.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
@@ -25,6 +27,7 @@ import com.example.insightku.core.utils.normalizedCategoryName
 import com.example.insightku.core.data.local.preferences.SessionManager
 import com.example.insightku.core.utils.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +43,7 @@ private const val TAG = "DashboardViewModel"
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getTransactionsUseCase: GetTransactionsUseCase,
     private val addTransactionUseCase: AddTransactionUseCase,
     private val calculateStreakUseCase: CalculateStreakUseCase,
@@ -91,8 +95,11 @@ class DashboardViewModel @Inject constructor(
                 _uiState.update { it.copy(streakGoal = event.days) }
             }
             DashboardEvent.UseStreakRepair -> viewModelScope.launch {
+                val dayKey = _uiState.value.repairDayKey ?: return@launch
+                prefs.addOverrideDay(dayKey)
                 prefs.setRepairAvailable(false)
-                _uiState.update { it.copy(repairAvailable = false, repairExpiryMs = 0L) }
+                _uiState.update { it.copy(repairAvailable = false, repairExpiryMs = 0L, repairDayKey = null) }
+                loadDashboardData()
             }
             is DashboardEvent.DismissDraft -> viewModelScope.launch {
                 draftRepository.dismiss(event.draftId)
@@ -143,7 +150,7 @@ class DashboardViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val msg = e.message ?: "Gagal memuat data dashboard"
+                val msg = e.message ?: context.getString(R.string.error_load_dashboard)
                 _uiState.update { it.copy(isLoading = false, error = msg) }
                 errorBus.send(msg)
             }
@@ -184,6 +191,8 @@ class DashboardViewModel @Inject constructor(
                         }
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 // Silently keep the existing totalBalance on error
             }
@@ -235,7 +244,7 @@ class DashboardViewModel @Inject constructor(
     private fun markRecurringPaid(budget: com.example.insightku.core.data.model.RecurringBudget) {
         viewModelScope.launch {
             markPaymentPaidUseCase.markRecurringPaid(budget).onFailure { e ->
-                val msg = e.message ?: "Gagal menandai pembayaran"
+                val msg = e.message ?: context.getString(R.string.error_mark_payment)
                 _uiState.update { it.copy(error = msg) }
                 errorBus.send(msg)
             }
@@ -245,7 +254,7 @@ class DashboardViewModel @Inject constructor(
     private fun markInstallmentPaid(installment: com.example.insightku.core.data.model.Installment) {
         viewModelScope.launch {
             markPaymentPaidUseCase.markInstallmentPaid(installment).onFailure { e ->
-                val msg = e.message ?: "Gagal menandai cicilan"
+                val msg = e.message ?: context.getString(R.string.error_mark_installment)
                 _uiState.update { it.copy(error = msg) }
                 errorBus.send(msg)
             }
@@ -286,9 +295,11 @@ class DashboardViewModel @Inject constructor(
                 draftRepository.purgeDismissed(draftId)
                 android.util.Log.d(TAG, "[DraftRejected] Draft deleted — no allocation, rule remains active")
                 _uiState.update { it.copy(snackbarMessage = "Allocation rejected") }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e(TAG, "[DraftRejected] EXCEPTION — ${e.message}", e)
-                _uiState.update { it.copy(error = e.message ?: "Failed to reject allocation") }
+                _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_reject_allocation)) }
             }
         }
     }
@@ -401,6 +412,7 @@ class DashboardViewModel @Inject constructor(
                 streakGoal = streakResult.streakGoal,
                 repairAvailable = streakResult.repairAvailable,
                 repairExpiryMs = streakResult.repairExpiryMs,
+                repairDayKey = streakResult.repairDayKey,
                 streakMilestone = streakResult.streakMilestone,
                 recurringBudgets = recurring,
                 installments = installments,
@@ -439,6 +451,9 @@ class DashboardViewModel @Inject constructor(
                     prefs.setPerfectStreak(false)
                     prefs.setLastFreezeDate(update.lastFreezeDate)
                 }
+                is CalculateStreakUseCase.PrefUpdate.OverrideDayAdded -> {
+                    prefs.addOverrideDay(update.dayKey)
+                }
                 is CalculateStreakUseCase.PrefUpdate.RepairEnabled -> {
                     prefs.setRepairAvailable(true, update.expiryMs)
                 }
@@ -450,6 +465,9 @@ class DashboardViewModel @Inject constructor(
                 }
                 is CalculateStreakUseCase.PrefUpdate.FreezeAwarded -> {
                     prefs.updateFreezeCount(update.newCount)
+                }
+                is CalculateStreakUseCase.PrefUpdate.MilestoneAwarded -> {
+                    prefs.addAwardedMilestone(update.milestone)
                 }
             }
         }

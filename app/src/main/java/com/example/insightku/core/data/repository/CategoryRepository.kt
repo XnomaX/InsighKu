@@ -7,6 +7,7 @@ import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -93,6 +94,8 @@ class CategoryRepository @Inject constructor(
                 batch.commit().await()
                 Log.d("InsightKu", "migrateCategoryFieldNames: migrated $count docs")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w("InsightKu", "migrateCategoryFieldNames: failed (will retry next refresh)", e)
         }
@@ -136,6 +139,8 @@ class CategoryRepository @Inject constructor(
             // Delete category from Firestore
             firestore.collection("users").document(userId)
                 .collection("categories").document(categoryId).delete().await()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Offline — Room already updated
         }
@@ -155,6 +160,8 @@ class CategoryRepository @Inject constructor(
                         .collection("categories").document(doc.id).delete().await()
                     categoryDao.deleteCategory(doc.id)
                 }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w("InsightKu", "cleanupVirtual: failed silently", e)
         }

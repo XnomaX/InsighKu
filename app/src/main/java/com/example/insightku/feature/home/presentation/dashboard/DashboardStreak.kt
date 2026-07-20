@@ -46,8 +46,11 @@ import java.util.Locale
 fun DailyStreakCard(
     currentStreak: Int,
     hasTrackedToday: Boolean,
+    repairAvailable: Boolean = false,
+    freezeCount: Int = 0,
     onCardClick: () -> Unit = {},
     onAddTransaction: () -> Unit,
+    onUseRepair: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val displayedStreak = if (hasTrackedToday) currentStreak else 0
@@ -215,23 +218,45 @@ fun DailyStreakCard(
                     }
                 }
             } else {
+                if (repairAvailable) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().clickable { onUseRepair() },
+                        shape = RoundedCornerShape(Dimens.ButtonRadius),
+                        color = NavPurple
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 14.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                stringResource(R.string.streak_repair),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
                 Surface(
                     modifier = Modifier.fillMaxWidth().clickable { onAddTransaction() },
                     shape = RoundedCornerShape(Dimens.ButtonRadius),
-                    color = NavPurple
+                    color = if (repairAvailable) AppPalette.cardBorder else NavPurple
                 ) {
                     Row(
                         modifier = Modifier.padding(vertical = 14.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, null, tint = if (repairAvailable) AppPalette.textMuted else Color.White, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
                             if (currentStreak == 0) stringResource(R.string.streak_start_your_streak) else stringResource(R.string.streak_log_today),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
-                            color = Color.White
+                            color = if (repairAvailable) AppPalette.textMuted else Color.White
                         )
                     }
                 }

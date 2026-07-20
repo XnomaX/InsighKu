@@ -15,4 +15,9 @@ interface StreakPreferences {
     val streakGoal: Flow<Int>
     val repairAvailable: Flow<Boolean>
     val repairExpiry: Flow<Long>
+    val overrideDays: Flow<Set<String>>
+    val awardedMilestones: Flow<Set<String>>
+
+    suspend fun addOverrideDay(dayKey: String)
+    suspend fun addAwardedMilestone(milestone: Int)
 }

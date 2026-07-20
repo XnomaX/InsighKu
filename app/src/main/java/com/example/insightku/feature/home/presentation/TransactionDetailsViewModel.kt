@@ -1,7 +1,9 @@
 package com.example.insightku.feature.home.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.feature.auth.data.AuthRepository
@@ -10,6 +12,7 @@ import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.feature.home.domain.GetTransactionsUseCase
 import com.example.insightku.core.utils.ErrorBus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -18,6 +21,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TransactionDetailsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getTransactionsUseCase: GetTransactionsUseCase,
     private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository,
@@ -47,7 +51,7 @@ class TransactionDetailsViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false) }
-                errorBus.send(e.message ?: "Gagal memuat transaksi")
+                errorBus.send(e.message ?: context.getString(R.string.error_load_transactions))
             }
         }
     }
@@ -71,8 +75,10 @@ class TransactionDetailsViewModel @Inject constructor(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
                 transactionRepository.updateTransaction(transaction, userId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                errorBus.send(e.message ?: "Gagal menyimpan perubahan transaksi")
+                errorBus.send(e.message ?: context.getString(R.string.error_save_transaction_changes))
             }
         }
     }
@@ -82,8 +88,10 @@ class TransactionDetailsViewModel @Inject constructor(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
                 transactionRepository.deleteTransaction(transactionId, userId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                errorBus.send(e.message ?: "Gagal menghapus transaksi")
+                errorBus.send(e.message ?: context.getString(R.string.error_delete_transaction))
             }
         }
     }
