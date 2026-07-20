@@ -976,7 +976,16 @@
     <string name="add_goal_icon_label">IKON</string>
     <string name="add_goal_color_label">WARNA</string>
     <string name="add_goal_create">Buat Tujuan</string>
+    <string name="add_goal_save">Simpan Perubahan</string>
+    <string name="add_goal_edit_title">Ubah Tujuan</string>
+    <string name="add_goal_edit_subtitle">Perbarui detail tujuan Anda</string>
     <string name="add_goal_name_error">Nama minimal 2 karakter</string>
+    <string name="add_goal_amount_error">Target minimal sebesar jumlah terkumpul</string>
+    <string name="add_goal_notes_label">CATATAN</string>
+    <string name="add_goal_notes_placeholder">cth. Nabung Rp500rb tiap gajian</string>
+    <string name="add_goal_saved_label">TERKUMPUL</string>
+    <string name="add_goal_reminder_label">Pengingat Tenggat</string>
+    <string name="add_goal_reminder_desc">Dapatkan notifikasi saat tenggat mendekat</string>
 
     <!-- Auto Allocation Dialog -->
     <string name="auto_alloc_chip">Alokasi Otomatis</string>
@@ -1100,6 +1109,18 @@
     <string name="goal_delete_permanently">Hapus Permanen</string>
     <string name="goal_delete_title">Hapus Tujuan Permanen?</string>
     <string name="goal_delete_permanent_desc">\"%1$s\" dan seluruh riwayatnya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="goal_complete_funds_title">Tujuan Tercapai</string>
+    <string name="goal_complete_funds_desc">Tujuan ini masih memiliki dana yang dialokasikan. Pilih yang ingin dilakukan dengan dana tersebut.</string>
+    <string name="goal_delete_funds_title">Hapus Tujuan</string>
+    <string name="goal_delete_funds_desc">Tujuan ini masih memiliki dana yang dialokasikan. Pilih yang harus terjadi sebelum menghapusnya.</string>
+    <string name="goal_funds_keep">Biarkan dana di akun saat ini</string>
+    <string name="goal_funds_return">Kembalikan dana ke akun asal</string>
+    <string name="goal_funds_transfer">Pindahkan dana ke akun lain</string>
+    <string name="goal_funds_total">Total dana dialokasikan</string>
+    <string name="goal_funds_select_account">Pilih akun tujuan</string>
+    <string name="goal_funds_confirm_transfer">Konfirmasi Pemindahan</string>
+    <string name="goal_funds_no_other_account">Tidak ada akun aktif lain yang tersedia</string>
+    <string name="goal_status_paused">Dijeda</string>
 
     <!-- Goal Redesign — Celebration -->
     <string name="goal_celebration_title">Tujuan Tercapai! \uD83C\uDF89</string>
@@ -1488,6 +1509,18 @@
     <string name="payment_due_in_days_body">"%1$s" jatuh tempo dalam %2$d hari. Jumlah: %3$s</string>
     <string name="payment_recurring">Berulang</string>
     <string name="payment_installment">Cicilan</string>
+
+    <!-- Goal Deadline Reminders -->
+    <string name="goal_reminder_channel_name">Pengingat Tujuan</string>
+    <string name="goal_reminder_channel_desc">Pengingat untuk tenggat tujuan yang mendekat dan terlewat</string>
+    <string name="goal_reminder_overdue_title">Tenggat lewat: %1$s</string>
+    <string name="goal_reminder_overdue_body">Tenggat \"%1$s\" lewat %2$d hari. Masih kurang %3$s</string>
+    <string name="goal_reminder_today_title">Jatuh hari ini: %1$s</string>
+    <string name="goal_reminder_today_body">Tenggat \"%1$s\" hari ini. Masih kurang %2$s</string>
+    <string name="goal_reminder_tomorrow_title">Jatuh besok: %1$s</string>
+    <string name="goal_reminder_tomorrow_body">Tenggat \"%1$s\" besok. Masih kurang %2$s</string>
+    <string name="goal_reminder_in_days_title">%1$d hari lagi: %2$s</string>
+    <string name="goal_reminder_in_days_body">Tenggat \"%1$s\" dalam %2$d hari. Masih kurang %3$s</string>
 
     <!-- Extend Deadline -->
     <string name="goal_deadline_urgent">%1$d hari tersisa</string>

@@ -3,6 +3,7 @@ package com.example.insightku.feature.planning.budget.presentation
 import com.example.insightku.core.ui.components.dialogs.IconOption
 import com.example.insightku.core.ui.components.dialogs.BudgetLimitInput
 import com.example.insightku.core.ui.components.dialogs.RecurringPeriodSelector
+import com.example.insightku.core.utils.toAmountOrNull
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 import com.example.insightku.core.ui.components.dialogs.CategoryIconInfo
 import com.example.insightku.core.ui.components.dialogs.expenseCategoryIcons
@@ -231,7 +232,7 @@ fun EditCategoryDialog(
                                             color           = colorHex,
                                             icon            = selectedIcon.name,
                                             budgetLimit     = if (categoryType == CategoryType.EXPENSE)
-                                                budgetLimitText.filter { it.isDigit() }.toLongOrNull()?.toDouble() else null,
+                                                budgetLimitText.toAmountOrNull() else null,
                                             alertThreshold  = alertThreshold.roundToInt(),
                                             recurringPeriod = if (categoryType == CategoryType.EXPENSE) selectedPeriod else null,
                                             categoryType    = categoryType.name

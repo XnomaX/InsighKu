@@ -1,6 +1,5 @@
 package com.example.insightku.feature.planning.goal.domain.engine
 
-import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
@@ -23,8 +22,7 @@ import kotlin.math.abs
 
 @Singleton
 class AutoAllocationEngine @Inject constructor(
-    private val dataSource: AutoAllocationDataSource,
-    private val accountRepository: AccountRepository
+    private val dataSource: AutoAllocationDataSource
 ) {
     companion object {
         private const val TAG = "AutoAllocationEngine"
@@ -155,12 +153,13 @@ class AutoAllocationEngine @Inject constructor(
         if (rule.minIncomeAmount > 0 && transaction.amount < rule.minIncomeAmount) return null
         val sourceAccountId = rule.sourceAccountId ?: transaction.accountId
         if (sourceAccountId.isBlank()) return null
-        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
+        val account = dataSource.getAccountById(sourceAccountId) ?: return null
         val allocationAmount = calculateAllocationAmount(rule, transaction.amount)
         if (allocationAmount <= 0) return null
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
-        if (account.balance < actualAmount) return null
+        val availableCash = dataSource.getAvailableCash(sourceAccountId)
+        if (availableCash < actualAmount) return null
         return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Income detected: ${formatCurrency(transaction.amount)}", rule.description, ruleId = rule.id)
     }
 
@@ -189,10 +188,11 @@ class AutoAllocationEngine @Inject constructor(
 
         val sourceAccountId = rule.sourceAccountId ?: transaction.accountId
         if (sourceAccountId.isBlank()) return null
-        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
+        val account = dataSource.getAccountById(sourceAccountId) ?: return null
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(roundUpAmount, remainingToGoal)
-        if (account.balance < actualAmount) return null
+        val availableCash = dataSource.getAvailableCash(sourceAccountId)
+        if (availableCash < actualAmount) return null
 
         val modeLabel = when (rule.roundUpMode) {
             RoundUpMode.ROUND_UP -> "Round up"
@@ -222,10 +222,11 @@ class AutoAllocationEngine @Inject constructor(
         if (allocationAmount <= 0) return null
         val sourceAccountId = rule.sourceAccountId ?: transaction.accountId
         if (sourceAccountId.isBlank()) return null
-        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
+        val account = dataSource.getAccountById(sourceAccountId) ?: return null
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
-        if (account.balance < actualAmount) return null
+        val availableCash = dataSource.getAvailableCash(sourceAccountId)
+        if (availableCash < actualAmount) return null
         return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Spending in ${transaction.category}: ${formatCurrency(transaction.amount)}", rule.description, ruleId = rule.id)
     }
 
@@ -235,12 +236,13 @@ class AutoAllocationEngine @Inject constructor(
         val currentAmount = dataSource.getTotalContributed(rule.goalId)
         if (currentAmount >= goal.targetAmount) return null
         val sourceAccountId = rule.sourceAccountId ?: return null
-        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
-        val allocationAmount = calculateAllocationAmount(rule, account.balance)
+        val account = dataSource.getAccountById(sourceAccountId) ?: return null
+        val availableCash = dataSource.getAvailableCash(sourceAccountId)
+        val allocationAmount = calculateAllocationAmount(rule, availableCash)
         if (allocationAmount <= 0) return null
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
-        if (account.balance < actualAmount) return null
+        if (availableCash < actualAmount) return null
         return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Scheduled ${rule.scheduledFrequency.value} allocation", rule.description, ruleId = rule.id)
     }
 
@@ -251,19 +253,20 @@ class AutoAllocationEngine @Inject constructor(
         if (currentAmount >= goal.targetAmount) return null
         val threshold = rule.triggerParams?.threshold ?: return null
         val accountId = rule.triggerParams.accountId ?: rule.sourceAccountId ?: return null
-        val account = accountRepository.getAccountById(accountId) ?: return null
-        if (account.balance <= threshold) return null
-        
-        val excess = account.balance - threshold
+        val account = dataSource.getAccountById(accountId) ?: return null
+        val availableCash = dataSource.getAvailableCash(accountId)
+        if (availableCash <= threshold) return null
+
+        val excess = availableCash - threshold
         val allocationAmount = calculateAllocationAmount(rule, excess)
         if (allocationAmount <= 0) return null
-        
-        // Respect minRemainingBalance: ensure account balance doesn't fall below this amount
+
+        // Respect minRemainingBalance: ensure available cash doesn't fall below this amount
         val minRemaining = rule.minRemainingBalance
         val maxAllocatable = if (minRemaining > 0) {
-            (account.balance - minRemaining).coerceAtLeast(0.0)
+            (availableCash - minRemaining).coerceAtLeast(0.0)
         } else {
-            account.balance
+            availableCash
         }
         
         val remainingToGoal = goal.targetAmount - currentAmount
@@ -367,11 +370,12 @@ class AutoAllocationEngine @Inject constructor(
         if (allocationAmount <= 0) return null
 
         val sourceAccountId = rule.sourceAccountId ?: return null
-        val account = accountRepository.getAccountById(sourceAccountId) ?: return null
+        val account = dataSource.getAccountById(sourceAccountId) ?: return null
 
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
-        if (account.balance < actualAmount) return null
+        val availableCash = dataSource.getAvailableCash(sourceAccountId)
+        if (availableCash < actualAmount) return null
 
         val periodLabel = if (execMode == CategoryBasedExecutionMode.AFTER_DAILY_TOTAL) "today" else "this month"
         return AllocationSuggestion(

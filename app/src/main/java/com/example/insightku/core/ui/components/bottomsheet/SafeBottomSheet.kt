@@ -1,5 +1,6 @@
 package com.example.insightku.core.ui.components.bottomsheet
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -92,6 +93,9 @@ fun SafeBottomSheet(
         with(density) { (screenHeightPx - statusBarPx - safeMarginPx).toDp() }
     }
 
+    // ── 50% swipe-to-dismiss threshold (see helper below) ──────────────────
+    LaunchedEffect(sheetState) { applyFiftyPercentDismissThreshold(sheetState) }
+
     // Track whether a dismiss is pending (animation in progress)
     var pendingDismiss by remember { mutableStateOf(false) }
 
@@ -146,5 +150,38 @@ fun DefaultDragHandle() {
                 .clip(RoundedCornerShape(Dimens.BottomSheetHandleRadius))
                 .background(AppPalette.cardBorder)
         )
+    }
+}
+
+/**
+ * FRAGILE — Material3 1.3.2 hardcodes the bottom-sheet dismiss thresholds
+ * (`positionalThreshold` = 56dp, `velocityThreshold` = 125dp/s in SheetDefaults.kt)
+ * and exposes no public API to change them. This uses reflection to make dismissal
+ * **purely position-based**: the sheet only dismisses when dragged past 50% of its
+ * height, and a fast flick alone never dismisses it.
+ *
+ * - `positionalThreshold` → 50% of the drag distance.
+ * - `velocityThreshold` → MAX_VALUE, so velocity can no longer trigger a dismiss.
+ *   (A quick flick previously dismissed the sheet regardless of distance, which also
+ *   caused the endless up/down fling oscillation on tall sheets.)
+ *
+ * Safe here because `isMinifyEnabled = false` (no R8 field renaming). If a future
+ * Material3 version renames these internal fields, this logs a warning and the sheet
+ * falls back to the default behavior.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+fun applyFiftyPercentDismissThreshold(sheetState: SheetState) {
+    try {
+        val anchoredDraggableField = sheetState.javaClass.getDeclaredField("anchoredDraggableState")
+        anchoredDraggableField.isAccessible = true
+        val anchoredDraggable = anchoredDraggableField.get(sheetState) ?: return
+        val positionalField = anchoredDraggable.javaClass.getDeclaredField("positionalThreshold")
+        positionalField.isAccessible = true
+        positionalField.set(anchoredDraggable) { totalDistance: Float -> totalDistance * 0.5f }
+        val velocityField = anchoredDraggable.javaClass.getDeclaredField("velocityThreshold")
+        velocityField.isAccessible = true
+        velocityField.set(anchoredDraggable) { Float.MAX_VALUE }
+    } catch (e: Exception) {
+        Log.w("SafeBottomSheet", "Could not apply custom dismiss threshold; using Material3 default", e)
     }
 }

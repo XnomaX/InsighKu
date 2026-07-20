@@ -3,17 +3,18 @@ package com.example.insightku.core.domain.model
 import com.example.insightku.core.data.model.Account
 
 /**
- * Represents the allocation breakdown of an Account.
+ * Represents the allocation breakdown of an Account (envelope model).
  *
- * This model provides a complete view of how an Account's balance is distributed,
- * serving as the single source of truth for allocation calculations.
+ * `account.balance` is the total pool; goal contributions set money aside
+ * without changing the balance. Budget allocations are informational only
+ * (budget spending already reduced the balance as expense transactions).
  *
  * Invariant:
- * currentBalance == availableCash + allocatedToGoals + allocatedToBudgets
+ * availableCash == balance − allocatedToGoals (set-aside for non-completed goals)
  *
  * @param account The parent account
- * @param allocatedToGoals Total amount allocated to all goals (from contributions)
- * @param allocatedToBudgets Total amount allocated to all budgets
+ * @param allocatedToGoals Total amount set aside for goals (net contributions)
+ * @param allocatedToBudgets Informational: current-month budget spending
  * @param goalAllocations Detailed breakdown of allocations per goal
  * @param budgetAllocations Detailed breakdown of allocations per budget
  */
@@ -25,11 +26,11 @@ data class AccountAllocation(
     val budgetAllocations: List<BudgetAllocationDetail> = emptyList()
 ) {
     /**
-     * Available cash = Account balance - all allocations
-     * This is the money that can be freely spent
+     * Available cash = Account balance − funds set aside in goals.
+     * Budget spending is NOT subtracted: it already reduced the balance.
      */
     val availableCash: Double
-        get() = (account.balance - allocatedToGoals - allocatedToBudgets).coerceAtLeast(0.0)
+        get() = (account.balance - allocatedToGoals).coerceAtLeast(0.0)
 
     /**
      * Total allocated amount across all categories
@@ -86,6 +87,7 @@ data class AccountAllocation(
  * @param goalName The goal's name
  * @param goalIcon The goal's icon name
  * @param goalColor The goal's color
+ * @param goalStatus The goal's status ("active", "paused", "completed", "archived")
  * @param allocatedAmount Total amount allocated to this goal from this account
  * @param targetAmount The goal's target amount
  * @param progressPercent Progress percentage (0-100)
@@ -95,6 +97,7 @@ data class GoalAllocationDetail(
     val goalName: String,
     val goalIcon: String,
     val goalColor: String,
+    val goalStatus: String = "active",
     val allocatedAmount: Double,
     val targetAmount: Double,
     val progressPercent: Double

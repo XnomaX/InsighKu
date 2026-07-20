@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -60,8 +59,6 @@ fun DashboardHeader(
     onToggleVisibility: () -> Unit,
     onNavigateToSettings: () -> Unit = {}
 ) {
-    val initial = userName.firstOrNull()?.uppercaseChar() ?: 'U'
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -166,21 +163,6 @@ fun DashboardHeader(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-                }
-                // Avatar
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(Brush.linearGradient(listOf(GradientStart, GradientEnd))),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initial.toString(),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
                 }
             }
         }

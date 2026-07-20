@@ -81,6 +81,9 @@ sealed class GoalsDialogState {
     // ── New dialog states for redesign ──────────────────────────────────────
     data class DeleteGoalConfirm(val goalId: String, val goalName: String) : GoalsDialogState()
     data class RestoreGoalConfirm(val goalId: String, val goalName: String) : GoalsDialogState()
+    // ── Funds dialogs (envelope model) ──────────────────────────────────────
+    data class CompleteGoalFunds(val goalId: String, val goalName: String, val goalIcon: String, val goalColor: String, val fundsByAccount: Map<String, Double>) : GoalsDialogState()
+    data class DeleteGoalFunds(val goalId: String, val goalName: String, val goalIcon: String, val goalColor: String, val fundsByAccount: Map<String, Double>) : GoalsDialogState()
 }
 
 enum class AccountAction { CONTRIBUTE, WITHDRAW }

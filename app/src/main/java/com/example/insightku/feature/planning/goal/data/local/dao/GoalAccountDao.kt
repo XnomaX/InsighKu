@@ -40,6 +40,9 @@ interface GoalAccountDao {
     @Query("DELETE FROM goal_accounts WHERE goalId = :goalId")
     suspend fun unlinkAllAccountsFromGoal(goalId: String)
 
+    @Query("DELETE FROM goal_accounts WHERE accountId = :accountId")
+    suspend fun unlinkAllGoalsFromAccount(accountId: String)
+
     @Query("UPDATE goal_accounts SET isPrimary = 0 WHERE goalId = :goalId")
     suspend fun clearPrimaryForGoal(goalId: String)
 

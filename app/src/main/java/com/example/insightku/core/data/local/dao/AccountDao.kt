@@ -74,13 +74,15 @@ interface AccountDao {
     /**
      * Get the total balance delta for an account based on its transactions.
      * INCOME adds to balance, EXPENSE subtracts from balance.
+     * Goal contributions/withdrawals/auto-allocation are informational only
+     * (envelope model: they set money aside without moving the balance).
      */
     @Query("""
         SELECT COALESCE(
             SUM(
                 CASE
-                    WHEN type IN ('INCOME', 'TRANSFER_IN', 'GOAL_WITHDRAWAL') THEN amount
-                    WHEN type IN ('EXPENSE', 'TRANSFER_OUT', 'GOAL_CONTRIBUTION', 'AUTO_ALLOCATION') THEN -amount
+                    WHEN type IN ('INCOME', 'TRANSFER_IN') THEN amount
+                    WHEN type IN ('EXPENSE', 'TRANSFER_OUT') THEN -amount
                     WHEN type = 'BALANCE_ADJUSTMENT' THEN amount
                     ELSE 0
                 END

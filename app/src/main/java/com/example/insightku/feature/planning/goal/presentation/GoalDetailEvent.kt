@@ -6,6 +6,15 @@ sealed class GoalDetailEvent {
     data class LoadGoal(val goalId: String) : GoalDetailEvent()
     data object RefreshGoal : GoalDetailEvent()
     data object EditGoal : GoalDetailEvent()
+    data class SaveGoalEdit(
+        val name: String,
+        val targetAmount: Double,
+        val deadline: java.time.LocalDate,
+        val iconName: String,
+        val color: String,
+        val notes: String,
+        val reminderEnabled: Boolean
+    ) : GoalDetailEvent()
     data class UpdateAmount(val amount: String) : GoalDetailEvent()
     data class UpdateNotes(val notes: String) : GoalDetailEvent()
     data class SelectAccount(val accountId: String) : GoalDetailEvent()
@@ -37,4 +46,10 @@ sealed class GoalDetailEvent {
     // ── Extend Deadline ────────────────────────────────────────────────────
     data object ShowExtendDeadlineDialog : GoalDetailEvent()
     data class ConfirmExtendDeadline(val newDeadline: java.time.LocalDate) : GoalDetailEvent()
+
+    // ── Funds flows (envelope model) ────────────────────────────────────────
+    data object CompleteGoalKeepFunds : GoalDetailEvent()
+    data class CompleteGoalTransferFunds(val targetAccountId: String) : GoalDetailEvent()
+    data object DeleteGoalReturnFunds : GoalDetailEvent()
+    data class DeleteGoalTransferFunds(val targetAccountId: String) : GoalDetailEvent()
 }

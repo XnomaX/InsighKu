@@ -66,11 +66,36 @@ private val goalIcons = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddGoalDialog(initialDeadline: LocalDate? = null, onDismiss: () -> Unit, onCreateGoal: (name: String, targetAmount: Double, deadline: LocalDate, icon: String, color: String) -> Unit) {
+fun AddGoalDialog(
+    initialDeadline: LocalDate? = null,
+    initialName: String = "",
+    initialAmount: Double? = null,
+    initialIcon: String = "Piggy Bank",
+    initialColor: String = AppPalette.GoalColors.first(),
+    initialNotes: String = "",
+    initialReminderEnabled: Boolean = false,
+    currentAmount: Double? = null,
+    isEditing: Boolean = false,
+    onDismiss: () -> Unit,
+    onCreateGoal: (name: String, targetAmount: Double, deadline: LocalDate, icon: String, color: String, notes: String, reminderEnabled: Boolean) -> Unit
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var name by remember { mutableStateOf("") }; var targetAmountText by remember { mutableStateOf("") }; var deadline by remember { mutableStateOf(initialDeadline ?: LocalDate.now().plusMonths(3)) }; var selectedIcon by remember { mutableStateOf("Piggy Bank") }; var selectedColor by remember { mutableStateOf(AppPalette.GoalColors.first()) }; var showDatePicker by remember { mutableStateOf(false) };    var nameError by remember { mutableStateOf<String?>(null) }
+    var name by remember { mutableStateOf(initialName) }
+    var targetAmountText by remember {
+        mutableStateOf(initialAmount?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() } ?: "")
+    }
+    var deadline by remember { mutableStateOf(initialDeadline ?: LocalDate.now().plusMonths(3)) }
+    var selectedIcon by remember { mutableStateOf(initialIcon) }
+    var selectedColor by remember { mutableStateOf(initialColor) }
+    var notes by remember { mutableStateOf(initialNotes) }
+    var reminderEnabled by remember { mutableStateOf(initialReminderEnabled) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var amountError by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
-    val isValid = name.isNotBlank() && targetAmountText.toDoubleOrNull()?.let { it > 0 } == true && deadline != null
+    val parsedAmount = targetAmountText.toDoubleOrNull() ?: 0.0
+    val amountBelowSaved = currentAmount != null && targetAmountText.isNotBlank() && parsedAmount < currentAmount
+    val isValid = name.isNotBlank() && parsedAmount > 0 && !amountBelowSaved
     if (showDatePicker) { val initialMillis = deadline?.atStartOfDay()?.toInstant(ZoneId.systemDefault().rules.getOffset(Instant.now()))?.toEpochMilli() ?: System.currentTimeMillis(); PremiumDatePicker(initialMillis = initialMillis, onDateSelected = { millis -> deadline = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate(); showDatePicker = false }, onDismiss = { showDatePicker = false }) }
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
@@ -79,16 +104,51 @@ fun AddGoalDialog(initialDeadline: LocalDate? = null, onDismiss: () -> Unit, onC
         dragHandle = { Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) { Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(GoalBorder)) } }
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) { Surface(shape = RoundedCornerShape(50), color = GoalPurple.copy(alpha = 0.10f)) { Text(stringResource(R.string.add_goal_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = GoalPurple) }; Spacer(Modifier.height(6.dp)); Text(stringResource(R.string.add_goal_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary); Text(stringResource(R.string.add_goal_subtitle), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted) }
+            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
+                Surface(shape = RoundedCornerShape(50), color = GoalPurple.copy(alpha = 0.10f)) { Text(stringResource(R.string.add_goal_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = GoalPurple) }
+                Spacer(Modifier.height(6.dp))
+                Text(stringResource(if (isEditing) R.string.add_goal_edit_title else R.string.add_goal_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                Text(stringResource(if (isEditing) R.string.add_goal_edit_subtitle else R.string.add_goal_subtitle), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+            }
             Box(Modifier.fillMaxWidth().height(1.dp).background(GoalBorder))
             Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).background(GoalBg).padding(24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 GoalFormField(label = stringResource(R.string.add_goal_name_label), value = name, onValueChange = { name = it; nameError = null }, placeholder = "e.g. Emergency Fund, Vacation", error = nameError, accentColor = GoalPurple)
-                GoalFormField(label = stringResource(R.string.add_goal_amount_label), value = CurrencyUtils.formatInputThousands(targetAmountText), onValueChange = { targetAmountText = CurrencyUtils.stripThousands(it) }, placeholder = "e.g. 5.000.000", keyboardType = KeyboardType.Number, prefix = NumberFormatter.getCurrencySymbol(), accentColor = GoalPurple)
+                GoalFormField(label = stringResource(R.string.add_goal_amount_label), value = CurrencyUtils.formatInputThousands(targetAmountText), onValueChange = { targetAmountText = CurrencyUtils.stripThousands(it); amountError = null }, placeholder = "e.g. 5.000.000", keyboardType = KeyboardType.Number, prefix = NumberFormatter.getCurrencySymbol(), accentColor = GoalPurple, error = amountError)
+                if (currentAmount != null) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.add_goal_saved_label), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), color = GoalPurple.copy(alpha = 0.08f), border = BorderStroke(1.dp, GoalBorder)) {
+                            Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text(NumberFormatter.formatCurrency(currentAmount), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = GoalPurple)
+                            }
+                        }
+                    }
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(stringResource(R.string.add_goal_date_label), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); Surface(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }, shape = RoundedCornerShape(14.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) { Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {                    Text(DateFormatter.formatFullDate(deadline.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary); Icon(Icons.Default.EditCalendar, contentDescription = null, tint = AppPalette.accent, modifier = Modifier.size(18.dp)) } } }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(stringResource(R.string.add_goal_icon_label), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); GoalIconPicker(selectedIcon = selectedIcon, onIconSelected = { selectedIcon = it }, accentColor = GoalPurple) }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(stringResource(R.string.add_goal_color_label), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); GoalColorPicker(selectedColor = selectedColor, onColorSelected = { selectedColor = it }) }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.add_goal_notes_label), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    OutlinedTextField(value = notes, onValueChange = { notes = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text(stringResource(R.string.add_goal_notes_placeholder), color = AppPalette.placeholder) }, minLines = 2, maxLines = 4, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = GoalPurple, unfocusedBorderColor = GoalBorder, focusedContainerColor = AppPalette.card, unfocusedContainerColor = AppPalette.card))
+                }
+                Surface(shape = RoundedCornerShape(14.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(stringResource(R.string.add_goal_reminder_label), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+                            Text(stringResource(R.string.add_goal_reminder_desc), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
+                        }
+                        Switch(checked = reminderEnabled, onCheckedChange = { reminderEnabled = it }, colors = SwitchDefaults.colors(checkedTrackColor = GoalPurple))
+                    }
+                }
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { Surface(modifier = Modifier.weight(1f).height(50.dp).clickable { onDismiss() }, shape = RoundedCornerShape(14.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) { Box(contentAlignment = Alignment.Center) { Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textDialogMuted) } }; Box(modifier = Modifier.weight(1f).height(50.dp).clip(RoundedCornerShape(14.dp)).background(if (isValid) GoalPurple else AppPalette.textMuted).clickable(enabled = isValid) { if (name.trim().length < 2) { nameError = context.getString(R.string.add_goal_name_error); return@clickable }; onCreateGoal(name.trim(), targetAmountText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0, deadline, selectedIcon, selectedColor) }, contentAlignment = Alignment.Center) { Text(stringResource(R.string.add_goal_create), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White) } }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Surface(modifier = Modifier.weight(1f).height(50.dp).clickable { onDismiss() }, shape = RoundedCornerShape(14.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) { Box(contentAlignment = Alignment.Center) { Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textDialogMuted) } }
+                    Box(modifier = Modifier.weight(1f).height(50.dp).clip(RoundedCornerShape(14.dp)).background(if (isValid) GoalPurple else AppPalette.textMuted).clickable(enabled = isValid) {
+                        if (name.trim().length < 2) { nameError = context.getString(R.string.add_goal_name_error); return@clickable }
+                        if (amountBelowSaved) { amountError = context.getString(R.string.add_goal_amount_error); return@clickable }
+                        onCreateGoal(name.trim(), targetAmountText.toDoubleOrNull() ?: 0.0, deadline, selectedIcon, selectedColor, notes.trim(), reminderEnabled)
+                    }, contentAlignment = Alignment.Center) { Text(stringResource(if (isEditing) R.string.add_goal_save else R.string.add_goal_create), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White) }
+                }
             }
         }
     }

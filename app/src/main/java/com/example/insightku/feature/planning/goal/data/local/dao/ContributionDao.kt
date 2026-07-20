@@ -25,14 +25,15 @@ interface ContributionDao {
     @Query("SELECT * FROM contributions WHERE id = :id")
     suspend fun getContributionById(id: String): ContributionEntity?
 
-    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM contributions WHERE goalId = :goalId AND amount > 0")
+    /** Net amount saved toward a goal (contributions minus withdrawals). */
+    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM contributions WHERE goalId = :goalId")
     suspend fun getTotalContributed(goalId: String): Double
 
-    /** Batch query: get total contributed for ALL goals in a single query (avoids N+1). */
-    @Query("SELECT goalId, COALESCE(SUM(amount), 0.0) as total FROM contributions WHERE amount > 0 GROUP BY goalId")
+    /** Batch query: get net total for ALL goals in a single query (avoids N+1). */
+    @Query("SELECT goalId, COALESCE(SUM(amount), 0.0) as total FROM contributions GROUP BY goalId")
     suspend fun getAllGoalTotals(): List<GoalAllocation>
 
-    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM contributions WHERE goalId = :goalId AND amount > 0")
+    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM contributions WHERE goalId = :goalId")
     fun getTotalContributedFlow(goalId: String): Flow<Double>
 
     @Query("SELECT COALESCE(ABS(SUM(amount)), 0.0) FROM contributions WHERE goalId = :goalId AND amount < 0")
@@ -93,7 +94,7 @@ interface ContributionDao {
     @Query("DELETE FROM contributions WHERE goalId = :goalId")
     suspend fun deleteContributionsByGoal(goalId: String)
 
-    // ── Allocation Queries ────────────────────────────────────────────────────
+    // ── Allocation Queries (envelope model: net amounts — withdrawals reduce set-aside) ──
 
     @Query("""
         SELECT COALESCE(SUM(amount), 0.0)
@@ -105,24 +106,52 @@ interface ContributionDao {
     @Query("""
         SELECT COALESCE(SUM(amount), 0.0)
         FROM contributions
-        WHERE accountId = :accountId AND amount > 0
+        WHERE accountId = :accountId
     """)
     suspend fun getTotalAllocatedFromAccount(accountId: String): Double
 
     @Query("""
         SELECT COALESCE(SUM(amount), 0.0)
         FROM contributions
-        WHERE accountId = :accountId AND amount > 0
+        WHERE accountId = :accountId
     """)
     fun getTotalAllocatedFromAccountFlow(accountId: String): Flow<Double>
 
     @Query("""
         SELECT goalId, COALESCE(SUM(amount), 0.0) as total
         FROM contributions
-        WHERE accountId = :accountId AND amount > 0
+        WHERE accountId = :accountId
         GROUP BY goalId
+        HAVING SUM(amount) > 0
     """)
     suspend fun getGoalAllocationsFromAccount(accountId: String): List<GoalAllocation>
+
+    /** Net funds held per account for a goal (for funds dialogs/transfers). */
+    @Query("""
+        SELECT accountId, COALESCE(SUM(amount), 0.0) as total
+        FROM contributions
+        WHERE goalId = :goalId
+        GROUP BY accountId
+        HAVING SUM(amount) > 0
+    """)
+    suspend fun getNetAllocationsByGoal(goalId: String): List<AccountAllocationRow>
+
+    /** Funds set aside in an account for non-completed goals (envelope validation guard). */
+    @Query("""
+        SELECT COALESCE(SUM(c.amount), 0.0)
+        FROM contributions c
+        INNER JOIN goals g ON c.goalId = g.id
+        WHERE c.accountId = :accountId AND g.status != 'completed'
+    """)
+    suspend fun getSetAsideByAccount(accountId: String): Double
+
+    @Query("""
+        SELECT COALESCE(SUM(c.amount), 0.0)
+        FROM contributions c
+        INNER JOIN goals g ON c.goalId = g.id
+        WHERE c.accountId = :accountId AND g.status != 'completed'
+    """)
+    fun getSetAsideByAccountFlow(accountId: String): Flow<Double>
 
     @Query("""
         SELECT c.* FROM contributions c
@@ -160,5 +189,10 @@ interface ContributionDao {
 
 data class GoalAllocation(
     val goalId: String,
+    val total: Double
+)
+
+data class AccountAllocationRow(
+    val accountId: String,
     val total: Double
 )

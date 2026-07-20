@@ -42,6 +42,7 @@ fun AllocationItemCard(
     icon: String? = null,
     targetAmount: Double? = null,
     isOverBudget: Boolean = false,
+    statusLabel: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -84,6 +85,21 @@ fun AllocationItemCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    // Optional status badge (e.g. "Paused")
+                    if (statusLabel != null) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = color.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = statusLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = color,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                 }
 
                 Row(

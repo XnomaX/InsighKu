@@ -128,6 +128,10 @@ interface TransactionDao {
      */
     @Query("DELETE FROM transactions WHERE referenceId = :contributionId AND sourceModule = 'auto_allocation'")
     suspend fun deleteTransactionByReferenceId(contributionId: String)
+
+    /** Delete all goal-related transactions (contributions/withdrawals) when a goal is deleted. */
+    @Query("DELETE FROM transactions WHERE goalId = :goalId AND sourceModule IN ('goal', 'auto_allocation')")
+    suspend fun deleteTransactionsByGoalId(goalId: String)
 }
 
 

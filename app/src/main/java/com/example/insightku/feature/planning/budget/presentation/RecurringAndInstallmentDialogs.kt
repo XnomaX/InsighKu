@@ -43,6 +43,9 @@ import com.example.insightku.core.ui.theme.LocalAccent
 import androidx.compose.ui.graphics.toArgb
 import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.utils.CurrencyUtils
+import com.example.insightku.core.utils.digitsToInt
+import com.example.insightku.core.utils.digitsToLong
+import com.example.insightku.core.utils.toAmountOrZero
 import java.util.*
 
 // ─── Curated Icon Set for Recurring Payments & Installments ───────────────────
@@ -293,7 +296,7 @@ fun AddRecurringPaymentDialog(
                                 // Validate
                                 var hasError = false
                                 if (name.trim().length < 2) { nameError = context.getString(R.string.error_name_short); hasError = true }
-                                val parsedAmount = amountText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0
+                                val parsedAmount = amountText.toAmountOrZero()
                                 if (parsedAmount <= 0) { amountError = context.getString(R.string.error_amount_zero); hasError = true }
                                 if (hasError) return@clickable
 
@@ -368,10 +371,10 @@ fun AddInstallmentDialog(
     // Tracks which field was last edited to determine calculation direction
     var lastEditedField by remember(editing) { mutableStateOf<String?>(null) }
 
-    val totalAmount = totalAmountText.filter { it.isDigit() }.toLongOrNull() ?: 0L
-    val monthly     = monthlyText.filter { it.isDigit() }.toLongOrNull() ?: 0L
-    val totalMonths = totalMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
-    val paidMonths  = paidMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
+    val totalAmount = totalAmountText.digitsToLong()
+    val monthly     = monthlyText.digitsToLong()
+    val totalMonths = totalMonthsText.digitsToInt()
+    val paidMonths  = paidMonthsText.digitsToInt()
 
     // Auto-calculate: when totalAmount and monthly are set, compute totalMonths
     LaunchedEffect(totalAmount, monthly, lastEditedField) {

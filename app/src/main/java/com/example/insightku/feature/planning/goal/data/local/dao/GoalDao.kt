@@ -14,6 +14,10 @@ interface GoalDao {
     @Query("SELECT * FROM goals WHERE isActive = 1 ORDER BY createdAt DESC")
     fun getAllGoals(): Flow<List<GoalEntity>>
 
+    /** Every goal including archived — for allocation joins (archived goals keep their set-aside). */
+    @Query("SELECT * FROM goals")
+    fun getAllGoalsIncludingArchived(): Flow<List<GoalEntity>>
+
     /** Get only goals with ACTIVE status. */
     @Query("SELECT * FROM goals WHERE status = 'active' AND isActive = 1 ORDER BY createdAt DESC")
     fun getActiveStatusGoals(): Flow<List<GoalEntity>>

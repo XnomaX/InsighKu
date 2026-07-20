@@ -1,7 +1,9 @@
 package com.example.insightku.feature.planning.goal.data.repository
 
+import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.CategoryDao
 import com.example.insightku.core.data.local.dao.TransactionDao
+import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao
@@ -21,7 +23,8 @@ class AutoAllocationDataSourceImpl @Inject constructor(
     private val goalDao: GoalDao,
     private val contributionDao: ContributionDao,
     private val categoryDao: CategoryDao,
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val accountDao: AccountDao
 ) : AutoAllocationDataSource {
 
     override suspend fun getEnabledRules(): List<AutoAllocationRuleEntity> =
@@ -41,4 +44,12 @@ class AutoAllocationDataSourceImpl @Inject constructor(
 
     override suspend fun getCategoryIdByName(categoryName: String): String? =
         categoryDao.getCategoryByName(categoryName)?.id
+
+    override suspend fun getAccountById(id: String): Account? =
+        accountDao.getAccountById(id)?.takeIf { it.isActive }
+
+    override suspend fun getAvailableCash(accountId: String): Double {
+        val account = accountDao.getAccountById(accountId) ?: return 0.0
+        return (account.balance - contributionDao.getSetAsideByAccount(accountId)).coerceAtLeast(0.0)
+    }
 }

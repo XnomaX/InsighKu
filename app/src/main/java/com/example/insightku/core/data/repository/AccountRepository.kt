@@ -2,9 +2,12 @@ package com.example.insightku.core.data.repository
 
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.TransactionDao
+import com.example.insightku.core.data.local.database.InsightKuDatabase
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Transaction
+import com.example.insightku.feature.planning.goal.data.local.dao.GoalAccountDao
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -20,6 +23,8 @@ import javax.inject.Singleton
 class AccountRepository @Inject constructor(
     private val accountDao: AccountDao,
     private val transactionDao: TransactionDao,
+    private val goalAccountDao: GoalAccountDao,
+    private val database: InsightKuDatabase,
     private val firestore: FirebaseFirestore
 ) {
     // ─── Query ─────────────────────────────────────────────────────────────────
@@ -82,8 +87,13 @@ class AccountRepository @Inject constructor(
         // Step 1: Collect transactions for Firestore cleanup
         val transactions = transactionDao.getTransactionsByAccountId(accountId)
 
-        // Step 2: Delete all transactions in this account from Room
-        transactionDao.deleteTransactionsByAccountId(accountId)
+        // Step 2: Atomically delete transactions, goal links, and deactivate the account
+        database.withTransaction {
+            transactionDao.deleteTransactionsByAccountId(accountId)
+            // Remove goal↔account links so the deleted account isn't referenced anywhere
+            goalAccountDao.unlinkAllGoalsFromAccount(accountId)
+            accountDao.deactivateAccount(accountId)
+        }
 
         // Step 3: Also delete from Firestore (best effort)
         if (userId != null) {
@@ -96,9 +106,6 @@ class AccountRepository @Inject constructor(
                 // Firestore offline — Room already deleted
             }
         }
-
-        // Step 4: Deactivate the account
-        accountDao.deactivateAccount(accountId)
     }
 
     suspend fun deactivateAccount(accountId: String) {

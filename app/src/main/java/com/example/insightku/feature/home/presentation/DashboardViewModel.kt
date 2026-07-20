@@ -13,6 +13,7 @@ import com.example.insightku.core.data.repository.InstallmentRepository
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import com.example.insightku.feature.home.domain.AddTransactionUseCase
+import com.example.insightku.feature.home.domain.ApproveAllocationDraftUseCase
 import com.example.insightku.feature.home.domain.BuildInsightMessagesUseCase
 import com.example.insightku.feature.home.domain.CalculateStreakUseCase
 import com.example.insightku.feature.home.domain.GetTransactionsUseCase
@@ -44,6 +45,7 @@ class DashboardViewModel @Inject constructor(
     private val calculateStreakUseCase: CalculateStreakUseCase,
     private val buildInsightMessagesUseCase: BuildInsightMessagesUseCase,
     private val markPaymentPaidUseCase: MarkPaymentPaidUseCase,
+    private val approveAllocationDraftUseCase: ApproveAllocationDraftUseCase,
     private val categoryRepository: CategoryRepository,
     private val recurringBudgetRepository: RecurringBudgetRepository,
     private val installmentRepository: InstallmentRepository,
@@ -259,63 +261,20 @@ class DashboardViewModel @Inject constructor(
 
     private fun approveAllocationDraft(draftId: String) {
         viewModelScope.launch {
-            try {
-                android.util.Log.i(TAG, "[DraftApproved] Processing draft=$draftId")
-                val draft = draftRepository.getById(draftId)
-                if (draft == null || draft.draftType != com.example.insightku.core.data.model.DraftType.AUTO_ALLOCATION) {
-                    android.util.Log.w(TAG, "[DraftApproved] Draft not found or wrong type: draftId=$draftId")
+            android.util.Log.i(TAG, "[DraftApproved] Processing draft=$draftId")
+            when (val outcome = approveAllocationDraftUseCase.approve(draftId)) {
+                is ApproveAllocationDraftUseCase.Outcome.DraftNotFound ->
                     _uiState.update { it.copy(error = "Draft not found") }
-                    return@launch
-                }
-                android.util.Log.d(TAG, "[DraftApproved] Rule=${draft.ruleId} Goal=${draft.goalName} Amount=${draft.allocationAmount}")
-
-                val accountId = draft.sourceAccountId
-                val goalId = draft.goalId
-                val amount = draft.allocationAmount
-
-                if (accountId == null || goalId == null || amount == null || amount <= 0) {
-                    android.util.Log.e(TAG, "[DraftApproved] Invalid draft data — ruleId=${draft.ruleId}")
+                is ApproveAllocationDraftUseCase.Outcome.InvalidDraft ->
                     _uiState.update { it.copy(error = "Invalid allocation draft data") }
-                    draftRepository.confirmAndRemove(draftId)
-                    return@launch
-                }
-
-                // Validate account exists and has sufficient balance
-                val account = accountRepository.getAccountById(accountId)
-                if (account == null) {
-                    android.util.Log.e(TAG, "[DraftApproved] Source account deleted: accountId=$accountId")
+                is ApproveAllocationDraftUseCase.Outcome.AccountMissing ->
                     _uiState.update { it.copy(error = "Source account no longer exists") }
-                    draftRepository.confirmAndRemove(draftId)
-                    return@launch
-                }
-                if (account.balance < amount) {
-                    android.util.Log.w(TAG, "[DraftApproved] Insufficient balance: ${account.balance} < $amount in ${account.name}")
-                    _uiState.update { it.copy(error = "Insufficient balance in ${account.name}") }
-                    draftRepository.confirmAndRemove(draftId)
-                    return@launch
-                }
-                android.util.Log.d(TAG, "[DraftApproved] Validation passed — account=${account.name} balance=${account.balance}")
-
-                // Execute the allocation via GoalRepository
-                val result = goalRepository.contribute(
-                    goalId = goalId,
-                    accountId = accountId,
-                    amount = amount,
-                    type = com.example.insightku.feature.planning.goal.data.model.ContributionType.AUTO_ALLOCATION
-                )
-
-                if (result.isSuccess) {
-                    android.util.Log.i(TAG, "[DraftApproved] Allocation executed — ${NumberFormatter.formatCurrency(amount)} → ${draft.goalName}")
-                    draftRepository.confirmAndRemove(draftId)
-                    android.util.Log.d(TAG, "[DraftApproved] Draft removed — home card will disappear")
-                    _uiState.update { it.copy(snackbarMessage = "${NumberFormatter.formatCurrency(amount)} allocated to ${draft.goalName ?: "goal"}") }
-                } else {
-                    android.util.Log.e(TAG, "[DraftApproved] Allocation FAILED — ${result.exceptionOrNull()?.message}")
-                    _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to allocate") }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e(TAG, "[DraftApproved] EXCEPTION — ${e.message}", e)
-                _uiState.update { it.copy(error = e.message ?: "Failed to approve allocation") }
+                is ApproveAllocationDraftUseCase.Outcome.InsufficientBalance ->
+                    _uiState.update { it.copy(error = "Insufficient balance in ${outcome.accountName}") }
+                is ApproveAllocationDraftUseCase.Outcome.Allocated ->
+                    _uiState.update { it.copy(snackbarMessage = "${NumberFormatter.formatCurrency(outcome.amount)} allocated to ${outcome.goalName ?: "goal"}") }
+                is ApproveAllocationDraftUseCase.Outcome.Failed ->
+                    _uiState.update { it.copy(error = outcome.message) }
             }
         }
     }
@@ -342,18 +301,7 @@ class DashboardViewModel @Inject constructor(
         pendingDrafts: List<com.example.insightku.core.data.model.DraftTransaction> = emptyList()
     ) {
         // Current-month range
-        val monthStart = Calendar.getInstance().apply {
-            set(Calendar.DAY_OF_MONTH, 1)
-            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-        val monthEnd = Calendar.getInstance().apply {
-            set(Calendar.DAY_OF_MONTH, 1)
-            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-            add(Calendar.MONTH, 1)
-            add(Calendar.MILLISECOND, -1)
-        }.timeInMillis
+        val (monthStart, monthEnd) = currentMonthRange()
         val monthlyTx = transactions.filter { it.date in monthStart..monthEnd }
 
         val monthlyIncome = monthlyTx.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
@@ -401,27 +349,7 @@ class DashboardViewModel @Inject constructor(
 
         // Apply preference updates from the use case
         for (update in streakResult.prefUpdates) {
-            viewModelScope.launch {
-                when (update) {
-                    is CalculateStreakUseCase.PrefUpdate.FreezeConsumed -> {
-                        prefs.updateFreezeCount(update.newCount)
-                        prefs.setPerfectStreak(false)
-                        prefs.setLastFreezeDate(update.lastFreezeDate)
-                    }
-                    is CalculateStreakUseCase.PrefUpdate.RepairEnabled -> {
-                        prefs.setRepairAvailable(true, update.expiryMs)
-                    }
-                    is CalculateStreakUseCase.PrefUpdate.RepairDisabled -> {
-                        prefs.setRepairAvailable(false)
-                    }
-                    is CalculateStreakUseCase.PrefUpdate.PerfectStreakEnabled -> {
-                        prefs.setPerfectStreak(true)
-                    }
-                    is CalculateStreakUseCase.PrefUpdate.FreezeAwarded -> {
-                        prefs.updateFreezeCount(update.newCount)
-                    }
-                }
-            }
+            applyStreakPrefUpdate(update)
         }
 
         val monthlySavings = monthlyIncome - monthlyExpenses
@@ -482,6 +410,48 @@ class DashboardViewModel @Inject constructor(
                 totalBudgetCount = allBudgetItems.size,
                 hasActiveBudgets = previewBudgets.isNotEmpty()
             )
+        }
+    }
+
+    /** Inclusive [start, end] epoch-millis range covering the current calendar month. */
+    private fun currentMonthRange(): Pair<Long, Long> {
+        val start = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val end = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            add(Calendar.MONTH, 1)
+            add(Calendar.MILLISECOND, -1)
+        }.timeInMillis
+        return start to end
+    }
+
+    /** Persist a single streak preference update computed by [CalculateStreakUseCase]. */
+    private fun applyStreakPrefUpdate(update: CalculateStreakUseCase.PrefUpdate) {
+        viewModelScope.launch {
+            when (update) {
+                is CalculateStreakUseCase.PrefUpdate.FreezeConsumed -> {
+                    prefs.updateFreezeCount(update.newCount)
+                    prefs.setPerfectStreak(false)
+                    prefs.setLastFreezeDate(update.lastFreezeDate)
+                }
+                is CalculateStreakUseCase.PrefUpdate.RepairEnabled -> {
+                    prefs.setRepairAvailable(true, update.expiryMs)
+                }
+                is CalculateStreakUseCase.PrefUpdate.RepairDisabled -> {
+                    prefs.setRepairAvailable(false)
+                }
+                is CalculateStreakUseCase.PrefUpdate.PerfectStreakEnabled -> {
+                    prefs.setPerfectStreak(true)
+                }
+                is CalculateStreakUseCase.PrefUpdate.FreezeAwarded -> {
+                    prefs.updateFreezeCount(update.newCount)
+                }
+            }
         }
     }
 }

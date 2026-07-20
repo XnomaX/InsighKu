@@ -25,14 +25,8 @@ class TransactionDetailsViewModel @Inject constructor(
     private val errorBus: ErrorBus
 ) : ViewModel() {
 
-    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
-    val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
-
-    private val _categories = MutableStateFlow<List<Category>>(emptyList())
-    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _uiState = MutableStateFlow(TransactionDetailsUiState())
+    val uiState: StateFlow<TransactionDetailsUiState> = _uiState.asStateFlow()
 
     private var loadJob: Job? = null
 
@@ -44,16 +38,15 @@ class TransactionDetailsViewModel @Inject constructor(
     private fun loadTransactions() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            _isLoading.value = true
+            _uiState.update { it.copy(isLoading = true) }
             try {
                 getTransactionsUseCase().collect { list ->
-                    _transactions.value = list
-                    _isLoading.value = false
+                    _uiState.update { it.copy(transactions = list, isLoading = false) }
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _isLoading.value = false
+                _uiState.update { it.copy(isLoading = false) }
                 errorBus.send(e.message ?: "Gagal memuat transaksi")
             }
         }
@@ -63,7 +56,7 @@ class TransactionDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 categoryRepository.getAllCategories().collect { cats ->
-                    _categories.value = cats
+                    _uiState.update { it.copy(categories = cats) }
                 }
             } catch (e: CancellationException) {
                 throw e

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.size
@@ -20,7 +19,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
@@ -42,10 +43,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -704,6 +703,13 @@ private fun AccountDetailSheet(
                     .background(AppPalette.cardBorder)
             )
 
+            // ── Scrollable body (bounded so flings settle; wraps when short) ──
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+            ) {
             // ── Allocation Breakdown Section ─────────────────────────────────
             if (allocation != null && allocation.hasAllocations) {
                 AllocationBreakdownSection(
@@ -845,6 +851,7 @@ private fun AccountDetailSheet(
                     }
                 }
             }
+            }
         }
     }
 
@@ -928,6 +935,7 @@ private fun AllocationBreakdownSection(
                         color = goalColor,
                         icon = goal.goalIcon,
                         targetAmount = goal.targetAmount,
+                        statusLabel = if (goal.goalStatus == "paused") stringResource(R.string.goal_status_paused) else null,
                         onClick = { onGoalClick(goal.goalId) }
                     )
                 }
