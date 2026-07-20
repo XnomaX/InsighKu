@@ -9,6 +9,7 @@ import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -54,6 +55,8 @@ class GoalReminderWorker @AssistedInject constructor(
 
             Log.d(TAG, "Checked ${goals.size} reminder-enabled goals")
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error checking goal reminders: ${e.message}")
             Result.retry()

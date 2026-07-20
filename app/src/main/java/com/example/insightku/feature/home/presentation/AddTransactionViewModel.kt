@@ -1,7 +1,9 @@
 package com.example.insightku.feature.home.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
 import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
@@ -14,6 +16,7 @@ import com.example.insightku.feature.home.domain.AddTransactionUseCase
 import com.example.insightku.feature.home.domain.CategoryMemory
 import com.example.insightku.core.utils.ErrorBus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,6 +37,7 @@ data class AddTransactionUiState(
 
 @HiltViewModel
 class AddTransactionViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository,
     private val authRepository: AuthRepository,
@@ -84,7 +88,7 @@ class AddTransactionViewModel @Inject constructor(
                     _uiState.update { it.copy(isSaving = false, savedSuccessfully = true) }
                 }.onFailure { e ->
                     android.util.Log.e(TAG, "[TxSaved] FAILED — ${e.message}", e)
-                    val msg = e.message ?: "Failed to save transaction"
+                    val msg = e.message ?: context.getString(R.string.error_save_transaction)
                     _uiState.update { it.copy(isSaving = false, error = msg) }
                     errorBus.send(msg)
                 }
@@ -92,7 +96,7 @@ class AddTransactionViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 android.util.Log.e(TAG, "[TxSaved] EXCEPTION — ${e.message}", e)
-                val msg = e.message ?: "Failed to save transaction"
+                val msg = e.message ?: context.getString(R.string.error_save_transaction)
                 _uiState.update { it.copy(isSaving = false, error = msg) }
                 errorBus.send(msg)
             }

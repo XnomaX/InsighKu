@@ -9,6 +9,7 @@ import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 
 /**
  * SyncGoalWorker — Background worker for syncing Goals and Contributions to Firestore.
@@ -45,6 +46,8 @@ class SyncGoalWorker @AssistedInject constructor(
 
             Log.d(TAG, "Sync completed successfully")
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "Sync failed, will retry", e)
             Result.retry()

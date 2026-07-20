@@ -9,6 +9,7 @@ import com.example.insightku.core.data.repository.TransactionRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -60,6 +61,8 @@ class SyncTransactionWorker @AssistedInject constructor(
                         .set(transaction)
                         .await()
                     transactionRepository.markTransactionSynced(transaction.id)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     // Satu transaksi gagal — catat, lanjut yang lain
                     allSuccess = false
@@ -67,6 +70,8 @@ class SyncTransactionWorker @AssistedInject constructor(
             }
 
             if (allSuccess) Result.success() else Result.retry()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Error umum — minta WorkManager untuk retry
             Result.retry()

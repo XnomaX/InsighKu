@@ -936,6 +936,7 @@
     <string name="streak_tracked_today">You have tracked today — streak is safe.</string>
     <string name="streak_start_your_streak">Start Your Streak</string>
     <string name="streak_log_today">Log Today\'s Transaction</string>
+    <string name="streak_repair">Repair Streak</string>
     <string name="streak_day_streak">%1$d-day streak</string>
     <string name="streak_keep_going">Keep going</string>
     <string name="streak_got_it">Got it</string>
@@ -1681,4 +1682,61 @@
     <string name="goal_status_actions_title">Status Actions</string>
     <string name="goal_status_actions_subtitle">Manage this goal\'s progress</string>
     <string name="goal_completed_banner_desc">%1$s has been achieved!</string>
+
+    <!-- Error messages -->
+    <string name="error_load_accounts">Failed to load accounts</string>
+    <string name="error_load_account_transactions">Failed to load account transactions</string>
+    <string name="error_delete_account">Failed to delete account</string>
+    <string name="error_set_default_account">Failed to set default account</string>
+    <string name="error_save_account">Failed to save account</string>
+    <string name="error_something_went_wrong">Something went wrong</string>
+    <string name="error_load_transactions">Failed to load transaction</string>
+    <string name="error_save_transaction_changes">Failed to save transaction changes</string>
+    <string name="error_delete_transaction">Failed to delete transaction</string>
+    <string name="error_create_goal">Failed to create goal</string>
+    <string name="error_update_goal">Failed to update goal</string>
+    <string name="error_restore_goal">Failed to restore goal</string>
+    <string name="error_delete_goal">Failed to delete goal</string>
+    <string name="error_complete_goal">Failed to complete goal</string>
+    <string name="error_transfer_funds">Failed to transfer funds</string>
+    <string name="error_contribute">Failed to contribute</string>
+    <string name="error_withdraw">Failed to withdraw</string>
+    <string name="error_save_transaction">Failed to save transaction</string>
+    <string name="error_load_dashboard">Failed to load dashboard data</string>
+    <string name="error_mark_payment">Failed to mark payment</string>
+    <string name="error_mark_installment">Failed to mark installment</string>
+    <string name="error_reject_allocation">Failed to reject allocation</string>
+    <string name="error_approve_allocation">Failed to approve allocation</string>
+    <string name="error_allocate">Failed to allocate</string>
+    <string name="error_load_goal">Failed to load goal</string>
+    <string name="error_pause_goal">Failed to pause goal</string>
+    <string name="error_resume_goal">Failed to resume goal</string>
+    <string name="error_load_budget">Failed to load budget data</string>
+    <string name="error_add_category">Failed to add category</string>
+    <string name="error_update_category">Failed to update category</string>
+    <string name="error_delete_category">Failed to delete category</string>
+    <string name="error_add_recurring_budget">Failed to add recurring budget</string>
+    <string name="error_update_recurring_budget">Failed to update recurring budget</string>
+    <string name="error_delete_recurring_budget">Failed to delete recurring budget</string>
+    <string name="error_add_installment">Failed to add installment</string>
+    <string name="error_update_installment">Failed to update installment</string>
+    <string name="error_delete_installment">Failed to delete installment</string>
+    <string name="error_login_user_not_found">Login failed: user not found</string>
+    <string name="error_registration_failed">Registration failed</string>
+    <string name="error_google_signin_failed">Google Sign-In failed</string>
+    <string name="error_user_not_logged_in">User not logged in</string>
+
+    <!-- Notification strings -->
+    <string name="notification_auto_prefix">Auto: %1$s</string>
+    <string name="notification_installment_prefix">Installment: %1$s</string>
+    <string name="notification_detected">%1$s detected</string>
+    <string name="notification_transfer_to">%1$s → %2$s</string>
+
+    <!-- Dialog labels -->
+    <string name="label_category_name">CATEGORY NAME</string>
+    <string name="label_icon">ICON</string>
+    <string name="label_budget_limit_alert">BUDGET LIMIT &amp; ALERT</string>
+    <string name="label_budget_reset">BUDGET RESET</string>
+    <string name="hint_category_name">e.g. Food &amp; Drinks</string>
+    <string name="label_of_amount">of %1$s</string>
 </resources>

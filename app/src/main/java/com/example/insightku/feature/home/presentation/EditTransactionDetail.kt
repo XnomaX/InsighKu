@@ -55,6 +55,7 @@ import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
+import com.example.insightku.core.utils.toAmountOrZero
 import java.util.*
 import kotlin.math.abs
 
@@ -274,7 +275,7 @@ fun EditTransactionDetail(
                 }
                 Button(
                     onClick = {
-                        val finalAmount = amountRaw.toLongOrNull()?.toDouble() ?: 0.0
+                        val finalAmount = amountRaw.toAmountOrZero()
                         onSave(
                             transaction.copy(
                                 title         = title.trim().ifBlank { transaction.title },

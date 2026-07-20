@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Locales the app supports. Referenced by android:localeConfig in the manifest.
+     Required for the Android 13+ (API 33+) per-app language API and the AppCompat
+     backport. Tags are BCP-47 and must match AppLanguage codes ("id", "en"). -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="id" />
+</locale-config>

@@ -1,9 +1,12 @@
 package com.example.insightku.feature.auth.data
 
+import android.content.Context
+import com.example.insightku.R
 import com.example.insightku.core.data.local.preferences.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,6 +27,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
     private val sessionManager: SessionManager
@@ -54,7 +58,7 @@ class AuthRepository @Inject constructor(
     suspend fun loginUser(email: String, password: String): Result<Unit> {
         return try {
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
-            val user = result.user ?: return Result.failure(Exception("Login gagal: user tidak ditemukan"))
+            val user = result.user ?: return Result.failure(Exception(context.getString(R.string.error_login_user_not_found)))
 
             // Simpan session ke DataStore segera setelah login berhasil
             sessionManager.saveLoginSession(
@@ -82,7 +86,7 @@ class AuthRepository @Inject constructor(
         return try {
             // 1. Buat user di Firebase Auth
             val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
-            val user = authResult.user ?: return Result.failure(Exception("Registrasi gagal"))
+            val user = authResult.user ?: return Result.failure(Exception(context.getString(R.string.error_registration_failed)))
 
             // 2. Update display name di Firebase Auth
             val profileUpdate = UserProfileChangeRequest.Builder()
@@ -174,7 +178,7 @@ class AuthRepository @Inject constructor(
         return try {
             val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
             val result = firebaseAuth.signInWithCredential(credential).await()
-            val user = result.user ?: return Result.failure(Exception("Google Sign-In gagal"))
+            val user = result.user ?: return Result.failure(Exception(context.getString(R.string.error_google_signin_failed)))
 
             // Simpan session ke DataStore
             sessionManager.saveLoginSession(

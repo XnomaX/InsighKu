@@ -13,9 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.utils.CurrencyUtils
@@ -145,7 +147,7 @@ fun AllocationItemCard(
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "of ${CurrencyUtils.formatAmount(targetAmount, "IDR")}",
+                            text = stringResource(R.string.label_of_amount, CurrencyUtils.formatAmount(targetAmount)),
                             style = MaterialTheme.typography.labelSmall,
                             color = AppPalette.textMuted
                         )

@@ -216,8 +216,11 @@ fun DashboardScreenContent(
                 DailyStreakCard(
                     currentStreak    = uiState.currentStreak,
                     hasTrackedToday  = uiState.hasTrackedToday,
+                    repairAvailable  = uiState.repairAvailable,
+                    freezeCount      = uiState.freezeCount,
                     onCardClick      = { showStreakDetail = true },
                     onAddTransaction = onAddTransactionForStreak,
+                    onUseRepair      = { onEvent(DashboardEvent.UseStreakRepair) },
                     modifier         = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical   = Dimens.CardSpacing

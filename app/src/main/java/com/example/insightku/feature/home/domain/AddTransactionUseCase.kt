@@ -1,6 +1,8 @@
 package com.example.insightku.feature.home.domain
 
 import android.content.Context
+import com.example.insightku.R
+import kotlinx.coroutines.CancellationException
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.data.repository.AccountRepository
@@ -55,7 +57,7 @@ class AddTransactionUseCase @Inject constructor(
      */
     suspend operator fun invoke(transaction: Transaction): Result<AutoAllocationResult> {
         val userId = authRepository.getCurrentUserId()
-            ?: return Result.failure(Exception("User tidak login"))
+            ?: return Result.failure(Exception(context.getString(R.string.error_user_not_logged_in)))
         return try {
             // Step 1: Save transaction to Room + Firestore
             transactionRepository.addTransaction(transaction, userId)
@@ -116,6 +118,8 @@ class AddTransactionUseCase @Inject constructor(
                         triggerDescription = suggestion.triggerDescription,
                         draftRepository = draftRepository
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     // Failed to create allocation draft — log and continue
                     android.util.Log.e(TAG, "Failed to create allocation draft: ${e.message}")
@@ -135,6 +139,8 @@ class AddTransactionUseCase @Inject constructor(
                 autoExecuted = executedSuggestions,
                 suggestions = emptyList() // Suggestions are now drafts, not in-memory
             ))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }

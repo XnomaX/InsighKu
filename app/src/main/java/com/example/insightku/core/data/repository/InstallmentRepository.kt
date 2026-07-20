@@ -3,6 +3,7 @@ package com.example.insightku.core.data.repository
 import com.example.insightku.core.data.local.dao.InstallmentDao
 import com.example.insightku.core.data.model.Installment
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -32,6 +33,8 @@ class InstallmentRepository @Inject constructor(
         try {
             firestore.collection("users").document(userId)
                 .collection("installments").document(installment.id).set(installment).await()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Offline — Room already saved
         }
@@ -42,6 +45,8 @@ class InstallmentRepository @Inject constructor(
         try {
             firestore.collection("users").document(userId)
                 .collection("installments").document(installment.id).set(installment).await()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Offline — Room already updated
         }
@@ -52,6 +57,8 @@ class InstallmentRepository @Inject constructor(
         try {
             firestore.collection("users").document(userId)
                 .collection("installments").document(installmentId).delete().await()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Offline — Room already deleted
         }

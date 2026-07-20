@@ -15,6 +15,7 @@ import com.example.insightku.feature.planning.goal.data.repository.GoalRepositor
 import com.example.insightku.feature.planning.goal.domain.engine.AutoAllocationEngine
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 
 /**
  * AllocationSafetyNetWorker — ensures auto-allocation is processed for a specific transaction.
@@ -81,6 +82,8 @@ class AllocationSafetyNetWorker @AssistedInject constructor(
                         transactionId = idempotencyKey
                     )
                     Log.d(TAG, "[SafetyNet] Allocated ${suggestion.amount} to ${suggestion.goalName}")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "[SafetyNet] Failed to allocate: ${e.message}")
                 }
@@ -102,6 +105,8 @@ class AllocationSafetyNetWorker @AssistedInject constructor(
                         draftRepository = draftRepository
                     )
                     Log.d(TAG, "[SafetyNet] Created draft for ${suggestion.goalName}")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "[SafetyNet] Failed to create draft: ${e.message}")
                 }
@@ -109,6 +114,8 @@ class AllocationSafetyNetWorker @AssistedInject constructor(
 
             Log.d(TAG, "Safety-net allocation complete for txId=$transactionId")
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Safety-net allocation error: ${e.message}", e)
             Result.retry()

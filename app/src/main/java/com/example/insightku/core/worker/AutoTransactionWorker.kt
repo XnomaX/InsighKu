@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.example.insightku.R
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
@@ -17,6 +18,7 @@ import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.i18n.DateFormatter
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
 import java.util.UUID
@@ -84,10 +86,12 @@ class AutoTransactionWorker @AssistedInject constructor(
                     AutoTransactionNotificationHelper.notify(
                         context     = applicationContext,
                         txId        = tx.id,
-                        title       = "Auto: ${budget.name}",
+                        title       = applicationContext.getString(R.string.notification_auto_prefix, budget.name),
                         amount      = budget.amount,
                         isRecurring = true
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Insert failed: recurring=${budget.id}, error=${e.message}")
                     allSuccess = false
@@ -103,6 +107,8 @@ class AutoTransactionWorker @AssistedInject constructor(
             try {
                 recurringBudgetRepository.updateRecurringBudget(updated, userId)
                 Log.d(TAG, "Updated nextDue for recurring id=${budget.id} → $nextDue")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to update recurring id=${budget.id}: ${e.message}")
                 allSuccess = false
@@ -141,10 +147,12 @@ class AutoTransactionWorker @AssistedInject constructor(
                     AutoTransactionNotificationHelper.notify(
                         context     = applicationContext,
                         txId        = tx.id,
-                        title       = "Cicilan: ${installment.name}",
+                        title       = applicationContext.getString(R.string.notification_installment_prefix, installment.name),
                         amount      = installment.monthlyPayment,
                         isRecurring = false
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Insert failed: installment=${installment.id}, error=${e.message}")
                     allSuccess = false
@@ -165,6 +173,8 @@ class AutoTransactionWorker @AssistedInject constructor(
             try {
                 installmentRepository.updateInstallment(updated, userId)
                 Log.d(TAG, "Updated installment id=${installment.id}: paidMonths=$paidMonths, nextDue=$nextDue, isActive=${updated.isActive}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to update installment id=${installment.id}: ${e.message}")
                 allSuccess = false

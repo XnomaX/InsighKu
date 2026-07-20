@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.insightku.R
+import com.example.insightku.core.utils.CurrencyUtils
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -105,7 +106,7 @@ object PaymentReminderHelper {
 
         // Determine reminder type and content
         val ctx = LocaleHelper.wrapContext(context)
-        val formattedAmount = "Rp ${"%,.0f".format(amount)}"
+        val formattedAmount = CurrencyUtils.formatAmount(amount)
         val reminderData = when {
             daysUntilDue < 0 -> Triple(
                 "overdue",
@@ -152,7 +153,7 @@ object PaymentReminderHelper {
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
-            .setContentText("$typeLabel · Rp ${"%,.0f".format(amount)}")
+            .setContentText("$typeLabel · $formattedAmount")
             .setStyle(
                 NotificationCompat.BigTextStyle()
                     .bigText("$body\nType: $typeLabel")

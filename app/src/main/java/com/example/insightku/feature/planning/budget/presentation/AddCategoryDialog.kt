@@ -158,7 +158,7 @@ fun AddCategoryDialog(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("CATEGORY NAME", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.label_category_name), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                     OutlinedTextField(
                         value         = name,
                         onValueChange = { name = it; nameError = null },
@@ -186,7 +186,7 @@ fun AddCategoryDialog(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("ICON", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.label_icon), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                     LazyVerticalGrid(
                         columns               = GridCells.Adaptive(56.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -206,7 +206,7 @@ fun AddCategoryDialog(
 
                 if (initialType == CategoryType.EXPENSE) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("BUDGET LIMIT & ALERT", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.label_budget_limit_alert), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                         BudgetLimitInput(
                             budgetLimitText         = budgetLimitText,
                             onBudgetLimitTextChange = { budgetLimitText = it },
@@ -215,7 +215,7 @@ fun AddCategoryDialog(
                         )
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("BUDGET RESET", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.label_budget_reset), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                         RecurringPeriodSelector(selected = selectedPeriod, onSelect = { selectedPeriod = it })
                     }
                 }

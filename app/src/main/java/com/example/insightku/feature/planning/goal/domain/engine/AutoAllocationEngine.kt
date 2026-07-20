@@ -429,9 +429,9 @@ class AutoAllocationEngine @Inject constructor(
 
     private fun calculateAllocationAmount(rule: AutoAllocationRule, sourceAmount: Double): Double {
         return when (rule.allocationType) {
-            AllocationValueType.PERCENT -> sourceAmount * (rule.allocationValue / 100.0)
+            AllocationValueType.PERCENT -> Math.round(sourceAmount * (rule.allocationValue / 100.0))
             AllocationValueType.FIXED -> rule.allocationValue
-        }
+        }.toDouble()
     }
 
     private fun formatCurrency(amount: Double): String = NumberFormatter.formatCurrency(amount)

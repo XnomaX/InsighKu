@@ -31,6 +31,8 @@ class UserPreferencesDataStore @Inject constructor(
         private val LAST_FREEZE_DATE_KEY = stringPreferencesKey("last_freeze_date")
         private val REPAIR_AVAILABLE_KEY = booleanPreferencesKey("streak_repair_available")
         private val REPAIR_EXPIRY_KEY = longPreferencesKey("streak_repair_expiry")
+        private val STREAK_OVERRIDE_DAYS_KEY = stringSetPreferencesKey("streak_override_days")
+        private val STREAK_AWARDED_MILESTONES_KEY = stringSetPreferencesKey("streak_awarded_milestones")
         private val BIOMETRIC_ENABLED_KEY = booleanPreferencesKey("biometric_enabled")
         private val NOTIFICATION_ENABLED_KEY = booleanPreferencesKey("notification_enabled")
         private val FIRST_TIME_USER_KEY = booleanPreferencesKey("first_time_user")
@@ -105,6 +107,14 @@ class UserPreferencesDataStore @Inject constructor(
 
     val repairExpiry: Flow<Long> = context.dataStore.data.map { preferences ->
         preferences[REPAIR_EXPIRY_KEY] ?: 0L
+    }
+
+    val overrideDays: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        preferences[STREAK_OVERRIDE_DAYS_KEY] ?: emptySet()
+    }
+
+    val awardedMilestones: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        preferences[STREAK_AWARDED_MILESTONES_KEY] ?: emptySet()
     }
 
     val biometricEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -249,6 +259,20 @@ class UserPreferencesDataStore @Inject constructor(
         context.dataStore.edit { preferences ->
             preferences[REPAIR_AVAILABLE_KEY] = available
             preferences[REPAIR_EXPIRY_KEY]    = expiryMs
+        }
+    }
+
+    suspend fun addOverrideDay(dayKey: String) {
+        context.dataStore.edit { preferences ->
+            val existing = preferences[STREAK_OVERRIDE_DAYS_KEY] ?: emptySet()
+            preferences[STREAK_OVERRIDE_DAYS_KEY] = existing + dayKey
+        }
+    }
+
+    suspend fun addAwardedMilestone(milestone: Int) {
+        context.dataStore.edit { preferences ->
+            val existing = preferences[STREAK_AWARDED_MILESTONES_KEY] ?: emptySet()
+            preferences[STREAK_AWARDED_MILESTONES_KEY] = existing + milestone.toString()
         }
     }
 

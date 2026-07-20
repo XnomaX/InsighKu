@@ -144,7 +144,7 @@ private fun ActiveGoalCard(
                         color = AppPalette.textPrimary
                     )
                     Text(
-                        text = "of ${NumberFormatter.formatCurrencyCompact(goal.targetAmount)}",
+                        text = stringResource(R.string.label_of_amount, NumberFormatter.formatCurrencyCompact(goal.targetAmount)),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )
@@ -289,7 +289,7 @@ private fun PausedGoalCard(
             ) {
                 Column {
                     Text(text = NumberFormatter.formatCurrencyCompact(goal.currentAmount), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary.copy(alpha = 0.5f))
-                    Text(text = "of ${NumberFormatter.formatCurrencyCompact(goal.targetAmount)}", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted.copy(alpha = 0.6f))
+                    Text(text = stringResource(R.string.label_of_amount, NumberFormatter.formatCurrencyCompact(goal.targetAmount)), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted.copy(alpha = 0.6f))
                 }
                 Text(text = "${goal.progressPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textMuted.copy(alpha = 0.6f))
             }
@@ -473,7 +473,7 @@ fun CompactGoalCard(goal: Goal, onClick: () -> Unit, modifier: Modifier = Modifi
             Text(text = goal.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = NumberFormatter.formatCurrencyCompact(goal.currentAmount), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-            Text(text = "of ${NumberFormatter.formatCurrencyCompact(goal.targetAmount)}", style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+            Text(text = stringResource(R.string.label_of_amount, NumberFormatter.formatCurrencyCompact(goal.targetAmount)), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             Spacer(modifier = Modifier.height(12.dp))
             Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(AppPalette.cardBorder)) {
                 Box(

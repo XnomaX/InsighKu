@@ -597,8 +597,8 @@ fun AddInstallmentDialog(
                                 // Validate
                                 var hasError = false
                                 if (name.trim().length < 2) { nameError = context.getString(R.string.error_name_short); hasError = true }
-                                val parsedTotal = totalAmountText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0
-                                val parsedMonthly = monthlyText.filter { it.isDigit() }.toLongOrNull()?.toDouble() ?: 0.0
+                                val parsedTotal = totalAmountText.toAmountOrZero()
+                                val parsedMonthly = monthlyText.toAmountOrZero()
                                 val parsedMonths = totalMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
                                 val parsedPaid = paidMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
 

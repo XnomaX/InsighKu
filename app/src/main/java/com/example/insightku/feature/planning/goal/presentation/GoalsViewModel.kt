@@ -1,7 +1,9 @@
 package com.example.insightku.feature.planning.goal.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.repository.AccountAllocationRepository
@@ -17,6 +19,7 @@ import com.example.insightku.feature.planning.goal.domain.model.DailyTarget
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import com.example.insightku.feature.planning.goal.domain.model.GoalSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -34,6 +37,7 @@ private data class CoreGoalsData(
 
 @HiltViewModel
 class GoalsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val goalRepository: GoalRepository,
     private val accountRepository: AccountRepository,
     private val accountAllocationRepository: AccountAllocationRepository,
@@ -186,7 +190,7 @@ class GoalsViewModel @Inject constructor(
             )
             goalRepository.createGoal(goal).onSuccess {
                 _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Goal created successfully") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to create goal") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_create_goal)) } }
         }
     }
 
@@ -200,7 +204,7 @@ class GoalsViewModel @Inject constructor(
             val updatedGoal = existingGoal.copy(name = event.name, targetAmount = event.targetAmount, deadline = event.deadline, iconName = event.iconName, color = event.color, notes = event.notes, reminderEnabled = event.reminderEnabled, updatedAt = Instant.now())
             goalRepository.updateGoal(updatedGoal).onSuccess {
                 _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Goal updated") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to update goal") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_update_goal)) } }
         }
     }
 
@@ -233,7 +237,7 @@ class GoalsViewModel @Inject constructor(
                     showArchivedSheet = false,
                     snackbarMessage = "Goal restored to active"
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to restore goal") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_restore_goal)) } }
         }
     }
 
@@ -245,7 +249,7 @@ class GoalsViewModel @Inject constructor(
                     showArchivedSheet = false,
                     snackbarMessage = "Goal permanently deleted"
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to delete goal") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_delete_goal)) } }
         }
     }
 
@@ -278,7 +282,7 @@ class GoalsViewModel @Inject constructor(
                     showCompletionCelebration = true,
                     completionGoalName = goal?.name ?: ""
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to complete goal") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_complete_goal)) } }
         }
     }
 
@@ -293,7 +297,7 @@ class GoalsViewModel @Inject constructor(
                     showCompletionCelebration = true,
                     completionGoalName = goal?.name ?: ""
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to transfer funds") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_transfer_funds)) } }
         }
     }
 
@@ -305,7 +309,7 @@ class GoalsViewModel @Inject constructor(
                     showArchivedSheet = false,
                     snackbarMessage = "Goal deleted — funds transferred"
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to delete goal") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_delete_goal)) } }
         }
     }
 
@@ -323,7 +327,7 @@ class GoalsViewModel @Inject constructor(
                         _uiState.update { it.copy(dialogState = GoalsDialogState.CompleteGoalFunds(event.goalId, refreshed.name, refreshed.iconName, refreshed.color, funds)) }
                     }
                 }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to contribute") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_contribute)) } }
         }
     }
 
@@ -331,7 +335,7 @@ class GoalsViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.withdraw(goalId = event.goalId, accountId = event.accountId, amount = event.amount, notes = event.notes).onSuccess {
                 _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "${NumberFormatter.formatCurrency(event.amount)} withdrawn") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: "Failed to withdraw") } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_withdraw)) } }
         }
     }
 

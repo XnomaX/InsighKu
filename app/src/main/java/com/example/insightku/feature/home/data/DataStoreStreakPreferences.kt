@@ -23,4 +23,9 @@ class DataStoreStreakPreferences @Inject constructor(
     override val streakGoal: Flow<Int> = dataStore.streakGoal
     override val repairAvailable: Flow<Boolean> = dataStore.repairAvailable
     override val repairExpiry: Flow<Long> = dataStore.repairExpiry
+    override val overrideDays: Flow<Set<String>> = dataStore.overrideDays
+    override val awardedMilestones: Flow<Set<String>> = dataStore.awardedMilestones
+
+    override suspend fun addOverrideDay(dayKey: String) = dataStore.addOverrideDay(dayKey)
+    override suspend fun addAwardedMilestone(milestone: Int) = dataStore.addAwardedMilestone(milestone)
 }
