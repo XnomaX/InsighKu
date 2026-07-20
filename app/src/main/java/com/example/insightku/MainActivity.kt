@@ -2,9 +2,9 @@ package com.example.insightku
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -17,15 +17,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
+import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.notification.NotificationTransactionData
 import com.example.insightku.core.ui.components.InsightKuApp
 import com.example.insightku.core.ui.theme.InsightKuTheme
 import com.example.insightku.feature.settings.presentation.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
+
+    @Inject
+    lateinit var preferencesDataStore: UserPreferencesDataStore
 
     // MutableState so onNewIntent can update it and trigger recomposition
     // without calling setContent() again (which creates a conflicting second tree).
@@ -37,9 +45,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        // Apply persisted language on startup (no restart needed for Compose)
-        val langCode = LocaleHelper.getCurrentLanguageCode(this)
-        LocaleHelper.applyLocale(langCode)
+        // Apply the user's persisted language choice on startup. Requires
+        // AppCompatActivity — AppCompatDelegate.setApplicationLocales() is a
+        // visual no-op on a plain ComponentActivity (nothing applies the locale
+        // to resources, so stringResource never switches).
+        lifecycleScope.launch {
+            LocaleHelper.applyLocale(preferencesDataStore.appLanguage.first())
+        }
 
         currentIntent.value = intent
         currentAllocationDraftId.value = extractAllocationDraftId(intent)
