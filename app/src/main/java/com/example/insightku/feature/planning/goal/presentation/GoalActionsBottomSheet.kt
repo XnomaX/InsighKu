@@ -9,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,7 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.insightku.R
-import com.example.insightku.core.ui.components.bottomsheet.applyFiftyPercentDismissThreshold
+import com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
@@ -41,9 +40,8 @@ fun GoalActionsBottomSheet(
 ) {
     val goalColor = try { Color(android.graphics.Color.parseColor(goal.color)) } catch (e: Exception) { AppPalette.accent }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    LaunchedEffect(sheetState) { applyFiftyPercentDismissThreshold(sheetState) }
 
-    ModalBottomSheet(
+    SafeBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = AppPalette.card,
