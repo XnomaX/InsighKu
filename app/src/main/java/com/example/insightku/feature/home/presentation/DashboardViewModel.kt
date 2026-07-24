@@ -315,8 +315,10 @@ class DashboardViewModel @Inject constructor(
         val (monthStart, monthEnd) = currentMonthRange()
         val monthlyTx = transactions.filter { it.date in monthStart..monthEnd }
 
-        val monthlyIncome = monthlyTx.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-        val monthlyExpenses = monthlyTx.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+        // PERFORMANCE FIX: Single-pass partition instead of two filter().sumOf() calls
+        val (incomeTxs, expenseTxs) = monthlyTx.partition { it.type == TransactionType.INCOME }
+        val monthlyIncome = incomeTxs.sumOf { it.amount }
+        val monthlyExpenses = expenseTxs.sumOf { it.amount }
 
         // Build lookup map
         val categoryMap = categories.associateBy { it.name.normalizedCategoryName() }

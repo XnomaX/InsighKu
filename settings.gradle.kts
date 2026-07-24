@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "InsighKu"
 include(":app")
+include(":benchmark")

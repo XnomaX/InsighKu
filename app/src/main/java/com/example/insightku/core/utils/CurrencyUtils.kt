@@ -24,16 +24,22 @@ object CurrencyUtils {
         CurrencyOption("JPY", "¥",   "JPY – Yen (¥)",                Locale.JAPAN,       fractionDigits = 0, flag = "🇯🇵", region = "Japanese Yen"),
     )
 
+    // PERFORMANCE FIX: Cache NumberFormat instances per currency code
+    private val currencyFormatterCache = mutableMapOf<String, NumberFormat>()
+
     fun getOption(code: String): CurrencyOption =
         SUPPORTED_CURRENCIES.firstOrNull { it.code == code } ?: SUPPORTED_CURRENCIES.first()
 
     fun formatAmount(amount: Double, currencyCode: String = "IDR"): String {
         val option = getOption(currencyCode)
         return try {
-            val fmt = NumberFormat.getCurrencyInstance(option.locale)
-            fmt.currency = Currency.getInstance(option.code)
-            fmt.maximumFractionDigits = option.fractionDigits
-            fmt.minimumFractionDigits = option.fractionDigits
+            val fmt = currencyFormatterCache.getOrPut(currencyCode) {
+                NumberFormat.getCurrencyInstance(option.locale).apply {
+                    currency = Currency.getInstance(option.code)
+                    maximumFractionDigits = option.fractionDigits
+                    minimumFractionDigits = option.fractionDigits
+                }
+            }
             fmt.format(amount)
         } catch (e: Exception) {
             val fmt = NumberFormat.getNumberInstance(option.locale)
@@ -83,8 +89,11 @@ object CurrencyUtils {
 
     fun stripThousands(formatted: String): String = formatted.filter { it.isDigit() }
 
+    // Pre-compiled regex for parseAmount
+    private val AMOUNT_STRIP_REGEX = Regex("^[A-Za-z$€¥₩Rp.\\s]+")
+
     fun parseAmount(amountString: String): Double? = try {
-        val cleaned = amountString.replace(Regex("^[A-Za-z$€¥₩Rp.\\s]+"), "").trim()
+        val cleaned = amountString.replace(AMOUNT_STRIP_REGEX, "").trim()
         if (cleaned.isEmpty()) return null
         // Detect format: if both '.' and ',' exist, the LAST one is the decimal separator.
         // e.g. "1.500,00" (ID) → decimal=',' | "1,500.00" (US) → decimal='.'

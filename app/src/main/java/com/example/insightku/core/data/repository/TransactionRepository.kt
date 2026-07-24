@@ -140,49 +140,50 @@ class TransactionRepository @Inject constructor(
         transactionDao.getTransactionById(id)
 
     suspend fun updateTransaction(transaction: Transaction, userId: String) {
-        // Get original transaction to calculate balance changes
-        val original = transactionDao.getTransactionByIdWithAccount(transaction.id)
+        // PERFORMANCE + CORRECTNESS FIX: Wrap all DB ops in a single transaction
+        // to prevent corrupted balance if process dies mid-operation.
+        database.withTransaction {
+            val original = transactionDao.getTransactionByIdWithAccount(transaction.id)
 
-        if (original != null) {
-            val reverseDelta = -TransactionType.balanceDelta(original.type, original.amount)
-            val newDelta = TransactionType.balanceDelta(transaction.type, transaction.amount)
+            if (original != null) {
+                val reverseDelta = -TransactionType.balanceDelta(original.type, original.amount)
+                val newDelta = TransactionType.balanceDelta(transaction.type, transaction.amount)
 
-            if (original.accountId == transaction.accountId) {
-                // Same account: apply net delta (reverse old + apply new)
-                if (original.accountId.isNotBlank()) {
-                    accountDao.updateBalance(original.accountId, reverseDelta + newDelta)
+                if (original.accountId == transaction.accountId) {
+                    if (original.accountId.isNotBlank()) {
+                        accountDao.updateBalance(original.accountId, reverseDelta + newDelta)
+                    }
+                } else {
+                    if (original.accountId.isNotBlank()) {
+                        accountDao.updateBalance(original.accountId, reverseDelta)
+                    }
+                    if (transaction.accountId.isNotBlank()) {
+                        accountDao.updateBalance(transaction.accountId, newDelta)
+                    }
                 }
-            } else {
-                // Account changed: reverse on old account, apply on new account
-                if (original.accountId.isNotBlank()) {
-                    accountDao.updateBalance(original.accountId, reverseDelta)
+
+                if (original.type == TransactionType.INCOME) {
+                    val originalAmount = original.amount
+                    val newAmount = transaction.amount
+                    if (originalAmount != newAmount || original.accountId != transaction.accountId) {
+                        Log.d(TAG, "[Reconciliation] Income changed: reversing allocations for txId=${original.id}")
+                        goalRepository.reverseAllocationsForTransaction(original.id)
+                    }
                 }
-                if (transaction.accountId.isNotBlank()) {
-                    accountDao.updateBalance(transaction.accountId, newDelta)
-                }
+            } else if (transaction.accountId.isNotBlank()) {
+                val newDelta = TransactionType.balanceDelta(transaction.type, transaction.amount)
+                accountDao.updateBalance(transaction.accountId, newDelta)
             }
 
-            // ── Reconciliation: reverse auto-allocation if income transaction changed ──
-            if (original.type == TransactionType.INCOME) {
-                val originalAmount = original.amount
-                val newAmount = transaction.amount
-                if (originalAmount != newAmount || original.accountId != transaction.accountId) {
-                    // Amount or account changed — reverse previous allocation and let it re-evaluate
-                    Log.d(TAG, "[Reconciliation] Income changed: reversing allocations for txId=${original.id}")
-                    goalRepository.reverseAllocationsForTransaction(original.id)
-                }
-            }
-        } else if (transaction.accountId.isNotBlank()) {
-            val newDelta = TransactionType.balanceDelta(transaction.type, transaction.amount)
-            accountDao.updateBalance(transaction.accountId, newDelta)
+            // Room write inside the same transaction for atomicity
+            val unsyncedTransaction = transaction.copy(isSynced = false)
+            transactionDao.updateTransaction(unsyncedTransaction)
         }
 
-        // Mark unsynced so SyncTransactionWorker picks it up if Firestore fails
-        val unsyncedTransaction = transaction.copy(isSynced = false)
-        transactionDao.updateTransaction(unsyncedTransaction)
+        // Now sync to Firestore (outside DB transaction — non-atomic with local)
         try {
             firestore.collection("users").document(userId)
-                .collection("transactions").document(transaction.id).set(unsyncedTransaction).await()
+                .collection("transactions").document(transaction.id).set(transaction.copy(isSynced = false)).await()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -191,22 +192,26 @@ class TransactionRepository @Inject constructor(
     }
 
     suspend fun deleteTransaction(transactionId: String, userId: String) {
-        // Get transaction first to restore its account balance
-        val transaction = transactionDao.getTransactionByIdWithAccount(transactionId)
+        // PERFORMANCE + CORRECTNESS FIX: Wrap all DB ops in a single transaction
+        database.withTransaction {
+            val transaction = transactionDao.getTransactionByIdWithAccount(transactionId)
 
-        // ── Reconciliation: reverse auto-allocation if income transaction is deleted ──
-        if (transaction != null && transaction.type == TransactionType.INCOME) {
-            Log.d(TAG, "[Reconciliation] Income deleted: reversing allocations for txId=$transactionId")
-            goalRepository.reverseAllocationsForTransaction(transactionId)
+            // ── Reconciliation: reverse auto-allocation if income transaction is deleted ──
+            if (transaction != null && transaction.type == TransactionType.INCOME) {
+                Log.d(TAG, "[Reconciliation] Income deleted: reversing allocations for txId=$transactionId")
+                goalRepository.reverseAllocationsForTransaction(transactionId)
+            }
+
+            if (transaction != null && transaction.accountId.isNotBlank()) {
+                // Restore account balance: reverse the transaction's effect
+                val reverseDelta = -TransactionType.balanceDelta(transaction.type, transaction.amount)
+                accountDao.updateBalance(transaction.accountId, reverseDelta)
+            }
+
+            transactionDao.deleteTransaction(transactionId)
         }
 
-        if (transaction != null && transaction.accountId.isNotBlank()) {
-            // Restore account balance: reverse the transaction's effect
-            val reverseDelta = -TransactionType.balanceDelta(transaction.type, transaction.amount)
-            accountDao.updateBalance(transaction.accountId, reverseDelta)
-        }
-
-        transactionDao.deleteTransaction(transactionId)
+        // Now sync to Firestore
         try {
             firestore.collection("users").document(userId)
                 .collection("transactions").document(transactionId).delete().await()

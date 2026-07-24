@@ -89,6 +89,28 @@ data class ParsedBankTransaction(
 
 object BankNotificationParser {
 
+    // PERFORMANCE FIX: Pre-compiled regex patterns — compiled once, not per-call
+    private val AMOUNT_PATTERNS = listOf(
+        Regex("""[Rr][Pp]\s*([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)"""),
+        Regex("""IDR\s*([0-9]{1,3}(?:[.,][0-9]{3})*)"""),
+        Regex("""(?i)sebesar\s+([0-9]{1,3}(?:[.,][0-9]{3})+)"""),
+        Regex("""(\d{1,3}(?:\.\d{3})+(?:,\d{2})?)""")
+    )
+
+    private val BALANCE_REGEX = Regex(
+        """(?i)(?:saldo|sisa|balance)\s*:?\s*[Rr][Pp]\s*([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)"""
+    )
+
+    private val MERCHANT_PATTERNS = mapOf(
+        "ke" to Regex("""(?i)\bke\b\s+([A-Za-z0-9][A-Za-z0-9\s\-&.']{1,40})"""),
+        "dari" to Regex("""(?i)\bdari\b\s+([A-Za-z0-9][A-Za-z0-9\s\-&.']{1,40})"""),
+        "di" to Regex("""(?i)\bdi\b\s+([A-Za-z0-9][A-Za-z0-9\s\-&.']{1,40})"""),
+        "to" to Regex("""(?i)\bto\b\s+([A-Za-z0-9][A-Za-z0-9\s\-&.']{1,40})"""),
+        "at" to Regex("""(?i)\bat\b\s+([A-Za-z0-9][A-Za-z0-9\s\-&.']{1,40})""")
+    )
+
+    private val MERCHANT_STOP_WORDS = setOf("saldo", "balance", "rp", "idr", "sebesar", "senilai", "dengan", "sisa")
+
     fun isSupportedPackage(packageName: String): Boolean =
         SUPPORTED_BANK_PACKAGES.containsKey(packageName)
 
@@ -405,17 +427,8 @@ object BankNotificationParser {
      * Handles: Rp100.000 / Rp 100,000 / IDR 100000 / 100.000,00
      */
     fun extractAmount(text: String): Double? {
-        val patterns = listOf(
-            // Rp 100.000,00 or Rp100.000 or Rp12.005
-            Regex("""[Rr][Pp]\s*([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)"""),
-            // IDR 100000
-            Regex("""IDR\s*([0-9]{1,3}(?:[.,][0-9]{3})*)"""),
-            // "sebesar 12.005" or "sebesar 100.000"
-            Regex("""(?i)sebesar\s+([0-9]{1,3}(?:[.,][0-9]{3})+)"""),
-            // plain number with dots as thousands: 100.000 or 1.500.000
-            Regex("""(\d{1,3}(?:\.\d{3})+(?:,\d{2})?)""")
-        )
-        for (pattern in patterns) {
+        // PERFORMANCE FIX: Pre-compiled regex patterns (compiled once, not per-call)
+        for (pattern in AMOUNT_PATTERNS) {
             val match = pattern.find(text) ?: continue
             val raw = match.groupValues[1]
                 .replace(".", "")
@@ -436,13 +449,12 @@ object BankNotificationParser {
      * Takes up to 4 words after the keyword, stopping at punctuation or common endings.
      */
     fun extractMerchant(text: String, keywords: List<String>): String? {
-        val stopWords = setOf("saldo", "balance", "rp", "idr", "sebesar", "senilai", "dengan", "sisa")
         for (kw in keywords) {
-            val pattern = Regex("""(?i)\b$kw\b\s+([A-Za-z0-9][A-Za-z0-9\s\-&.']{1,40})""")
+            val pattern = MERCHANT_PATTERNS[kw] ?: continue
             val match   = pattern.find(text) ?: continue
             val raw     = match.groupValues[1].trim()
             val words   = raw.split(" ")
-                .takeWhile { it.lowercase() !in stopWords && !it.startsWith("Rp") }
+                .takeWhile { it.lowercase() !in MERCHANT_STOP_WORDS && !it.startsWith("Rp") }
                 .take(4)
                 .joinToString(" ")
                 .trimEnd('.', ',', ';', ':')
@@ -456,9 +468,7 @@ object BankNotificationParser {
      * Handles: "Saldo Rp5.000.000" / "Sisa Rp..." / "Balance Rp..."
      */
     fun extractBalance(text: String): Double? {
-        val balanceSection = Regex(
-            """(?i)(?:saldo|sisa|balance)\s*:?\s*[Rr][Pp]\s*([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)"""
-        ).find(text) ?: return null
+        val balanceSection = BALANCE_REGEX.find(text) ?: return null
         return balanceSection.groupValues[1]
             .replace(".", "")
             .replace(",", ".")

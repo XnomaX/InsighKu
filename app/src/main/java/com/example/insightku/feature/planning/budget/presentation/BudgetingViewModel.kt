@@ -175,6 +175,19 @@ class BudgetingViewModel @Inject constructor(
         accounts: List<Account>
     ): BudgetSnapshot {
         val activeCategories = categories.filter { it.isActive && it.id !in pendingDeleteIds && !it.isSystemCategory }
+
+        // PERFORMANCE FIX: Pre-group transactions by category once (O(n)) instead of
+        // filtering for each category in a loop (O(n×m) = O(n²))
+        val expensesByCategory = transactions
+            .filter { it.type == TransactionType.EXPENSE }
+            .groupBy { it.category.normalizedCategoryName() }
+            .mapValues { (_, txs) -> txs.sumOf { it.amount } }
+
+        val incomeByCategory = transactions
+            .filter { it.type == TransactionType.INCOME }
+            .groupBy { it.category.normalizedCategoryName() }
+            .mapValues { (_, txs) -> txs.sumOf { it.amount } }
+
         val monthlyExpenses = transactions.filter { it.type == TransactionType.EXPENSE }
         val monthlyIncome = transactions.filter { it.type == TransactionType.INCOME }
 
@@ -183,9 +196,8 @@ class BudgetingViewModel @Inject constructor(
         val knownExpenseNames = expenseCategories.map { it.name.normalizedCategoryName() }.toSet()
 
         val expenseCategoryRows = expenseCategories.map { category ->
-            val spentAmount = monthlyExpenses
-                .filter { it.category.normalizedCategoryName() == category.name.normalizedCategoryName() }
-                .sumOf { it.amount }
+            // O(1) lookup instead of O(n) filter
+            val spentAmount = expensesByCategory[category.name.normalizedCategoryName()] ?: 0.0
             BudgetCategory(
                 id = category.id,
                 name = category.name,
@@ -227,9 +239,8 @@ class BudgetingViewModel @Inject constructor(
             )
 
         val incomeCategoryRows = incomeCategories.map { category ->
-            val earnedAmount = monthlyIncome
-                .filter { it.category.normalizedCategoryName() == category.name.normalizedCategoryName() }
-                .sumOf { it.amount }
+            // O(1) lookup instead of O(n) filter
+            val earnedAmount = incomeByCategory[category.name.normalizedCategoryName()] ?: 0.0
             BudgetCategory(
                 id = category.id,
                 name = category.name,

@@ -64,6 +64,7 @@ dependencies {
     testImplementation(libs.kotest.runner)
     testImplementation(libs.kotest.assertions)
     testImplementation(libs.kotest.property)
+    debugImplementation(libs.leakcanary)
     testRuntimeOnly(libs.junit.vintage.engine)
     testImplementation(libs.mockk)
     testImplementation(libs.coroutines.test)
