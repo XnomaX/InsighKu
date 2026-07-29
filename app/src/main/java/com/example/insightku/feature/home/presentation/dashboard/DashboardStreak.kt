@@ -51,6 +51,7 @@ fun DailyStreakCard(
     onCardClick: () -> Unit = {},
     onAddTransaction: () -> Unit,
     onUseRepair: () -> Unit = {},
+    isScrolling: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val displayedStreak = if (hasTrackedToday) currentStreak else 0
@@ -152,7 +153,7 @@ fun DailyStreakCard(
                 }
 
                 // Lottie flame
-                PremiumFlameIcon(active = hasTrackedToday, size = 96.dp, streak = displayedStreak)
+                PremiumFlameIcon(active = hasTrackedToday, size = 96.dp, streak = displayedStreak, isScrolling = isScrolling)
             }
 
             // -- Weekly rhythm track -------------------------------------------

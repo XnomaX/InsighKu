@@ -1724,6 +1724,7 @@
     <string name="error_login_user_not_found">Login failed: user not found</string>
     <string name="error_registration_failed">Registration failed</string>
     <string name="error_google_signin_failed">Google Sign-In failed</string>
+    <string name="error_google_no_account">No Google account found on this device</string>
     <string name="error_user_not_logged_in">User not logged in</string>
 
     <!-- Notification strings -->

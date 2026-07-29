@@ -560,8 +560,10 @@ fun PremiumTransactionCard(
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Category icon (shared composable — consistent with Home screen)
+            // Use title as fallback when category is blank — the icon resolver
+            // has fuzzy keyword matching that can resolve icons from titles.
             TransactionCategoryIcon(
-                categoryName = transaction.category,
+                categoryName = transaction.category.ifBlank { transaction.title },
                 transactionType = transaction.type,
                 categoryMap = categoryMap,
                 containerSize = 46.dp,

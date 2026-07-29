@@ -48,6 +48,8 @@
             android:exported="true"
             android:theme="@style/Theme.InsightKu"
             android:windowSoftInputMode="adjustResize"
+            android:resizeableActivity="true"
+            android:configChanges="smallestScreenSize|screenSize|screenLayout|orientation|density"
             android:enableOnBackInvokedCallback="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

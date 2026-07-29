@@ -148,8 +148,6 @@ fun MainScreen(
     val dashboardViewModel: DashboardViewModel           = hiltViewModel()
     val addTransactionViewModel: AddTransactionViewModel = hiltViewModel()
     val budgetingViewModel: BudgetingViewModel           = hiltViewModel()
-    val expenseCategories          by addTransactionViewModel.expenseCategories.collectAsStateWithLifecycle()
-    val incomeCategories           by addTransactionViewModel.incomeCategories.collectAsStateWithLifecycle()
     val addTxUiState               by addTransactionViewModel.uiState.collectAsStateWithLifecycle()
     val budgetingUiState           by budgetingViewModel.uiState.collectAsStateWithLifecycle()
     val accountsViewModel: AccountsViewModel = hiltViewModel()
@@ -164,6 +162,33 @@ fun MainScreen(
     // Allocation draft review sheet state
     var showAllocationReviewSheet  by remember { mutableStateOf(false) }
     var activeAllocationDraft      by remember { mutableStateOf<DraftTransaction?>(null) }
+
+    // PERF FIX: Stabilize lambdas passed to DashboardScreen to prevent
+    // recomposition cascades when MainScreen recomposes from other ViewModel state changes.
+    val stableOnNavigateToTransactionDetails = remember {
+        { navController.navigate(Route.TRANSACTION_DETAILS) { launchSingleTop = true } }
+    }
+    val stableOnNavigateToSettings = remember {
+        { navController.navigate(Route.SETTINGS) { launchSingleTop = true } }
+    }
+    val stableOnNavigateToBudgetingFromDashboard = remember {
+        {
+            navController.navigate(Route.BUDGETING) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState    = true
+            }
+        }
+    }
+    val stableOnShowAddTransaction = remember {
+        { showAddTransactionDialog = true }
+    }
+    val stableOnShowAddTransactionForStreak = remember {
+        {
+            showAddTransactionDialog = true
+            pendingStreakPopup       = true
+        }
+    }
 
     // Auto-open AddTransaction when app is launched from bank notification deep link
     LaunchedEffect(notificationData) {
@@ -363,6 +388,7 @@ fun MainScreen(
         }
 
         // Add Transaction overlay — above everything including nav
+        // PERF FIX: Pass viewModel instead of categories to avoid MainScreen recompositions
         AddTransactionDialog(
             isOpen    = showAddTransactionDialog,
             onDismiss = {
@@ -374,8 +400,7 @@ fun MainScreen(
                 addTransactionViewModel.addTransaction(transaction, activeDraftData?.draftId)
             },
             onOpenScanner      = {},
-            expenseCategories  = expenseCategories,
-            incomeCategories   = incomeCategories,
+            viewModel          = addTransactionViewModel,
             accounts          = accounts,
             notificationData   = activeDraftData,
             onCreateCategory   = {
@@ -653,33 +678,41 @@ private fun MainNavHost(
         modifier         = modifier
     ) {
         composable(Route.HOME) {
-            DashboardScreen(
-                viewModel                      = dashboardViewModel,
-                onNavigateToTransactionDetails = {
+            // PERF FIX: Stabilize lambdas to prevent recomposition cascades
+            val stableOnNavigateToTransactionDetails = remember {
+                {
                     navController.navigate(Route.TRANSACTION_DETAILS) {
-                        // Keep HOME in back stack so Back returns to it
                         launchSingleTop = true
                     }
-                },
-                onAddTransaction               = onShowAddTransaction,
-                onAddTransactionForStreak      = onShowAddTransactionForStreak,
-                onOpenDraft                    = onOpenDraft,
-                onDraftDismissed               = onDraftDismissed,
-                onNavigateToSettings           = {
+                }
+            }
+            val stableOnNavigateToSettings = remember {
+                {
                     navController.navigate(Route.SETTINGS) {
-                        // Keep HOME in back stack so Back returns to it
                         launchSingleTop = true
                     }
-                },
-                onNavigateToGoals              = onNavigateToGoals,
-                onNavigateToBudgeting          = {
+                }
+            }
+            val stableOnNavigateToBudgeting = remember {
+                {
                     navController.navigate(Route.BUDGETING) {
                         popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                         launchSingleTop = true
                         restoreState    = true
                     }
-                },
+                }
+            }
 
+            DashboardScreen(
+                viewModel                      = dashboardViewModel,
+                onNavigateToTransactionDetails = stableOnNavigateToTransactionDetails,
+                onAddTransaction               = onShowAddTransaction,
+                onAddTransactionForStreak      = onShowAddTransactionForStreak,
+                onOpenDraft                    = onOpenDraft,
+                onDraftDismissed               = onDraftDismissed,
+                onNavigateToSettings           = stableOnNavigateToSettings,
+                onNavigateToGoals              = onNavigateToGoals,
+                onNavigateToBudgeting          = stableOnNavigateToBudgeting,
                 onCreateGoal                   = onCreateGoal,
                 onCreateBudget                 = onCreateBudget
             )

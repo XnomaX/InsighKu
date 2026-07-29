@@ -32,6 +32,9 @@ class AccountsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AccountsUiState())
     val uiState = _uiState.asStateFlow()
 
+    // PERF INSTRUMENTATION: Track state emissions
+    private var emissionCount = 0
+
     init {
         loadAccounts()
     }
@@ -75,6 +78,9 @@ class AccountsViewModel @Inject constructor(
                     )
                 }
                 .collect { state ->
+                    // PERF INSTRUMENTATION: Log state emission
+                    emissionCount++
+                    android.util.Log.i("PERF", "⚡ AccountsViewModel emission #$emissionCount | accounts=${state.accounts.size}")
                     _uiState.value = state
                 }
         }

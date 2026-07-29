@@ -67,6 +67,9 @@ class BudgetingViewModel @Inject constructor(
     private val pendingDeleteIds = mutableSetOf<String>()
     private val pendingDeleteNames = mutableSetOf<String>()
 
+    // PERF INSTRUMENTATION: Track state emissions
+    private var emissionCount = 0
+
     init {
         loadBudgetData()
         refreshData()
@@ -137,6 +140,11 @@ class BudgetingViewModel @Inject constructor(
 
                     val totalBudget = snapshot.budgetCategories.filter { it.hasLimit }.sumOf { it.limitAmount }
                     val totalSpent  = snapshot.budgetCategories.sumOf { it.spentAmount }
+
+                    // PERF INSTRUMENTATION: Log state emission
+                    emissionCount++
+                    android.util.Log.i("PERF", "⚡ BudgetingViewModel emission #$emissionCount | budgetCats=${snapshot.budgetCategories.size} incomeCats=${snapshot.incomeCategories.size}")
+
                     _uiState.update {
                         it.copy(
                             isLoading           = false,

@@ -29,6 +29,7 @@ import com.example.insightku.core.utils.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,10 +37,16 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Calendar
 import javax.inject.Inject
 
-private const val TAG = "DashboardViewModel"
+/** Snapshot of non-transaction meta used by the single dashboard pipeline. */
+private data class DashboardMeta(
+    val userName: String,
+    val goals: List<Goal>,
+    val accounts: List<com.example.insightku.core.data.model.Account>
+)
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
@@ -65,14 +72,14 @@ class DashboardViewModel @Inject constructor(
     val uiState = _uiState.asStateFlow()
 
     private var loadJob: Job? = null
-    private var userNameJob: Job? = null
+
+    // Streak cache — skip recompute when transaction list is unchanged
+    private var lastStreakTxIds: Set<String>? = null
+    private var cachedStreakResult: CalculateStreakUseCase.StreakResult? = null
 
     init {
-        loadUserName()
+        // Single pipeline — one combine, one uiState update per emission.
         loadDashboardData()
-        loadGoalProgress()
-        loadBudgetProgress()
-        loadAccountBalances()
         refreshData()
     }
 
@@ -92,12 +99,15 @@ class DashboardViewModel @Inject constructor(
             is DashboardEvent.MarkInstallmentPaid -> markInstallmentPaid(event.installment)
             is DashboardEvent.SetStreakGoal -> viewModelScope.launch {
                 prefs.setStreakGoal(event.days)
+                // Invalidate streak cache — goal change can affect repair/freeze logic
+                lastStreakTxIds = null
                 _uiState.update { it.copy(streakGoal = event.days) }
             }
             DashboardEvent.UseStreakRepair -> viewModelScope.launch {
                 val dayKey = _uiState.value.repairDayKey ?: return@launch
                 prefs.addOverrideDay(dayKey)
                 prefs.setRepairAvailable(false)
+                lastStreakTxIds = null
                 _uiState.update { it.copy(repairAvailable = false, repairExpiryMs = 0L, repairDayKey = null) }
                 loadDashboardData()
             }
@@ -116,21 +126,24 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun loadUserName() {
-        userNameJob?.cancel()
-        userNameJob = viewModelScope.launch {
-            sessionManager.userName.collect { name ->
-                _uiState.update { it.copy(userName = name.ifBlank { "User" }) }
-            }
-        }
-    }
-
     private fun loadDashboardData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                combine(
+                // Outer combine: meta (user/goals/accounts) × core (tx/recurring/installments/categories/drafts)
+                val metaFlow = combine(
+                    sessionManager.userName,
+                    goalRepository.getActiveGoals(),
+                    accountRepository.getAllAccounts()
+                ) { userName, goals, accounts ->
+                    DashboardMeta(
+                        userName = userName.ifBlank { "User" },
+                        goals = goals,
+                        accounts = accounts
+                    )
+                }
+                val coreFlow = combine(
                     getTransactionsUseCase(),
                     recurringBudgetRepository.getAllRecurringBudgets(),
                     installmentRepository.getAllInstallments(),
@@ -144,71 +157,24 @@ class DashboardViewModel @Inject constructor(
                         val c = categories
                         val d = drafts
                     }
-                }.collect { data ->
-                    updateStateFromTransactions(data.t, data.r, data.i, data.c, data.d)
                 }
+                combine(metaFlow, coreFlow) { meta, core -> meta to core }
+                    .collect { (meta, core) ->
+                        updateDashboardState(
+                            transactions = core.t,
+                            recurring = core.r,
+                            installments = core.i,
+                            categories = core.c,
+                            pendingDrafts = core.d,
+                            meta = meta
+                        )
+                    }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 val msg = e.message ?: context.getString(R.string.error_load_dashboard)
                 _uiState.update { it.copy(isLoading = false, error = msg) }
                 errorBus.send(msg)
-            }
-        }
-    }
-
-    private fun loadGoalProgress() {
-        viewModelScope.launch {
-            goalRepository.getActiveGoals().collect { goals ->
-                val sorted = goals.sortedWith(
-                    compareBy<Goal> { it.daysRemaining ?: Int.MAX_VALUE }
-                        .thenByDescending { it.progressPercent }
-                        .thenByDescending { it.updatedAt.toEpochMilli() }
-                )
-                _uiState.update {
-                    it.copy(
-                        previewGoals = sorted.take(3),
-                        totalGoalCount = goals.size,
-                        hasActiveGoals = goals.isNotEmpty()
-                    )
-                }
-            }
-        }
-    }
-
-    private fun loadAccountBalances() {
-        viewModelScope.launch {
-            try {
-                accountRepository.getAllAccounts().collect { accounts ->
-                    if (accounts.isNotEmpty()) {
-                        val accountBalance = accounts.sumOf { acc -> acc.balance }
-                        _uiState.update {
-                            it.copy(
-                                totalBalance = accountBalance,
-                                totalAccountBalance = accountBalance,
-                                accountCount = accounts.size
-                            )
-                        }
-                    }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // Silently keep the existing totalBalance on error
-            }
-        }
-    }
-
-    private fun loadBudgetProgress() {
-        viewModelScope.launch {
-            categoryRepository.getAllCategories().collect { categories ->
-                val budgetCategories = categories.filter { it.budgetLimit != null && it.budgetLimit > 0 && !it.isSystemCategory }
-                _uiState.update {
-                    it.copy(
-                        totalBudgetCount = budgetCategories.size,
-                        hasActiveBudgets = budgetCategories.isNotEmpty()
-                    )
-                }
             }
         }
     }
@@ -270,7 +236,6 @@ class DashboardViewModel @Inject constructor(
 
     private fun approveAllocationDraft(draftId: String) {
         viewModelScope.launch {
-            android.util.Log.i(TAG, "[DraftApproved] Processing draft=$draftId")
             when (val outcome = approveAllocationDraftUseCase.approve(draftId)) {
                 is ApproveAllocationDraftUseCase.Outcome.DraftNotFound ->
                     _uiState.update { it.copy(error = "Draft not found") }
@@ -291,36 +256,92 @@ class DashboardViewModel @Inject constructor(
     private fun rejectAllocationDraft(draftId: String) {
         viewModelScope.launch {
             try {
-                android.util.Log.i(TAG, "[DraftRejected] Rejecting draft=$draftId")
                 draftRepository.purgeDismissed(draftId)
-                android.util.Log.d(TAG, "[DraftRejected] Draft deleted — no allocation, rule remains active")
                 _uiState.update { it.copy(snackbarMessage = "Allocation rejected") }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                android.util.Log.e(TAG, "[DraftRejected] EXCEPTION — ${e.message}", e)
                 _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_reject_allocation)) }
             }
         }
     }
 
-    private suspend fun updateStateFromTransactions(
+    private suspend fun updateDashboardState(
         transactions: List<Transaction>,
         recurring: List<com.example.insightku.core.data.model.RecurringBudget>,
         installments: List<com.example.insightku.core.data.model.Installment>,
         categories: List<Category> = emptyList(),
-        pendingDrafts: List<com.example.insightku.core.data.model.DraftTransaction> = emptyList()
+        pendingDrafts: List<com.example.insightku.core.data.model.DraftTransaction> = emptyList(),
+        meta: DashboardMeta
     ) {
-        // Current-month range
+        // Heavy pure work off main (partition/group/streak)
+        val computed = withContext(Dispatchers.Default) {
+            computeDashboardSnapshot(transactions, categories, pendingDrafts)
+        }
+
+        // Apply streak pref side-effects after compute (DataStore writes on Main/IO)
+        for (update in computed.streakResult.prefUpdates) {
+            applyStreakPrefUpdate(update)
+        }
+
+        val sortedGoals = meta.goals.sortedWith(
+            compareBy<Goal> { it.daysRemaining ?: Int.MAX_VALUE }
+                .thenByDescending { it.progressPercent }
+                .thenByDescending { it.updatedAt.toEpochMilli() }
+        )
+        val accountBalance = if (meta.accounts.isNotEmpty()) meta.accounts.sumOf { it.balance } else null
+        // Single atomic uiState write — one recomposition for all dashboard data
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                error = null,
+                userName = meta.userName,
+                totalBalance = accountBalance ?: it.totalBalance,
+                totalAccountBalance = accountBalance ?: it.totalAccountBalance,
+                accountCount = meta.accounts.size,
+                monthlyIncome = computed.monthlyIncome,
+                monthlyExpenses = computed.monthlyExpenses,
+                monthlySavings = computed.monthlySavings,
+                insightMessages = computed.insightMessages,
+                recentTransactions = computed.recentTransactions,
+                currentStreak = computed.streakResult.currentStreak,
+                bestStreak = computed.streakResult.bestStreak,
+                hasTrackedToday = computed.streakResult.hasTrackedToday,
+                freezeCount = computed.streakResult.freezeCount,
+                isPerfectStreak = computed.streakResult.isPerfectStreak,
+                streakGoal = computed.streakResult.streakGoal,
+                repairAvailable = computed.streakResult.repairAvailable,
+                repairExpiryMs = computed.streakResult.repairExpiryMs,
+                repairDayKey = computed.streakResult.repairDayKey,
+                streakMilestone = computed.streakResult.streakMilestone,
+                recurringBudgets = recurring,
+                installments = installments,
+                budgetCategorySpending = computed.budgetCategorySpending,
+                pendingDrafts = pendingDrafts,
+                previewGoals = sortedGoals.take(3),
+                totalGoalCount = meta.goals.size,
+                hasActiveGoals = meta.goals.isNotEmpty(),
+                previewBudgets = computed.previewBudgets,
+                totalBudgetCount = computed.totalBudgetCount,
+                hasActiveBudgets = computed.previewBudgets.isNotEmpty()
+            )
+        }
+    }
+
+    /**
+     * Pure computation for dashboard numbers. Runs on Dispatchers.Default.
+     * Streak is cached by transaction-id set so non-tx emissions (drafts/categories) skip the 140ms calc.
+     */
+    private suspend fun computeDashboardSnapshot(
+        transactions: List<Transaction>,
+        categories: List<Category>,
+        pendingDrafts: List<com.example.insightku.core.data.model.DraftTransaction>
+    ): DashboardSnapshot {
         val (monthStart, monthEnd) = currentMonthRange()
         val monthlyTx = transactions.filter { it.date in monthStart..monthEnd }
-
-        // PERFORMANCE FIX: Single-pass partition instead of two filter().sumOf() calls
         val (incomeTxs, expenseTxs) = monthlyTx.partition { it.type == TransactionType.INCOME }
         val monthlyIncome = incomeTxs.sumOf { it.amount }
         val monthlyExpenses = expenseTxs.sumOf { it.amount }
-
-        // Build lookup map
         val categoryMap = categories.associateBy { it.name.normalizedCategoryName() }
         val recentTransactions = transactions
             .sortedByDescending { it.date }
@@ -334,13 +355,11 @@ class DashboardViewModel @Inject constructor(
                     amount = t.amount,
                     time = TimeUtils.toShortRelativeTime(t.date),
                     isIncome = t.type == TransactionType.INCOME,
-                    iconName = matchedCat?.icon ?: t.category,
+                    iconName = matchedCat?.icon ?: t.category.ifBlank { t.title },
                     colorHex = matchedCat?.color ?: "",
                     transactionType = t.type
                 )
             }
-
-        // Budget spending per category
         val budgetCategorySpending = monthlyTx
             .filter { it.type == TransactionType.EXPENSE && it.category.isNotBlank() }
             .groupBy { it.category }
@@ -356,34 +375,27 @@ class DashboardViewModel @Inject constructor(
                 )
             }
             .sortedByDescending { it.spent }
-
-        // -- Streak calculation (delegated to use case) --
-        val streakResult = calculateStreakUseCase(transactions)
-
-        // Apply preference updates from the use case
-        for (update in streakResult.prefUpdates) {
-            applyStreakPrefUpdate(update)
+        // Streak: cache by tx id set — skip when only drafts/categories/meta changed
+        val txIds = transactions.mapTo(HashSet(transactions.size)) { it.id }
+        val streakResult = if (txIds == lastStreakTxIds && cachedStreakResult != null) {
+            cachedStreakResult!!
+        } else {
+            val result = calculateStreakUseCase(transactions)
+            lastStreakTxIds = txIds
+            cachedStreakResult = result
+            result
         }
-
         val monthlySavings = monthlyIncome - monthlyExpenses
-        val insightMessages = buildInsightMessagesUseCase(monthlyIncome, monthlyExpenses, monthlySavings, streakResult.currentStreak)
-        // -----------------------------------------------------------------------
+        val insightMessages = buildInsightMessagesUseCase(
+            monthlyIncome, monthlyExpenses, monthlySavings, streakResult.currentStreak
+        )
 
-        // Compute budget totals
-        val budgetTotalLimit = categories.filter { it.budgetLimit != null && it.budgetLimit > 0 }
-            .sumOf { it.budgetLimit ?: 0.0 }
-        val budgetTotalSpent = budgetCategorySpending
-            .filter { it.limit != null && it.limit > 0 }
-            .sumOf { it.spent }
-
-        // Preserve the account-sourced totalBalance
-        val currentTotalBalance = _uiState.value.totalBalance
-
-        // Top 3 budgets by spent percentage
         val allBudgetItems = categories
             .filter { it.budgetLimit != null && it.budgetLimit > 0 && !it.isSystemCategory }
             .map { cat ->
-                val existing = budgetCategorySpending.find { it.categoryName.normalizedCategoryName() == cat.name.normalizedCategoryName() }
+                val existing = budgetCategorySpending.find {
+                    it.categoryName.normalizedCategoryName() == cat.name.normalizedCategoryName()
+                }
                 BudgetSpendingItem(
                     id = cat.id,
                     categoryName = cat.name,
@@ -397,35 +409,32 @@ class DashboardViewModel @Inject constructor(
             .sortedByDescending { it.spent / (it.limit ?: 1.0) }
             .take(3)
 
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                totalBalance = currentTotalBalance,
-                monthlyIncome = monthlyIncome,
-                monthlyExpenses = monthlyExpenses,
-                monthlySavings = monthlySavings,
-                insightMessages = insightMessages,
-                recentTransactions = recentTransactions,
-                currentStreak = streakResult.currentStreak,
-                bestStreak = streakResult.bestStreak,
-                hasTrackedToday = streakResult.hasTrackedToday,
-                freezeCount = streakResult.freezeCount,
-                isPerfectStreak = streakResult.isPerfectStreak,
-                streakGoal = streakResult.streakGoal,
-                repairAvailable = streakResult.repairAvailable,
-                repairExpiryMs = streakResult.repairExpiryMs,
-                repairDayKey = streakResult.repairDayKey,
-                streakMilestone = streakResult.streakMilestone,
-                recurringBudgets = recurring,
-                installments = installments,
-                budgetCategorySpending = budgetCategorySpending,
-                pendingDrafts = pendingDrafts,
-                previewBudgets = previewBudgets,
-                totalBudgetCount = allBudgetItems.size,
-                hasActiveBudgets = previewBudgets.isNotEmpty()
-            )
-        }
+        return DashboardSnapshot(
+            monthlyIncome = monthlyIncome,
+            monthlyExpenses = monthlyExpenses,
+            monthlySavings = monthlySavings,
+            insightMessages = insightMessages,
+            recentTransactions = recentTransactions,
+            budgetCategorySpending = budgetCategorySpending,
+            previewBudgets = previewBudgets,
+            totalBudgetCount = allBudgetItems.size,
+            streakResult = streakResult,
+            pendingDraftCount = pendingDrafts.size
+        )
     }
+
+    private data class DashboardSnapshot(
+        val monthlyIncome: Double,
+        val monthlyExpenses: Double,
+        val monthlySavings: Double,
+        val insightMessages: List<String>,
+        val recentTransactions: List<TransactionItem>,
+        val budgetCategorySpending: List<BudgetSpendingItem>,
+        val previewBudgets: List<BudgetSpendingItem>,
+        val totalBudgetCount: Int,
+        val streakResult: CalculateStreakUseCase.StreakResult,
+        val pendingDraftCount: Int
+    )
 
     /** Inclusive [start, end] epoch-millis range covering the current calendar month. */
     private fun currentMonthRange(): Pair<Long, Long> {

@@ -6,9 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
 import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.data.model.Category
-import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.model.Transaction
-import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.core.data.repository.DraftTransactionRepository
@@ -23,7 +21,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -40,16 +37,11 @@ class AddTransactionViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository,
-    private val authRepository: AuthRepository,
     private val preferencesDataStore: UserPreferencesDataStore,
     private val draftRepository: DraftTransactionRepository,
     private val addTransactionUseCase: AddTransactionUseCase,
     private val errorBus: ErrorBus
 ) : ViewModel() {
-
-    companion object {
-        private const val TAG = "AddTransactionViewModel"
-    }
 
     private val categoryMemory = CategoryMemory()
 
@@ -73,21 +65,17 @@ class AddTransactionViewModel @Inject constructor(
 
     fun addTransaction(transaction: Transaction, draftId: String? = null) {
         viewModelScope.launch {
-            android.util.Log.i(TAG, "[TxSaved] type=${transaction.type} amount=${transaction.amount} category=${transaction.category}")
             _uiState.update { it.copy(isSaving = true, error = null) }
             try {
                 // Route through AddTransactionUseCase which handles auto-allocation
                 val result = addTransactionUseCase(transaction)
                 result.onSuccess { allocResult ->
-                    android.util.Log.i(TAG, "[TxSaved] Transaction saved — autoAlloc: ${allocResult.autoExecuted.size} auto, ${allocResult.suggestions.size} confirm-first")
                     // Remove source draft if this was from a bank notification draft
                     if (draftId != null) {
                         draftRepository.confirmAndRemove(draftId)
-                        android.util.Log.d(TAG, "[TxSaved] Source draft $draftId removed")
                     }
                     _uiState.update { it.copy(isSaving = false, savedSuccessfully = true) }
                 }.onFailure { e ->
-                    android.util.Log.e(TAG, "[TxSaved] FAILED — ${e.message}", e)
                     val msg = e.message ?: context.getString(R.string.error_save_transaction)
                     _uiState.update { it.copy(isSaving = false, error = msg) }
                     errorBus.send(msg)
@@ -95,7 +83,6 @@ class AddTransactionViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                android.util.Log.e(TAG, "[TxSaved] EXCEPTION — ${e.message}", e)
                 val msg = e.message ?: context.getString(R.string.error_save_transaction)
                 _uiState.update { it.copy(isSaving = false, error = msg) }
                 errorBus.send(msg)
@@ -121,6 +108,4 @@ class AddTransactionViewModel @Inject constructor(
         return categoryMemory.suggestCategory(title, transactions)
     }
 }
-
-
 

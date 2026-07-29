@@ -52,7 +52,8 @@ fun resolveCategoryIcon(
         return ResolvedCategoryIcon(presentation.icon, presentation.color)
     }
 
-    val matchedCat = categoryMap[categoryName.trim().lowercase()]
+    val lookupKey = categoryName.trim().lowercase()
+    val matchedCat = categoryMap[lookupKey]
     val resolved = CategoryIconResolver.resolve(
         matchedCat?.icon?.ifBlank { categoryName } ?: categoryName
     )

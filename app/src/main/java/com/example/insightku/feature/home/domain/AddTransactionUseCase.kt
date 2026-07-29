@@ -46,10 +46,6 @@ class AddTransactionUseCase @Inject constructor(
     private val draftRepository: DraftTransactionRepository,
     @ApplicationContext private val context: Context
 ) {
-    companion object {
-        private const val TAG = "AddTransactionUseCase"
-    }
-
     /**
      * Add a transaction and process auto-allocation rules.
      *
@@ -121,8 +117,7 @@ class AddTransactionUseCase @Inject constructor(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    // Failed to create allocation draft — log and continue
-                    android.util.Log.e(TAG, "Failed to create allocation draft: ${e.message}")
+                    // Allocation draft creation failed — continue without blocking the save
                 }
             }
 

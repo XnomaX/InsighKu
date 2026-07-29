@@ -169,14 +169,16 @@ fun PremiumFlameIcon(
     modifier: Modifier = Modifier,
     size: Dp = 72.dp,
     streak: Int = 0,
-    frozen: Boolean = false
+    frozen: Boolean = false,
+    isScrolling: Boolean = false
 ) {
     val config = remember(streak) { flameConfig(streak) }
 
     val effectiveSize  = size * config.flameScale
-    // Frozen: slow to 0.28× — suspended, barely alive
+    // PERF FIX: Pause all animations while scrolling to prevent jank.
+    // The flame icon has 12+ simultaneous infinite animations that destroy scroll performance.
     val effectiveSpeed = when {
-        !active  -> 0f
+        !active || isScrolling -> 0f
         frozen   -> config.animationSpeed * 0.28f
         else     -> config.animationSpeed
     }
@@ -265,7 +267,8 @@ fun PremiumFlameIcon(
             modifier          = Modifier.fillMaxSize()
         )
 
-        if (frozen) {
+        if (frozen && !isScrolling) {
+            // PERF FIX: Skip frost shards while scrolling to prevent particle animation jank
             // Frost shards — fall downward slowly, drift outward, fade at bottom
             val flameH = effectiveSize.value
             FrostShard(progress = f1, spawnX = -flameH * 0.12f, spawnY = -flameH * 0.36f,
@@ -291,7 +294,8 @@ fun PremiumFlameIcon(
                     .clip(RoundedCornerShape(50))
                     .background(FreezeOuter.copy(alpha = crystalPulse * 0.12f))
             )
-        } else if (active && config.particleIntensity >= 1) {
+        } else if (active && !isScrolling && config.particleIntensity >= 1) {
+            // PERF FIX: Skip ember particles while scrolling to prevent animation jank
             val flameH = effectiveSize.value
             val (pColor1, pColor2, pColor3) = particleColors(config)
 

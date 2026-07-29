@@ -6,5 +6,6 @@ sealed class LoginEvent {
     object Submit : LoginEvent()
     object ClearError : LoginEvent()
     data class GoogleSignIn(val idToken: String) : LoginEvent()
+    data class GoogleSignInFailed(val message: String) : LoginEvent()
 }
 

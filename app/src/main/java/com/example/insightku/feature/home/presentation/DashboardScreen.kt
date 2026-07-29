@@ -5,6 +5,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -123,6 +125,8 @@ fun DashboardScreen(
 
 // --- Screen Content -----------------------------------------------------------
 
+private const val RECOMP_TAG = "DashboardRecomp"
+
 @Composable
 fun DashboardScreenContent(
     uiState: DashboardUiState,
@@ -142,18 +146,24 @@ fun DashboardScreenContent(
     var showStreakPopup by remember { mutableStateOf(false) }
     var showStreakDetail by remember { mutableStateOf(false) }
 
+    // PERF FIX: Use LazyListState instead of tracking scrollOffsetPx manually
+    // This avoids recomposing the entire screen on every scroll event
+    val lazyListState = rememberLazyListState()
     val stickyThresholdPx = with(density) { 260.dp.toPx() }
-    var scrollOffsetPx by remember { mutableFloatStateOf(0f) }
-    val showStickyBar by remember { derivedStateOf { scrollOffsetPx < -stickyThresholdPx } }
 
-    val nestedScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                scrollOffsetPx = (scrollOffsetPx + available.y).coerceAtMost(0f)
-                return Offset.Zero
-            }
-        }
-    }
+    // Stable lambdas to avoid recreation on recomposition
+    val onToggleBalanceVisibility = remember { { onEvent(DashboardEvent.ToggleBalanceVisibility) } }
+    val onShowStreakDetail = remember { { showStreakDetail = true } }
+    val onUseStreakRepair = remember { { onEvent(DashboardEvent.UseStreakRepair) } }
+    val onClickGoal = remember { { _: String -> onNavigateToGoals() } }
+    val onCreateGoalLambda = remember { { onCreateGoal() } }
+    val onToggleForecastPeriod = remember { { period: String -> onEvent(DashboardEvent.ToggleForecastPeriod(period)) } }
+    val onMarkRecurringPaid = remember { { budget: com.example.insightku.core.data.model.RecurringBudget -> onEvent(DashboardEvent.MarkRecurringPaid(budget)) } }
+    val onMarkInstallmentPaid = remember { { installment: com.example.insightku.core.data.model.Installment -> onEvent(DashboardEvent.MarkInstallmentPaid(installment)) } }
+    val onDismissDraftLambda = remember { { draft: com.example.insightku.core.data.model.DraftTransaction ->
+        onEvent(DashboardEvent.DismissDraft(draft.id))
+        onDraftDismissed(draft)
+    } }
 
     val prevTracked = remember { mutableStateOf(uiState.hasTrackedToday) }
     LaunchedEffect(uiState.hasTrackedToday) {
@@ -167,23 +177,22 @@ fun DashboardScreenContent(
             .background(AppPalette.background)
     ) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
+            state = lazyListState,
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = Dimens.ContentBottomPadding)
         ) {
-            item {
+            item(key = "header") {
                 DashboardHeader(
                     userName           = uiState.userName,
                     monthlySavings     = uiState.monthlySavings,
                     currentStreak      = uiState.currentStreak,
                     isBalanceVisible   = !LocalHideAmounts.current,
                     isLoading          = uiState.isLoading,
-                    onToggleVisibility = { onEvent(DashboardEvent.ToggleBalanceVisibility) },
+                    onToggleVisibility = onToggleBalanceVisibility,
                     onNavigateToSettings = onNavigateToSettings
                 )
             }
-            item {
+            item(key = "hero_balance") {
                 HeroBalanceCard(
                     totalBalance      = uiState.totalBalance,
                     accountBalance    = uiState.totalAccountBalance,
@@ -198,36 +207,37 @@ fun DashboardScreenContent(
                     )
                 )
             }
-            item {
+            item(key = "draft_inbox") {
                 DraftInboxSection(
                     drafts         = uiState.pendingDrafts,
                     onOpenDraft    = onOpenDraft,
-                    onDismissDraft = { draft ->
-                        onEvent(DashboardEvent.DismissDraft(draft.id))
-                        onDraftDismissed(draft)
-                    },
+                    onDismissDraft = onDismissDraftLambda,
                     modifier       = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical   = Dimens.CardSpacing
                     )
                 )
             }
-            item {
+            item(key = "daily_streak") {
+                val isScrolling by remember {
+                    derivedStateOf { lazyListState.isScrollInProgress }
+                }
                 DailyStreakCard(
                     currentStreak    = uiState.currentStreak,
                     hasTrackedToday  = uiState.hasTrackedToday,
                     repairAvailable  = uiState.repairAvailable,
                     freezeCount      = uiState.freezeCount,
-                    onCardClick      = { showStreakDetail = true },
+                    onCardClick      = onShowStreakDetail,
                     onAddTransaction = onAddTransactionForStreak,
-                    onUseRepair      = { onEvent(DashboardEvent.UseStreakRepair) },
+                    onUseRepair      = onUseStreakRepair,
+                    isScrolling      = isScrolling,
                     modifier         = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical   = Dimens.CardSpacing
                     )
                 )
             }
-            item {
+            item(key = "insights") {
                 InsightsSection(
                     insightMessages = uiState.insightMessages,
                     modifier        = Modifier.padding(
@@ -236,23 +246,21 @@ fun DashboardScreenContent(
                     )
                 )
             }
-            // Goals preview list (always shown — handles empty state)
-            item {
+            item(key = "goals_preview") {
                 GoalsPreviewSection(
                     goals = uiState.previewGoals,
                     totalCount = uiState.totalGoalCount,
                     isBalanceVisible = !LocalHideAmounts.current,
-                    onClickGoal = { onNavigateToGoals() },
+                    onClickGoal = onClickGoal,
                     onClickViewAll = onNavigateToGoals,
-                    onCreateGoal = { onCreateGoal() },
+                    onCreateGoal = onCreateGoalLambda,
                     modifier = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical = Dimens.CardSpacing
                     )
                 )
             }
-            // Budget preview list (always shown — handles empty state)
-            item {
+            item(key = "budget_preview") {
                 BudgetPreviewSection(
                     budgets = uiState.previewBudgets,
                     totalCount = uiState.totalBudgetCount,
@@ -266,32 +274,32 @@ fun DashboardScreenContent(
                     )
                 )
             }
-            item {
+            item(key = "ai_forecast") {
                 AiForecastCard(
                     weeklyData     = uiState.weeklyForecastData,
                     monthlyData    = uiState.monthlyForecastData,
                     aiInsight      = uiState.aiInsightMessage,
                     selectedPeriod = uiState.forecastPeriod,
-                    onPeriodChange = { onEvent(DashboardEvent.ToggleForecastPeriod(it)) },
+                    onPeriodChange = onToggleForecastPeriod,
                     modifier       = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical   = Dimens.CardSpacing
                     )
                 )
             }
-            item {
+            item(key = "upcoming_payments") {
                 UpcomingPaymentsSection(
                     recurringBudgets      = uiState.recurringBudgets,
                     installments          = uiState.installments,
-                    onMarkRecurringPaid   = { onEvent(DashboardEvent.MarkRecurringPaid(it)) },
-                    onMarkInstallmentPaid = { onEvent(DashboardEvent.MarkInstallmentPaid(it)) },
+                    onMarkRecurringPaid   = onMarkRecurringPaid,
+                    onMarkInstallmentPaid = onMarkInstallmentPaid,
                     modifier              = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical   = Dimens.CardSpacing
                     )
                 )
             }
-            item {
+            item(key = "recent_transactions") {
                 RecentTransactionsPreview(
                     transactions   = uiState.recentTransactions,
                     onViewAllClick = onNavigateToTransactionDetails,
@@ -303,20 +311,17 @@ fun DashboardScreenContent(
             }
         }
 
-        AnimatedVisibility(
-            visible  = showStickyBar,
-            enter    = fadeIn(tween(250)) + slideInVertically(tween(250)) { -it },
-            exit     = fadeOut(tween(200)) + slideOutVertically(tween(200)) { -it },
+        // PERF FIX: Extract sticky bar into separate composable to isolate scroll state reading
+        StickyBar(
+            lazyListState = lazyListState,
+            stickyThresholdPx = stickyThresholdPx,
+            monthlyIncome = uiState.monthlyIncome,
+            monthlyExpenses = uiState.monthlyExpenses,
+            currentStreak = uiState.currentStreak,
+            hasTrackedToday = uiState.hasTrackedToday,
+            freezeCount = uiState.freezeCount,
             modifier = Modifier.align(Alignment.TopCenter)
-        ) {
-            StickyFinanceStatusBar(
-                monthlyIncome   = uiState.monthlyIncome,
-                monthlyExpenses = uiState.monthlyExpenses,
-                currentStreak   = uiState.currentStreak,
-                hasTrackedToday = uiState.hasTrackedToday,
-                freezeCount     = uiState.freezeCount
-            )
-        }
+        )
     }
 
     if (showStreakPopup) {
@@ -330,4 +335,37 @@ fun DashboardScreenContent(
             onDismiss       = { showStreakDetail = false }
         )
     } // Scaffold
+}
+
+@Composable
+private fun StickyBar(
+    lazyListState: LazyListState,
+    stickyThresholdPx: Float,
+    monthlyIncome: Double,
+    monthlyExpenses: Double,
+    currentStreak: Int,
+    hasTrackedToday: Boolean,
+    freezeCount: Int,
+    modifier: Modifier = Modifier
+) {
+    // Only this composable reads scroll state, isolating recomposition
+    val showStickyBar by derivedStateOf {
+        lazyListState.firstVisibleItemIndex > 0 ||
+        lazyListState.firstVisibleItemScrollOffset > stickyThresholdPx
+    }
+
+    AnimatedVisibility(
+        visible = showStickyBar,
+        enter = fadeIn(tween(250)) + slideInVertically(tween(250)) { -it },
+        exit = fadeOut(tween(200)) + slideOutVertically(tween(200)) { -it },
+        modifier = modifier
+    ) {
+        StickyFinanceStatusBar(
+            monthlyIncome = monthlyIncome,
+            monthlyExpenses = monthlyExpenses,
+            currentStreak = currentStreak,
+            hasTrackedToday = hasTrackedToday,
+            freezeCount = freezeCount
+        )
+    }
 }

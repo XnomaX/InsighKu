@@ -43,6 +43,10 @@ class LoginViewModel @Inject constructor(
             is LoginEvent.GoogleSignIn -> {
                 signInWithGoogle(event.idToken)
             }
+            is LoginEvent.GoogleSignInFailed -> {
+                _uiState.update { it.copy(isLoading = false, error = event.message) }
+                errorBus.send(event.message)
+            }
         }
     }
 

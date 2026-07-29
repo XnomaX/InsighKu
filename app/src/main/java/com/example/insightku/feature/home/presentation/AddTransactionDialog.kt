@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
@@ -101,8 +102,16 @@ fun AddTransactionDialog(
     /** Default account ID to preselect (e.g., from auto-detection or last used) */
     defaultAccountId: String? = null,
     notificationData: com.example.insightku.core.notification.NotificationTransactionData? = null,
-    onCreateCategory: () -> Unit = {}
+    onCreateCategory: () -> Unit = {},
+    viewModel: AddTransactionViewModel? = null
 ) {
+    // PERF FIX: Collect state internally to avoid MainScreen recompositions
+    // If viewModel is provided, use it; otherwise fall back to parameters
+    val collectedExpenseCategories = viewModel?.expenseCategories?.collectAsStateWithLifecycle()
+    val collectedIncomeCategories = viewModel?.incomeCategories?.collectAsStateWithLifecycle()
+    val effectiveExpenseCategories = collectedExpenseCategories?.value ?: expenseCategories
+    val effectiveIncomeCategories = collectedIncomeCategories?.value ?: incomeCategories
+
     var currentStep by remember { mutableStateOf<AddTransactionStep>(AddTransactionStep.ModeSelection) }
     var formData    by remember { mutableStateOf(TransactionFormData()) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -250,8 +259,8 @@ fun AddTransactionDialog(
                             formData = formData,
                             onFormDataChanged = { formData = it },
                             onFocusChanged = { isAnyFieldFocused = it },
-                            categories = if (formData.isIncome) incomeCategories
-                                         else expenseCategories,
+                            categories = if (formData.isIncome) effectiveIncomeCategories
+                                         else effectiveExpenseCategories,
                             accounts = accounts,
                             onCreateCategory = onCreateCategory,
                             onShowDatePicker = { showDatePicker = true },

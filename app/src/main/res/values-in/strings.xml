@@ -1581,6 +1581,7 @@
     <string name="error_login_user_not_found">Login gagal: user tidak ditemukan</string>
     <string name="error_registration_failed">Registrasi gagal</string>
     <string name="error_google_signin_failed">Google Sign-In gagal</string>
+    <string name="error_google_no_account">Tidak ada akun Google di perangkat ini</string>
     <string name="error_user_not_logged_in">User tidak login</string>
 
     <!-- Notification strings -->

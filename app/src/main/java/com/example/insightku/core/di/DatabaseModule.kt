@@ -2,7 +2,9 @@
 package com.example.insightku.core.di
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.BudgetAllocationDao
 import com.example.insightku.core.data.local.dao.BudgetDao
@@ -20,6 +22,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+private const val ROOM_PERF = "RoomPerf"
+
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
@@ -34,6 +38,12 @@ object DatabaseModule {
         )
             .addMigrations(*InsightKuDatabase.ALL_MIGRATIONS)
             .fallbackToDestructiveMigration(true)
+            .setQueryCallback(
+                androidx.room.RoomDatabase.QueryCallback { query, bindArgs ->
+                    Log.d(ROOM_PERF, "SQL fired: $query | args=$bindArgs")
+                },
+                java.util.concurrent.Executors.newSingleThreadExecutor()
+            )
             .build()
     }
 
