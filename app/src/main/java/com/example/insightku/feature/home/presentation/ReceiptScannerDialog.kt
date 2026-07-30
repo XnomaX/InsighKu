@@ -13,14 +13,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import com.example.insightku.R
-import com.example.insightku.feature.home.presentation.TransactionData
+import com.example.insightku.core.i18n.DateFormatter
 
 enum class ScanningState {
     READY, SCANNING, SCANNED, PROCESSING, RESULT
@@ -241,7 +240,7 @@ fun ScannedContent(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                 )
                 ExposedDropdownMenu(
                     expanded = showCategoryDropdown,
@@ -265,7 +264,7 @@ fun ScannedContent(
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(formData.dateMillis)),
+                value = DateFormatter.formatNumericDate(formData.dateMillis),
                 onValueChange = {},
                 readOnly = true,
                 label = { Text(stringResource(R.string.transaction_date_label)) },

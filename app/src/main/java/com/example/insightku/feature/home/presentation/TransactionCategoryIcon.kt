@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
@@ -56,8 +57,9 @@ fun resolveCategoryIcon(
     val resolved = CategoryIconResolver.resolve(
         matchedCat?.icon?.ifBlank { categoryName } ?: categoryName
     )
-    val color = if (!matchedCat?.color.isNullOrBlank()) {
-        runCatching { Color(android.graphics.Color.parseColor(matchedCat!!.color)) }
+    val catColor = matchedCat?.color
+    val color = if (!catColor.isNullOrBlank()) {
+        runCatching { Color(catColor.toColorInt()) }
             .getOrDefault(resolved.color)
     } else resolved.color
 
@@ -84,9 +86,9 @@ fun resolveCategoryIcon(
 @Composable
 fun TransactionCategoryIcon(
     categoryName: String,
+    modifier: Modifier = Modifier,
     transactionType: TransactionType? = null,
     categoryMap: Map<String, Category> = emptyMap(),
-    modifier: Modifier = Modifier,
     containerSize: Dp = 44.dp,
     iconSize: Dp = 20.dp,
     cornerRadius: Dp = 14.dp,
