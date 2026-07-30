@@ -37,9 +37,8 @@ import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
-import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.ui.components.PremiumDatePicker
-import java.util.*
+import androidx.core.graphics.toColorInt
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,14 +73,6 @@ fun RecurringBudgetsDialog(
     fun handleBackToList() { showAddForm = false; editingBudget = null }
     fun handleDeleteRequest(budget: RecurringBudget) { budgetToDelete = budget }
     fun handleDeleteConfirm() { budgetToDelete?.let { onBudgetDeleted(it); budgetToDelete = null } }
-
-    // Localized reminder options
-    val reminderOptions = listOf(
-        1 to stringResource(R.string.recurring_reminder_1day),
-        3 to stringResource(R.string.recurring_reminder_3days),
-        7 to stringResource(R.string.recurring_reminder_7days),
-        14 to stringResource(R.string.recurring_reminder_14days)
-    )
 
     if (isOpen) {
         Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -241,7 +232,7 @@ fun ColumnScope.AddEditBudgetForm(editingBudget: RecurringBudget?, onSave: (Recu
 fun <T> DropdownField(label: String, options: Map<T, String>, onValueSelected: (T) -> Unit, displayValue: @Composable () -> String) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-        OutlinedTextField(value = displayValue(), onValueChange = {}, readOnly = true, label = { Text(label) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }, modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable))
+        OutlinedTextField(value = displayValue(), onValueChange = {}, readOnly = true, label = { Text(label) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }, modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable))
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) { options.forEach { (value, text) -> DropdownMenuItem(text = { Text(text) }, onClick = { onValueSelected(value); expanded = false }) } }
     }
 }
@@ -255,7 +246,7 @@ private fun RecurringBudgetAccountSelector(accounts: List<Account>, selectedAcco
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 rowItems.forEach { account ->
                     val isSelected = selectedAccountId == account.id
-                    val accountColor = runCatching { Color(android.graphics.Color.parseColor(account.color)) }.getOrDefault(AppPalette.accent)
+                    val accountColor = runCatching { Color(account.color.toColorInt()) }.getOrDefault(AppPalette.accent)
                     val accountIcon = when (account.type) { AccountType.CASH -> Icons.Default.Payments; AccountType.BANK_ACCOUNT -> Icons.Default.AccountBalance; AccountType.E_WALLET -> Icons.Default.AccountBalanceWallet; AccountType.CREDIT_CARD -> Icons.Default.CreditCard }
                     Column(modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(if (isSelected) accountColor.copy(alpha = 0.10f) else AppPalette.card).border(1.5.dp, if (isSelected) accountColor else AppPalette.cardBorder, RoundedCornerShape(12.dp)).clickable { onSelect(if (isSelected) null else account.id) }.padding(vertical = 10.dp, horizontal = 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(accountColor.copy(alpha = if (isSelected) 0.18f else 0.10f)), contentAlignment = Alignment.Center) { Icon(accountIcon, null, tint = accountColor, modifier = Modifier.size(16.dp)) }

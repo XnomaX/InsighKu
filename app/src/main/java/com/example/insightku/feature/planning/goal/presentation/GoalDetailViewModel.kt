@@ -19,11 +19,13 @@ import android.content.Context
 import com.example.insightku.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 private const val CONTRIBUTION_PAGE_SIZE = 20
 
@@ -145,9 +147,12 @@ class GoalDetailViewModel @Inject constructor(
         val enteredAmount = amount.toDoubleOrNull() ?: 0.0
         // Envelope model: validate against available cash, not raw balance
         val availableCash = state.selectedAccountId?.let { id -> state.accountAllocations[id]?.availableCash }
-        val insufficientFunds = availableCash != null && enteredAmount > 0 && enteredAmount > availableCash
-        val shortfall = if (insufficientFunds && availableCash != null) enteredAmount - availableCash else 0.0
-        _uiState.update { it.copy(contributionAmount = amount, isInsufficientFunds = insufficientFunds, shortfall = shortfall) }
+        val shortfall = if (availableCash != null && enteredAmount > 0 && enteredAmount > availableCash) {
+            enteredAmount - availableCash
+        } else 0.0
+        _uiState.update {
+            it.copy(contributionAmount = amount, isInsufficientFunds = shortfall > 0, shortfall = shortfall)
+        }
     }
 
     private fun updateNotes(notes: String) { _uiState.update { it.copy(contributionNotes = notes) } }
@@ -162,7 +167,7 @@ class GoalDetailViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.contribute(goalId = goal.id, accountId = accountId, amount = amount, type = ContributionType.MANUAL, notes = state.contributionNotes).onSuccess {
                 _uiState.update { it.copy(showContributeDialog = false, isSubmitting = false, showSuccessAnimation = true, successMessage = context.getString(R.string.goal_contribution_success)) }
-                kotlinx.coroutines.delay(2000); _uiState.update { it.copy(showSuccessAnimation = false, successMessage = "") }
+                delay(2.seconds); _uiState.update { it.copy(showSuccessAnimation = false, successMessage = "") }
             }.onFailure { e -> _uiState.update { it.copy(isSubmitting = false, error = e.message ?: context.getString(R.string.goal_contribution_failed)) } }
         }
     }
@@ -174,7 +179,7 @@ class GoalDetailViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.withdraw(goalId = goal.id, accountId = accountId, amount = amount, notes = state.contributionNotes).onSuccess {
                 _uiState.update { it.copy(showWithdrawDialog = false, isSubmitting = false, showSuccessAnimation = true, successMessage = context.getString(R.string.goal_withdrawal_success)) }
-                kotlinx.coroutines.delay(2000); _uiState.update { it.copy(showSuccessAnimation = false, successMessage = "") }
+                delay(2.seconds); _uiState.update { it.copy(showSuccessAnimation = false, successMessage = "") }
             }.onFailure { e -> _uiState.update { it.copy(isSubmitting = false, error = e.message ?: context.getString(R.string.goal_withdrawal_failed)) } }
         }
     }
