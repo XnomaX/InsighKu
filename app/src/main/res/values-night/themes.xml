@@ -41,11 +41,12 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 
-    <!-- Splash Screen Theme -->
-    <style name="Theme.SplashScreen" parent="Theme.InsightKu.Splash" />
-
+    <!-- Same light splash as day — theme prefs load async; avoid dual-tone handoff. -->
     <style name="Theme.InsightKu.Splash" parent="Theme.SplashScreen">
-        <item name="android:windowBackground">@color/primary</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>
         <item name="postSplashScreenTheme">@style/Theme.InsightKu</item>
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
     </style>
 </resources>

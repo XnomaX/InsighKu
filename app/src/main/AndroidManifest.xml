@@ -39,14 +39,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.InsightKu"
         android:hardwareAccelerated="true"
-        android:largeHeap="true"
         android:localeConfig="@xml/locales_config"
         tools:targetApi="31">
         
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.InsightKu"
+            android:theme="@style/Theme.InsightKu.Splash"
             android:windowSoftInputMode="adjustResize"
             android:enableOnBackInvokedCallback="false">
             <intent-filter>

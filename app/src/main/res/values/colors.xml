@@ -8,6 +8,8 @@
     
     <!-- Light Theme Colors -->
     <color name="background_light">#FFFFFF</color>
+    <!-- Launch splash canvas — must match AppPalette.background light (#FAF9FE) -->
+    <color name="splash_background">#FAF9FE</color>
     <color name="surface_light">#FFFFFF</color>
     <color name="on_primary_light">#FFFFFF</color>
     <color name="on_secondary_light">#000000</color>

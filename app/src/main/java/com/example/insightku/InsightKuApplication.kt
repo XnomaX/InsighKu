@@ -4,7 +4,12 @@ import android.app.Application
 import android.content.ComponentName
 import android.service.notification.NotificationListenerService
 import androidx.hilt.work.HiltWorkerFactory
-import androidx.work.*
+import androidx.work.Configuration
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.insightku.core.notification.BankNotificationListenerService
 import com.example.insightku.core.worker.AutoTransactionWorker
 import com.example.insightku.core.worker.DraftReminderWorker
@@ -16,6 +21,7 @@ import com.example.insightku.core.worker.SyncTransactionWorker
 import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
 import java.util.Calendar
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -27,7 +33,7 @@ import javax.inject.Inject
  * (Repository, Auth, dll.) dan akan crash dengan "No default constructor found".
  *
  * Alur Offline-First Sync:
- * App start → scheduleSyncWorker() → WorkManager register PeriodicWork
+ * App start → scheduleBackgroundWork() → WorkManager register PeriodicWork
  * Saat network tersedia → SyncTransactionWorker.doWork() → upload isSynced=false → markSynced
  */
 @HiltAndroidApp
@@ -36,6 +42,11 @@ class InsightKuApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    // Single background thread for non-critical startup work (WM enqueue, NLS rebind).
+    private val startupExecutor = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "insightku-startup").apply { isDaemon = true }
+    }
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -43,7 +54,13 @@ class InsightKuApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        // Firebase must stay on main — Auth/currentUser is read on splash critical path.
         FirebaseApp.initializeApp(this)
+        // WorkManager enqueue + NLS rebind are not needed for first frame.
+        startupExecutor.execute { scheduleBackgroundWork() }
+    }
+
+    private fun scheduleBackgroundWork() {
         scheduleSyncWorker()
         scheduleGoalSyncWorker()
         scheduleScheduledAllocationWorker()
@@ -83,11 +100,6 @@ class InsightKuApplication : Application(), Configuration.Provider {
         )
     }
 
-    /**
-     * AutoTransactionWorker — berjalan setiap hari, tidak butuh network.
-     * Query recurring + installment yang jatuh tempo, buat transaksi otomatis,
-     * backfill transaksi yang terlewat, kirim notifikasi dengan action hapus.
-     */
     /**
      * Schedule SyncGoalWorker as PeriodicWork (every 4 hours).
      * Safety-net for syncing unsynced Goals and Contributions to Firestore.
@@ -133,6 +145,11 @@ class InsightKuApplication : Application(), Configuration.Provider {
         )
     }
 
+    /**
+     * AutoTransactionWorker — berjalan setiap hari, tidak butuh network.
+     * Query recurring + installment yang jatuh tempo, buat transaksi otomatis,
+     * backfill transaksi yang terlewat, kirim notifikasi dengan action hapus.
+     */
     private fun scheduleAutoTransactionWorker() {
         val request = PeriodicWorkRequestBuilder<AutoTransactionWorker>(
             repeatInterval = 1,
