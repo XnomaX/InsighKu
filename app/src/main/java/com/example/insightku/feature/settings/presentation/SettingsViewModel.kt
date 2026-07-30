@@ -14,7 +14,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -66,6 +65,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val (userEmail, userName, _) = sessionManager.getUserData()
+            // One combine — no nested .first() per emission (was re-reading 3 prefs every update).
             combine<Any, Array<Any>>(
                 preferencesDataStore.currencyCode,
                 preferencesDataStore.isDarkMode,
@@ -76,30 +76,30 @@ class SettingsViewModel @Inject constructor(
                 preferencesDataStore.visualDensity,
                 preferencesDataStore.hideAmounts,
                 preferencesDataStore.comfortMode,
-                preferencesDataStore.insightTone
+                preferencesDataStore.insightTone,
+                preferencesDataStore.notificationEnabled,
+                preferencesDataStore.appLanguage,
+                preferencesDataStore.bankNotificationEnabled,
             ) { values -> values }
                 .collect { values ->
-                    val notification        = preferencesDataStore.notificationEnabled.first()
-                    val langCode            = preferencesDataStore.appLanguage.first()
-                    val bankNotifEnabled    = preferencesDataStore.bankNotificationEnabled.first()
                     _uiState.update {
                         it.copy(
-                            isLoading                = false,
-                            currencyCode             = values[0] as String,
-                            isDarkMode               = values[1] as Boolean,
-                            defaultInputMode         = if ((values[2] as String) == "ocr") InputMode.OCR else InputMode.MANUAL,
-                            whatsappEnabled          = values[3] as Boolean,
-                            biometricEnabled         = values[4] as Boolean,
-                            accentColorHex           = values[5] as String,
-                            visualDensity            = VisualDensity.fromKey(values[6] as String),
-                            hideAmounts              = values[7] as Boolean,
-                            comfortMode              = values[8] as Boolean,
-                            insightTone              = InsightTone.fromKey(values[9] as String),
-                            pushNotificationsEnabled = notification,
-                            appLanguage              = if (langCode == "en") AppLanguage.EN else AppLanguage.ID,
-                            userEmail                = userEmail,
-                            userName                 = userName,
-                            bankNotificationEnabled  = bankNotifEnabled
+                            isLoading = false,
+                            currencyCode = values[0] as String,
+                            isDarkMode = values[1] as Boolean,
+                            defaultInputMode = if ((values[2] as String) == "ocr") InputMode.OCR else InputMode.MANUAL,
+                            whatsappEnabled = values[3] as Boolean,
+                            biometricEnabled = values[4] as Boolean,
+                            accentColorHex = values[5] as String,
+                            visualDensity = VisualDensity.fromKey(values[6] as String),
+                            hideAmounts = values[7] as Boolean,
+                            comfortMode = values[8] as Boolean,
+                            insightTone = InsightTone.fromKey(values[9] as String),
+                            pushNotificationsEnabled = values[10] as Boolean,
+                            appLanguage = if ((values[11] as String) == "en") AppLanguage.EN else AppLanguage.ID,
+                            userEmail = userEmail,
+                            userName = userName,
+                            bankNotificationEnabled = values[12] as Boolean,
                         )
                     }
                 }

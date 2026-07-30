@@ -41,12 +41,16 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 
-    <!-- Splash Screen Theme — konsisten dengan SplashScreen.kt composable -->
-    <style name="Theme.SplashScreen" parent="Theme.InsightKu.Splash" />
-
+    <!--
+      Launch theme. Parent is AndroidX Core SplashScreen.
+      bg + icon match Compose SplashScreen first frame (shared ic_splash_mark).
+    -->
     <style name="Theme.InsightKu.Splash" parent="Theme.SplashScreen">
-        <!-- Putih: sama dengan colorScheme.background di SplashScreen.kt -->
-        <item name="android:windowBackground">@color/background_light</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>
         <item name="postSplashScreenTheme">@style/Theme.InsightKu</item>
+        <item name="android:windowBackground">@color/splash_background</item>
+        <!-- Instant handoff — avoid default icon scale-out (reads as “second screen”). -->
+        <item name="windowSplashScreenAnimationDuration">0</item>
     </style>
 </resources>

@@ -27,6 +27,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): InsightKuDatabase {
+        // .build() is cheap; open + migrations run on first DAO access (already off main via Room).
         return Room.databaseBuilder(
             context,
             InsightKuDatabase::class.java,
