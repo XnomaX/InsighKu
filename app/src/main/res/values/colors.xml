@@ -24,6 +24,10 @@
     <color name="on_background_dark">#FFFFFF</color>
     <color name="on_surface_dark">#FFFFFF</color>
     
+    <!-- Splash Screen Colors — must match AppPalette.background -->
+    <color name="splash_background_light">#FAF9FE</color>
+    <color name="splash_background_night">#0F0A1E</color>
+
     <!-- Status Colors -->
     <color name="success">#10B981</color>
     <color name="error">#EF4444</color>
