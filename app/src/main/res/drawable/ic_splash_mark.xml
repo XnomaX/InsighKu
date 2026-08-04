@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <!-- Background circle — 200dp centered (20dp padding on each side) -->
+    <path
+        android:fillColor="#7C4DFF"
+        android:pathData="M120,120m-100,0a100,100 0,1 1,200 0a100,100 0,1 1,-200 0" />
+    <!-- Lightbulb icon — scaled from 24dp viewport to fit ~96dp centered in circle -->
+    <group
+        android:scaleX="0.04"
+        android:scaleY="0.04"
+        android:translateX="72"
+        android:translateY="66">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M9,21c0,0.55 0.45,1 1,1h4c0.55,0 1,-0.45 1,-1v-1H9v1zM12,2C8.14,2 5,5.14 5,9c0,2.38 1.19,4.47 3,5.74V17c0,0.55 0.45,1 1,1h6c0.55,0 1,-0.45 1,-1v-2.26c1.81,-1.27 3,-3.36 3,-5.74 0,-3.86 -3.14,-7 -7,-7zM15,15h-2v2H11v-2H9v-2h2v-2h2v2h2v2z" />
+    </group>
+</vector>
