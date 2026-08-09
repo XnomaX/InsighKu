@@ -1,26 +1,24 @@
 package com.example.insightku.core.navigation
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.insightku.core.ui.components.ErrorSnackbar
-import com.example.insightku.core.ui.components.RootViewModel
-
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.insightku.core.ui.components.splash.SplashScreen
-
 import com.example.insightku.core.notification.NotificationTransactionData
+import com.example.insightku.core.ui.components.RootViewModel
+import com.example.insightku.core.ui.components.splash.SplashScreen
 
 @Composable
 fun RootNavGraph(notificationData: NotificationTransactionData? = null, allocationDraftId: String? = null) {
@@ -65,6 +63,7 @@ fun RootNavGraph(notificationData: NotificationTransactionData? = null, allocati
             route = "root_graph",
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
         ) {
             // Splash Screen — Protected Route Controller
             composable(Route.SPLASH) {

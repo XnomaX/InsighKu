@@ -1,13 +1,14 @@
 package com.example.insightku.feature.auth.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
+import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.GoogleSignInUseCase
 import com.example.insightku.feature.auth.domain.LoginUseCase
-import com.example.insightku.feature.auth.presentation.LoginEvent
-import com.example.insightku.feature.auth.presentation.LoginUiState
-import com.example.insightku.core.utils.ErrorBus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -16,6 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val loginUseCase: LoginUseCase,
     private val googleSignInUseCase: GoogleSignInUseCase,
     private val errorBus: ErrorBus
@@ -48,14 +50,14 @@ class LoginViewModel @Inject constructor(
 
     private fun validateEmail(email: String): String? {
         if (email.isNotBlank() && !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            return "Please enter a valid email address"
+            return context.getString(R.string.error_invalid_email)
         }
         return null
     }
 
     private fun validatePassword(password: String): String? {
         if (password.isNotBlank() && password.length < 6) {
-            return "Password must be at least 6 characters"
+            return context.getString(R.string.error_password_length)
         }
         return null
     }

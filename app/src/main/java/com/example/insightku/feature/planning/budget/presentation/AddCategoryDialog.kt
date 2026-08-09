@@ -1,20 +1,20 @@
 package com.example.insightku.feature.planning.budget.presentation
 
-import com.example.insightku.core.ui.components.dialogs.IconOption
-import com.example.insightku.core.ui.components.dialogs.BudgetLimitInput
-import com.example.insightku.core.ui.components.dialogs.RecurringPeriodSelector
-import com.example.insightku.core.utils.toAmountOrNull
-import com.example.insightku.core.utils.toAmountOrZero
-import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
-import com.example.insightku.core.ui.components.dialogs.CategoryIconInfo
-import com.example.insightku.core.ui.components.dialogs.expenseCategoryIcons
-import com.example.insightku.core.ui.components.dialogs.incomeCategoryIcons
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -24,8 +24,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,15 +44,22 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.i18n.NumberFormatter
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
+import com.example.insightku.core.ui.components.dialogs.BudgetLimitInput
+import com.example.insightku.core.ui.components.dialogs.IconOption
+import com.example.insightku.core.ui.components.dialogs.RecurringPeriodSelector
+import com.example.insightku.core.ui.components.dialogs.expenseCategoryIcons
+import com.example.insightku.core.ui.components.dialogs.incomeCategoryIcons
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.utils.toAmountOrNull
+import com.example.insightku.core.utils.toAmountOrZero
 import kotlin.math.roundToInt
 
 private val ExpenseAccent = AppPalette.accent
@@ -59,7 +77,6 @@ fun AddCategoryDialog(
 
     val focusManager       = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val sheetState         = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val accentColor = if (initialType == CategoryType.EXPENSE) ExpenseAccent else IncomeAccent
     val iconSet     = if (initialType == CategoryType.EXPENSE) expenseCategoryIcons else incomeCategoryIcons
@@ -68,16 +85,16 @@ fun AddCategoryDialog(
     var nameError        by remember { mutableStateOf<String?>(null) }
     var nameFocused      by remember { mutableStateOf(false) }
     var budgetLimitText  by remember { mutableStateOf("") }
-    var alertThreshold   by remember { mutableStateOf(80f) }
+    var alertThreshold by remember { mutableFloatStateOf(80f) }
     var selectedIconName by remember { mutableStateOf(iconSet.first().name) }
     var selectedPeriod   by remember { mutableStateOf<String?>(null) }
 
     val selectedIcon = iconSet.find { it.name == selectedIconName } ?: iconSet.first()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val nameErrorMessage = stringResource(R.string.add_category_name_error)
 
     fun validate(): Boolean {
         return if (name.trim().length < 2) {
-            nameError = context.getString(R.string.add_category_name_error)
+            nameError = nameErrorMessage
             false
         } else {
             nameError = null
@@ -103,7 +120,9 @@ fun AddCategoryDialog(
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
         dragHandle       = {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -146,7 +165,12 @@ fun AddCategoryDialog(
                 )
             }
 
-            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(AppPalette.cardBorder))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(AppPalette.cardBorder)
+            )
 
             Column(
                 modifier = Modifier
@@ -162,7 +186,9 @@ fun AddCategoryDialog(
                     OutlinedTextField(
                         value         = name,
                         onValueChange = { name = it; nameError = null },
-                        modifier      = Modifier.fillMaxWidth().onFocusChanged { nameFocused = it.isFocused },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { nameFocused = it.isFocused },
                         singleLine    = true,
                         isError       = nameError != null,
                         shape         = RoundedCornerShape(14.dp),
@@ -222,12 +248,16 @@ fun AddCategoryDialog(
 
                 Surface(shape = RoundedCornerShape(16.dp), color = AppPalette.card, border = BorderStroke(1.dp, AppPalette.cardBorder)) {
                     Row(
-                        modifier              = Modifier.fillMaxWidth().padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment     = Alignment.CenterVertically
                     ) {
                         Box(
-                            modifier         = Modifier.size(44.dp).background(selectedIcon.color.copy(alpha = 0.15f), CircleShape),
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(selectedIcon.color.copy(alpha = 0.15f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(selectedIcon.icon, contentDescription = null, tint = selectedIcon.color, modifier = Modifier.size(22.dp))
@@ -255,7 +285,10 @@ fun AddCategoryDialog(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Surface(
-                        modifier = Modifier.weight(1f).height(50.dp).clickable { handleDismiss() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clickable { handleDismiss() },
                         shape    = RoundedCornerShape(14.dp),
                         color    = AppPalette.card,
                         border   = BorderStroke(1.dp, AppPalette.cardBorder)
@@ -272,17 +305,19 @@ fun AddCategoryDialog(
                             .background(accentColor)
                             .clickable {
                                 if (validate()) {
-                                    val colorHex = "#" + selectedIcon.color.value.toString(16).padStart(8, '0').substring(2, 8).uppercase()
+                                    val colorHex =
+                                        "#" + selectedIcon.color.value.toString(16).padStart(8, '0')
+                                            .substring(2, 8).uppercase()
                                     onCategoryAdded(
                                         Category(
-                                            name            = name.trim(),
-                                            color           = colorHex,
-                                            icon            = selectedIcon.name,
-                                            budgetLimit     = if (initialType == CategoryType.EXPENSE)
+                                            name = name.trim(),
+                                            color = colorHex,
+                                            icon = selectedIcon.name,
+                                            budgetLimit = if (initialType == CategoryType.EXPENSE)
                                                 budgetLimitText.toAmountOrNull() else null,
-                                            alertThreshold  = alertThreshold.roundToInt(),
+                                            alertThreshold = alertThreshold.roundToInt(),
                                             recurringPeriod = if (initialType == CategoryType.EXPENSE) selectedPeriod else null,
-                                            categoryType    = initialType.name
+                                            categoryType = initialType.name
                                         )
                                     )
                                 }

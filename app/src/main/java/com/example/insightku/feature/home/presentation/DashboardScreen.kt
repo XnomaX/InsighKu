@@ -1,14 +1,32 @@
 package com.example.insightku.feature.home.presentation
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -16,16 +34,28 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalHideAmounts
-import com.example.insightku.feature.home.presentation.dashboard.*
+import com.example.insightku.feature.home.presentation.dashboard.AiForecastCard
+import com.example.insightku.feature.home.presentation.dashboard.BudgetPreviewSection
+import com.example.insightku.feature.home.presentation.dashboard.DailyStreakCard
+import com.example.insightku.feature.home.presentation.dashboard.DashboardHeader
+import com.example.insightku.feature.home.presentation.dashboard.DraftInboxSection
+import com.example.insightku.feature.home.presentation.dashboard.GoalsPreviewSection
+import com.example.insightku.feature.home.presentation.dashboard.InsightsSection
+import com.example.insightku.feature.home.presentation.dashboard.RecentTransactionsPreview
+import com.example.insightku.feature.home.presentation.dashboard.StickyFinanceStatusBar
+import com.example.insightku.feature.home.presentation.dashboard.StreakCelebrationDialog
+import com.example.insightku.feature.home.presentation.dashboard.StreakDetailSheet
+import com.example.insightku.feature.home.presentation.dashboard.UpcomingPaymentsSection
 
 // --- Root Screen -------------------------------------------------------------
 
@@ -44,40 +74,24 @@ fun DashboardScreen(
     onCreateBudget: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.snackbarMessage) {
-        uiState.snackbarMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            viewModel.onEvent(DashboardEvent.ClearSnackbar)
-        }
-    }
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            viewModel.onEvent(DashboardEvent.ClearError)
-        }
-    }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = androidx.compose.ui.graphics.Color.Transparent
-    ) { padding ->
-    when {
-        uiState.isLoading && uiState.recentTransactions.isEmpty() -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            uiState.isLoading && uiState.recentTransactions.isEmpty() -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
-        }
-        uiState.error != null && uiState.recentTransactions.isEmpty() && !uiState.isLoading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+
+            uiState.error != null && uiState.recentTransactions.isEmpty() -> {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.padding(32.dp)
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(32.dp)
                 ) {
+                    // Calm empty/error glyph — replaces the raw "??" placeholder.
                     Text(
-                        text = "??",
+                        text = "😮‍💨",
                         style = MaterialTheme.typography.displayMedium
                     )
                     Text(
@@ -100,24 +114,24 @@ fun DashboardScreen(
                     }
                 }
             }
+
+            else -> {
+                DashboardScreenContent(
+                    uiState = uiState,
+                    onEvent = viewModel::onEvent,
+                    onNavigateToTransactionDetails = onNavigateToTransactionDetails,
+                    onAddTransaction = onAddTransaction,
+                    onAddTransactionForStreak = onAddTransactionForStreak,
+                    onOpenDraft = onOpenDraft,
+                    onDraftDismissed = onDraftDismissed,
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToGoals = onNavigateToGoals,
+                    onNavigateToBudgeting = onNavigateToBudgeting,
+                    onCreateGoal = onCreateGoal,
+                    onCreateBudget = onCreateBudget
+                )
+            }
         }
-        else -> {
-            DashboardScreenContent(
-                uiState = uiState,
-                onEvent = viewModel::onEvent,
-                onNavigateToTransactionDetails = onNavigateToTransactionDetails,
-                onAddTransaction = onAddTransaction,
-                onAddTransactionForStreak = onAddTransactionForStreak,
-                onOpenDraft = onOpenDraft,
-                onDraftDismissed = onDraftDismissed,
-                onNavigateToSettings = onNavigateToSettings,
-                onNavigateToGoals = onNavigateToGoals,
-                onNavigateToBudgeting = onNavigateToBudgeting,
-                onCreateGoal = onCreateGoal,
-                onCreateBudget = onCreateBudget
-            )
-        }
-    }
     }
 }
 
@@ -217,7 +231,6 @@ fun DashboardScreenContent(
                     currentStreak    = uiState.currentStreak,
                     hasTrackedToday  = uiState.hasTrackedToday,
                     repairAvailable  = uiState.repairAvailable,
-                    freezeCount      = uiState.freezeCount,
                     onCardClick      = { showStreakDetail = true },
                     onAddTransaction = onAddTransactionForStreak,
                     onUseRepair      = { onEvent(DashboardEvent.UseStreakRepair) },

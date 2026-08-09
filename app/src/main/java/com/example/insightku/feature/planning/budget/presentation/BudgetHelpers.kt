@@ -1,15 +1,14 @@
 package com.example.insightku.feature.planning.budget.presentation
 
-import androidx.compose.runtime.Composable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
-import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
 import java.util.Locale
@@ -72,10 +71,6 @@ internal fun parseCategoryColor(value: String): Color {
 
 internal fun categoryIcon(category: BudgetCategory): ImageVector =
     CategoryIconResolver.resolveIcon(category.icon.ifBlank { category.name })
-
-internal fun currentMonthLabel(): String {
-    return DateFormatter.formatMonthYear(System.currentTimeMillis())
-}
 
 // ─── Percentage Formatting ────────────────────────────────────────────────────
 

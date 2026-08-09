@@ -1,37 +1,53 @@
 package com.example.insightku.feature.planning.goal.presentation
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
-import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.PurpleViolet
-import com.example.insightku.core.ui.theme.SuccessColor
-import com.example.insightku.feature.planning.goal.domain.model.Contribution
-import com.example.insightku.feature.planning.goal.domain.model.DailyTarget
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import java.time.LocalDate
 import java.time.ZoneId
@@ -46,7 +62,6 @@ fun GoalDetailScreen(
     onBack: () -> Unit,
     onNavigateToAccounts: () -> Unit,
     onGoalArchived: () -> Unit,
-    onGoalDeleted: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: GoalDetailViewModel = hiltViewModel()
 ) {
@@ -59,7 +74,11 @@ fun GoalDetailScreen(
     LaunchedEffect(uiState.snackbarMessage) { if (uiState.snackbarMessage == "Goal archived" || uiState.snackbarMessage == "Goal deleted") onGoalArchived() }
 
     Scaffold(modifier = modifier.fillMaxSize(), snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = AppPalette.background) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
             when {
                 uiState.isLoading -> LoadingContent(onBack = onBack)
                 uiState.error != null && !uiState.hasGoal -> ErrorContent(message = uiState.error!!, onBack = onBack, onRetry = { viewModel.onEvent(GoalDetailEvent.LoadGoal(goalId)) })
@@ -118,27 +137,25 @@ fun GoalDetailScreen(
 
 // ─── Dialog-based Entry Point (Legacy) ───────────────────────────────────────────
 
-@Composable
-fun GoalDetailScreen(goal: Goal, dailyTarget: DailyTarget, contributions: List<Contribution>, onBack: () -> Unit, onEdit: () -> Unit, onSetDailyTarget: () -> Unit, onSave: () -> Unit, onWithdraw: () -> Unit, modifier: Modifier = Modifier) {
-    val goalColor = remember(goal.color) { try { Color(android.graphics.Color.parseColor(goal.color)) } catch (e: Exception) { PurpleViolet } }
-    val animatedProgress by animateFloatAsState(targetValue = goal.progressPercent.toFloat() / 100f, animationSpec = spring(dampingRatio = 0.8f, stiffness = 200f), label = "progress")
-    LazyColumn(modifier = modifier.fillMaxSize().background(AppPalette.background), contentPadding = PaddingValues(bottom = 120.dp)) {
-        item { PremiumDetailHeader(goal = goal, goalColor = goalColor, onBack = onBack) }
-        item { GoalSummaryCard(goal = goal, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-        item { Spacer(Modifier.height(12.dp)); ProgressSection(goal = goal, goalColor = goalColor, animatedProgress = animatedProgress, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-        item { Spacer(Modifier.height(12.dp)); ActionButtonsSection(goal = goal, goalColor = goalColor, onContribute = onSave, onWithdraw = onWithdraw, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-    }
-}
-
 // ─── Main Content ────────────────────────────────────────────────────────────────
 
 @Composable
 private fun GoalDetailContent(uiState: GoalDetailUiState, onBack: () -> Unit, onEvent: (GoalDetailEvent) -> Unit) {
     val goal = uiState.goal ?: return
-    val goalColor = remember(goal.color) { try { Color(android.graphics.Color.parseColor(goal.color)) } catch (e: Exception) { PurpleViolet } }
+    val goalColor = remember(goal.color) {
+        try {
+            Color(goal.color.toColorInt())
+        } catch (_: Exception) {
+            PurpleViolet
+        }
+    }
     val animatedProgress by animateFloatAsState(targetValue = goal.progressPercent.toFloat() / 100f, animationSpec = spring(dampingRatio = 0.8f, stiffness = 200f), label = "progress")
 
-    LazyColumn(modifier = Modifier.fillMaxSize().background(AppPalette.background), contentPadding = PaddingValues(bottom = 120.dp)) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppPalette.background), contentPadding = PaddingValues(bottom = 120.dp)
+    ) {
         item { PremiumDetailHeader(goal = goal, goalColor = goalColor, onBack = onBack, onEdit = { onEvent(GoalDetailEvent.EditGoal) }) }
         item { GoalSummaryCard(goal = goal, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
 
@@ -160,7 +177,23 @@ private fun GoalDetailContent(uiState: GoalDetailUiState, onBack: () -> Unit, on
 
         // ── Auto-allocation (not for completed/archived) ──────────────────
         if (!goal.isCompleted && !goal.isArchived) {
-            item { Spacer(Modifier.height(12.dp)); AutoAllocationSection(goal = goal, rules = uiState.allocationRules, goalColor = goalColor, onAddRule = { onEvent(GoalDetailEvent.ShowAutoAllocationDialog) }, onEditRule = { onEvent(GoalDetailEvent.ShowEditAutoAllocationRule(it)) }, onToggleRule = { ruleId, enabled -> onEvent(GoalDetailEvent.ToggleAutoAllocationRule(ruleId, enabled)) }, onDeleteRule = { onEvent(GoalDetailEvent.DeleteAutoAllocationRule(it)) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+            item {
+                Spacer(Modifier.height(12.dp)); AutoAllocationSection(
+                rules = uiState.allocationRules,
+                goalColor = goalColor,
+                onAddRule = { onEvent(GoalDetailEvent.ShowAutoAllocationDialog) },
+                onEditRule = { onEvent(GoalDetailEvent.ShowEditAutoAllocationRule(it)) },
+                onToggleRule = { ruleId, enabled ->
+                    onEvent(
+                        GoalDetailEvent.ToggleAutoAllocationRule(
+                            ruleId,
+                            enabled
+                        )
+                    )
+                },
+                modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
+            )
+            }
         }
 
         // ── Action buttons (only for active, non-completed goals) ─────────
@@ -174,7 +207,6 @@ private fun GoalDetailContent(uiState: GoalDetailUiState, onBack: () -> Unit, on
                 Spacer(Modifier.height(12.dp))
                 StatusActionsSection(
                     goal = goal,
-                    goalColor = goalColor,
                     onPause = { onEvent(GoalDetailEvent.PauseGoal) },
                     onResume = { onEvent(GoalDetailEvent.ResumeGoal) },
                     onComplete = { onEvent(GoalDetailEvent.CompleteGoal) },
@@ -202,7 +234,11 @@ private fun DeadlineWarningBanner(goal: Goal, goalColor: Color, onExtend: () -> 
 
     val bannerColor = if (isOverdue) ExpenseRed else goalColor
     val icon = if (isOverdue) Icons.Outlined.ErrorOutline else Icons.Outlined.AccessTime
-    val title = if (isOverdue) stringResource(R.string.goal_deadline_overdue) else stringResource(R.string.goal_deadline_urgent, daysRemaining)
+    val title =
+        if (isOverdue) stringResource(R.string.goal_deadline_overdue) else pluralStringResource(
+            R.plurals.goal_deadline_urgent,
+            daysRemaining
+        )
     val subtitle = if (isOverdue) stringResource(R.string.goal_deadline_overdue_desc) else stringResource(R.string.goal_deadline_urgent_desc)
 
     Surface(

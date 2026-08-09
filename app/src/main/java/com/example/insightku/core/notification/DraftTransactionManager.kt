@@ -7,25 +7,24 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import com.example.insightku.MainActivity
+import com.example.insightku.R
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.DraftType
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.data.repository.DraftTransactionRepository
-import com.example.insightku.R
 import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.NumberFormatter
+
 private const val TAG = "NotificationDebug"
 private const val CHANNEL_ID   = "bank_notification_channel"
-private const val CHANNEL_NAME = "Transaksi dari Notifikasi Bank"
 private const val ALLOCATION_CHANNEL_ID = "auto_allocation_review_channel"
-private const val ALLOCATION_CHANNEL_NAME = "Auto Allocation Review"
 private const val DUPLICATE_WINDOW_MS = 60_000L
 
 class DraftTransactionManager {
@@ -119,7 +118,7 @@ class DraftTransactionManager {
         // Deep link URI: opens AddTransaction with pre-filled data + draftId so the
         // confirm flow can remove the draft after saving.
         // User still picks category and confirms before saving.
-        val deepLinkUri = Uri.parse("insightku://add-transaction").buildUpon()
+        val deepLinkUri = "insightku://add-transaction".toUri().buildUpon()
             .appendQueryParameter("draftId",     draftId)
             .appendQueryParameter("amount",      parsed.amount.toString())
             .appendQueryParameter("title",       parsed.merchant)
@@ -131,15 +130,19 @@ class DraftTransactionManager {
 
         val openIntent = Intent(Intent.ACTION_VIEW, deepLinkUri, context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            // Extra (not deep link) so DismissNotificationReceiver can pair cancel + soft-dismiss.
+            putExtra(DismissNotificationReceiver.EXTRA_DRAFT_ID, draftId)
         }
         val openPending = PendingIntent.getActivity(
             context, notifId, openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Dismiss action: user does not want to add this transaction.
+        // Dismiss action: close the notification and — when we know the draft — soft-dismiss it
+        // (the Inbox undo snackbar lets the user bring it back; if no draft id, just cancel).
         val dismissIntent = Intent(context, DismissNotificationReceiver::class.java).apply {
             putExtra(DismissNotificationReceiver.EXTRA_NOTIF_ID, notifId)
+            putExtra(DismissNotificationReceiver.EXTRA_DRAFT_ID, draftId)
         }
         val dismissPending = PendingIntent.getBroadcast(
             context, notifId + 1, dismissIntent,
@@ -267,12 +270,14 @@ class DraftTransactionManager {
         val amountText = NumberFormatter.formatCurrency(amount)
 
         // Deep link URI: opens allocation draft review
-        val deepLinkUri = Uri.parse("insightku://allocation-draft").buildUpon()
+        val deepLinkUri = "insightku://allocation-draft".toUri().buildUpon()
             .appendQueryParameter("draftId", draftId)
             .build()
 
         val openIntent = Intent(Intent.ACTION_VIEW, deepLinkUri, context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            // Extra (not deep link) so DismissNotificationReceiver can pair cancel + soft-dismiss.
+            putExtra(DismissNotificationReceiver.EXTRA_DRAFT_ID, draftId)
         }
         val openPending = PendingIntent.getActivity(
             context, notifId, openIntent,

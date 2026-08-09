@@ -3,16 +3,47 @@ package com.example.insightku.feature.planning.goal.presentation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Undo
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Savings
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
@@ -52,7 +84,13 @@ fun GoalFundsBottomSheet(
     onTransfer: (targetAccountId: String) -> Unit
 ) {
     val accent = LocalAccent.current
-    val parsedGoalColor = remember(goalColor) { try { Color(android.graphics.Color.parseColor(goalColor)) } catch (e: Exception) { accent } }
+    val parsedGoalColor = remember(goalColor) {
+        try {
+            Color(goalColor.toColorInt())
+        } catch (_: Exception) {
+            accent
+        }
+    }
     var transferMode by remember { mutableStateOf(false) }
     var selectedAccountId by remember { mutableStateOf<String?>(null) }
     // Destination options: active accounts that are not a source of this goal's funds
@@ -63,12 +101,46 @@ fun GoalFundsBottomSheet(
         containerColor = AppPalette.card,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = { Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) { Box(Modifier.width(40.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(AppPalette.cardBorder)) } }
+        dragHandle = {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(AppPalette.cardBorder)
+                )
+            }
+        }
     ) {
-        Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).navigationBarsPadding().padding(bottom = 32.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 32.dp)
+        ) {
             // ── Goal header ─────────────────────────────────────────────
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Box(modifier = Modifier.size(52.dp).clip(RoundedCornerShape(14.dp)).background(parsedGoalColor.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) { Icon(imageVector = getGoalIcon(goalIcon), contentDescription = null, tint = parsedGoalColor, modifier = Modifier.size(26.dp)) }
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(parsedGoalColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = getGoalIcon(goalIcon),
+                        contentDescription = null,
+                        tint = parsedGoalColor,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = stringResource(if (isDelete) R.string.goal_delete_funds_title else R.string.goal_complete_funds_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
                     Text(text = goalName, style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -92,13 +164,29 @@ fun GoalFundsBottomSheet(
 
             if (!transferMode) {
                 // ── Choice mode ─────────────────────────────────────────
-                Button(onClick = onKeepOrReturn, modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = if (isDelete) AppPalette.error else parsedGoalColor)) {
+                Button(
+                    onClick = onKeepOrReturn,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDelete) AppPalette.error else parsedGoalColor)
+                ) {
                     Icon(imageVector = if (isDelete) Icons.AutoMirrored.Outlined.Undo else Icons.Outlined.Savings, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(10.dp))
                     Text(stringResource(if (isDelete) R.string.goal_funds_return else R.string.goal_funds_keep), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 }
                 Spacer(Modifier.height(10.dp))
-                OutlinedButton(onClick = { transferMode = true }, modifier = Modifier.fillMaxWidth().height(54.dp), enabled = destinationAccounts.isNotEmpty(), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, AppPalette.cardBorder), colors = ButtonDefaults.outlinedButtonColors(contentColor = AppPalette.textPrimary)) {
+                OutlinedButton(
+                    onClick = { transferMode = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    enabled = destinationAccounts.isNotEmpty(),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, AppPalette.cardBorder),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppPalette.textPrimary)
+                ) {
                     Icon(imageVector = Icons.Outlined.SwapHoriz, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(10.dp))
                     Text(stringResource(R.string.goal_funds_transfer), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -115,10 +203,39 @@ fun GoalFundsBottomSheet(
                     Column(modifier = Modifier.heightIn(max = 280.dp)) {
                         destinationAccounts.forEachIndexed { index, account ->
                             val isSelected = account.id == selectedAccountId
-                            val acctColor = remember(account.color) { try { Color(android.graphics.Color.parseColor(account.color)) } catch (e: Exception) { accent } }
+                            val acctColor = remember(account.color) {
+                                try {
+                                    Color(account.color.toColorInt())
+                                } catch (_: Exception) {
+                                    accent
+                                }
+                            }
                             val acctIcon = when (account.type) { AccountType.CASH -> Icons.Outlined.Payments; AccountType.BANK_ACCOUNT -> Icons.Outlined.AccountBalance; AccountType.E_WALLET -> Icons.Outlined.AccountBalanceWallet; AccountType.CREDIT_CARD -> Icons.Outlined.CreditCard }
-                            Row(modifier = Modifier.fillMaxWidth().clickable { selectedAccountId = account.id }.background(if (isSelected) acctColor.copy(alpha = 0.08f) else Color.Transparent).padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(if (isSelected) acctColor.copy(alpha = 0.15f) else AppPalette.cardBorder.copy(alpha = 0.3f)), contentAlignment = Alignment.Center) { Icon(acctIcon, contentDescription = null, tint = if (isSelected) acctColor else AppPalette.textMuted, modifier = Modifier.size(20.dp)) }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedAccountId = account.id }
+                                    .background(if (isSelected) acctColor.copy(alpha = 0.08f) else Color.Transparent)
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (isSelected) acctColor.copy(alpha = 0.15f) else AppPalette.cardBorder.copy(
+                                                alpha = 0.3f
+                                            )
+                                        ), contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        acctIcon,
+                                        contentDescription = null,
+                                        tint = if (isSelected) acctColor else AppPalette.textMuted,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(account.balance), style = MaterialTheme.typography.bodySmall, color = if (account.balance > 0) SuccessColor else ExpenseRed)
@@ -130,17 +247,45 @@ fun GoalFundsBottomSheet(
                     }
                 }
                 Spacer(Modifier.height(20.dp))
-                Button(onClick = { selectedAccountId?.let { onTransfer(it) } }, modifier = Modifier.fillMaxWidth().height(54.dp), enabled = selectedAccountId != null, shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = parsedGoalColor)) {
+                Button(
+                    onClick = { selectedAccountId?.let { onTransfer(it) } },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    enabled = selectedAccountId != null,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = parsedGoalColor)
+                ) {
                     Icon(imageVector = Icons.Outlined.SwapHoriz, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(10.dp))
                     Text(stringResource(R.string.goal_funds_confirm_transfer), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 }
                 Spacer(Modifier.height(10.dp))
-                TextButton(onClick = { transferMode = false }, modifier = Modifier.fillMaxWidth().height(44.dp)) { Text(stringResource(R.string.back), style = MaterialTheme.typography.titleMedium, color = AppPalette.textMuted) }
+                TextButton(
+                    onClick = { transferMode = false }, modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.back),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AppPalette.textMuted
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))
-            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text(stringResource(R.string.cancel), style = MaterialTheme.typography.titleMedium, color = AppPalette.textMuted) }
+            TextButton(
+                onClick = onDismiss, modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text(
+                    stringResource(R.string.cancel),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = AppPalette.textMuted
+                )
+            }
         }
     }
 }

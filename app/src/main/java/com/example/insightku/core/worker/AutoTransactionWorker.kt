@@ -7,15 +7,13 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.insightku.R
 import com.example.insightku.core.data.model.BudgetFrequency
-import com.example.insightku.core.data.model.Installment
-import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.core.data.repository.TransactionRepository
-import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.core.data.repository.InstallmentRepository
-import com.example.insightku.feature.auth.data.AuthRepository
+import com.example.insightku.core.data.repository.RecurringBudgetRepository
+import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.feature.auth.data.AuthRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
@@ -62,10 +60,13 @@ class AutoTransactionWorker @AssistedInject constructor(
                 continue
             }
 
-            // Backfill: process every missed occurrence up to today
+            // Backfill: process next missed occurrences up to today, but cap the count.
+            // An app left offline across many periods (or a stale nextDue) must not flood
+            // the ledger with dozens of auto-transactions at once.
             var nextDue = budget.nextDue
             var lastProcessed = budget.lastProcessed
-            while (nextDue <= now) {
+            var backfilled = 0
+            while (nextDue <= now && backfilled < MAX_BACKFILL_PER_PAYMENT) {
                 Log.d(TAG, "Creating transaction from recurring id=${budget.id}, name=${budget.name}, amount=${budget.amount}, dueDate=$nextDue")
                 val tx = Transaction(
                     id            = UUID.randomUUID().toString(),
@@ -98,6 +99,13 @@ class AutoTransactionWorker @AssistedInject constructor(
                     break
                 }
 
+                backfilled++
+                if (backfilled >= MAX_BACKFILL_PER_PAYMENT) {
+                    Log.w(
+                        TAG,
+                        "Backfill cap reached for recurring=${budget.id} — stopping; remaining periods will process on the next run"
+                    )
+                }
                 lastProcessed = nextDue
                 nextDue = advanceDate(nextDue, budget.frequency)
             }
@@ -123,11 +131,13 @@ class AutoTransactionWorker @AssistedInject constructor(
         for (installment in dueInstallments) {
             Log.d(TAG, "Installment: id=${installment.id}, name=${installment.name}, monthlyPayment=${installment.monthlyPayment}, nextDueDate=${installment.nextDueDate}, paid=${installment.paidMonths}/${installment.totalMonths}")
 
-            // Backfill: process every missed month up to today
+            // Backfill: process next missed months up to today, but cap the count
+            // (mirrors the recurring backfill guard).
             var nextDue = installment.nextDueDate
             var paidMonths = installment.paidMonths
+            var backfilled = 0
 
-            while (nextDue <= now && paidMonths < installment.totalMonths) {
+            while (nextDue <= now && paidMonths < installment.totalMonths && backfilled < MAX_BACKFILL_PER_PAYMENT) {
                 Log.d(TAG, "Creating transaction from installment id=${installment.id}, name=${installment.name}, amount=${installment.monthlyPayment}, dueDate=$nextDue")
                 val tx = Transaction(
                     id            = UUID.randomUUID().toString(),
@@ -160,6 +170,13 @@ class AutoTransactionWorker @AssistedInject constructor(
                 }
 
                 paidMonths++
+                backfilled++
+                if (backfilled >= MAX_BACKFILL_PER_PAYMENT) {
+                    Log.w(
+                        TAG,
+                        "Backfill cap reached for installment=${installment.id} — stopping; remaining months will process on the next run"
+                    )
+                }
                 nextDue = advanceDate(nextDue, BudgetFrequency.MONTHLY)
             }
 
@@ -205,5 +222,8 @@ class AutoTransactionWorker @AssistedInject constructor(
 
     companion object {
         const val WORK_NAME = "AutoTransactionWorker"
+
+        /** Cap on auto-backfilled occurrences per payment per run — prevents ledger floods. */
+        const val MAX_BACKFILL_PER_PAYMENT = 12
     }
 }

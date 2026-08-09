@@ -4,7 +4,21 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -14,13 +28,49 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -28,17 +78,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.graphics.toColorInt
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.RecurringBudget
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
-import com.example.insightku.core.i18n.NumberFormatter
-import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.components.PremiumDatePicker
-import androidx.core.graphics.toColorInt
+import com.example.insightku.core.ui.theme.AppPalette
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,8 +125,19 @@ fun RecurringBudgetsDialog(
 
     if (isOpen) {
         Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-            Surface(modifier = Modifier.fillMaxWidth(0.95f).fillMaxHeight(0.85f), shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface) {
-                Column(Modifier.fillMaxSize().imePadding()) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .fillMaxHeight(0.85f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ) {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                ) {
                     DialogHeader(showAddForm = showAddForm, isEditing = editingBudget != null, onBack = ::handleBackToList, onClose = onDismiss)
                     if (showAddForm) {
                         AddEditBudgetForm(editingBudget = editingBudget, onSave = { budget -> if (editingBudget != null) onBudgetEdited(budget) else onBudgetAdded(budget); handleBackToList() }, onCancel = ::handleBackToList, categories = categories, accounts = accounts)
@@ -94,7 +154,13 @@ fun RecurringBudgetsDialog(
 
 @Composable
 fun DialogHeader(showAddForm: Boolean, isEditing: Boolean, onBack: () -> Unit, onClose: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (showAddForm) { IconButton(onClick = onBack, modifier = Modifier.size(24.dp)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back)) }; Spacer(Modifier.width(8.dp)) }
             Icon(Icons.Default.Repeat, contentDescription = null, tint = AppPalette.accent)
@@ -108,17 +174,43 @@ fun DialogHeader(showAddForm: Boolean, isEditing: Boolean, onBack: () -> Unit, o
 
 @Composable
 fun ColumnScope.BudgetList(budgets: List<RecurringBudget>, onEdit: (RecurringBudget) -> Unit, onDelete: (RecurringBudget) -> Unit, onAdd: () -> Unit, categories: Map<String, String>) {
-    Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
-        Text(stringResource(R.string.recurring_manage_desc), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), textAlign = TextAlign.Center)
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .padding(horizontal = 16.dp)
+    ) {
+        Text(
+            stringResource(R.string.recurring_manage_desc),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            textAlign = TextAlign.Center
+        )
         if (budgets.isEmpty()) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.recurring_empty), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(), contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    stringResource(R.string.recurring_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         } else {
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
                 items(budgets) { budget -> RecurringBudgetItem(budget = budget, categoryName = categories.entries.find { it.value == budget.categoryId }?.key ?: "N/A", onEdit = { onEdit(budget) }, onDelete = { onDelete(budget) }) }
             }
         }
     }
-    Button(onClick = onAdd, modifier = Modifier.fillMaxWidth().padding(16.dp).height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = AppPalette.accent)) {
+    Button(
+        onClick = onAdd, modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = AppPalette.accent)
+    ) {
         Icon(Icons.Default.Add, contentDescription = null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.recurring_add))
     }
 }
@@ -174,7 +266,12 @@ fun ColumnScope.AddEditBudgetForm(editingBudget: RecurringBudget?, onSave: (Recu
     var showDatePicker by remember { mutableStateOf(false) }
     val reminderOptions = listOf(1 to stringResource(R.string.recurring_reminder_1day), 3 to stringResource(R.string.recurring_reminder_3days), 7 to stringResource(R.string.recurring_reminder_7days), 14 to stringResource(R.string.recurring_reminder_14days))
 
-    Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
         OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.recurring_budgets_name_label)) }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text(stringResource(R.string.recurring_budgets_amount_label)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -215,13 +312,23 @@ fun ColumnScope.AddEditBudgetForm(editingBudget: RecurringBudget?, onSave: (Recu
         Spacer(Modifier.height(16.dp))
         DropdownField(label = stringResource(R.string.recurring_budgets_reminder_time), options = reminderOptions.toMap(), onValueSelected = { reminderDaysBefore = it }, displayValue = { reminderOptions.find { it.first == reminderDaysBefore }?.second ?: stringResource(R.string.recurring_select_reminder) })
         Spacer(Modifier.height(16.dp))
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Column { Text(stringResource(R.string.recurring_budgets_notifications), style = MaterialTheme.typography.bodyLarge); Text(stringResource(R.string.recurring_budgets_notifications_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Switch(checked = notifications, onCheckedChange = { notifications = it })
         }
     }
     if (showDatePicker) { PremiumDatePicker(initialMillis = nextDueDate, onDateSelected = { millis -> nextDueDate = millis; showDatePicker = false }, onDismiss = { showDatePicker = false }) }
-    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.cancel)) }
         Button(onClick = { val budget = RecurringBudget(id = editingBudget?.id ?: 0, name = name, amount = amount.toDoubleOrNull() ?: 0.0, frequency = frequency, categoryId = categoryId, accountId = accountId ?: editingBudget?.accountId, nextDue = nextDueDate, isActive = notifications, reminderDaysBefore = reminderDaysBefore); onSave(budget) }, enabled = name.isNotBlank() && amount.isNotBlank() && categoryId != null, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = AppPalette.accent)) { Icon(Icons.Default.Add, contentDescription = null); Spacer(Modifier.width(4.dp)); Text(if (editingBudget != null) stringResource(R.string.save) else stringResource(R.string.recurring_add)) }
     }
@@ -232,7 +339,16 @@ fun ColumnScope.AddEditBudgetForm(editingBudget: RecurringBudget?, onSave: (Recu
 fun <T> DropdownField(label: String, options: Map<T, String>, onValueSelected: (T) -> Unit, displayValue: @Composable () -> String) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-        OutlinedTextField(value = displayValue(), onValueChange = {}, readOnly = true, label = { Text(label) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }, modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable))
+        OutlinedTextField(
+            value = displayValue(),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+        )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) { options.forEach { (value, text) -> DropdownMenuItem(text = { Text(text) }, onClick = { onValueSelected(value); expanded = false }) } }
     }
 }
@@ -248,8 +364,34 @@ private fun RecurringBudgetAccountSelector(accounts: List<Account>, selectedAcco
                     val isSelected = selectedAccountId == account.id
                     val accountColor = runCatching { Color(account.color.toColorInt()) }.getOrDefault(AppPalette.accent)
                     val accountIcon = when (account.type) { AccountType.CASH -> Icons.Default.Payments; AccountType.BANK_ACCOUNT -> Icons.Default.AccountBalance; AccountType.E_WALLET -> Icons.Default.AccountBalanceWallet; AccountType.CREDIT_CARD -> Icons.Default.CreditCard }
-                    Column(modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(if (isSelected) accountColor.copy(alpha = 0.10f) else AppPalette.card).border(1.5.dp, if (isSelected) accountColor else AppPalette.cardBorder, RoundedCornerShape(12.dp)).clickable { onSelect(if (isSelected) null else account.id) }.padding(vertical = 10.dp, horizontal = 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(accountColor.copy(alpha = if (isSelected) 0.18f else 0.10f)), contentAlignment = Alignment.Center) { Icon(accountIcon, null, tint = accountColor, modifier = Modifier.size(16.dp)) }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isSelected) accountColor.copy(alpha = 0.10f) else AppPalette.card)
+                            .border(
+                                1.5.dp,
+                                if (isSelected) accountColor else AppPalette.cardBorder,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .clickable { onSelect(if (isSelected) null else account.id) }
+                            .padding(vertical = 10.dp, horizontal = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(accountColor.copy(alpha = if (isSelected) 0.18f else 0.10f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                accountIcon,
+                                null,
+                                tint = accountColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                         Text(account.name, style = MaterialTheme.typography.labelSmall, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, color = if (isSelected) accountColor else AppPalette.textMuted, maxLines = 2, textAlign = TextAlign.Center)
                     }
                 }
@@ -268,7 +410,7 @@ fun formatNextDue(nextDue: Long): String {
         diffDays < 0 -> stringResource(R.string.recurring_budgets_overdue)
         diffDays == 0L -> stringResource(R.string.recurring_budgets_today)
         diffDays == 1L -> stringResource(R.string.recurring_budgets_tomorrow)
-        else -> stringResource(R.string.recurring_budgets_in_days, diffDays.toInt())
+        else -> pluralStringResource(R.plurals.recurring_budgets_in_days, diffDays.toInt())
     }
 }
 

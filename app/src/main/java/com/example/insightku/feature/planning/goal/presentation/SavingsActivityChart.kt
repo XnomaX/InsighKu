@@ -1,41 +1,47 @@
 package com.example.insightku.feature.planning.goal.presentation
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Savings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PaintingStyle
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
-import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.feature.planning.goal.domain.model.Contribution
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.PaintingStyle
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
+import com.patrykandpatrick.vico.compose.cartesian.VicoZoomState
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
@@ -46,20 +52,22 @@ import com.patrykandpatrick.vico.compose.cartesian.decoration.Decoration
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
-import com.patrykandpatrick.vico.compose.cartesian.VicoZoomState
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Insets
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
-import java.time.*
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
@@ -81,35 +89,6 @@ private val xRangeEndKey = ExtraStore.Key<Double>()
 
 
 // ─── Main Chart Composable ────────────────────────────────────────────────────────
-
-@Composable
-fun SavingsActivityChart(
-    contributions: List<Contribution>,
-    goalColor: Color,
-    goalStartDate: Instant,
-    goalDeadline: LocalDate?,
-    targetAmount: Double = 0.0,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        SectionHeader(
-            title = stringResource(R.string.goal_savings_activity_chart),
-            subtitle = stringResource(R.string.goal_savings_activity_chart_desc),
-        )
-        Spacer(Modifier.height(12.dp))
-        if (contributions.isEmpty()) {
-            EmptyChartCard(goalColor)
-        } else {
-            ChartCard(
-                contributions = contributions,
-                goalColor = goalColor,
-                goalStartDate = goalStartDate,
-                goalDeadline = goalDeadline,
-                targetAmount = targetAmount,
-            )
-        }
-    }
-}
 
 // ─── Chart Card ───────────────────────────────────────────────────────────────────
 
@@ -250,31 +229,6 @@ internal fun ChartCardContent(
     }
 }
 
-@Composable
-private fun ChartCard(
-    contributions: List<Contribution>,
-    goalColor: Color,
-    goalStartDate: Instant,
-    goalDeadline: LocalDate?,
-    targetAmount: Double,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Dimens.CardRadius),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, goalColor.copy(alpha = 0.15f)),
-    ) {
-        ChartCardContent(
-            contributions = contributions,
-            goalColor = goalColor,
-            goalStartDate = goalStartDate,
-            goalDeadline = goalDeadline,
-            targetAmount = targetAmount,
-        )
-    }
-}
-
 // ─── Chart Summary Header ─────────────────────────────────────────────────────────
 
 @Composable
@@ -330,52 +284,6 @@ private fun ChartSummaryHeader(points: List<ChartPoint>, goalColor: Color) {
     }
 }
 
-// ─── Empty Chart Card ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun EmptyChartCard(goalColor: Color) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Dimens.CardRadius),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, goalColor.copy(alpha = 0.15f)),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(goalColor.copy(alpha = 0.08f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Outlined.Savings,
-                    null,
-                    tint = goalColor.copy(alpha = 0.5f),
-                    modifier = Modifier.size(28.dp),
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                stringResource(R.string.chart_empty_title),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = AppPalette.textPrimary,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                stringResource(R.string.chart_empty_desc),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppPalette.textMuted,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-}
 
 // ─── Data Processing ──────────────────────────────────────────────────────────────
 

@@ -1,8 +1,10 @@
 package com.example.insightku.feature.planning.goal.presentation
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.repository.AccountRepository
@@ -10,17 +12,20 @@ import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
+import com.example.insightku.feature.planning.goal.domain.ContributionSummary
+import com.example.insightku.feature.planning.goal.domain.GoalContributionStats
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
 import com.example.insightku.feature.planning.goal.domain.model.Contribution
 import com.example.insightku.feature.planning.goal.domain.model.Goal
-import com.example.insightku.feature.planning.goal.domain.ContributionSummary
-import com.example.insightku.feature.planning.goal.domain.GoalContributionStats
-import android.content.Context
-import com.example.insightku.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -47,10 +52,6 @@ class GoalDetailViewModel @Inject constructor(
     init {
         if (goalId.isNotEmpty()) {
             viewModelScope.launch {
-                // Fix legacy epoch timestamps BEFORE loading data.
-                // This prevents contributions with createdAt=0L from appearing
-                // at wrong positions on the savings activity chart.
-                goalRepository.fixLegacyContributionTimestamps()
                 loadGoalData(goalId)
             }
         }

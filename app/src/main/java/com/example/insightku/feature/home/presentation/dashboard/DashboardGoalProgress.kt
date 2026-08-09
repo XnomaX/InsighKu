@@ -3,27 +3,42 @@ package com.example.insightku.feature.home.presentation.dashboard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
+import androidx.core.graphics.toColorInt
 import com.example.insightku.R
-import com.example.insightku.core.ui.theme.*
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.core.ui.theme.IncomeGreen
+import com.example.insightku.feature.home.presentation.formatCurrencyShort
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import com.example.insightku.feature.planning.goal.presentation.getGoalIcon
-import com.example.insightku.feature.home.presentation.formatCurrencyShort
 
 @Composable
 fun GoalsPreviewSection(
@@ -32,8 +47,8 @@ fun GoalsPreviewSection(
     isBalanceVisible: Boolean,
     onClickGoal: (String) -> Unit,
     onClickViewAll: () -> Unit,
-    onCreateGoal: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onCreateGoal: () -> Unit = {}
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)) {
         // Section header
@@ -51,8 +66,16 @@ fun GoalsPreviewSection(
                 )
                 val subtitle = when {
                     totalCount == 0 -> stringResource(R.string.dashboard_no_active_goals)
-                    totalCount <= 3  -> stringResource(R.string.dashboard_active_goals_count, totalCount)
-                    else            -> stringResource(R.string.dashboard_goals_of_count, goals.size, totalCount)
+                    totalCount <= 3 -> pluralStringResource(
+                        R.plurals.dashboard_active_goals_count,
+                        totalCount
+                    )
+
+                    else -> pluralStringResource(
+                        R.plurals.dashboard_goals_of_count,
+                        goals.size,
+                        totalCount
+                    )
                 }
                 Text(
                     subtitle,
@@ -158,7 +181,7 @@ fun GoalsPreviewSection(
 
             if (totalCount > 3) {
                 Text(
-                    stringResource(R.string.dashboard_more_goals, totalCount - 3),
+                    pluralStringResource(R.plurals.dashboard_more_goals, totalCount - 3),
                     style = MaterialTheme.typography.labelMedium,
                     color = NavPurple,
                     modifier = Modifier
@@ -178,7 +201,7 @@ private fun GoalPreviewItem(
 ) {
     val icon = getGoalIcon(goal.iconName)
     val iconColor = try {
-        Color(android.graphics.Color.parseColor(goal.color))
+        Color(goal.color.toColorInt())
     } catch (_: Exception) {
         NavPurple
     }

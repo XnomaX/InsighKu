@@ -2,9 +2,9 @@ package com.example.insightku.feature.settings.presentation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -14,37 +14,36 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Spa
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -52,10 +51,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -64,17 +62,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
-import com.example.insightku.feature.home.domain.MerchantMemory
+import com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.LocalResponsiveDimens
 import com.example.insightku.core.ui.theme.VisualDensity
 import com.example.insightku.core.utils.CurrencyUtils
+import com.example.insightku.feature.home.domain.MerchantMemory
 
 @Composable
 fun SettingsScreen(
@@ -126,7 +127,9 @@ fun SettingsScreen(
             item {
                 SettingsSurface {
                     Row(
-                        Modifier.fillMaxWidth().clickable { onNavigateToNotificationDebug() },
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateToNotificationDebug() },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -173,7 +176,9 @@ private fun SettingsSurface(
 private fun SectionLabel(icon: ImageVector, title: String, subtitle: String? = null) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
-            Modifier.size(36.dp).clip(RoundedCornerShape(12.dp))
+            Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
                 .background(SettingsPalette.tint(SettingsPalette.Purple)),
             contentAlignment = Alignment.Center
         ) { Icon(icon, null, tint = SettingsPalette.Purple, modifier = Modifier.size(18.dp)) }
@@ -391,7 +396,12 @@ private fun AppearanceSection(uiState: SettingsUiState, onEvent: (SettingsEvent)
             border = BorderStroke(1.dp, SettingsPalette.cardBorder)
         ) {
             Row(Modifier.padding(Dimens.CardInnerPadding), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(28.dp).clip(CircleShape).background(SettingsPalette.Purple))
+                Box(
+                    Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(SettingsPalette.Purple)
+                )
                 Spacer(Modifier.width(Dimens.PaddingMedium))
                 Column {
                     Text(stringResource(R.string.settings_preview), style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
@@ -436,7 +446,9 @@ private fun InsightToneSection(uiState: SettingsUiState, onEvent: (SettingsEvent
                 val selected = uiState.insightTone == tone
                 val bg by animateColorAsState(if (selected) SettingsPalette.Purple else SettingsPalette.tint(SettingsPalette.Purple), label = "tonebg")
                 Surface(
-                    Modifier.weight(1f).clickable { onEvent(SettingsEvent.OnInsightToneChange(tone)) },
+                    Modifier
+                        .weight(1f)
+                        .clickable { onEvent(SettingsEvent.OnInsightToneChange(tone)) },
                     shape = RoundedCornerShape(50),
                     color = bg
                 ) {
@@ -446,7 +458,9 @@ private fun InsightToneSection(uiState: SettingsUiState, onEvent: (SettingsEvent
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                         color = if (selected) Color.White else SettingsPalette.Purple,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.PaddingMedium)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = Dimens.PaddingMedium)
                     )
                 }
             }
@@ -503,7 +517,9 @@ private fun <T> PillSelector(
                 label = "pillbg"
             )
             Surface(
-                Modifier.weight(1f).clickable { onSelect(value) },
+                Modifier
+                    .weight(1f)
+                    .clickable { onSelect(value) },
                 shape = RoundedCornerShape(50),
                 color = bg
             ) {
@@ -513,7 +529,9 @@ private fun <T> PillSelector(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     color = if (isSelected) Color.White else SettingsPalette.Purple,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.PaddingMedium)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Dimens.PaddingMedium)
                 )
             }
         }
@@ -538,10 +556,13 @@ private fun AccentSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> 
         Spacer(Modifier.height(Dimens.PaddingLarge))
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
             ACCENT_PRESETS.forEach { (hex, _) ->
-                val color = Color(android.graphics.Color.parseColor(hex))
+                val color = Color(hex.toColorInt())
                 val isSelected = uiState.accentColorHex.equals(hex, ignoreCase = true)
                 Box(
-                    Modifier.size(40.dp).clip(CircleShape).background(color)
+                    Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(color)
                         .clickable { onEvent(SettingsEvent.OnAccentChange(hex)) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -602,7 +623,9 @@ private fun HabitGoalSection(uiState: SettingsUiState, onEvent: (SettingsEvent) 
 private fun StepperButton(icon: ImageVector, enabled: Boolean, onClick: () -> Unit) {
     val alpha = if (enabled) 1f else 0.3f
     Box(
-        Modifier.size(36.dp).clip(CircleShape)
+        Modifier
+            .size(36.dp)
+            .clip(CircleShape)
             .background(SettingsPalette.tint(SettingsPalette.Purple).copy(alpha = 0.12f * alpha))
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
@@ -875,7 +898,7 @@ private fun BankNotificationSection(
         when {
             // Permission NOT granted — show prominent prompt
             !isListenerEnabled -> {
-                androidx.compose.material3.Surface(
+                Surface(
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CornerRadiusMedium),
                     color = SettingsPalette.cardElevated,
                     modifier = Modifier.fillMaxWidth()
@@ -884,7 +907,7 @@ private fun BankNotificationSection(
                         Text(
                             stringResource(R.string.settings_notification_access_prompt),
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                            fontWeight = FontWeight.SemiBold,
                             color = SettingsPalette.textPrimary
                         )
                         Spacer(Modifier.height(4.dp))
@@ -924,7 +947,7 @@ private fun BankNotificationSection(
                 )
             }
             // Permission granted but feature toggled OFF
-            isListenerEnabled && !uiState.bankNotificationEnabled -> {
+            else -> {
                 Text(
                     stringResource(R.string.settings_notification_inactive),
                     style = MaterialTheme.typography.bodySmall,
@@ -939,7 +962,9 @@ private fun BankNotificationSection(
             androidx.compose.material3.HorizontalDivider(color = SettingsPalette.cardBorder)
             Spacer(Modifier.height(Dimens.PaddingMedium))
             Row(
-                Modifier.fillMaxWidth().clickable { onNavigateToBankWhitelist() },
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToBankWhitelist() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
@@ -955,7 +980,9 @@ private fun BankNotificationSection(
 @Composable
 private fun MemoryRow(memory: MerchantMemory, onForget: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().padding(vertical = Dimens.PaddingSmall),
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.PaddingSmall),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
@@ -967,7 +994,9 @@ private fun MemoryRow(memory: MerchantMemory, onForget: () -> Unit) {
             )
         }
         Box(
-            Modifier.size(28.dp).clip(CircleShape)
+            Modifier
+                .size(28.dp)
+                .clip(CircleShape)
                 .background(SettingsPalette.tint(SettingsPalette.textMuted))
                 .clickable(onClick = onForget),
             contentAlignment = Alignment.Center
@@ -984,13 +1013,17 @@ private fun AccountSection(uiState: SettingsUiState, onEvent: (SettingsEvent) ->
         Text(uiState.userEmail, style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
         Spacer(Modifier.height(Dimens.PaddingLarge))
         Surface(
-            Modifier.fillMaxWidth().clickable { onEvent(SettingsEvent.ShowLogoutDialog) },
+            Modifier
+                .fillMaxWidth()
+                .clickable { onEvent(SettingsEvent.ShowLogoutDialog) },
             shape = RoundedCornerShape(50),
             color = Color.Transparent,
             border = BorderStroke(1.dp, SettingsPalette.ExpenseRed.copy(alpha = 0.5f))
         ) {
             Row(
-                Modifier.fillMaxWidth().padding(vertical = Dimens.PaddingMedium),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Dimens.PaddingMedium),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1005,7 +1038,9 @@ private fun AccountSection(uiState: SettingsUiState, onEvent: (SettingsEvent) ->
 @Composable
 private fun AppInfoFooter() {
     Column(
-        Modifier.fillMaxWidth().padding(top = Dimens.PaddingMedium),
+        Modifier
+            .fillMaxWidth()
+            .padding(top = Dimens.PaddingMedium),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.textMuted)

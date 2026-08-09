@@ -1,8 +1,8 @@
 package com.example.insightku.feature.home.presentation
 
+import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
-import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 
@@ -54,29 +54,25 @@ data class DashboardUiState(
     val accountCount: Int = 0,
     // ── Snackbar ──────────────────────────────────────────────────────────────
     val snackbarMessage: String? = null
-) {
-    // Visual-only streak: shows 0 (dormant) until user logs a transaction today.
-    // The real currentStreak is preserved — this never touches streak history.
-    val displayedStreak: Int get() = if (hasTrackedToday) currentStreak else 0
-}
+)
 
 enum class ForecastPeriod {
     WEEKLY, MONTHLY
 }
 
-enum class StreakMilestone(val days: Int, val label: String, val emoji: String) {
-    DAY_3(3,   "3-Day Habit",      "✦"),
-    DAY_7(7,   "Week Warrior",     "⬡"),
-    DAY_14(14, "Two Week Strong",  "◈"),
-    DAY_30(30, "Monthly Master",   "❋"),
-    DAY_100(100,"Century Legend",  "✺");
+enum class StreakMilestone(val days: Int, val label: String) {
+    DAY_3(3, "3-Day Habit"),
+    DAY_7(7, "Week Warrior"),
+    DAY_14(14, "Two Week Strong"),
+    DAY_30(30, "Monthly Master"),
+    DAY_100(100, "Century Legend");
 
     companion object {
         fun forStreak(streak: Int): StreakMilestone? =
-            values().sortedByDescending { it.days }.firstOrNull { streak >= it.days }
+            entries.sortedByDescending { it.days }.firstOrNull { streak >= it.days }
 
         fun next(streak: Int): StreakMilestone? =
-            values().sortedBy { it.days }.firstOrNull { it.days > streak }
+            entries.sortedBy { it.days }.firstOrNull { it.days > streak }
     }
 }
 

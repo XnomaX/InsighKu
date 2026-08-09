@@ -1,5 +1,10 @@
 package com.example.insightku.feature.home.presentation
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,9 +32,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Payments
@@ -57,33 +62,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.Category
-import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import kotlin.math.roundToInt
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 
-internal val IncomeGreen = com.example.insightku.core.ui.theme.AppPalette.success
-internal val ExpenseRed = com.example.insightku.core.ui.theme.AppPalette.deleteRed
+internal val IncomeGreen = AppPalette.success
+internal val ExpenseRed = AppPalette.deleteRed
 internal val GlassSurface: Color @Composable get() = AppPalette.card
 internal val GlassBorder: Color @Composable get() = AppPalette.cardBorder
 
@@ -370,12 +372,17 @@ internal fun CategoryChipSelector(
             border = BorderStroke(1.dp, AppPalette.cardBorder)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Box(
-                    modifier = Modifier.size(48.dp).clip(CircleShape).background(primary.copy(alpha = 0.08f)),
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(primary.copy(alpha = 0.08f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Category, contentDescription = null, tint = primary.copy(alpha = 0.5f), modifier = Modifier.size(22.dp))
@@ -513,12 +520,17 @@ internal fun AccountChipSelector(
             border = BorderStroke(1.dp, AppPalette.cardBorder)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Box(
-                    modifier = Modifier.size(48.dp).clip(CircleShape).background(accent.copy(alpha = 0.08f)),
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(accent.copy(alpha = 0.08f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.AccountBalance, contentDescription = null, tint = accent.copy(alpha = 0.5f), modifier = Modifier.size(22.dp))
@@ -539,13 +551,25 @@ internal fun AccountChipSelector(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         if (cashAndBank.isNotEmpty()) {
-            AccountChipGrid(accounts = cashAndBank, selectedAccountId = selectedAccountId, onAccountSelected = onAccountSelected, accent = accent)
+            AccountChipGrid(
+                accounts = cashAndBank,
+                selectedAccountId = selectedAccountId,
+                onAccountSelected = onAccountSelected
+            )
         }
         if (eWallets.isNotEmpty()) {
-            AccountChipGrid(accounts = eWallets, selectedAccountId = selectedAccountId, onAccountSelected = onAccountSelected, accent = accent)
+            AccountChipGrid(
+                accounts = eWallets,
+                selectedAccountId = selectedAccountId,
+                onAccountSelected = onAccountSelected
+            )
         }
         if (creditCards.isNotEmpty()) {
-            AccountChipGrid(accounts = creditCards, selectedAccountId = selectedAccountId, onAccountSelected = onAccountSelected, accent = accent)
+            AccountChipGrid(
+                accounts = creditCards,
+                selectedAccountId = selectedAccountId,
+                onAccountSelected = onAccountSelected
+            )
         }
     }
 }
@@ -554,8 +578,7 @@ internal fun AccountChipSelector(
 private fun AccountChipGrid(
     accounts: List<Account>,
     selectedAccountId: String,
-    onAccountSelected: (String) -> Unit,
-    accent: Color
+    onAccountSelected: (String) -> Unit
 ) {
     val rows = accounts.chunked(3)
     Column(
@@ -685,7 +708,7 @@ fun PremiumSegmentedControl(
             modifier = Modifier
                 .width(halfWidthDp)
                 .fillMaxHeight()
-                .offset(x = halfWidthDp * pillFraction)
+                .offset { IntOffset((halfWidthDp * pillFraction).value.roundToInt(), 0) }
                 .padding(3.dp)
                 .clip(RoundedCornerShape(11.dp))
                 .background(if (isIncome) IncomeGreen else ExpenseRed)
@@ -746,67 +769,3 @@ fun PremiumSegmentedControl(
     }
 }
 
-// Alias backward compat
-@Composable
-fun IncomeExpenseSegmentedControl(
-    isIncome: Boolean,
-    onSelectionChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) = PremiumSegmentedControl(isIncome, onSelectionChanged, modifier)
-
-// ─── Backward compat aliases ──────────────────────────────────────────────────
-
-@Composable
-fun PremiumTextField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    modifier: Modifier = Modifier,
-    readOnly: Boolean = false,
-    singleLine: Boolean = true,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    imeAction: ImeAction = ImeAction.Next,
-    onImeAction: () -> Unit = {},
-    leadingContent: @Composable (() -> Unit)? = null,
-    trailingContent: @Composable (() -> Unit)? = null
-) = FinanceField(
-    icon = Icons.Default.Category,
-    value = value,
-    onValueChange = onValueChange,
-    placeholder = placeholder,
-    modifier = modifier,
-    readOnly = readOnly,
-    singleLine = singleLine,
-    imeAction = imeAction,
-    onImeAction = onImeAction,
-    trailingIcon = trailingContent
-)
-
-@Composable
-fun FormTextField(
-    label: String,
-    icon: ImageVector,
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    modifier: Modifier = Modifier,
-    readOnly: Boolean = false,
-    singleLine: Boolean = true,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    imeAction: ImeAction = ImeAction.Next,
-    onImeAction: () -> Unit = {},
-    trailingIcon: @Composable (() -> Unit)? = null,
-    prefix: @Composable (() -> Unit)? = null
-) = FinanceField(
-    icon = icon,
-    value = value,
-    onValueChange = onValueChange,
-    placeholder = placeholder,
-    modifier = modifier,
-    readOnly = readOnly,
-    singleLine = singleLine,
-    imeAction = imeAction,
-    onImeAction = onImeAction,
-    trailingIcon = trailingIcon
-)

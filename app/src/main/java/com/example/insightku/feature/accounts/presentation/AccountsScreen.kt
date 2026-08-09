@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -21,8 +21,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CreditCard
@@ -46,7 +46,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,12 +54,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.domain.model.AccountAllocation
@@ -71,13 +75,10 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
-import com.example.insightku.R
-import androidx.compose.ui.res.stringResource
 import com.example.insightku.feature.accounts.presentation.components.AllocationItemCard
 
 @Composable
 fun AccountsScreen(
-    onNavigateToAddAccount: () -> Unit = {},
     onNavigateToGoalDetail: (String) -> Unit = {},
     onNavigateToBudgeting: () -> Unit = {},
     viewModel: AccountsViewModel = hiltViewModel()
@@ -159,7 +160,6 @@ fun AccountsScreen(
             AccountDetailSheet(
                 account = account,
                 allocation = uiState.getAllocation(account.id),
-                isOpen = true,
                 onDismiss = { accountToView = null },
                 onEdit = {
                     accountToView = null
@@ -210,7 +210,7 @@ private fun AccountsHeader(
                     )
                     if (accountCount > 0) {
                         Text(
-                            text = stringResource(R.string.accounts_count, accountCount),
+                            text = pluralStringResource(R.plurals.accounts_count, accountCount),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppPalette.textMuted
                         )
@@ -263,7 +263,7 @@ private fun AccountsList(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+        contentPadding = PaddingValues(
             bottom = 80.dp
         )
     ) {
@@ -314,8 +314,8 @@ private fun AccountRow(
     }
 
     val accountColor = try {
-        Color(android.graphics.Color.parseColor(account.color))
-    } catch (e: Exception) {
+        Color(account.color.toColorInt())
+    } catch (_: Exception) {
         LocalAccent.current
     }
 
@@ -575,17 +575,13 @@ private fun EmptyAccountsState(
 private fun AccountDetailSheet(
     account: Account,
     allocation: AccountAllocation?,
-    isOpen: Boolean,
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onGoalClick: (String) -> Unit = {},
     onBudgetClick: () -> Unit = {}
 ) {
-    if (!isOpen) return
-
     val accent = LocalAccent.current
-    val successGreen = com.example.insightku.core.ui.theme.SuccessColor
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val icon = when (account.type) {
@@ -596,8 +592,8 @@ private fun AccountDetailSheet(
     }
 
     val accountColor = try {
-        Color(android.graphics.Color.parseColor(account.color))
-    } catch (e: Exception) {
+        Color(account.color.toColorInt())
+    } catch (_: Exception) {
         accent
     }
 
@@ -923,8 +919,8 @@ private fun AllocationBreakdownSection(
 
                 allocation.goalAllocations.forEach { goal ->
                     val goalColor = try {
-                        Color(android.graphics.Color.parseColor(goal.goalColor))
-                    } catch (e: Exception) {
+                        Color(goal.goalColor.toColorInt())
+                    } catch (_: Exception) {
                         accountColor
                     }
 
@@ -954,8 +950,8 @@ private fun AllocationBreakdownSection(
 
                 allocation.budgetAllocations.forEach { budget ->
                     val budgetColor = try {
-                        budget.budgetColor?.let { Color(android.graphics.Color.parseColor(it)) }
-                    } catch (e: Exception) {
+                        budget.budgetColor?.let { Color(it.toColorInt()) }
+                    } catch (_: Exception) {
                         null
                     } ?: accountColor
 

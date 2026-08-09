@@ -15,11 +15,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "1044586760966-qc62svehbl1hksv12jsd7g6dn5dk9i9o.apps.googleusercontent.com",
+          "client_id": "1044586760966-oqbu5rot64e332vakku9ktj23oi5046m.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.insightku",
-            "certificate_hash": "c5ab97f82ae483601829ac066e2617720f129dac"
+            "certificate_hash": "317dc75817393d40d022266a65554240bcb3361b"
           }
         },
         {

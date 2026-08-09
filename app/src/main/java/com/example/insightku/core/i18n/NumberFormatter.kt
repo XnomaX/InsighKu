@@ -1,9 +1,7 @@
 package com.example.insightku.core.i18n
 
-import android.content.Context
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
-import com.example.insightku.core.utils.CurrencyOption
+import com.example.insightku.core.i18n.NumberFormatter.formatCompact
+import com.example.insightku.core.i18n.NumberFormatter.formatCurrencyCompact
 import com.example.insightku.core.utils.CurrencyUtils
 import java.text.DecimalFormat
 import java.text.NumberFormat
@@ -28,30 +26,6 @@ import kotlin.math.floor
  *   - Configurable decimal precision
  */
 object NumberFormatter {
-
-    /**
-     * Get the current application locale.
-     * Falls back to device locale if no explicit selection.
-     */
-    fun getCurrentLocale(context: Context): Locale {
-        val currentLocales = AppCompatDelegate.getApplicationLocales()
-        if (!currentLocales.isEmpty) {
-            return currentLocales[0] ?: Locale.getDefault()
-        }
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-            context.resources.configuration.locales[0]
-        } else {
-            @Suppress("DEPRECATION")
-            context.resources.configuration.locale
-        } ?: Locale.getDefault()
-    }
-
-    /**
-     * Get the current locale code ("id" or "en").
-     */
-    fun getCurrentLocaleCode(context: Context): String {
-        return getCurrentLocale(context).language
-    }
 
     // ══════════════════════════════════════════════════════════════════════════════
     // NUMBER FORMATTING
@@ -104,13 +78,6 @@ object NumberFormatter {
         return NumberFormat.getIntegerInstance(locale).format(number)
     }
 
-    /**
-     * Strip thousands separators from a formatted string.
-     */
-    fun stripThousands(formatted: String): String {
-        return formatted.filter { it.isDigit() }
-    }
-
     // ══════════════════════════════════════════════════════════════════════════════
     // CURRENCY FORMATTING
     // ══════════════════════════════════════════════════════════════════════════════
@@ -147,7 +114,7 @@ object NumberFormatter {
             fmt.maximumFractionDigits = option.fractionDigits
             fmt.minimumFractionDigits = option.fractionDigits
             fmt.format(amount)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             val numFmt = NumberFormat.getNumberInstance(locale) as DecimalFormat
             numFmt.maximumFractionDigits = option.fractionDigits
             numFmt.minimumFractionDigits = option.fractionDigits
@@ -257,38 +224,11 @@ object NumberFormatter {
     ): String = formatCompact(value.toDouble(), locale)
 
     /**
-     * Format a percentage with one decimal place.
-     *
-     * Example: 75.5%, 0.0%, 100.0%
-     */
-    fun formatPercentage(percentage: Double): String {
-        if (percentage.isNaN() || percentage.isInfinite()) return "0.0%"
-        return "${formatNumber(percentage, decimalPlaces = 1)}%"
-    }
-
-    /**
      * Get the current currency symbol (e.g., "Rp" for IDR, "$" for USD).
      * Useful for input field prefixes where only the symbol is needed.
      */
     fun getCurrencySymbol(currencyCode: String = "IDR"): String {
         return CurrencyUtils.getOption(currencyCode).symbol
-    }
-
-    /**
-     * Parse a currency string back to a Double.
-     * Handles various formats including "Rp12.500", "$12,500", "12,500.00", etc.
-     */
-    fun parseAmount(amountString: String): Double? {
-        return try {
-            amountString
-                .replace(Regex("^[A-Za-z$€¥₩Rp.\\s]+"), "")
-                .replace(".", "")
-                .replace(",", ".")
-                .trim()
-                .toDoubleOrNull()
-        } catch (e: Exception) {
-            null
-        }
     }
 
     // ══════════════════════════════════════════════════════════════════════════════

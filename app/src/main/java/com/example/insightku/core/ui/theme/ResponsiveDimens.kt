@@ -4,7 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -65,12 +66,13 @@ val LocalResponsiveDimens = compositionLocalOf {
  * Buat ResponsiveDimens berdasarkan lebar layar saat ini.
  * Dipanggil sekali di Theme.kt agar tersedia di seluruh app.
  */
+
 @Composable
 fun rememberResponsiveDimens(): ResponsiveDimens {
-    val config = LocalConfiguration.current
-    return remember(config.screenWidthDp) {
+    val width = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    return remember(width) {
         when {
-            config.screenWidthDp < 600 -> ResponsiveDimens(
+            width < 600.dp -> ResponsiveDimens(
                 // Compact — HP normal (< 600dp)
                 screenHorizontalPadding = 16.dp,
                 screenVerticalPadding   = 16.dp,
@@ -81,7 +83,8 @@ fun rememberResponsiveDimens(): ResponsiveDimens {
                 headerIconSize          = 48.dp,
                 isCompact               = true
             )
-            config.screenWidthDp < 840 -> ResponsiveDimens(
+
+            width < 840.dp -> ResponsiveDimens(
                 // Medium — HP besar / foldable (600–840dp)
                 screenHorizontalPadding = 32.dp,
                 screenVerticalPadding   = 24.dp,

@@ -4,7 +4,18 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -13,40 +24,86 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Checkroom
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.CreditScore
+import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.EditCalendar
+import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Laptop
+import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.LocalParking
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Subscriptions
+import androidx.compose.material.icons.filled.TwoWheeler
+import androidx.compose.material.icons.filled.Water
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
-import com.example.insightku.core.i18n.NumberFormatter
-import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
-import com.example.insightku.core.ui.theme.LocalAccent
-import androidx.compose.ui.graphics.toArgb
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.components.PremiumDatePicker
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.core.utils.digitsToInt
 import com.example.insightku.core.utils.digitsToLong
 import com.example.insightku.core.utils.toAmountOrZero
-import java.util.*
 
 // ─── Curated Icon Set for Recurring Payments & Installments ───────────────────
 
@@ -95,8 +152,7 @@ internal val installmentIcons = listOf(
 fun SheetIconPicker(
     icons: List<QuickIcon>,
     selectedLabel: String?,
-    onSelect: (QuickIcon) -> Unit,
-    accentColor: Color
+    onSelect: (QuickIcon) -> Unit
 ) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(icons) { qi ->
@@ -141,10 +197,10 @@ fun AddRecurringPaymentDialog(
 ) {
     if (!isOpen) return
 
-    val context            = LocalContext.current
+    val nameErrorMessage = stringResource(R.string.error_name_short)
+    val amountErrorMessage = stringResource(R.string.error_amount_zero)
     val focusManager       = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val sheetState         = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var name        by remember(editing) { mutableStateOf(editing?.name ?: "") }
     var amountText  by remember(editing) { mutableStateOf(editing?.amount?.toLong()?.toString() ?: "") }
@@ -176,14 +232,30 @@ fun AddRecurringPaymentDialog(
         onDismissRequest   = onDismiss,
         containerColor     = AppPalette.card,
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle         = {             Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(SheetBorder))
+        dragHandle = {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    Modifier
+                        .width(36.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(SheetBorder)
+                )
             }
         }
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Header
-            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 8.dp)
+            ) {
                 Surface(shape = RoundedCornerShape(50), color = SheetPurple.copy(alpha = 0.10f)) {
                     Text(stringResource(R.string.recurring_sheet_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = SheetPurple)
@@ -195,12 +267,21 @@ fun AddRecurringPaymentDialog(
                     style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             }
 
-            Box(Modifier.fillMaxWidth().height(1.dp).background(SheetBorder))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(SheetBorder)
+            )
 
             // Form
             Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                    .background(SheetBg).padding(24.dp).navigationBarsPadding(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .background(SheetBg)
+                    .padding(24.dp)
+                    .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 SheetFormField(label = stringResource(R.string.recurring_form_name), value = name,
@@ -223,8 +304,7 @@ fun AddRecurringPaymentDialog(
                         onSelect = { qi ->
                             selectedIconLabel = qi.label
                             selectedColorHex = String.format("#%06X", 0xFFFFFF and qi.color.toArgb())
-                        },
-                        accentColor = SheetPurple
+                        }
                     )
                 }
 
@@ -265,7 +345,9 @@ fun AddRecurringPaymentDialog(
                     Text(stringResource(R.string.recurring_form_next_due), style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                     Surface(
-                        modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePicker = true },
                         shape    = RoundedCornerShape(14.dp),
                         color    = AppPalette.card,
                         border   = BorderStroke(1.dp, SheetBorder)
@@ -281,7 +363,10 @@ fun AddRecurringPaymentDialog(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Surface(
-                        modifier = Modifier.weight(1f).height(50.dp).clickable { focusManager.clearFocus(); keyboardController?.hide(); onDismiss() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clickable { focusManager.clearFocus(); keyboardController?.hide(); onDismiss() },
                         shape    = RoundedCornerShape(14.dp),
                         color    = AppPalette.card,
                         border   = BorderStroke(1.dp, SheetBorder)
@@ -291,29 +376,40 @@ fun AddRecurringPaymentDialog(
                         }
                     }
                     Box(
-                        modifier = Modifier.weight(1f).height(50.dp).clip(RoundedCornerShape(14.dp))
-                            .background(SheetPurple).clickable {
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(SheetPurple)
+                            .clickable {
                                 // Validate
                                 var hasError = false
-                                if (name.trim().length < 2) { nameError = context.getString(R.string.error_name_short); hasError = true }
+                                if (name.trim().length < 2) {
+                                    nameError = nameErrorMessage; hasError = true
+                                }
                                 val parsedAmount = amountText.toAmountOrZero()
-                                if (parsedAmount <= 0) { amountError = context.getString(R.string.error_amount_zero); hasError = true }
+                                if (parsedAmount <= 0) {
+                                    amountError = amountErrorMessage; hasError = true
+                                }
                                 if (hasError) return@clickable
 
                                 focusManager.clearFocus(); keyboardController?.hide()
-                                val selectedIcon = selectedIconLabel?.let { label -> recurringIcons.find { it.label == label } }
-                                onSave(RecurringBudget(
-                                    id         = editing?.id ?: 0,
-                                    name       = name.trim(),
-                                    amount     = parsedAmount,
-                                    frequency  = frequency,
-                                    nextDue    = nextDue,
-                                    isActive   = true,
-                                    categoryId = selectedCategoryId,
-                                    accountId  = selectedAccountId ?: editing?.accountId,
-                                    iconName   = selectedIcon?.label,
-                                    color      = selectedColorHex
-                                ))
+                                val selectedIcon =
+                                    selectedIconLabel?.let { label -> recurringIcons.find { it.label == label } }
+                                onSave(
+                                    RecurringBudget(
+                                        id = editing?.id ?: 0,
+                                        name = name.trim(),
+                                        amount = parsedAmount,
+                                        frequency = frequency,
+                                        nextDue = nextDue,
+                                        isActive = true,
+                                        categoryId = selectedCategoryId,
+                                        accountId = selectedAccountId ?: editing?.accountId,
+                                        iconName = selectedIcon?.label,
+                                        color = selectedColorHex
+                                    )
+                                )
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -340,10 +436,13 @@ fun AddInstallmentDialog(
 ) {
     if (!isOpen) return
 
-    val context            = LocalContext.current
+    val nameErrorMessage = stringResource(R.string.error_name_short)
+    val totalAmountErrorMessage = stringResource(R.string.error_total_required)
+    val monthlyErrorMessage = stringResource(R.string.error_monthly_required)
+    val monthsErrorMessage = stringResource(R.string.error_months_required)
+    val paidExceedsErrorMessage = stringResource(R.string.error_paid_exceeds)
     val focusManager       = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val sheetState         = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var name            by remember(editing) { mutableStateOf(editing?.name ?: "") }
     var totalAmountText by remember(editing) { mutableStateOf(editing?.totalAmount?.toLong()?.toString() ?: "") }
@@ -417,13 +516,29 @@ fun AddInstallmentDialog(
         onDismissRequest = onDismiss,
         containerColor   = AppPalette.card,
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {             Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(SheetBorder))
+        dragHandle = {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    Modifier
+                        .width(36.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(SheetBorder)
+                )
             }
         }
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 8.dp)
+            ) {
                 Surface(shape = RoundedCornerShape(50), color = SheetCyan.copy(alpha = 0.10f)) {
                     Text(stringResource(R.string.installment_sheet_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = SheetCyan)
@@ -435,11 +550,20 @@ fun AddInstallmentDialog(
                     style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             }
 
-            Box(Modifier.fillMaxWidth().height(1.dp).background(SheetBorder))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(SheetBorder)
+            )
 
             Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                    .background(SheetBg).padding(24.dp).navigationBarsPadding(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .background(SheetBg)
+                    .padding(24.dp)
+                    .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 SheetFormField(label = stringResource(R.string.installment_form_name), value = name,
@@ -462,8 +586,7 @@ fun AddInstallmentDialog(
                         onSelect = { qi ->
                             selectedIconLabel = qi.label
                             selectedColorHex = String.format("#%06X", 0xFFFFFF and qi.color.toArgb())
-                        },
-                        accentColor = SheetCyan
+                        }
                     )
                 }
 
@@ -536,7 +659,11 @@ fun AddInstallmentDialog(
                         color  = SheetCyan.copy(alpha = 0.06f),
                         border = BorderStroke(1.dp, SheetCyan.copy(alpha = 0.15f))
                     ) {
-                        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(stringResource(R.string.recurring_remaining), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
@@ -551,12 +678,21 @@ fun AddInstallmentDialog(
                             }
                             // Progress bar
                             LinearProgressIndicator(
-                                progress = { if (totalMonths > 0) paidMonths.toFloat() / totalMonths else 0f },
-                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50.dp)),
+                                progress = { paidMonths.toFloat() / totalMonths },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(50.dp)),
                                 color = Color(0xFF7C4DFF),
                                 trackColor = SheetBorder
                             )
-                            Text(stringResource(R.string.installment_months_summary, remainingMonths, paidMonths, totalMonths),
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.installment_months_summary,
+                                    remainingMonths,
+                                    paidMonths,
+                                    totalMonths
+                                ),
                                 style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                         }
                     }
@@ -566,7 +702,9 @@ fun AddInstallmentDialog(
                     Text(stringResource(R.string.next_due_date_label), style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
                     Surface(
-                        modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePicker = true },
                         shape    = RoundedCornerShape(14.dp),
                         color    = AppPalette.card,
                         border   = BorderStroke(1.dp, SheetBorder)
@@ -582,7 +720,10 @@ fun AddInstallmentDialog(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Surface(
-                        modifier = Modifier.weight(1f).height(50.dp).clickable { focusManager.clearFocus(); keyboardController?.hide(); onDismiss() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clickable { focusManager.clearFocus(); keyboardController?.hide(); onDismiss() },
                         shape    = RoundedCornerShape(14.dp),
                         color    = AppPalette.card,
                         border   = BorderStroke(1.dp, SheetBorder)
@@ -592,38 +733,57 @@ fun AddInstallmentDialog(
                         }
                     }
                     Box(
-                        modifier = Modifier.weight(1f).height(50.dp).clip(RoundedCornerShape(14.dp))
-                            .background(SheetCyan).clickable {
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(SheetCyan)
+                            .clickable {
                                 // Validate
                                 var hasError = false
-                                if (name.trim().length < 2) { nameError = context.getString(R.string.error_name_short); hasError = true }
+                                if (name.trim().length < 2) {
+                                    nameError = nameErrorMessage; hasError = true
+                                }
                                 val parsedTotal = totalAmountText.toAmountOrZero()
                                 val parsedMonthly = monthlyText.toAmountOrZero()
-                                val parsedMonths = totalMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
-                                val parsedPaid = paidMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
+                                val parsedMonths =
+                                    totalMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
+                                val parsedPaid =
+                                    paidMonthsText.filter { it.isDigit() }.toIntOrNull() ?: 0
 
-                                if (parsedTotal <= 0) { totalAmountError = context.getString(R.string.error_total_required); hasError = true }
-                                if (parsedMonthly <= 0) { monthlyError = context.getString(R.string.error_monthly_required); hasError = true }
-                                if (parsedMonths <= 0) { monthsError = context.getString(R.string.error_months_required); hasError = true }
-                                if (parsedPaid > parsedMonths && parsedMonths > 0) { monthsError = context.getString(R.string.error_paid_exceeds); hasError = true }
+                                if (parsedTotal <= 0) {
+                                    totalAmountError = totalAmountErrorMessage; hasError = true
+                                }
+                                if (parsedMonthly <= 0) {
+                                    monthlyError = monthlyErrorMessage; hasError = true
+                                }
+                                if (parsedMonths <= 0) {
+                                    monthsError = monthsErrorMessage; hasError = true
+                                }
+                                if (parsedPaid > parsedMonths && parsedMonths > 0) {
+                                    monthsError = paidExceedsErrorMessage; hasError = true
+                                }
                                 if (hasError) return@clickable
 
                                 focusManager.clearFocus(); keyboardController?.hide()
-                                val selectedIcon = selectedIconLabel?.let { label -> installmentIcons.find { it.label == label } }
-                                onSave(Installment(
-                                    id          = editing?.id ?: java.util.UUID.randomUUID().toString(),
-                                    name        = name.trim(),
-                                    totalAmount = parsedTotal,
-                                    monthlyPayment = parsedMonthly,
-                                    totalMonths = parsedMonths,
-                                    paidMonths  = parsedPaid,
-                                    nextDueDate = nextDue,
-                                    isActive    = true,
-                                    categoryId  = selectedCategoryId,
-                                    accountId   = selectedAccountId ?: editing?.accountId,
-                                    iconName    = selectedIcon?.label,
-                                    color       = selectedColorHex
-                                ))
+                                val selectedIcon =
+                                    selectedIconLabel?.let { label -> installmentIcons.find { it.label == label } }
+                                onSave(
+                                    Installment(
+                                        id = editing?.id ?: java.util.UUID.randomUUID().toString(),
+                                        name = name.trim(),
+                                        totalAmount = parsedTotal,
+                                        monthlyPayment = parsedMonthly,
+                                        totalMonths = parsedMonths,
+                                        paidMonths = parsedPaid,
+                                        nextDueDate = nextDue,
+                                        isActive = true,
+                                        categoryId = selectedCategoryId,
+                                        accountId = selectedAccountId ?: editing?.accountId,
+                                        iconName = selectedIcon?.label,
+                                        color = selectedColorHex
+                                    )
+                                )
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -652,21 +812,27 @@ private fun SheetCategorySelector(
                 row.forEach { cat ->
                     val isSelected = selectedId == cat.id
                     val catColor = runCatching {
-                        Color(android.graphics.Color.parseColor(cat.color.ifBlank { "#7C4DFF" }))
+                        Color(cat.color.ifBlank { "#7C4DFF" }.toColorInt())
                     }.getOrDefault(accentColor)
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (isSelected) catColor.copy(alpha = 0.10f) else AppPalette.card)
-                            .border(1.5.dp, if (isSelected) catColor else SheetBorder, RoundedCornerShape(12.dp))
+                            .border(
+                                1.5.dp,
+                                if (isSelected) catColor else SheetBorder,
+                                RoundedCornerShape(12.dp)
+                            )
                             .clickable { onSelect(cat.id) }
                             .padding(vertical = 10.dp, horizontal = 6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         Box(
-                            modifier = Modifier.size(32.dp).clip(CircleShape)
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
                                 .background(catColor.copy(alpha = if (isSelected) 0.18f else 0.10f)),
                             contentAlignment = Alignment.Center
                         ) {
@@ -701,7 +867,7 @@ private fun SheetAccountSelector(
                 rowItems.forEach { account ->
                     val isSelected = selectedAccountId == account.id
                     val accountColor = runCatching {
-                        Color(android.graphics.Color.parseColor(account.color))
+                        Color(account.color.toColorInt())
                     }.getOrDefault(SheetPurple)
                     val accountIcon = when (account.type) {
                         AccountType.CASH -> Icons.Default.Payments
@@ -714,14 +880,20 @@ private fun SheetAccountSelector(
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (isSelected) accountColor.copy(alpha = 0.10f) else AppPalette.card)
-                            .border(1.5.dp, if (isSelected) accountColor else SheetBorder, RoundedCornerShape(12.dp))
+                            .border(
+                                1.5.dp,
+                                if (isSelected) accountColor else SheetBorder,
+                                RoundedCornerShape(12.dp)
+                            )
                             .clickable { onSelect(if (isSelected) null else account.id) }
                             .padding(vertical = 10.dp, horizontal = 6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         Box(
-                            modifier = Modifier.size(32.dp).clip(CircleShape)
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
                                 .background(accountColor.copy(alpha = if (isSelected) 0.18f else 0.10f)),
                             contentAlignment = Alignment.Center
                         ) {

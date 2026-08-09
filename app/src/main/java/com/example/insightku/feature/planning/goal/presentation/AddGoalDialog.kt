@@ -4,7 +4,18 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -17,31 +28,90 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsBike
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Apartment
+import androidx.compose.material.icons.filled.BeachAccess
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Celebration
+import androidx.compose.material.icons.filled.Chair
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChildCare
+import androidx.compose.material.icons.filled.Church
+import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.Construction
+import androidx.compose.material.icons.filled.CurrencyBitcoin
+import androidx.compose.material.icons.filled.Diamond
+import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.EditCalendar
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Laptop
+import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.Luggage
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Money
+import androidx.compose.material.icons.filled.OndemandVideo
+import androidx.compose.material.icons.filled.Paid
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.Sports
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tablet
+import androidx.compose.material.icons.filled.Terrain
+import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.TwoWheeler
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import androidx.core.graphics.toColorInt
 import com.example.insightku.R
-import com.example.insightku.core.i18n.NumberFormatter
-import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
-import com.example.insightku.core.ui.theme.LocalAccent
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.components.PremiumDatePicker
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.util.Locale
 
 private val GoalPurple: Color @Composable get() = LocalAccent.current
 private val GoalBorder: Color @Composable get() = AppPalette.cardBorder
@@ -79,7 +149,6 @@ fun AddGoalDialog(
     onDismiss: () -> Unit,
     onCreateGoal: (name: String, targetAmount: Double, deadline: LocalDate, icon: String, color: String, notes: String, reminderEnabled: Boolean) -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var name by remember { mutableStateOf(initialName) }
     var targetAmountText by remember {
         mutableStateOf(initialAmount?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() } ?: "")
@@ -92,7 +161,8 @@ fun AddGoalDialog(
     var showDatePicker by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf<String?>(null) }
     var amountError by remember { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
+    val nameErrorMessage = stringResource(R.string.add_goal_name_error)
+    val amountErrorMessage = stringResource(R.string.add_goal_amount_error)
     val parsedAmount = targetAmountText.toDoubleOrNull() ?: 0.0
     val amountBelowSaved = currentAmount != null && targetAmountText.isNotBlank() && parsedAmount < currentAmount
     val isValid = name.isNotBlank() && parsedAmount > 0 && !amountBelowSaved
@@ -101,17 +171,48 @@ fun AddGoalDialog(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = { Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) { Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(50.dp)).background(GoalBorder)) } }
+        dragHandle = {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    Modifier
+                        .width(36.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(GoalBorder)
+                )
+            }
+        }
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 8.dp)
+            ) {
                 Surface(shape = RoundedCornerShape(50), color = GoalPurple.copy(alpha = 0.10f)) { Text(stringResource(R.string.add_goal_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = GoalPurple) }
                 Spacer(Modifier.height(6.dp))
                 Text(stringResource(if (isEditing) R.string.add_goal_edit_title else R.string.add_goal_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
                 Text(stringResource(if (isEditing) R.string.add_goal_edit_subtitle else R.string.add_goal_subtitle), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             }
-            Box(Modifier.fillMaxWidth().height(1.dp).background(GoalBorder))
-            Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).background(GoalBg).padding(24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(GoalBorder)
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .background(GoalBg)
+                    .padding(24.dp)
+                    .navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 GoalFormField(label = stringResource(R.string.add_goal_name_label), value = name, onValueChange = { name = it; nameError = null }, placeholder = "e.g. Emergency Fund, Vacation", error = nameError, accentColor = GoalPurple)
                 GoalFormField(label = stringResource(R.string.add_goal_amount_label), value = CurrencyUtils.formatInputThousands(targetAmountText), onValueChange = { targetAmountText = CurrencyUtils.stripThousands(it); amountError = null }, placeholder = "e.g. 5.000.000", keyboardType = KeyboardType.Number, prefix = NumberFormatter.getCurrencySymbol(), accentColor = GoalPurple, error = amountError)
                 if (currentAmount != null) {
@@ -124,7 +225,43 @@ fun AddGoalDialog(
                         }
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(stringResource(R.string.add_goal_date_label), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); Surface(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }, shape = RoundedCornerShape(14.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) { Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {                    Text(DateFormatter.formatFullDate(deadline.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary); Icon(Icons.Default.EditCalendar, contentDescription = null, tint = AppPalette.accent, modifier = Modifier.size(18.dp)) } } }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(R.string.add_goal_date_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 1.2.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppPalette.textMuted
+                    ); Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true },
+                    shape = RoundedCornerShape(14.dp),
+                    color = AppPalette.card,
+                    border = BorderStroke(1.dp, GoalBorder)
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            DateFormatter.formatFullDate(
+                                deadline.atStartOfDay(ZoneId.systemDefault()).toInstant()
+                                    .toEpochMilli()
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = AppPalette.textPrimary
+                        ); Icon(
+                        Icons.Default.EditCalendar,
+                        contentDescription = null,
+                        tint = AppPalette.accent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    }
+                }
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(stringResource(R.string.add_goal_icon_label), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); GoalIconPicker(selectedIcon = selectedIcon, onIconSelected = { selectedIcon = it }, accentColor = GoalPurple) }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(stringResource(R.string.add_goal_color_label), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); GoalColorPicker(selectedColor = selectedColor, onColorSelected = { selectedColor = it }) }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -132,7 +269,13 @@ fun AddGoalDialog(
                     OutlinedTextField(value = notes, onValueChange = { notes = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text(stringResource(R.string.add_goal_notes_placeholder), color = AppPalette.placeholder) }, minLines = 2, maxLines = 4, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = GoalPurple, unfocusedBorderColor = GoalBorder, focusedContainerColor = AppPalette.card, unfocusedContainerColor = AppPalette.card))
                 }
                 Surface(shape = RoundedCornerShape(14.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(stringResource(R.string.add_goal_reminder_label), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
                             Text(stringResource(R.string.add_goal_reminder_desc), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
@@ -142,20 +285,153 @@ fun AddGoalDialog(
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Surface(modifier = Modifier.weight(1f).height(50.dp).clickable { onDismiss() }, shape = RoundedCornerShape(14.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) { Box(contentAlignment = Alignment.Center) { Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textDialogMuted) } }
-                    Box(modifier = Modifier.weight(1f).height(50.dp).clip(RoundedCornerShape(14.dp)).background(if (isValid) GoalPurple else AppPalette.textMuted).clickable(enabled = isValid) {
-                        if (name.trim().length < 2) { nameError = context.getString(R.string.add_goal_name_error); return@clickable }
-                        if (amountBelowSaved) { amountError = context.getString(R.string.add_goal_amount_error); return@clickable }
-                        onCreateGoal(name.trim(), targetAmountText.toDoubleOrNull() ?: 0.0, deadline, selectedIcon, selectedColor, notes.trim(), reminderEnabled)
-                    }, contentAlignment = Alignment.Center) { Text(stringResource(if (isEditing) R.string.add_goal_save else R.string.add_goal_create), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White) }
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clickable { onDismiss() },
+                        shape = RoundedCornerShape(14.dp),
+                        color = AppPalette.card,
+                        border = BorderStroke(1.dp, GoalBorder)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                stringResource(R.string.cancel),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = AppPalette.textDialogMuted
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (isValid) GoalPurple else AppPalette.textMuted)
+                            .clickable(enabled = isValid) {
+                                if (name.trim().length < 2) {
+                                    nameError = nameErrorMessage; return@clickable
+                                }
+                                if (amountBelowSaved) {
+                                    amountError = amountErrorMessage; return@clickable
+                                }
+                                onCreateGoal(
+                                    name.trim(),
+                                    targetAmountText.toDoubleOrNull() ?: 0.0,
+                                    deadline,
+                                    selectedIcon,
+                                    selectedColor,
+                                    notes.trim(),
+                                    reminderEnabled
+                                )
+                            }, contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            stringResource(if (isEditing) R.string.add_goal_save else R.string.add_goal_create),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-@Composable private fun GoalIconPicker(selectedIcon: String, onIconSelected: (String) -> Unit, accentColor: Color) { Surface(shape = RoundedCornerShape(16.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) { LazyRow(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { items(goalIcons) { goalIcon -> val isSelected = selectedIcon == goalIcon.name; Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(if (isSelected) accentColor.copy(alpha = 0.15f) else Color.Transparent).then(if (isSelected) Modifier.border(2.dp, accentColor, CircleShape) else Modifier.border(1.dp, GoalBorder, CircleShape)).clickable { onIconSelected(goalIcon.name) }, contentAlignment = Alignment.Center) { Icon(imageVector = goalIcon.icon, contentDescription = goalIcon.name, tint = if (isSelected) accentColor else AppPalette.textMuted, modifier = Modifier.size(24.dp)) } } } } }
+@Composable
+private fun GoalIconPicker(
+    selectedIcon: String,
+    onIconSelected: (String) -> Unit,
+    accentColor: Color
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = AppPalette.card,
+        border = BorderStroke(1.dp, GoalBorder)
+    ) {
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items(goalIcons) { goalIcon ->
+                val isSelected = selectedIcon == goalIcon.name; Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) accentColor.copy(alpha = 0.15f) else Color.Transparent)
+                    .then(
+                        if (isSelected) Modifier.border(
+                            2.dp,
+                            accentColor,
+                            CircleShape
+                        ) else Modifier.border(
+                            1.dp,
+                            GoalBorder,
+                            CircleShape
+                        )
+                    )
+                    .clickable { onIconSelected(goalIcon.name) },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = goalIcon.icon,
+                    contentDescription = goalIcon.name,
+                    tint = if (isSelected) accentColor else AppPalette.textMuted,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            }
+        }
+    }
+}
 
-@Composable private fun GoalColorPicker(selectedColor: String, onColorSelected: (String) -> Unit) { Surface(shape = RoundedCornerShape(16.dp), color = AppPalette.card, border = BorderStroke(1.dp, GoalBorder)) { LazyRow(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) { items(AppPalette.GoalColors) { colorHex -> val color = Color(android.graphics.Color.parseColor(colorHex)); val isSelected = selectedColor == colorHex; Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(color).then(if (isSelected) Modifier.border(2.5.dp, AppPalette.textPrimary, CircleShape) else Modifier).clickable { onColorSelected(colorHex) }, contentAlignment = Alignment.Center) { if (isSelected) { Icon(imageVector = Icons.Default.Check, contentDescription = stringResource(R.string.content_selected), tint = Color.White, modifier = Modifier.size(18.dp)) } } } } } }
+@Composable
+private fun GoalColorPicker(selectedColor: String, onColorSelected: (String) -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = AppPalette.card,
+        border = BorderStroke(1.dp, GoalBorder)
+    ) {
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items(AppPalette.GoalColors) { colorHex ->
+                val color = Color(colorHex.toColorInt())
+                val isSelected = selectedColor == colorHex; Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(color)
+                    .then(
+                        if (isSelected) Modifier.border(
+                            2.5.dp,
+                            AppPalette.textPrimary,
+                            CircleShape
+                        ) else Modifier
+                    )
+                    .clickable { onColorSelected(colorHex) }, contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = stringResource(R.string.content_selected),
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            }
+        }
+    }
+}
 
 @Composable private fun GoalFormField(label: String, value: String, onValueChange: (String) -> Unit, placeholder: String, accentColor: Color, error: String? = null, keyboardType: KeyboardType = KeyboardType.Text, prefix: String? = null) { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text(label, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted); OutlinedTextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth(), placeholder = { Text(placeholder, color = AppPalette.placeholder) }, prefix = if (prefix != null) { { Text(prefix, fontWeight = FontWeight.Bold, color = accentColor) } } else null, singleLine = true, isError = error != null, keyboardOptions = KeyboardOptions(keyboardType = keyboardType), shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor, unfocusedBorderColor = GoalBorder, focusedContainerColor = AppPalette.card, unfocusedContainerColor = AppPalette.card, errorBorderColor = AppPalette.error)); if (error != null) { Text(error, style = MaterialTheme.typography.labelSmall, color = AppPalette.error) } } }

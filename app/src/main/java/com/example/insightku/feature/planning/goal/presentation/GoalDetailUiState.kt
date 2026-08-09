@@ -1,6 +1,8 @@
 package com.example.insightku.feature.planning.goal.presentation
 
-import com.example.insightku.feature.planning.goal.domain.model.*
+import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
+import com.example.insightku.feature.planning.goal.domain.model.Contribution
+import com.example.insightku.feature.planning.goal.domain.model.Goal
 
 data class GoalDetailUiState(
     val isLoading: Boolean = true,
@@ -56,5 +58,5 @@ data class GoalTimelineEvent(
 )
 
 enum class TimelineEventType {
-    GOAL_CREATED, FIRST_CONTRIBUTION, MILESTONE_25, MILESTONE_50, MILESTONE_75, MILESTONE_90, GOAL_COMPLETED, WITHDRAWAL, OTHER
+    GOAL_CREATED, FIRST_CONTRIBUTION, MILESTONE_25, MILESTONE_50, MILESTONE_75, MILESTONE_90, GOAL_COMPLETED, WITHDRAWAL
 }

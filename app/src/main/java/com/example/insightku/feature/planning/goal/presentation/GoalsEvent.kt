@@ -3,7 +3,6 @@ package com.example.insightku.feature.planning.goal.presentation
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
-import com.example.insightku.feature.planning.goal.domain.model.Goal
 import java.time.LocalDate
 
 sealed class GoalsEvent {

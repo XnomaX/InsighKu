@@ -34,6 +34,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
@@ -62,6 +63,7 @@ fun LoginScreen(
     val viewModel: LoginViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val defaultWebClientId = stringResource(R.string.default_web_client_id)
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(uiState.loginSuccess) {
@@ -76,7 +78,7 @@ fun LoginScreen(
                 val credentialManager = CredentialManager.create(context)
                 val googleIdOption = GetGoogleIdOption.Builder()
                     .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(context.getString(R.string.default_web_client_id))
+                    .setServerClientId(defaultWebClientId)
                     .build()
                 val request = GetCredentialRequest.Builder()
                     .addCredentialOption(googleIdOption)
@@ -89,6 +91,8 @@ fun LoginScreen(
                     val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data)
                     viewModel.onEvent(LoginEvent.GoogleSignIn(googleIdToken.idToken))
                 }
+            } catch (_: NoCredentialException) {
+                // No saved Google credential — silently ignore; user can sign up manually
             } catch (e: GetCredentialException) {
                 android.util.Log.e("LoginScreen", "Google Sign-In error: ${e.message}")
             }

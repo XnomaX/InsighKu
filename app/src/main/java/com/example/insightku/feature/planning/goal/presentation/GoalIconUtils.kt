@@ -2,7 +2,24 @@ package com.example.insightku.feature.planning.goal.presentation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.BeachAccess
+import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.Celebration
+import androidx.compose.material.icons.outlined.Diamond
+import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Flight
+import androidx.compose.material.icons.outlined.HealthAndSafety
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Laptop
+import androidx.compose.material.icons.outlined.Luggage
+import androidx.compose.material.icons.outlined.Paid
+import androidx.compose.material.icons.outlined.Savings
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Smartphone
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.ui.graphics.vector.ImageVector
 
 internal fun getGoalIcon(iconName: String): ImageVector {
@@ -16,7 +33,7 @@ internal fun getGoalIcon(iconName: String): ImageVector {
         "school", "education", "graduation" -> Icons.Outlined.School
         "health", "health and safety" -> Icons.Outlined.HealthAndSafety
         "warning", "emergency" -> Icons.Outlined.Warning
-        "trending up", "investment", "stocks" -> Icons.AutoMirrored.Outlined.TrendingUp
+        "trending up", "stocks" -> Icons.AutoMirrored.Outlined.TrendingUp
         "card giftcard", "gift" -> Icons.Outlined.CardGiftcard
         "celebration" -> Icons.Outlined.Celebration
         "star" -> Icons.Outlined.Star

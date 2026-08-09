@@ -1,18 +1,31 @@
 package com.example.insightku.feature.home.presentation
-import com.example.insightku.feature.home.presentation.resolveCategoryIcon
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,10 +34,34 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Notes
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EditCalendar
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,8 +69,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -42,21 +79,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
-import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.core.ui.components.PremiumDatePicker
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
-import com.example.insightku.core.i18n.NumberFormatter
-import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.PremiumDatePicker
+import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
-import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.core.utils.toAmountOrZero
-import java.util.*
 import kotlin.math.abs
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -91,14 +125,13 @@ fun EditTransactionDetail(
     }
     var type          by remember { mutableStateOf(transaction.type) }
     var category      by remember { mutableStateOf(transaction.category) }
-    var dateMillis    by remember { mutableStateOf(transaction.date) }
+    var dateMillis by remember { mutableLongStateOf(transaction.date) }
     var notes         by remember { mutableStateOf(transaction.description ?: "") }
     var accountId     by remember { mutableStateOf(transaction.accountId) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     val isIncome    = type == TransactionType.INCOME
     val accentColor = if (isIncome) EditIncomeGreen else EditPurple
-    val amountColor = if (isIncome) EditIncomeGreen else EditExpenseRed
 
     BackHandler { onDismiss() }
 
@@ -106,8 +139,19 @@ fun EditTransactionDetail(
         onDismissRequest = onDismiss,
         containerColor   = EditSurface,
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {             Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(EditBorder))
+        dragHandle = {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(CircleShape)
+                        .background(EditBorder)
+                )
             }
         }
     ) {
@@ -131,14 +175,23 @@ fun EditTransactionDetail(
                     Text(stringResource(R.string.transaction_edit_desc), style = MaterialTheme.typography.bodySmall, color = EditTextMuted)
                 }
                 Box(
-                    modifier = Modifier.size(36.dp).clip(CircleShape).background(EditPurpleTint).clickable { onDismiss() },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(EditPurpleTint)
+                        .clickable { onDismiss() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Close, null, tint = EditPurple, modifier = Modifier.size(18.dp))
                 }
             }
 
-            Box(Modifier.fillMaxWidth().height(1.dp).background(EditBorder))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(EditBorder)
+            )
 
             // Scrollable form
             Column(
@@ -202,7 +255,9 @@ fun EditTransactionDetail(
                     EditFieldLabel(stringResource(R.string.transaction_date_label))
                     Spacer(Modifier.height(8.dp))
                     Surface(
-                        modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePicker = true },
                         shape    = RoundedCornerShape(14.dp),
                         color    = EditSurface,
                         border   = BorderStroke(1.dp, EditBorder)
@@ -213,7 +268,10 @@ fun EditTransactionDetail(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Box(
-                                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(accentColor.copy(alpha = 0.08f)),
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(accentColor.copy(alpha = 0.08f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(Icons.Default.CalendarMonth, null, tint = accentColor, modifier = Modifier.size(18.dp))
@@ -241,7 +299,10 @@ fun EditTransactionDetail(
                         placeholder   = { Text(stringResource(R.string.add_note_placeholder), color = EditTextMuted.copy(alpha = 0.5f)) },
                         leadingIcon   = {
                             Box(
-                                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(accentColor.copy(alpha = 0.08f)),
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(accentColor.copy(alpha = 0.08f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(Icons.AutoMirrored.Outlined.Notes, null, tint = accentColor, modifier = Modifier.size(18.dp))
@@ -260,14 +321,23 @@ fun EditTransactionDetail(
             }
 
             // ── Save / Cancel ─────────────────────────────────────────────
-            Box(Modifier.fillMaxWidth().height(1.dp).background(EditBorder))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(EditBorder)
+            )
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedButton(
                     onClick  = onDismiss,
-                    modifier = Modifier.weight(1f).height(52.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
                     shape    = RoundedCornerShape(16.dp),
                     border   = BorderStroke(1.dp, EditBorder)
                 ) {
@@ -288,7 +358,9 @@ fun EditTransactionDetail(
                             )
                         )
                     },
-                    modifier = Modifier.weight(1f).height(52.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
                     shape    = RoundedCornerShape(16.dp),
                     colors   = ButtonDefaults.buttonColors(containerColor = accentColor)
                 ) {
@@ -330,16 +402,24 @@ private fun EditTypeToggle(isIncome: Boolean, onToggle: (Boolean) -> Unit) {
     ) {
         Row(modifier = Modifier.padding(4.dp)) {
             Box(
-                modifier = Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(10.dp))
-                    .background(expenseColor).clickable { onToggle(false) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(expenseColor)
+                    .clickable { onToggle(false) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(stringResource(R.string.type_expense), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                     color = if (!isIncome) Color.White else EditTextMuted)
             }
             Box(
-                modifier = Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(10.dp))
-                    .background(incomeColor).clickable { onToggle(true) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(incomeColor)
+                    .clickable { onToggle(true) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(stringResource(R.string.type_income), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
@@ -369,8 +449,11 @@ private fun EditAmountCard(
     )
 
     Column(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
-            .background(cardBg).border(1.5.dp, borderColor, RoundedCornerShape(20.dp))
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(cardBg)
+            .border(1.5.dp, borderColor, RoundedCornerShape(20.dp))
             .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -394,7 +477,9 @@ private fun EditAmountCard(
                 Text(NumberFormatter.getCurrencySymbol(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold,
                     color = accentColor, modifier = Modifier.padding(start = 4.dp))
             },
-            modifier = Modifier.fillMaxWidth().onFocusChanged { isFocused = it.isFocused },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { isFocused = it.isFocused },
             singleLine      = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
             shape  = RoundedCornerShape(14.dp),
@@ -446,7 +531,9 @@ private fun EditCategoryPicker(
         shape = RoundedCornerShape(14.dp),
         color = currentColor.copy(alpha = 0.08f),
         border = BorderStroke(1.dp, currentColor.copy(alpha = if (expanded) 0.5f else 0.2f)),
-        modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -454,7 +541,10 @@ private fun EditCategoryPicker(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
-                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(currentColor.copy(alpha = 0.12f)),
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(currentColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(iconFor(selected), null, tint = currentColor, modifier = Modifier.size(20.dp))
@@ -481,17 +571,25 @@ private fun EditCategoryPicker(
                         val isSel = name == selected
                         val c = colorFor(name)
                         Row(
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(if (isSel) c.copy(alpha = 0.12f) else EditSurface)
-                                .border(1.5.dp, if (isSel) c else EditBorder, RoundedCornerShape(12.dp))
+                                .border(
+                                    1.5.dp,
+                                    if (isSel) c else EditBorder,
+                                    RoundedCornerShape(12.dp)
+                                )
                                 .clickable { onSelect(name); expanded = false }
                                 .padding(horizontal = 10.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Box(
-                                modifier = Modifier.size(28.dp).clip(CircleShape).background(c.copy(alpha = 0.15f)),
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(c.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(iconFor(name), null, tint = c, modifier = Modifier.size(14.dp))
@@ -577,7 +675,7 @@ private fun EditAccountChipRow(
                     )
 
                     val accountColor = runCatching {
-                        Color(android.graphics.Color.parseColor(account.color))
+                        Color(account.color.toColorInt())
                     }.getOrDefault(AppPalette.accent)
 
                     val bgColor by animateColorAsState(
@@ -597,7 +695,8 @@ private fun EditAccountChipRow(
                     }
 
                     Column(
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
                             .graphicsLayer { scaleX = scale; scaleY = scale }
                             .height(68.dp)
                             .clip(RoundedCornerShape(12.dp))
@@ -611,7 +710,9 @@ private fun EditAccountChipRow(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Box(
-                            modifier = Modifier.size(28.dp).clip(CircleShape)
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
                                 .background(if (isSelected) accountColor.copy(alpha = 0.15f) else AppPalette.cardElevated),
                             contentAlignment = Alignment.Center
                         ) {
@@ -644,7 +745,9 @@ private fun EditFormCard(content: @Composable ColumnScope.() -> Unit) {
         shadowElevation = 1.dp
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             content  = content
         )
     }
@@ -679,11 +782,16 @@ private fun EditTextField(
     OutlinedTextField(
         value         = value,
         onValueChange = onValueChange,
-        modifier      = Modifier.fillMaxWidth().onFocusChanged { isFocused = it.isFocused },
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { isFocused = it.isFocused },
         placeholder   = { Text(placeholder, color = EditTextMuted.copy(alpha = 0.5f)) },
         leadingIcon   = {
             Box(
-                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(accentColor.copy(alpha = 0.08f)),
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(accentColor.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, null, tint = accentColor, modifier = Modifier.size(18.dp))

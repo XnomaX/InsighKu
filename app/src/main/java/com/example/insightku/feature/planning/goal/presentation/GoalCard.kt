@@ -1,36 +1,68 @@
 package com.example.insightku.feature.planning.goal.presentation
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Archive
+import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.PauseCircleOutline
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
+import androidx.core.graphics.toColorInt
 import com.example.insightku.R
+import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.core.ui.theme.WarningYellow
-import com.example.insightku.core.i18n.DateFormatter
-import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import java.time.ZoneId
@@ -46,7 +78,11 @@ fun GoalCard(
     onEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val goalColor = try { Color(android.graphics.Color.parseColor(goal.color)) } catch (e: Exception) { AppPalette.textPrimary }
+    val goalColor = try {
+        Color(goal.color.toColorInt())
+    } catch (_: Exception) {
+        AppPalette.textPrimary
+    }
     val isCompleted = goal.status == GoalStatus.COMPLETED
     val isPaused = goal.status == GoalStatus.PAUSED
     val isOverdue = goal.isOverdue
@@ -57,7 +93,13 @@ fun GoalCard(
     )
 
     when {
-        isCompleted -> CompletedGoalCard(goal = goal, goalColor = goalColor, animatedProgress = animatedProgress, onClick = onClick, onArchive = onEdit, modifier = modifier)
+        isCompleted -> CompletedGoalCard(
+            goal = goal,
+            animatedProgress = animatedProgress,
+            onClick = onClick,
+            onArchive = onEdit,
+            modifier = modifier
+        )
         isPaused -> PausedGoalCard(goal = goal, goalColor = goalColor, animatedProgress = animatedProgress, onClick = onClick, onResume = onEdit, modifier = modifier)
         else -> ActiveGoalCard(goal = goal, goalColor = goalColor, animatedProgress = animatedProgress, isOverdue = isOverdue, onClick = onClick, onContribute = onContribute, onWithdraw = onWithdraw, onMoreClick = onEdit, modifier = modifier)
     }
@@ -76,7 +118,10 @@ private fun ActiveGoalCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth().animateContentSize().clickable(onClick = onClick),
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -90,7 +135,10 @@ private fun ActiveGoalCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
-                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(goalColor.copy(alpha = 0.12f)),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(goalColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -163,11 +211,27 @@ private fun ActiveGoalCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             // ── Progress Bar ───────────────────────────────────────────────
-            Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(AppPalette.cardBorder)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(AppPalette.cardBorder)
+            ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(animatedProgress.coerceIn(0f, 1f)).fillMaxHeight()
+                    modifier = Modifier
+                        .fillMaxWidth(animatedProgress.coerceIn(0f, 1f))
+                        .fillMaxHeight()
                         .clip(RoundedCornerShape(3.dp))
-                        .background(brush = Brush.horizontalGradient(colors = listOf(goalColor.copy(alpha = 0.8f), goalColor)))
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    goalColor.copy(
+                                        alpha = 0.8f
+                                    ), goalColor
+                                )
+                            )
+                        )
                 )
             }
 
@@ -243,7 +307,10 @@ private fun PausedGoalCard(
 ) {
     val mutedColor = goalColor.copy(alpha = 0.45f)
     Card(
-        modifier = modifier.fillMaxWidth().animateContentSize().clickable(onClick = onClick),
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -257,7 +324,10 @@ private fun PausedGoalCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
-                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(mutedColor.copy(alpha = 0.12f)),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(mutedColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(imageVector = getGoalIcon(goal.iconName), contentDescription = null, tint = mutedColor, modifier = Modifier.size(22.dp))
@@ -297,9 +367,17 @@ private fun PausedGoalCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             // ── Progress Bar (muted) ───────────────────────────────────────
-            Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(AppPalette.cardBorder.copy(alpha = 0.5f))) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(AppPalette.cardBorder.copy(alpha = 0.5f))
+            ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(animatedProgress.coerceIn(0f, 1f)).fillMaxHeight()
+                    modifier = Modifier
+                        .fillMaxWidth(animatedProgress.coerceIn(0f, 1f))
+                        .fillMaxHeight()
                         .clip(RoundedCornerShape(3.dp))
                         .background(mutedColor)
                 )
@@ -309,7 +387,9 @@ private fun PausedGoalCard(
             Spacer(modifier = Modifier.height(14.dp))
             OutlinedButton(
                 onClick = onResume,
-                modifier = Modifier.fillMaxWidth().height(40.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, AppPalette.cardBorder),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = AppPalette.textMuted)
@@ -327,14 +407,16 @@ private fun PausedGoalCard(
 @Composable
 private fun CompletedGoalCard(
     goal: Goal,
-    goalColor: Color,
     animatedProgress: Float,
     onClick: () -> Unit,
     onArchive: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth().animateContentSize().clickable(onClick = onClick),
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -348,7 +430,10 @@ private fun CompletedGoalCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
-                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(SuccessColor.copy(alpha = 0.12f)),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(SuccessColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = SuccessColor, modifier = Modifier.size(24.dp))
@@ -387,11 +472,26 @@ private fun CompletedGoalCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             // ── Progress Bar (full, success) ───────────────────────────────
-            Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(SuccessColor.copy(alpha = 0.15f))) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(SuccessColor.copy(alpha = 0.15f))
+            ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(animatedProgress.coerceIn(0f, 1f)).fillMaxHeight()
+                    modifier = Modifier
+                        .fillMaxWidth(animatedProgress.coerceIn(0f, 1f))
+                        .fillMaxHeight()
                         .clip(RoundedCornerShape(3.dp))
-                        .background(Brush.horizontalGradient(listOf(SuccessColor.copy(alpha = 0.7f), SuccessColor)))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    SuccessColor.copy(alpha = 0.7f),
+                                    SuccessColor
+                                )
+                            )
+                        )
                 )
             }
 
@@ -433,55 +533,13 @@ private fun DeadlineBadge(daysLeft: Int, deadline: String, isOverdue: Boolean) {
                 text = when {
                     isOverdue -> stringResource(R.string.goal_card_overdue)
                     daysLeft <= 0 -> stringResource(R.string.goal_card_due_today)
-                    daysLeft <= 7 -> stringResource(R.string.goal_card_days_left, daysLeft)
+                    daysLeft <= 7 -> pluralStringResource(R.plurals.goal_card_days_left, daysLeft)
                     else -> deadline
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = badgeColor,
                 fontWeight = FontWeight.Medium
             )
-        }
-    }
-}
-
-@Composable
-fun CompactGoalCard(goal: Goal, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val goalColor = try { Color(android.graphics.Color.parseColor(goal.color)) } catch (e: Exception) { AppPalette.textPrimary }
-    val isCompleted = goal.status == GoalStatus.COMPLETED
-    Card(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = BorderStroke(1.dp, AppPalette.cardBorder)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(goalColor.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(imageVector = getGoalIcon(goal.iconName), contentDescription = null, tint = goalColor, modifier = Modifier.size(20.dp))
-                }
-                Text(text = "${goal.progressPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (isCompleted) SuccessColor else goalColor)
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(text = goal.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = NumberFormatter.formatCurrencyCompact(goal.currentAmount), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-            Text(text = stringResource(R.string.label_of_amount, NumberFormatter.formatCurrencyCompact(goal.targetAmount)), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
-            Spacer(modifier = Modifier.height(12.dp))
-            Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(AppPalette.cardBorder)) {
-                Box(
-                    modifier = Modifier.fillMaxWidth((goal.progressPercent / 100).toFloat()).fillMaxHeight()
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(if (isCompleted) SuccessColor else goalColor)
-                )
-            }
         }
     }
 }
@@ -496,10 +554,16 @@ fun ArchivedGoalRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val goalColor = try { Color(android.graphics.Color.parseColor(goal.color)) } catch (e: Exception) { AppPalette.textPrimary }
+    val goalColor = try {
+        Color(goal.color.toColorInt())
+    } catch (_: Exception) {
+        AppPalette.textPrimary
+    }
 
     Card(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -511,7 +575,10 @@ fun ArchivedGoalRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
-                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(goalColor.copy(alpha = 0.08f)),
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(goalColor.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(imageVector = getGoalIcon(goal.iconName), contentDescription = null, tint = goalColor.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))

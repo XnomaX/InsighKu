@@ -3,7 +3,11 @@ package com.example.insightku.feature.planning.goal.presentation
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.domain.model.AccountAllocation
 import com.example.insightku.feature.planning.goal.data.model.GoalAccountEntity
-import com.example.insightku.feature.planning.goal.domain.model.*
+import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
+import com.example.insightku.feature.planning.goal.domain.model.Contribution
+import com.example.insightku.feature.planning.goal.domain.model.DailyTarget
+import com.example.insightku.feature.planning.goal.domain.model.Goal
+import com.example.insightku.feature.planning.goal.domain.model.GoalSummary
 import java.time.LocalDate
 
 /**

@@ -1,25 +1,26 @@
 package com.example.insightku.feature.home.domain
 
 import android.content.Context
-import com.example.insightku.R
-import kotlinx.coroutines.CancellationException
-import com.example.insightku.core.data.model.Transaction
-import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.core.data.repository.AccountRepository
-import com.example.insightku.core.data.repository.DraftTransactionRepository
-import com.example.insightku.core.notification.DraftTransactionManager
-import com.example.insightku.feature.auth.data.AuthRepository
-import com.example.insightku.core.data.repository.TransactionRepository
-import com.example.insightku.feature.planning.goal.data.model.ContributionType
-import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
-import com.example.insightku.feature.planning.goal.domain.engine.AutoAllocationEngine
-import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.insightku.R
+import com.example.insightku.core.data.model.Transaction
+import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.data.repository.DraftTransactionRepository
+import com.example.insightku.core.data.repository.TransactionRepository
+import com.example.insightku.core.notification.AutoAllocationNotificationHelper
+import com.example.insightku.core.notification.DraftTransactionManager
 import com.example.insightku.core.worker.AllocationSafetyNetWorker
+import com.example.insightku.feature.auth.data.AuthRepository
+import com.example.insightku.feature.planning.goal.data.model.ContributionType
+import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
+import com.example.insightku.feature.planning.goal.domain.engine.AutoAllocationEngine
+import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 /**
@@ -42,8 +43,8 @@ class AddTransactionUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val autoAllocationEngine: AutoAllocationEngine,
     private val goalRepository: GoalRepository,
-    private val accountRepository: AccountRepository,
     private val draftRepository: DraftTransactionRepository,
+    private val notificationHelper: AutoAllocationNotificationHelper,
     @ApplicationContext private val context: Context
 ) {
     companion object {
@@ -95,8 +96,17 @@ class AddTransactionUseCase @Inject constructor(
                         transactionId = idempotencyKey
                     ).onSuccess {
                         executedSuggestions.add(suggestion)
-                    }.onFailure { _ ->
-                        // Allocation failed — skip this suggestion
+                    }.onFailure { failure ->
+                        // BUG-08: surface a skipped allocation instead of swallowing it —
+                        // the user sees why a rule didn't fire (insufficient balance, etc.).
+                        Log.w(
+                            TAG,
+                            "[AutoAlloc] Allocation failed for rule=${suggestion.ruleId}: ${failure.message}"
+                        )
+                        notificationHelper.showAllocationSkippedNotification(
+                            goalName = suggestion.goalName,
+                            accountName = suggestion.sourceAccountName
+                        )
                     }
                 } catch (_: Exception) {
                     // Allocation execution error — skip this suggestion
@@ -122,7 +132,7 @@ class AddTransactionUseCase @Inject constructor(
                     throw e
                 } catch (e: Exception) {
                     // Failed to create allocation draft — log and continue
-                    android.util.Log.e(TAG, "Failed to create allocation draft: ${e.message}")
+                    Log.e(TAG, "Failed to create allocation draft: ${e.message}")
                 }
             }
 

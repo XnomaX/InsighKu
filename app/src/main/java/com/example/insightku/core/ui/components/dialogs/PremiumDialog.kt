@@ -1,20 +1,56 @@
 package com.example.insightku.core.ui.components.dialogs
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.Archive
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.Savings
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,16 +58,19 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CONTEXT-AWARE DIALOG TYPE SYSTEM
@@ -68,7 +107,6 @@ enum class DialogButtonStyle {
  *
  * @param icon          Unique icon vector for this dialog type
  * @param accentColor   Primary accent color applied to icon tint + button fill
- * @param iconTint      Override tint for the icon (defaults to accentColor)
  * @param buttonStyle   Controls primary/secondary button rendering
  * @param defaultTitle  Fallback title when caller doesn't provide one
  */
@@ -292,7 +330,7 @@ private fun InsightDialogAnimatedIcon(
                     }) }
                     launch { rotation.animateTo(0f, keyframes {
                         durationMillis = 200
-                        -45f at 0
+                        (-45f) at 0
                         5f at 120    // slight overshoot past 0
                         0f at 200
                     }) }
@@ -314,14 +352,14 @@ private fun InsightDialogAnimatedIcon(
                         1f at 250
                     }) }
                     launch {
-                        delay(150)
+                        delay(150.milliseconds)
                         shakeOffset.animateTo(0f, keyframes {
                             durationMillis = 240
                             0f at 0
                             6f at 40    // right
-                            -6f at 80   // left
+                            (-6f) at 80   // left
                             4f at 120   // right (smaller)
-                            -3f at 160  // left (smaller)
+                            (-3f) at 160  // left (smaller)
                             2f at 200   // right (dampening)
                             0f at 240   // settle
                         })
@@ -332,7 +370,7 @@ private fun InsightDialogAnimatedIcon(
                 modifier = Modifier
                     .size(80.dp)
                     .scale(scale.value)
-                    .offset(x = shakeOffset.value.dp)
+                    .offset { IntOffset(shakeOffset.value.roundToInt(), 0) }
                     .clip(CircleShape)
                     .background(accentColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
@@ -361,7 +399,7 @@ private fun InsightDialogAnimatedIcon(
                     launch { rotation.animateTo(0f, keyframes {
                         durationMillis = 350
                         15f at 0
-                        -5f at 180   // slight counter-overshoot
+                        (-5f) at 180   // slight counter-overshoot
                         0f at 350
                     }) }
                 }
@@ -423,7 +461,7 @@ private fun InsightDialogAnimatedIcon(
                     }) }
                     launch { rotation.animateTo(0f, keyframes {
                         durationMillis = 300
-                        -20f at 0
+                        (-20f) at 0
                         3f at 180    // slight counter-overshoot
                         0f at 300
                     }) }
@@ -467,7 +505,7 @@ private fun InsightDialogAnimatedIcon(
                     launch { rotation.animateTo(0f, keyframes {
                         durationMillis = 450
                         30f at 0
-                        -3f at 300   // slight settle-back
+                        (-3f) at 300   // slight settle-back
                         0f at 450
                     }) }
                 }
@@ -530,7 +568,7 @@ private fun InsightDialogTextContent(
 ) {
     var textVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        delay(200)
+        delay(200.milliseconds)
         textVisible = true
     }
 
@@ -800,47 +838,6 @@ fun PremiumDialog(
 
 // ─── Warning ──────────────────────────────────────────────────────────────────
 
-@Composable
-fun InsightWarningDialog(
-    title: String = stringResource(R.string.warning),
-    message: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    confirmText: String = stringResource(R.string.dialog_continue),
-    dismissText: String = stringResource(R.string.cancel)
-) {
-    InsightDialog(
-        type = DialogType.WARNING,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText,
-        onConfirm = onConfirm,
-        dismissText = dismissText
-    )
-}
-
-// ─── Error ────────────────────────────────────────────────────────────────────
-
-@Composable
-fun InsightErrorDialog(
-    title: String = stringResource(R.string.error),
-    message: String,
-    onDismiss: () -> Unit,
-    onRetry: (() -> Unit)? = null,
-    retryText: String = stringResource(R.string.transaction_retry)
-) {
-    InsightDialog(
-        type = DialogType.ERROR,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = if (onRetry != null) retryText else stringResource(R.string.dialog_ok),
-        onConfirm = { onRetry?.invoke() },
-        showDismissButton = onRetry != null
-    )
-}
-
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 @Composable
@@ -883,24 +880,6 @@ fun InsightArchiveDialog(
 }
 
 // ─── Information ──────────────────────────────────────────────────────────────
-
-@Composable
-fun InsightInfoDialog(
-    title: String = stringResource(R.string.dialog_information),
-    message: String,
-    onDismiss: () -> Unit,
-    confirmText: String = stringResource(R.string.dialog_got_it)
-) {
-    InsightDialog(
-        type = DialogType.INFORMATION,
-        title = title,
-        message = message,
-        onDismiss = onDismiss,
-        confirmText = confirmText,
-        onConfirm = { },
-        showDismissButton = false
-    )
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // LEGACY SPECIALIZED COMPOSABLES (backward compat wrappers)
@@ -952,7 +931,7 @@ fun PremiumSuccessOverlay(
 
     LaunchedEffect(Unit) {
         if (onAutoDismiss != null) {
-            delay(autoDismissMs)
+            delay(autoDismissMs.milliseconds)
             onAutoDismiss()
         }
     }
@@ -1024,7 +1003,7 @@ fun PremiumSuccessOverlay(
                     // Message text with fade-in
                     var textVisible by remember { mutableStateOf(false) }
                     LaunchedEffect(Unit) {
-                        delay(300)
+                        delay(300.milliseconds)
                         textVisible = true
                     }
 

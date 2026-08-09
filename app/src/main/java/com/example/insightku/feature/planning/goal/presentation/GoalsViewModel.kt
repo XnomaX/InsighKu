@@ -11,7 +11,6 @@ import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
-import com.example.insightku.feature.planning.goal.data.model.GoalAccountEntity
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
@@ -20,7 +19,13 @@ import com.example.insightku.feature.planning.goal.domain.model.Goal
 import com.example.insightku.feature.planning.goal.domain.model.GoalSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -315,7 +320,13 @@ class GoalsViewModel @Inject constructor(
 
     private fun contribute(event: GoalsEvent.Contribute) {
         viewModelScope.launch {
-            goalRepository.contribute(goalId = event.goalId, accountId = event.accountId, amount = event.amount, type = ContributionType.MANUAL, notes = event.notes).onSuccess { contribution ->
+            goalRepository.contribute(
+                goalId = event.goalId,
+                accountId = event.accountId,
+                amount = event.amount,
+                type = ContributionType.MANUAL,
+                notes = event.notes
+            ).onSuccess {
                 val goal = _uiState.value.goals.find { it.id == event.goalId }
                 _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "${NumberFormatter.formatCurrency(event.amount)} added to ${goal?.name ?: "goal"}") }
                 // The repository auto-completes a goal when it reaches its target.
@@ -467,6 +478,4 @@ class GoalsViewModel @Inject constructor(
             ?: state.goals.find { it.id == goalId }
     }
 
-    fun clearError() { _uiState.update { it.copy(error = null) } }
-    fun clearSnackbar() { _uiState.update { it.copy(snackbarMessage = null) } }
 }

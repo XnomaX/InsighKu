@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
+import com.example.insightku.core.data.local.preferences.SessionManager
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
@@ -11,17 +12,15 @@ import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.feature.planning.budget.domain.DefaultBudgetCategories
-import com.example.insightku.feature.auth.data.AuthRepository
-import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.repository.CategoryRepository
-import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.core.data.repository.InstallmentRepository
-
+import com.example.insightku.core.data.repository.RecurringBudgetRepository
+import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.core.utils.normalizedCategoryName
-import com.example.insightku.core.data.local.preferences.SessionManager
+import com.example.insightku.feature.auth.data.AuthRepository
+import com.example.insightku.feature.planning.budget.domain.DefaultBudgetCategories
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -77,7 +76,6 @@ class BudgetingViewModel @Inject constructor(
             is BudgetingEvent.LoadBudgetData -> loadBudgetData()
             is BudgetingEvent.RefreshData -> refreshData()
             is BudgetingEvent.ClearError -> _uiState.update { it.copy(error = null) }
-            is BudgetingEvent.ChangePeriod -> { /* Not implemented yet */ }
 
             is BudgetingEvent.ShowAddBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.AddBudget(event.categoryType)) }
             is BudgetingEvent.HideAddBudgetDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
@@ -96,8 +94,6 @@ class BudgetingViewModel @Inject constructor(
             is BudgetingEvent.ShowAddRecurringDialog -> _uiState.update { it.copy(dialogState = DialogState.AddRecurringPayment) }
             is BudgetingEvent.ShowEditRecurringDialog -> _uiState.update { it.copy(dialogState = DialogState.EditRecurringPayment(event.budget)) }
             is BudgetingEvent.HideRecurringDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
-            is BudgetingEvent.ShowRecurringBudgetsDialog -> _uiState.update { it.copy(dialogState = DialogState.AddRecurringPayment) }
-            is BudgetingEvent.HideRecurringBudgetsDialog -> _uiState.update { it.copy(dialogState = DialogState.None) }
             is BudgetingEvent.AddRecurringBudget -> addRecurringBudget(event.budget)
             is BudgetingEvent.UpdateRecurringBudget -> updateRecurringBudget(event.budget)
             is BudgetingEvent.DeleteRecurringBudget -> deleteRecurringBudget(event.budget)
@@ -273,7 +269,7 @@ class BudgetingViewModel @Inject constructor(
                 recurringBudgetRepository.cleanupInvalidRecurringBudgets()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Log error
             } finally {
                 isRefreshComplete = true
@@ -463,7 +459,12 @@ class BudgetingViewModel @Inject constructor(
 
     private suspend fun seedDefaultCategories(userId: String) {
         DefaultBudgetCategories.all.forEach { category ->
-            try { categoryRepository.insertCategory(category, userId) } catch (e: CancellationException) { throw e } catch (e: Exception) { }
+            try {
+                categoryRepository.insertCategory(category, userId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) { /* best-effort */
+            }
         }
     }
 

@@ -3,16 +3,15 @@ package com.example.insightku.feature.planning.goal.domain.model
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
-import com.example.insightku.feature.planning.goal.data.model.RoundUpMode
 import com.example.insightku.feature.planning.goal.data.model.AllocationValueType
 import com.example.insightku.feature.planning.goal.data.model.AutoAllocationRuleEntity
 import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
 import com.example.insightku.feature.planning.goal.data.model.ConfirmationMode
+import com.example.insightku.feature.planning.goal.data.model.RoundUpMode
 import com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
-import java.time.ZoneId
 import java.util.UUID
 
 data class AllocationTriggerParams(
@@ -34,7 +33,9 @@ data class AllocationTriggerParams(
                     accountId = obj.optString("accountId").takeIf { it.isNotBlank() },
                     threshold = if (obj.has("threshold")) obj.getDouble("threshold") else null
                 )
-            } catch (e: Exception) { null }
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 }
@@ -105,32 +106,6 @@ data class AutoAllocationRule(
         }
     }
 
-    /** Human-readable summary for the configuration preview */
-    val configurationSummary: String get() = when (triggerType) {
-        AllocationTriggerType.DAILY -> "Every day at ${formatTime()}"
-        AllocationTriggerType.WEEKLY -> "Every ${dayOfWeekName()} at ${formatTime()}"
-        AllocationTriggerType.BIWEEKLY -> "Every two weeks starting ${biweeklyStartDateText()} at ${formatTime()}"
-        AllocationTriggerType.MONTHLY -> "Every ${dayOfMonthText()} of the month at ${formatTime()}"
-        AllocationTriggerType.BALANCE_ABOVE -> {
-            val thresh = triggerParams?.threshold ?: 0.0
-            "When balance exceeds ${formatAmount(thresh)}"
-        }
-        AllocationTriggerType.SPENDING_CATEGORY -> {
-            val modeText = when (categoryBasedExecutionMode) {
-                CategoryBasedExecutionMode.EVERY_TRANSACTION -> "On every transaction"
-                CategoryBasedExecutionMode.AFTER_DAILY_TOTAL -> "After daily total"
-                CategoryBasedExecutionMode.AFTER_MONTHLY_TOTAL -> "After monthly total"
-            }
-            "$modeText in selected categories"
-        }
-        AllocationTriggerType.INCOME_RECEIVED -> "When income is received"
-        AllocationTriggerType.ROUND_UP -> when (roundUpMode) {
-            RoundUpMode.ROUND_UP -> "After every expense (round-up)"
-            RoundUpMode.ROUND_DOWN -> "After every expense (round-down)"
-            RoundUpMode.ROUND_NEAREST -> "After every expense (round-nearest)"
-        }
-    }
-
     val triggerLabel: String get() = when (triggerType) {
         AllocationTriggerType.INCOME_RECEIVED -> "Income-Based"
         AllocationTriggerType.SPENDING_CATEGORY -> "Category-Based"
@@ -146,11 +121,6 @@ data class AutoAllocationRule(
         AllocationTriggerType.BALANCE_ABOVE -> "Balance Threshold"
     }
 
-    val confirmationModeLabel: String get() = when (confirmationMode) {
-        ConfirmationMode.AUTO -> "Automatic"
-        ConfirmationMode.CONFIRMATION_REQUIRED -> "Confirm First"
-    }
-
     private fun formatAmount(amount: Double): String = NumberFormatter.formatCurrency(amount)
 
     companion object {
@@ -158,11 +128,15 @@ data class AutoAllocationRule(
             val categoryIds = try {
                 val arr = JSONArray(entity.incomeCategoryIds)
                 (0 until arr.length()).map { arr.getString(it) }
-            } catch (e: Exception) { emptyList() }
+            } catch (_: Exception) {
+                emptyList()
+            }
             val catBasedIds = try {
                 val arr = JSONArray(entity.categoryBasedCategoryIds)
                 (0 until arr.length()).map { arr.getString(it) }
-            } catch (e: Exception) { emptyList() }
+            } catch (_: Exception) {
+                emptyList()
+            }
 
             return AutoAllocationRule(
                 id = entity.id, goalId = entity.goalId, goalName = goalName,

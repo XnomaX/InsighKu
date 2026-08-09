@@ -1,39 +1,61 @@
 package com.example.insightku.feature.planning.budget.presentation
-import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
-import com.example.insightku.feature.planning.budget.presentation.recurringIcons
-import com.example.insightku.feature.planning.budget.presentation.installmentIcons
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CreditScore
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import com.example.insightku.R
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
-import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.i18n.DateFormatter
-import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.LocalAccent
 import java.util.concurrent.TimeUnit
 
 // ─── Design tokens (theme-aware — react to light/dark + accent from Settings) ───
@@ -42,7 +64,6 @@ private val Purple: Color     @Composable get() = LocalAccent.current
 private val Orange     = AppPalette.warning
 private val Red        = AppPalette.deleteRed
 private val Border: Color     @Composable get() = AppPalette.cardBorder
-private val BgSurface: Color  @Composable get() = AppPalette.background
 
 // ─── Recurring Payments Section ───────────────────────────────────────────────
 
@@ -52,8 +73,8 @@ fun RecurringSection(
     onAdd: () -> Unit,
     onEdit: (RecurringBudget) -> Unit,
     onDelete: (RecurringBudget) -> Unit,
-    categories: List<Category> = emptyList(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    categories: List<Category> = emptyList()
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Section header
@@ -71,7 +92,11 @@ fun RecurringSection(
                 )
                 Text(
                     text = if (recurringBudgets.isEmpty()) stringResource(R.string.recurring_section_empty)
-                           else stringResource(R.string.recurring_section_active, recurringBudgets.size, NumberFormatter.formatCurrency(recurringBudgets.sumOf { it.amount })),
+                    else pluralStringResource(
+                        R.plurals.recurring_section_active,
+                        recurringBudgets.size,
+                        NumberFormatter.formatCurrency(recurringBudgets.sumOf { it.amount })
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -116,8 +141,8 @@ fun RecurringPaymentCard(
     budget: RecurringBudget,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    categoryMap: Map<String, Category> = emptyMap(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    categoryMap: Map<String, Category> = emptyMap()
 ) {
     val daysUntilDue = ((budget.nextDue - System.currentTimeMillis()) /
             (1000 * 60 * 60 * 24)).toInt()
@@ -126,7 +151,8 @@ fun RecurringPaymentCard(
     val matchedCategory = budget.categoryId?.let { categoryMap[it] }
     val iconInfo = if (matchedCategory != null) {
         val resolved = CategoryIconResolver.resolve(matchedCategory.icon ?: matchedCategory.name)
-        val catColor = runCatching { Color(android.graphics.Color.parseColor(matchedCategory.color)) }.getOrDefault(resolved.color)
+        val catColor =
+            runCatching { Color(matchedCategory.color.toColorInt()) }.getOrDefault(resolved.color)
         com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(matchedCategory.name, resolved.icon, catColor)
     } else {
         budget.iconName?.let { label ->
@@ -239,12 +265,17 @@ private fun RecurringEmptyState(onAdd: () -> Unit) {
         border = BorderStroke(1.dp, Border)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(28.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
-                modifier = Modifier.size(56.dp).clip(CircleShape).background(Purple.copy(alpha = 0.08f)),
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(Purple.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Repeat, contentDescription = null, tint = Purple.copy(alpha = 0.5f), modifier = Modifier.size(26.dp))
@@ -278,8 +309,8 @@ fun InstallmentsSection(
     onAdd: () -> Unit,
     onEdit: (Installment) -> Unit,
     onDelete: (Installment) -> Unit,
-    categories: List<Category> = emptyList(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    categories: List<Category> = emptyList()
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Section header
@@ -297,7 +328,11 @@ fun InstallmentsSection(
                 )
                 Text(
                     text = if (installments.isEmpty()) stringResource(R.string.installment_section_empty)
-                           else stringResource(R.string.installment_section_active, installments.size, NumberFormatter.formatCurrency(installments.sumOf { it.remainingBalance })),
+                    else pluralStringResource(
+                        R.plurals.installment_section_active,
+                        installments.size,
+                        NumberFormatter.formatCurrency(installments.sumOf { it.remainingBalance })
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -342,8 +377,8 @@ fun InstallmentCard(
     installment: Installment,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    categoryMap: Map<String, Category> = emptyMap(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    categoryMap: Map<String, Category> = emptyMap()
 ) {
     val daysUntilDue = ((installment.nextDueDate - System.currentTimeMillis()) /
             (1000 * 60 * 60 * 24)).toInt()
@@ -352,7 +387,8 @@ fun InstallmentCard(
     val matchedCategory = installment.categoryId?.let { categoryMap[it] }
     val iconInfo = if (matchedCategory != null) {
         val resolved = CategoryIconResolver.resolve(matchedCategory.icon ?: matchedCategory.name)
-        val catColor = runCatching { Color(android.graphics.Color.parseColor(matchedCategory.color)) }.getOrDefault(resolved.color)
+        val catColor =
+            runCatching { Color(matchedCategory.color.toColorInt()) }.getOrDefault(resolved.color)
         com.example.insightku.core.ui.components.dialogs.CategoryIconInfo(matchedCategory.name, resolved.icon, catColor)
     } else {
         installment.iconName?.let { label ->
@@ -389,7 +425,9 @@ fun InstallmentCard(
         border = BorderStroke(1.dp, Border)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(18.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Top row: icon + name + actions
@@ -458,7 +496,10 @@ fun InstallmentCard(
                 }
                 LinearProgressIndicator(
                     progress = { animatedProgress },
-                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(50.dp)),
                     color = Purple,
                     trackColor = Border
                 )
@@ -494,12 +535,17 @@ private fun InstallmentEmptyState(onAdd: () -> Unit) {
         border = BorderStroke(1.dp, Border)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(28.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
-                modifier = Modifier.size(56.dp).clip(CircleShape).background(AppPalette.cyan.copy(alpha = 0.08f)),
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(AppPalette.cyan.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.CreditScore, contentDescription = null, tint = AppPalette.cyan.copy(alpha = 0.5f), modifier = Modifier.size(26.dp))

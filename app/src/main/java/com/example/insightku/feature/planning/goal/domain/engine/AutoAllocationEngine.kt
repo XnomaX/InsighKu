@@ -1,24 +1,24 @@
 package com.example.insightku.feature.planning.goal.domain.engine
 
+import android.util.Log
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
 import com.example.insightku.feature.planning.goal.data.model.AllocationValueType
+import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.data.model.RoundUpMode
 import com.example.insightku.feature.planning.goal.domain.model.AllocationSuggestion
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult
-import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
-import com.example.insightku.core.i18n.NumberFormatter
-import android.util.Log
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.min
-import kotlin.math.abs
 
 @Singleton
 class AutoAllocationEngine @Inject constructor(
@@ -417,7 +417,9 @@ class AutoAllocationEngine @Inject constructor(
         // Load categories once and build lookup map for efficiency
         val categoryMap = try {
             dataSource.getAllCategories().first().associateBy { it.name.trim().lowercase() }
-        } catch (e: Exception) { emptyMap() }
+        } catch (_: Exception) {
+            emptyMap()
+        }
         
         // Filter by categories and sum expenses
         return transactions.filter { tx ->

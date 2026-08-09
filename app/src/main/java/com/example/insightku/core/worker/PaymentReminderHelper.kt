@@ -2,21 +2,19 @@ package com.example.insightku.core.worker
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.example.insightku.R
-import com.example.insightku.core.utils.CurrencyUtils
+import androidx.core.content.edit
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.insightku.R
 import com.example.insightku.core.i18n.LocaleHelper
-import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.utils.CurrencyUtils
 import java.util.concurrent.TimeUnit
 
 /**
@@ -111,7 +109,13 @@ object PaymentReminderHelper {
             daysUntilDue < 0 -> Triple(
                 "overdue",
                 ctx.getString(R.string.payment_overdue_title, paymentName),
-                ctx.getString(R.string.payment_overdue_body, paymentName, -daysUntilDue, formattedAmount)
+                ctx.resources.getQuantityString(
+                    R.plurals.payment_overdue_body,
+                    -daysUntilDue,
+                    paymentName,
+                    -daysUntilDue,
+                    formattedAmount
+                )
             )
             daysUntilDue == 0 -> Triple(
                 "today",
@@ -125,13 +129,35 @@ object PaymentReminderHelper {
             )
             daysUntilDue <= 3 -> Triple(
                 "h3",
-                ctx.getString(R.string.payment_due_in_days_title, daysUntilDue, paymentName),
-                ctx.getString(R.string.payment_due_in_days_body, paymentName, daysUntilDue, formattedAmount)
+                ctx.resources.getQuantityString(
+                    R.plurals.payment_due_in_days_title,
+                    daysUntilDue,
+                    daysUntilDue,
+                    paymentName
+                ),
+                ctx.resources.getQuantityString(
+                    R.plurals.payment_due_in_days_body,
+                    daysUntilDue,
+                    paymentName,
+                    daysUntilDue,
+                    formattedAmount
+                )
             )
             daysUntilDue <= 7 -> Triple(
                 "h7",
-                ctx.getString(R.string.payment_due_in_days_title, daysUntilDue, paymentName),
-                ctx.getString(R.string.payment_due_in_days_body, paymentName, daysUntilDue, formattedAmount)
+                ctx.resources.getQuantityString(
+                    R.plurals.payment_due_in_days_title,
+                    daysUntilDue,
+                    daysUntilDue,
+                    paymentName
+                ),
+                ctx.resources.getQuantityString(
+                    R.plurals.payment_due_in_days_body,
+                    daysUntilDue,
+                    paymentName,
+                    daysUntilDue,
+                    formattedAmount
+                )
             )
             else -> return // Don't send reminders for payments > 7 days away
         }
@@ -169,7 +195,7 @@ object PaymentReminderHelper {
             NotificationManagerCompat.from(context)
                 .notify(notificationId(paymentId, type), notification)
             // Record that we sent this reminder today
-            prefs(context).edit().putInt(prefsKey, todayBucket).apply()
+            prefs(context).edit { putInt(prefsKey, todayBucket) }
         } catch (_: SecurityException) {
             // POST_NOTIFICATIONS permission not granted
         }

@@ -1,21 +1,58 @@
 package com.example.insightku.core.ui.components
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Wallet
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,13 +63,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
-import androidx.annotation.StringRes
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.insightku.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -40,33 +76,35 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.insightku.BuildConfig
+import com.example.insightku.R
+import com.example.insightku.core.data.model.DraftTransaction
+import com.example.insightku.core.data.model.DraftType
+import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.navigation.Route
-import com.example.insightku.feature.analytics.presentation.AnalyticsScreen
-import com.example.insightku.feature.accounts.presentation.AccountsScreen
-import com.example.insightku.feature.accounts.presentation.AccountsViewModel
-import com.example.insightku.feature.planning.budget.presentation.BudgetingEvent
-import com.example.insightku.feature.planning.budget.presentation.BudgetingScreen
-import com.example.insightku.feature.home.presentation.DashboardScreen
-import com.example.insightku.feature.settings.presentation.SettingsScreen
-import com.example.insightku.feature.home.presentation.AddTransactionDialog
-import com.example.insightku.feature.planning.budget.presentation.BudgetingAction
-import com.example.insightku.feature.planning.budget.presentation.DialogState
+import com.example.insightku.core.notification.NotificationTransactionData
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
+import com.example.insightku.feature.accounts.presentation.AccountsScreen
+import com.example.insightku.feature.accounts.presentation.AccountsViewModel
+import com.example.insightku.feature.analytics.presentation.AnalyticsScreen
+import com.example.insightku.feature.home.presentation.AddTransactionDialog
 import com.example.insightku.feature.home.presentation.AddTransactionViewModel
-import com.example.insightku.feature.planning.budget.presentation.BudgetingViewModel
+import com.example.insightku.feature.home.presentation.DashboardEvent
+import com.example.insightku.feature.home.presentation.DashboardScreen
 import com.example.insightku.feature.home.presentation.DashboardViewModel
-import com.example.insightku.feature.home.presentation.TransactionDetailsViewModel
 import com.example.insightku.feature.home.presentation.TransactionDetailsScreen
+import com.example.insightku.feature.home.presentation.TransactionDetailsViewModel
+import com.example.insightku.feature.home.presentation.dashboard.AllocationDraftReviewSheet
+import com.example.insightku.feature.planning.budget.presentation.BudgetingAction
+import com.example.insightku.feature.planning.budget.presentation.BudgetingEvent
+import com.example.insightku.feature.planning.budget.presentation.BudgetingScreen
+import com.example.insightku.feature.planning.budget.presentation.BudgetingViewModel
+import com.example.insightku.feature.planning.budget.presentation.DialogState
+import com.example.insightku.feature.planning.goal.presentation.GoalDetailScreen
+import com.example.insightku.feature.settings.presentation.SettingsScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.example.insightku.core.notification.NotificationTransactionData
-import com.example.insightku.core.data.model.DraftTransaction
-import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.feature.home.presentation.DashboardEvent
-import com.example.insightku.feature.planning.goal.presentation.GoalDetailScreen
-import com.example.insightku.feature.home.presentation.dashboard.AllocationDraftReviewSheet
-import com.example.insightku.core.data.model.DraftType
+import kotlin.time.Duration.Companion.seconds
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -102,14 +140,6 @@ private val navItems = listOf(
 )
 
 // ─── Tab Route Mapping ───────────────────────────────────────────────────────
-
-/** Root routes for each bottom navigation tab. */
-private val tabRootRoutes = setOf(
-    Route.HOME,
-    Route.ANALYSIS,
-    Route.BUDGETING,
-    Route.ACCOUNTS
-)
 
 /** Nested routes that belong to the Home tab. */
 private val homeNestedRoutes = setOf(Route.TRANSACTION_DETAILS, Route.SETTINGS, Route.BANK_WHITELIST, Route.AUTO_DETECTION_ONBOARDING)
@@ -152,6 +182,7 @@ fun MainScreen(
     val incomeCategories           by addTransactionViewModel.incomeCategories.collectAsStateWithLifecycle()
     val addTxUiState               by addTransactionViewModel.uiState.collectAsStateWithLifecycle()
     val budgetingUiState           by budgetingViewModel.uiState.collectAsStateWithLifecycle()
+    val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
     val accountsViewModel: AccountsViewModel = hiltViewModel()
     val accountsUiState by accountsViewModel.uiState.collectAsStateWithLifecycle()
     val accounts = accountsUiState.accounts
@@ -184,8 +215,6 @@ fun MainScreen(
         }
     }
 
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
     // Derived — nav hides whenever ANY overlay is open.
     // TRANSACTION_DETAILS is a regular nav destination — navbar stays visible so
     // user can tap Home to return. Overlays (dialogs/sheets) hide it.
@@ -210,6 +239,21 @@ fun MainScreen(
     var navBarHeightDp       by remember { mutableStateOf(0.dp) }
     val context              = LocalContext.current
     val scope                = rememberCoroutineScope()
+
+    // Dashboard one-shot feedback (snackbar + fatal error) surfaced through
+    // MainScreen's shared SnackbarHost — single host for the whole app.
+    LaunchedEffect(dashboardUiState.snackbarMessage) {
+        dashboardUiState.snackbarMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            dashboardViewModel.onEvent(DashboardEvent.ClearSnackbar)
+        }
+    }
+    LaunchedEffect(dashboardUiState.error) {
+        dashboardUiState.error?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            dashboardViewModel.onEvent(DashboardEvent.ClearError)
+        }
+    }
 
     // Handle back: dismiss budgeting dialogs first, then add-transaction, then double-tap exit
     BackHandler(enabled = budgetingUiState.dialogState !is DialogState.None) {
@@ -251,7 +295,7 @@ fun MainScreen(
                 message  = backExitHint,
                 duration = SnackbarDuration.Short
             )
-            delay(2000)
+            delay(2.seconds)
             backPressedOnce = false
         }
     }
@@ -422,17 +466,10 @@ fun PremiumBottomNav(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val currentTab = getTabForRoute(currentRoute)
-    val isAtTabRoot = currentRoute in tabRootRoutes
 
     fun navigateToTab(tabRoute: String) {
         // Already on this tab's root → no-op (prevents redundant navigation)
-        if (currentTab == tabRoute && isAtTabRoot) {
-            return
-        }
-
-        // On a nested screen within this tab → pop back to root (preserves other tabs)
-        if (currentTab == tabRoute && !isAtTabRoot) {
-            navController.popBackStack(tabRoute, inclusive = false)
+        if (currentTab == tabRoute) {
             return
         }
 
@@ -535,8 +572,8 @@ private fun BottomNavTabItem(
         modifier              = Modifier
             .clickable(
                 interactionSource = interactionSource,
-                indication        = null,
-                onClick           = onClick
+                indication = null,
+                onClick = onClick
             )
             .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalAlignment   = Alignment.CenterHorizontally,
@@ -554,7 +591,9 @@ private fun BottomNavTabItem(
                 Icon(
                     imageVector        = item.icon,
                     contentDescription = label,
-                    modifier           = Modifier.size(20.dp).scale(iconScale),
+                    modifier = Modifier
+                        .size(20.dp)
+                        .scale(iconScale),
                     tint               = if (isSelected) NavPurple else NavInactive
                 )
         }
@@ -588,8 +627,8 @@ fun CenterAddButton(onClick: () -> Unit) {
         modifier            = Modifier
             .clickable(
                 interactionSource = interactionSource,
-                indication        = null,
-                onClick           = onClick
+                indication = null,
+                onClick = onClick
             )
             .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -600,10 +639,10 @@ fun CenterAddButton(onClick: () -> Unit) {
                 .size(44.dp)
                 .scale(scale)
                 .shadow(
-                    elevation    = 4.dp,
-                    shape        = CircleShape,
+                    elevation = 4.dp,
+                    shape = CircleShape,
                     ambientColor = NavPurple.copy(alpha = 0.15f),
-                    spotColor    = NavPurple.copy(alpha = 0.20f)
+                    spotColor = NavPurple.copy(alpha = 0.20f)
                 )
                 .clip(CircleShape)
                 .background(NavPurple),
@@ -635,6 +674,7 @@ private fun MainNavHost(
     rootNavController: NavHostController,
     dashboardViewModel: DashboardViewModel,
     budgetingViewModel: BudgetingViewModel,
+    modifier: Modifier = Modifier,
     onNavigateToGoalDetail: (String) -> Unit = {},
     onShowAddTransaction: () -> Unit = {},
     onShowAddTransactionForStreak: () -> Unit = {},
@@ -644,8 +684,7 @@ private fun MainNavHost(
     onCreateGoal: () -> Unit = {},
     onCreateBudget: () -> Unit = {},
     pendingBudgetingAction: BudgetingAction? = null,
-    onBudgetingActionConsumed: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onBudgetingActionConsumed: () -> Unit = {}
 ) {
     NavHost(
         navController    = navController,
@@ -767,8 +806,7 @@ private fun MainNavHost(
                         restoreState = true
                     }
                 },
-                onGoalArchived = { navController.popBackStack() },
-                onGoalDeleted = { navController.popBackStack() }
+                onGoalArchived = { navController.popBackStack() }
             )
         }
 

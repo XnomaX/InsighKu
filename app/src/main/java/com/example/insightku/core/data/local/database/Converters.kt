@@ -1,7 +1,11 @@
 package com.example.insightku.core.data.local.database
 
 import androidx.room.TypeConverter
-import com.example.insightku.core.data.model.*
+import com.example.insightku.core.data.model.BudgetFrequency
+import com.example.insightku.core.data.model.BudgetPeriod
+import com.example.insightku.core.data.model.DraftConfidence
+import com.example.insightku.core.data.model.DraftStatus
+import com.example.insightku.core.data.model.TransactionType
 
 class Converters {
     @TypeConverter

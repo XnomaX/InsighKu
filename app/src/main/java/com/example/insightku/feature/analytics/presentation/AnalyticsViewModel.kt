@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
-import com.example.insightku.feature.analytics.domain.AnalyticsPeriodType
 import com.example.insightku.feature.analytics.domain.GetAnalyticsInsightsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext

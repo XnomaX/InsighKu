@@ -9,244 +9,53 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.insightku.R
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
-import com.example.insightku.core.ui.theme.ExpenseRed
-import com.example.insightku.core.ui.theme.IncomeGreen
-import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.LocalAccent
-import com.example.insightku.core.ui.theme.LocalComfortMode
-import com.example.insightku.core.ui.theme.LocalInsightTone
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
-import com.example.insightku.core.ui.theme.WarningYellow
-import com.example.insightku.core.i18n.NumberFormatter
-
-// ─── Budget Health Card ───────────────────────────────────────────────────────
-
-@Composable
-fun BudgetHealthCard(
-    percentage: Double,
-    totalBudget: Double,
-    limitedSpent: Double,
-    remaining: Double,
-    riskyCount: Int,
-    overBudgetCount: Int,
-    safeCount: Int,
-    modifier: Modifier = Modifier
-) {
-    val tone = LocalInsightTone.current
-    val soften = LocalComfortMode.current || tone == InsightTone.GENTLE
-    val overColor = if (soften) AppPalette.deleteRed else ExpenseRed
-    val warnColor = if (soften) AppPalette.warning.copy(alpha = 0.6f) else WarningYellow
-    val accent = LocalAccent.current
-    val progressColor by animateColorAsState(
-        targetValue = when {
-            percentage >= 100.0 -> overColor
-            percentage >= 70.0 -> warnColor
-            else -> accent
-        },
-        animationSpec = tween(400),
-        label = "healthColor"
-    )
-
-    var animated by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { animated = true }
-    val animatedProgress by animateFloatAsState(
-        targetValue = if (animated) (percentage / 100.0).coerceIn(0.0, 1.0).toFloat() else 0f,
-        animationSpec = tween(900, easing = androidx.compose.animation.core.EaseOutCubic),
-        label = "barProgress"
-    )
-
-    val healthLabel = when {
-        totalBudget <= 0.0 -> stringResource(R.string.health_no_limits)
-        percentage >= 100.0 -> if (soften) stringResource(R.string.health_over_budget_gentle) else stringResource(R.string.health_over_budget)
-        percentage >= 70.0 -> if (soften) stringResource(R.string.health_getting_close) else stringResource(R.string.health_watch_spending)
-        else -> if (tone == InsightTone.DIRECT) stringResource(R.string.health_within_budget) else stringResource(R.string.health_on_track)
-    }
-
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = AppPalette.card,
-        tonalElevation = 0.dp,
-        shadowElevation = 2.dp,
-        border = BorderStroke(1.dp, AppPalette.cardBorder)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.monthly_overview),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppPalette.textPrimary
-                )
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = progressColor.copy(alpha = 0.10f)
-                ) {
-                    Text(
-                        text = stringResource(R.string.percent_used, percentage.toInt()),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = progressColor,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(AppPalette.cardBorder)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(animatedProgress)
-                        .matchParentSize()
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(progressColor)
-                )
-            }
-
-            Text(
-                text = healthLabel,
-                style = MaterialTheme.typography.bodySmall,
-                color = progressColor.copy(alpha = 0.8f)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                BudgetHeroStat(
-                    label = stringResource(R.string.budget_stat_label),
-                    value = formatCurrencyPlain(totalBudget),
-                    color = AppPalette.textPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(36.dp)
-                        .background(AppPalette.cardBorder)
-                        .align(Alignment.CenterVertically)
-                )
-                BudgetHeroStat(
-                    label = stringResource(R.string.spent_stat_label),
-                    value = formatCurrencyPlain(limitedSpent),
-                    color = progressColor,
-                    modifier = Modifier.weight(1f)
-                )
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(36.dp)
-                        .background(AppPalette.cardBorder)
-                        .align(Alignment.CenterVertically)
-                )
-                BudgetHeroStat(
-                    label = stringResource(R.string.remaining_stat_label),
-                    value = if (totalBudget > 0) formatCurrencyPlain(remaining.coerceAtLeast(0.0)) else "—",
-                    color = if (remaining < 0) ExpenseRed else IncomeGreen,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            if (totalBudget > 0) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    if (safeCount > 0) {
-                        CompactStatDot(label = stringResource(R.string.budget_safe, safeCount), color = IncomeGreen)
-                    }
-                    if (riskyCount > 0) {
-                        CompactStatDot(label = stringResource(R.string.budget_warning, riskyCount), color = WarningYellow)
-                    }
-                    if (overBudgetCount > 0) {
-                        CompactStatDot(label = stringResource(R.string.budget_over, overBudgetCount), color = ExpenseRed)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun BudgetHeroStat(
-    label: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = AppPalette.textMuted
-        )
-    }
-}
-
-@Composable
-internal fun CompactStatDot(label: String, color: Color) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(color)
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = AppPalette.textMuted
-        )
-    }
-}
 
 // ─── Budget Category Card ─────────────────────────────────────────────────────
 
@@ -254,8 +63,8 @@ internal fun CompactStatDot(label: String, color: Color) {
 fun BudgetCategoryCard(
     category: BudgetCategory,
     onEdit: () -> Unit,
+    modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
 ) {
     val statusColor by animateColorAsState(
         targetValue = budgetStatusColor(category.health),
@@ -428,8 +237,8 @@ internal fun BudgetStatePill(text: String, color: Color) {
 internal fun IncomeCategoryCard(
     category: BudgetCategory,
     onEdit: () -> Unit,
-    onDelete: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDelete: (() -> Unit)? = null
 ) {
     val categoryColor = parseCategoryColor(category.color)
 
@@ -697,39 +506,6 @@ internal fun EmptyIncomeState(
                     )
                 }
             }
-        }
-    }
-}
-
-// ─── Budget Insight Chip ──────────────────────────────────────────────────────
-
-@Composable
-fun BudgetInsightChip(
-    label: String,
-    icon: ImageVector,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = color.copy(alpha = 0.08f),
-        tonalElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = color,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }

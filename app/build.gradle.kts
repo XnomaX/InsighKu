@@ -1,10 +1,14 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose.compiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
-    alias(libs.plugins.google.services) // Corrected this line
+    alias(libs.plugins.google.services)
+}
+
+ksp {
+    // Export Room schema so future migrations have a versioned baseline.
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 android {
@@ -30,27 +34,34 @@ android {
             )
         }
     }
+
+    // Dynamic runtime locale switching (LocaleHelper) — all languages must be
+    // present in every install, so disable per-language APK splitting.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-            // KT-73255: Hilt/Dagger @ApplicationContext on constructor props should hit param+field
-            freeCompilerArgs.add("-Xannotation-default-target=param-property")
-        }
-    }
     buildFeatures {
         compose = true
         buildConfig = true
     }
-    
     testOptions {
         unitTests.all {
             it.useJUnitPlatform()
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        // KT-73255: Hilt/Dagger @ApplicationContext on constructor props should hit param+field
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 
@@ -86,8 +97,6 @@ dependencies {
     implementation(libs.navigation.compose)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
-
-    implementation(libs.splashscreen)
 
     // Hilt
     implementation(libs.hilt.android)

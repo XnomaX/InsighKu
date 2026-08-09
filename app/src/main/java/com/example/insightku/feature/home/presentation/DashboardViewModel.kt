@@ -4,28 +4,28 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
+import com.example.insightku.core.data.local.preferences.SessionManager
+import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.repository.CategoryRepository
-import com.example.insightku.core.data.repository.RecurringBudgetRepository
+import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.core.data.repository.InstallmentRepository
-import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
-import com.example.insightku.feature.planning.goal.domain.model.Goal
+import com.example.insightku.core.data.repository.RecurringBudgetRepository
+import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.utils.ErrorBus
+import com.example.insightku.core.utils.TimeUtils
+import com.example.insightku.core.utils.normalizedCategoryName
 import com.example.insightku.feature.home.domain.AddTransactionUseCase
 import com.example.insightku.feature.home.domain.ApproveAllocationDraftUseCase
 import com.example.insightku.feature.home.domain.BuildInsightMessagesUseCase
 import com.example.insightku.feature.home.domain.CalculateStreakUseCase
 import com.example.insightku.feature.home.domain.GetTransactionsUseCase
 import com.example.insightku.feature.home.domain.MarkPaymentPaidUseCase
-import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
-import com.example.insightku.core.i18n.NumberFormatter
-import com.example.insightku.core.utils.ErrorBus
-import com.example.insightku.core.utils.normalizedCategoryName
-import com.example.insightku.core.data.local.preferences.SessionManager
-import com.example.insightku.core.utils.TimeUtils
+import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
+import com.example.insightku.feature.planning.goal.domain.model.Goal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -193,7 +193,7 @@ class DashboardViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Silently keep the existing totalBalance on error
             }
         }
@@ -220,7 +220,7 @@ class DashboardViewModel @Inject constructor(
                 getTransactionsUseCase.refresh()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 val hasData = _uiState.value.recentTransactions.isNotEmpty()
                 if (!hasData) {
                     val msg = "Tidak dapat memuat data. Periksa koneksi internet."
@@ -273,13 +273,20 @@ class DashboardViewModel @Inject constructor(
             android.util.Log.i(TAG, "[DraftApproved] Processing draft=$draftId")
             when (val outcome = approveAllocationDraftUseCase.approve(draftId)) {
                 is ApproveAllocationDraftUseCase.Outcome.DraftNotFound ->
-                    _uiState.update { it.copy(error = "Draft not found") }
+                    _uiState.update { it.copy(error = context.getString(R.string.error_draft_not_found)) }
                 is ApproveAllocationDraftUseCase.Outcome.InvalidDraft ->
-                    _uiState.update { it.copy(error = "Invalid allocation draft data") }
+                    _uiState.update { it.copy(error = context.getString(R.string.error_invalid_allocation_draft)) }
                 is ApproveAllocationDraftUseCase.Outcome.AccountMissing ->
-                    _uiState.update { it.copy(error = "Source account no longer exists") }
+                    _uiState.update { it.copy(error = context.getString(R.string.error_account_missing)) }
                 is ApproveAllocationDraftUseCase.Outcome.InsufficientBalance ->
-                    _uiState.update { it.copy(error = "Insufficient balance in ${outcome.accountName}") }
+                    _uiState.update {
+                        it.copy(
+                            error = context.getString(
+                                R.string.error_insufficient_alloc_balance,
+                                outcome.accountName
+                            )
+                        )
+                    }
                 is ApproveAllocationDraftUseCase.Outcome.Allocated ->
                     _uiState.update { it.copy(snackbarMessage = "${NumberFormatter.formatCurrency(outcome.amount)} allocated to ${outcome.goalName ?: "goal"}") }
                 is ApproveAllocationDraftUseCase.Outcome.Failed ->
@@ -294,7 +301,7 @@ class DashboardViewModel @Inject constructor(
                 android.util.Log.i(TAG, "[DraftRejected] Rejecting draft=$draftId")
                 draftRepository.purgeDismissed(draftId)
                 android.util.Log.d(TAG, "[DraftRejected] Draft deleted — no allocation, rule remains active")
-                _uiState.update { it.copy(snackbarMessage = "Allocation rejected") }
+                _uiState.update { it.copy(snackbarMessage = context.getString(R.string.snackbar_allocation_rejected)) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -366,13 +373,6 @@ class DashboardViewModel @Inject constructor(
         val monthlySavings = monthlyIncome - monthlyExpenses
         val insightMessages = buildInsightMessagesUseCase(monthlyIncome, monthlyExpenses, monthlySavings, streakResult.currentStreak)
         // -----------------------------------------------------------------------
-
-        // Compute budget totals
-        val budgetTotalLimit = categories.filter { it.budgetLimit != null && it.budgetLimit > 0 }
-            .sumOf { it.budgetLimit ?: 0.0 }
-        val budgetTotalSpent = budgetCategorySpending
-            .filter { it.limit != null && it.limit > 0 }
-            .sumOf { it.spent }
 
         // Preserve the account-sourced totalBalance
         val currentTotalBalance = _uiState.value.totalBalance

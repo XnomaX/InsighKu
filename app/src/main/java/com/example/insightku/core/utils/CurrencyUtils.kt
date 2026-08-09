@@ -1,7 +1,8 @@
 package com.example.insightku.core.utils
 
 import java.text.NumberFormat
-import java.util.*
+import java.util.Currency
+import java.util.Locale
 
 data class CurrencyOption(
     val code: String,
@@ -35,15 +36,13 @@ object CurrencyUtils {
             fmt.maximumFractionDigits = option.fractionDigits
             fmt.minimumFractionDigits = option.fractionDigits
             fmt.format(amount)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             val fmt = NumberFormat.getNumberInstance(option.locale)
             fmt.maximumFractionDigits = option.fractionDigits
             fmt.minimumFractionDigits = option.fractionDigits
             "${option.symbol} ${fmt.format(amount)}"
         }
     }
-
-    fun formatAmountWithoutSymbol(amount: Double): String = String.format("%.2f", amount)
 
     fun formatAmountCompact(amount: Double, currencyCode: String = "IDR"): String {
         val symbol = getOption(currencyCode).symbol
@@ -83,46 +82,6 @@ object CurrencyUtils {
 
     fun stripThousands(formatted: String): String = formatted.filter { it.isDigit() }
 
-    fun parseAmount(amountString: String): Double? = try {
-        val cleaned = amountString.replace(Regex("^[A-Za-z$€¥₩Rp.\\s]+"), "").trim()
-        if (cleaned.isEmpty()) return null
-        // Detect format: if both '.' and ',' exist, the LAST one is the decimal separator.
-        // e.g. "1.500,00" (ID) → decimal=',' | "1,500.00" (US) → decimal='.'
-        val lastDot = cleaned.lastIndexOf('.')
-        val lastComma = cleaned.lastIndexOf(',')
-        val normalized = when {
-            lastDot > lastComma -> {
-                // US format: comma=thousands, dot=decimal → "1,500.00"
-                cleaned.replace(",", "")
-            }
-            lastComma > lastDot -> {
-                // ID format: dot=thousands, comma=decimal → "1.500,00"
-                cleaned.replace(".", "").replace(",", ".")
-            }
-            else -> {
-                // Only one separator or none — just try direct parse
-                cleaned.replace(",", ".")
-            }
-        }
-        normalized.toDoubleOrNull()
-    } catch (e: Exception) { null }
 
-    fun formatAmountWithSign(amount: Double, isIncome: Boolean, currencyCode: String = "IDR"): String {
-        val f = formatAmount(kotlin.math.abs(amount), currencyCode)
-        return if (isIncome) "+$f" else "-$f"
-    }
-
-    fun calculatePercentage(value: Double, total: Double): Double =
-        if (total != 0.0) (value / total) * 100 else 0.0
-
-    fun formatPercentage(percentage: Double): String = String.format("%.1f%%", percentage)
-
-    // ponytail: IDR has no decimal subunits — round to whole rupiah, not 2 decimals
-    fun roundToTwoDecimals(amount: Double): Double = Math.round(amount).toDouble()
-
-    fun isValidAmount(amount: String): Boolean {
-        val parsed = parseAmount(amount) ?: return false
-        return parsed >= 0
-    }
 }
 

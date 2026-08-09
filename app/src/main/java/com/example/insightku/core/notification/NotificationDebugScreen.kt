@@ -3,7 +3,17 @@ package com.example.insightku.core.notification
 import android.content.ComponentName
 import android.provider.Settings
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,26 +22,44 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.insightku.R
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.i18n.DateFormatter
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
-import java.util.*
 
 // ── Raw notification (all packages, no filter) ───────────────────────────────
 
@@ -132,8 +160,8 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
     var isListenerEnabled by remember { mutableStateOf(false) }
     var rawListenerValue  by remember { mutableStateOf("") }
     var componentNameStr  by remember { mutableStateOf("") }
-    var refreshTick       by remember { mutableStateOf(0) }
-    var selectedTab       by remember { mutableStateOf(0) } // 0=All, 1=Bank, 2=Service
+    var refreshTick by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) } // 0=All, 1=Bank, 2=Service
 
     fun refresh() {
         val cn = ComponentName(context, BankNotificationListenerService::class.java)
@@ -190,7 +218,11 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
 
         // ── Diagnostics ───────────────────────────────────────────────────────
         Surface(shape = RoundedCornerShape(10.dp), color = AppPalette.card) {
-            Column(Modifier.fillMaxWidth().padding(10.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp)
+            ) {
                 DiagRow("ComponentName", componentNameStr)
                 DiagRow("Match",         if (isListenerEnabled) "YES ✓" else "NO ✗")
                 DiagRow("Raw listeners", if (rawListenerValue.length > 80) rawListenerValue.take(80) + "…" else rawListenerValue)
@@ -278,7 +310,10 @@ fun NotificationDebugScreen(modifier: Modifier = Modifier) {
                                 Text(event, color = AppPalette.textPrimary,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontFamily = FontFamily.Monospace,
-                                    modifier = Modifier.fillMaxWidth().padding(10.dp))
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(10.dp)
+                                )
                             }
                         }
                     }
@@ -300,21 +335,21 @@ private fun BatteryGuideTab(context: android.content.Context) {
             title   = stringResource(R.string.debug_battery_step1_title),
             detail  = stringResource(R.string.debug_battery_step1_detail),
             action  = stringResource(R.string.debug_battery_step1_action),
-            intent  = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            intent = android.content.Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
         ),
         BatteryStep(
             title   = stringResource(R.string.debug_battery_step2_title),
             detail  = stringResource(R.string.debug_battery_step2_detail),
             action  = stringResource(R.string.debug_battery_step2_action),
-            intent  = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = android.net.Uri.parse("package:${context.packageName}")
+            intent = android.content.Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = "package:${context.packageName}".toUri()
             }
         ),
         BatteryStep(
             title   = stringResource(R.string.debug_battery_step3_title),
             detail  = stringResource(R.string.debug_battery_step3_detail),
             action  = stringResource(R.string.debug_battery_step3_action),
-            intent  = android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+            intent = android.content.Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
         ),
         BatteryStep(
             title   = stringResource(R.string.debug_battery_step4_title),
@@ -327,7 +362,11 @@ private fun BatteryGuideTab(context: android.content.Context) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
             Surface(shape = RoundedCornerShape(10.dp), color = AppPalette.errorChipBg.copy(alpha = 0.3f)) {
-                Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                ) {
                     Text(
                         stringResource(R.string.debug_battery_warning_title),
                         color = AppPalette.error,
@@ -461,7 +500,11 @@ private fun BankEntryCard(entry: NotificationDebugEntry) {
 
 @Composable
 private fun EmptyState(text: String) {
-    Box(Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp), contentAlignment = Alignment.Center
+    ) {
         Text(text, color = AppPalette.textMuted, style = MaterialTheme.typography.bodySmall,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
@@ -469,7 +512,11 @@ private fun EmptyState(text: String) {
 
 @Composable
 private fun DiagRow(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 1.dp)
+    ) {
         Text("$label:", color = AppPalette.textMuted, style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.width(100.dp))
         Text(value, color = AppPalette.textPrimary, style = MaterialTheme.typography.labelSmall,
@@ -479,7 +526,11 @@ private fun DiagRow(label: String, value: String) {
 
 @Composable
 private fun DebugRow(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 1.dp)
+    ) {
         Text("$label: ", color = AppPalette.textMuted, style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.width(56.dp))
         Text(value, color = AppPalette.textPrimary, style = MaterialTheme.typography.labelSmall,

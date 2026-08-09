@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,8 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.core.graphics.toColorInt
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 
@@ -40,7 +41,7 @@ import com.example.insightku.core.ui.theme.Dimens
  */
 fun parseCategoryColor(value: String, fallback: Color = Color(0xFF79747E)): Color {
     return runCatching {
-        Color(android.graphics.Color.parseColor(value.ifBlank { "#79747E" }))
+        Color(value.ifBlank { "#79747E" }.toColorInt())
     }.getOrDefault(fallback)
 }
 
@@ -96,9 +97,9 @@ fun SectionHeaderWithCount(
 fun DetailRow(
     label: String,
     value: String,
+    modifier: Modifier = Modifier,
     hint: String? = null,
-    isPlaceholder: Boolean = false,
-    modifier: Modifier = Modifier
+    isPlaceholder: Boolean = false
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),

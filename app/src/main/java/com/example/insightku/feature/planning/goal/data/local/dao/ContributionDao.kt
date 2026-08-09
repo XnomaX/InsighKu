@@ -1,6 +1,11 @@
 package com.example.insightku.feature.planning.goal.data.local.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import com.example.insightku.feature.planning.goal.data.model.ContributionEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -177,14 +182,6 @@ interface ContributionDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertContributionsFromRemote(contributions: List<ContributionEntity>)
-
-    // ── Legacy Data Repair ─────────────────────────────────────────────────────
-
-    @Query("SELECT * FROM contributions WHERE createdAt < :cutoffMillis")
-    suspend fun getContributionsWithEpochTimestamps(cutoffMillis: Long): List<ContributionEntity>
-
-    @Query("UPDATE contributions SET createdAt = :newTimestamp WHERE id = :id")
-    suspend fun updateContributionTimestamp(id: String, newTimestamp: Long)
 }
 
 data class GoalAllocation(

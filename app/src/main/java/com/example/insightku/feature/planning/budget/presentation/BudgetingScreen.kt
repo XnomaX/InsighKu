@@ -28,32 +28,32 @@ import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
-import com.example.insightku.feature.planning.presentation.PlanningHeader
 import com.example.insightku.feature.planning.goal.presentation.GoalsEvent
 import com.example.insightku.feature.planning.goal.presentation.GoalsScreen
 import com.example.insightku.feature.planning.goal.presentation.GoalsViewModel
+import com.example.insightku.feature.planning.presentation.PlanningHeader
 import kotlinx.coroutines.launch
 
 // ─── Tab Enum ─────────────────────────────────────────────────────────────────
@@ -77,7 +77,6 @@ fun BudgetingScreen(
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
     val goalsViewModel: GoalsViewModel = hiltViewModel()
-    val goalsUiState by goalsViewModel.uiState.collectAsStateWithLifecycle()
 
     // Handle initial action from Home screen CTAs
     LaunchedEffect(initialAction) {
@@ -282,7 +281,10 @@ fun BudgetingScreenContent(
             IncomeSectionLabel(
                 title = stringResource(R.string.budget_income_sources),
                 subtitle = if (uiState.incomeCategories.isEmpty()) stringResource(R.string.no_income_sources)
-                else stringResource(R.string.income_sources_count, uiState.incomeCategories.size),
+                else pluralStringResource(
+                    R.plurals.income_sources_count,
+                    uiState.incomeCategories.size
+                ),
                 onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,

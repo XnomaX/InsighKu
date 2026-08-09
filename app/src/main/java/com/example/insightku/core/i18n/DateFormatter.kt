@@ -1,11 +1,6 @@
 package com.example.insightku.core.i18n
 
-import android.content.Context
-import androidx.appcompat.app.AppCompatDelegate
 import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -93,15 +88,6 @@ object DateFormatter {
     // ══════════════════════════════════════════════════════════════════════════════
     // TIME FORMATTING
     // ══════════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Format time in 24-hour format.
-     *
-     * Example: 08:30, 21:45
-     */
-    fun formatTime24h(timestamp: Long, locale: Locale = Locale.getDefault()): String {
-        return formatWith("HH:mm", locale, timestamp)
-    }
 
     /**
      * Format time in 24-hour format with seconds.
@@ -213,15 +199,6 @@ object DateFormatter {
         return formatWith("EEEE", locale, timestamp)
     }
 
-    /**
-     * Get localized month name.
-     *
-     * Indonesian: Januari, Februari, Maret, April, Mei, Juni, Juli, Agustus, September, Oktober, November, Desember
-     * English:    January, February, March, April, May, June, July, August, September, October, November, December
-     */
-    fun getMonthName(timestamp: Long, locale: Locale = Locale.getDefault()): String {
-        return formatWith("MMMM", locale, timestamp)
-    }
 
     /**
      * Get short month name.
@@ -246,27 +223,6 @@ object DateFormatter {
     // ══════════════════════════════════════════════════════════════════════════════
     // DATE RANGES
     // ══════════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Format a date range within the same month and year.
-     *
-     * Indonesian: 1–31 Juli 2026
-     * English:    July 1–31, 2026
-     */
-    fun formatDateRange(startTimestamp: Long, endTimestamp: Long, locale: Locale = Locale.getDefault()): String {
-        val startDate = Instant.ofEpochMilli(startTimestamp).atZone(ZoneId.systemDefault()).toLocalDate()
-        val endDate = Instant.ofEpochMilli(endTimestamp).atZone(ZoneId.systemDefault()).toLocalDate()
-
-        return if (startDate.month == endDate.month && startDate.year == endDate.year) {
-            if (locale.language == "id") {
-                "${startDate.dayOfMonth}–${endDate.dayOfMonth} ${getMonthName(startTimestamp, locale)} ${startDate.year}"
-            } else {
-                "${getMonthName(startTimestamp, locale)} ${startDate.dayOfMonth}–${endDate.dayOfMonth}, ${startDate.year}"
-            }
-        } else {
-            "${formatShortDate(startTimestamp, locale)} – ${formatShortDate(endTimestamp, locale)}"
-        }
-    }
 
     // ══════════════════════════════════════════════════════════════════════════════
     // RELATIVE TIME (PAST)
@@ -411,38 +367,4 @@ object DateFormatter {
     // HELPER METHODS
     // ══════════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Get the current locale from the application context.
-     * Uses the AppCompat per-app language setting.
-     */
-    fun getCurrentLocale(context: Context): Locale {
-        val currentLocales = AppCompatDelegate.getApplicationLocales()
-        if (!currentLocales.isEmpty) {
-            return currentLocales[0] ?: Locale.getDefault()
-        }
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-            context.resources.configuration.locales[0]
-        } else {
-            @Suppress("DEPRECATION")
-            context.resources.configuration.locale
-        } ?: Locale.getDefault()
-    }
-
-    /** Check if a timestamp is today. */
-    fun isToday(timestamp: Long): Boolean {
-        val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
-        return date == LocalDate.now()
-    }
-
-    /** Check if a timestamp is yesterday. */
-    fun isYesterday(timestamp: Long): Boolean {
-        val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
-        return date == LocalDate.now().minusDays(1)
-    }
-
-    /** Check if a timestamp is tomorrow. */
-    fun isTomorrow(timestamp: Long): Boolean {
-        val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
-        return date == LocalDate.now().plusDays(1)
-    }
 }

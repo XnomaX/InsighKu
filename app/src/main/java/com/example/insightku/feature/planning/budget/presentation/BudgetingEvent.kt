@@ -10,7 +10,6 @@ sealed class BudgetingEvent {
     object LoadBudgetData : BudgetingEvent()
     object RefreshData : BudgetingEvent()
     object ClearError : BudgetingEvent()
-    data class ChangePeriod(val period: BudgetPeriod) : BudgetingEvent()
 
     // Category dialogs
     data class ShowAddBudgetDialog(val categoryType: CategoryType) : BudgetingEvent()
@@ -31,10 +30,6 @@ sealed class BudgetingEvent {
     data class AddRecurringBudget(val budget: RecurringBudget) : BudgetingEvent()
     data class UpdateRecurringBudget(val budget: RecurringBudget) : BudgetingEvent()
     data class DeleteRecurringBudget(val budget: RecurringBudget) : BudgetingEvent()
-
-    // Legacy — kept for backward compat
-    object ShowRecurringBudgetsDialog : BudgetingEvent()
-    object HideRecurringBudgetsDialog : BudgetingEvent()
 
     // Installment dialogs
     object ShowAddInstallmentDialog : BudgetingEvent()

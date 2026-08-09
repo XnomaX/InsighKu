@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.edit
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -45,20 +46,6 @@ object GoalReminderHelper {
         )
     }
 
-    /** Cancel all reminders for a goal (e.g. when completed/archived/deleted). */
-    fun cancelRemindersForGoal(context: Context, goalId: String) {
-        val manager = NotificationManagerCompat.from(context)
-        listOf("h7", "h3", "h1", "today", "overdue").forEach { type ->
-            manager.cancel(notificationId(goalId, type))
-        }
-        prefs(context).edit().apply {
-            listOf("h7", "h3", "h1", "today", "overdue").forEach { type ->
-                remove("${KEY_PREFIX}${goalId}_$type")
-            }
-            apply()
-        }
-    }
-
     /**
      * Send a goal deadline reminder, once per calendar day per reminder type.
      *
@@ -80,7 +67,13 @@ object GoalReminderHelper {
             daysUntilDue < 0 -> Triple(
                 "overdue",
                 ctx.getString(R.string.goal_reminder_overdue_title, goalName),
-                ctx.getString(R.string.goal_reminder_overdue_body, goalName, -daysUntilDue, formattedAmount)
+                ctx.resources.getQuantityString(
+                    R.plurals.goal_reminder_overdue_body,
+                    -daysUntilDue,
+                    goalName,
+                    -daysUntilDue,
+                    formattedAmount
+                )
             )
             daysUntilDue == 0 -> Triple(
                 "today",
@@ -94,8 +87,19 @@ object GoalReminderHelper {
             )
             daysUntilDue <= 7 -> Triple(
                 "h7",
-                ctx.getString(R.string.goal_reminder_in_days_title, daysUntilDue, goalName),
-                ctx.getString(R.string.goal_reminder_in_days_body, goalName, daysUntilDue, formattedAmount)
+                ctx.resources.getQuantityString(
+                    R.plurals.goal_reminder_in_days_title,
+                    daysUntilDue,
+                    daysUntilDue,
+                    goalName
+                ),
+                ctx.resources.getQuantityString(
+                    R.plurals.goal_reminder_in_days_body,
+                    daysUntilDue,
+                    goalName,
+                    daysUntilDue,
+                    formattedAmount
+                )
             )
             else -> return // Don't send reminders for deadlines > 7 days away
         }
@@ -122,7 +126,7 @@ object GoalReminderHelper {
 
         try {
             NotificationManagerCompat.from(context).notify(notificationId(goalId, type), notification)
-            prefs(context).edit().putInt(prefsKey, todayBucket).apply()
+            prefs(context).edit { putInt(prefsKey, todayBucket) }
         } catch (_: SecurityException) {
             // POST_NOTIFICATIONS permission not granted
         }

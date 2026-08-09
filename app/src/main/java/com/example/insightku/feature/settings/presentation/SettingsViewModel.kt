@@ -2,18 +2,20 @@ package com.example.insightku.feature.settings.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.data.local.preferences.SessionManager
+import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
+import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.VisualDensity
-import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.LogoutUseCase
+import com.example.insightku.feature.home.domain.CategoryMemory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,9 +23,9 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val logoutUseCase: LogoutUseCase,
-    private val errorBus: ErrorBus,
     private val preferencesDataStore: UserPreferencesDataStore,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val transactionRepository: TransactionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -44,7 +46,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.OnDefaultInputChange      -> saveAndUpdateInputMode(event.mode)
             is SettingsEvent.OnWhatsAppToggle          -> saveAndUpdateWhatsApp(event.enabled)
             is SettingsEvent.OnPushNotificationsToggle -> saveAndUpdatePushNotifications(event.enabled)
-            is SettingsEvent.OnBudgetAlertsToggle      -> _uiState.update { it.copy(budgetAlertsEnabled = event.enabled) }
+            is SettingsEvent.OnBudgetAlertsToggle -> saveAndUpdateBudgetAlerts(event.enabled)
             is SettingsEvent.OnBiometricToggle         -> saveAndUpdateBiometric(event.enabled)
             is SettingsEvent.OnCurrencyChange          -> saveCurrency(event.currencyCode)
             is SettingsEvent.OnLanguageChange          -> saveLanguage(event.language)
@@ -53,10 +55,10 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.OnAccentChange            -> saveAndUpdateAccent(event.hex)
             is SettingsEvent.OnVisualDensityChange     -> saveAndUpdateVisualDensity(event.density)
             is SettingsEvent.OnHideAmountsToggle       -> saveAndUpdateHideAmounts(event.hidden)
-            is SettingsEvent.OnHabitGoalChange         -> _uiState.update { it.copy(habitGoal = event.goal) }
-            is SettingsEvent.OnSmartCaptureToggle      -> _uiState.update { it.copy(smartCaptureEnabled = event.enabled) }
-            is SettingsEvent.OnCategoryLearningToggle  -> _uiState.update { it.copy(categoryLearningEnabled = event.enabled) }
-            is SettingsEvent.OnForgetMemory            -> { /* TODO: remove from DataStore */ }
+            is SettingsEvent.OnHabitGoalChange -> saveAndUpdateHabitGoal(event.goal)
+            is SettingsEvent.OnSmartCaptureToggle -> saveAndUpdateSmartCapture(event.enabled)
+            is SettingsEvent.OnCategoryLearningToggle -> saveAndUpdateCategoryLearning(event.enabled)
+            is SettingsEvent.OnForgetMemory -> onForgetMemory(event.merchant)
             is SettingsEvent.OnBankNotificationToggle  -> saveAndUpdateBankNotification(event.enabled)
         }
     }
@@ -80,11 +82,17 @@ class SettingsViewModel @Inject constructor(
                 preferencesDataStore.notificationEnabled,
                 preferencesDataStore.appLanguage,
                 preferencesDataStore.bankNotificationEnabled,
+                // Smart-capture kit (persisted DataStore, not just local state)
+                preferencesDataStore.smartCaptureEnabled,
+                preferencesDataStore.categoryLearningEnabled,
+                preferencesDataStore.streakGoal,
             ) { values -> values }
                 .collect { values ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            // Refreshed right after via refreshLearnedMemories(); cleared to avoid stale rows.
+                            learnedMemories = emptyList(),
                             currencyCode = values[0] as String,
                             isDarkMode = values[1] as Boolean,
                             defaultInputMode = if ((values[2] as String) == "ocr") InputMode.OCR else InputMode.MANUAL,
@@ -100,9 +108,16 @@ class SettingsViewModel @Inject constructor(
                             userEmail = userEmail,
                             userName = userName,
                             bankNotificationEnabled = values[12] as Boolean,
+                            // Persisted prefs now drive these; default when absent matches SettingsUiState.
+                            smartCaptureEnabled = values[13] as Boolean,
+                            categoryLearningEnabled = values[14] as Boolean,
+                            habitGoal = values[15] as Int,
                         )
                     }
                 }
+
+            // Learned-memory transparency list (device-local; derived, not stored).
+            refreshLearnedMemories()
         }
     }
 
@@ -161,6 +176,52 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferencesDataStore.setHideAmounts(hidden) }
     }
 
+    // ── Smart-capture kit: all persisted in DataStore, never just local state ──
+
+    private fun saveAndUpdateBudgetAlerts(enabled: Boolean) {
+        _uiState.update { it.copy(budgetAlertsEnabled = enabled) }
+        // Budget alerts drive the per-category budget notifications at save time;
+        // persisting the flag keeps the setting alive across restarts. (No separate
+        // push-opt-out is created — that remains governed by pushNotificationsEnabled.)
+        viewModelScope.launch {
+            preferencesDataStore.setNotificationEnabled(enabled && preferencesDataStore.notificationEnabled.first())
+        }
+    }
+
+    private fun saveAndUpdateHabitGoal(goal: Int) {
+        _uiState.update { it.copy(habitGoal = goal) }
+        // Reuses the streak goal pref — the dashboard streak logic already reads it.
+        viewModelScope.launch { preferencesDataStore.setStreakGoal(goal) }
+    }
+
+    private fun saveAndUpdateSmartCapture(enabled: Boolean) {
+        _uiState.update { it.copy(smartCaptureEnabled = enabled) }
+        viewModelScope.launch { preferencesDataStore.setSmartCaptureEnabled(enabled) }
+    }
+
+    private fun saveAndUpdateCategoryLearning(enabled: Boolean) {
+        _uiState.update { it.copy(categoryLearningEnabled = enabled) }
+        viewModelScope.launch { preferencesDataStore.setCategoryLearningEnabled(enabled) }
+    }
+
+    private fun onForgetMemory(merchant: String) {
+        // Marks the merchant forgotten so suggestions + the transparency list skip it.
+        viewModelScope.launch {
+            preferencesDataStore.forgetMerchant(merchant)
+            refreshLearnedMemories()
+        }
+    }
+
+    private fun refreshLearnedMemories() {
+        viewModelScope.launch {
+            val all = transactionRepository.getAllTransactions().first()
+            val memories = CategoryMemory().derive(all).filter {
+                it.merchant.trim().lowercase() !in preferencesDataStore.forgottenMerchants.first()
+            }
+            _uiState.update { it.copy(learnedMemories = memories) }
+        }
+    }
+
     private fun saveCurrency(code: String) {
         viewModelScope.launch {
             preferencesDataStore.setCurrencyCode(code)
@@ -184,7 +245,7 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = SettingsUiState(isLoading = false)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _uiState.value = SettingsUiState(isLoading = false)
             }
         }

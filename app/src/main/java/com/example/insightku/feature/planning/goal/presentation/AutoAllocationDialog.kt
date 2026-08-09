@@ -11,11 +11,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -88,10 +88,10 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
-import com.example.insightku.feature.planning.goal.data.model.RoundUpMode
 import com.example.insightku.feature.planning.goal.data.model.AllocationValueType
 import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
 import com.example.insightku.feature.planning.goal.data.model.ConfirmationMode
+import com.example.insightku.feature.planning.goal.data.model.RoundUpMode
 import com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency
 import com.example.insightku.feature.planning.goal.domain.model.AllocationTriggerParams
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
@@ -639,8 +639,9 @@ fun AutoAllocationDialog(
                                         modifier = Modifier
                                             .weight(1f)
                                             .clickable {
-                                                val updated = if (isSelected) form.categoryBasedCategoryIds - cat.id
-                                                else form.categoryBasedCategoryIds + cat.id
+                                                val updated =
+                                                    if (isSelected) form.categoryBasedCategoryIds - cat.id
+                                                    else form.categoryBasedCategoryIds + cat.id
                                                 form = form.copy(categoryBasedCategoryIds = updated)
                                             },
                                         shape = RoundedCornerShape(10.dp),
@@ -657,7 +658,13 @@ fun AutoAllocationDialog(
                                                     .size(18.dp)
                                                     .clip(RoundedCornerShape(5.dp))
                                                     .background(if (isSelected) goalColor else Color.Transparent)
-                                                    .then(if (!isSelected) Modifier.border(1.dp, AppPalette.cardBorder, RoundedCornerShape(5.dp)) else Modifier),
+                                                    .then(
+                                                        if (!isSelected) Modifier.border(
+                                                            1.dp,
+                                                            AppPalette.cardBorder,
+                                                            RoundedCornerShape(5.dp)
+                                                        ) else Modifier
+                                                    ),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 if (isSelected) Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(12.dp))
@@ -695,7 +702,9 @@ fun AutoAllocationDialog(
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clickable { form = form.copy(categoryBasedExecutionMode = value) },
+                                    .clickable {
+                                        form = form.copy(categoryBasedExecutionMode = value)
+                                    },
                                 shape = RoundedCornerShape(10.dp),
                                 color = if (isSel) goalColor.copy(alpha = 0.08f) else AppPalette.card,
                                 border = BorderStroke(1.dp, if (isSel) goalColor else AppPalette.cardBorder)
@@ -882,7 +891,9 @@ private fun CompactTriggerSelector(
             exit = shrinkVertically(tween(200))
         ) {
             Surface(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
                 shape = RoundedCornerShape(cornerRadius),
                 color = AppPalette.card,
                 border = BorderStroke(1.dp, accentColor)
@@ -1031,7 +1042,9 @@ private fun AccountSelector(
                         }
                         if (onNavigateToAccounts != null) {
                             Surface(
-                                modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onNavigateToAccounts() },
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onNavigateToAccounts() },
                                 shape = RoundedCornerShape(8.dp),
                                 color = accentColor.copy(alpha = 0.10f),
                                 border = BorderStroke(1.dp, accentColor.copy(alpha = 0.25f))
@@ -1080,15 +1093,26 @@ private fun AccountPickerChips(
             val bgColor by animateColorAsState(targetValue = if (isSelected) accentColor.copy(alpha = 0.08f) else AppPalette.card, animationSpec = tween(200), label = "bg")
 
             Surface(
-                modifier = Modifier.width(140.dp).clip(RoundedCornerShape(12.dp)).clickable { onSelect(account) },
+                modifier = Modifier
+                    .width(140.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onSelect(account) },
                 shape = RoundedCornerShape(12.dp),
                 color = bgColor,
                 border = BorderStroke(1.5.dp, borderColor)
             ) {
                 Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(
-                        modifier = Modifier.size(32.dp).clip(RoundedCornerShape(10.dp))
-                            .background(try { Color(account.color.toColorInt()).copy(alpha = 0.12f) } catch (_: Exception) { accentColor.copy(alpha = 0.12f) }),
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                try {
+                                    Color(account.color.toColorInt()).copy(alpha = 0.12f)
+                                } catch (_: Exception) {
+                                    accentColor.copy(alpha = 0.12f)
+                                }
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(accountTypeIcon(account.type), null, tint = try {
@@ -1099,7 +1123,12 @@ private fun AccountPickerChips(
                         Text(CurrencyUtils.formatAmountCompact(account.balance), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, maxLines = 1)
                     }
                     if (isSelected) {
-                        Box(modifier = Modifier.size(18.dp).clip(RoundedCornerShape(6.dp)).background(accentColor), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(accentColor), contentAlignment = Alignment.Center
+                        ) {
                             Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(12.dp))
                         }
                     }
@@ -1283,7 +1312,10 @@ private fun CompactTimePicker(
 private fun TimeAdjuster(value: Int, onDecrement: () -> Unit, onIncrement: () -> Unit, accentColor: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Surface(
-            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).clickable { onDecrement() },
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onDecrement() },
             shape = RoundedCornerShape(8.dp),
             color = AppPalette.cardElevated
         ) {
@@ -1300,7 +1332,10 @@ private fun TimeAdjuster(value: Int, onDecrement: () -> Unit, onIncrement: () ->
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         Surface(
-            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).clickable { onIncrement() },
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onIncrement() },
             shape = RoundedCornerShape(8.dp),
             color = AppPalette.cardElevated
         ) {
@@ -1340,7 +1375,10 @@ private fun WeekDayPicker(
             days.forEach { (dayNum, dayLabel) ->
                 val isSelected = selectedDay == dayNum
                 Surface(
-                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable { onDaySelected(dayNum) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onDaySelected(dayNum) },
                     shape = RoundedCornerShape(8.dp),
                     color = if (isSelected) accentColor else AppPalette.card,
                     border = BorderStroke(1.dp, if (isSelected) accentColor else AppPalette.cardBorder)
@@ -1383,7 +1421,10 @@ private fun MonthDayPickerCompact(
                     row.forEach { day ->
                         val isSelected = selectedDay == day
                         Surface(
-                            modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable { onDaySelected(day) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onDaySelected(day) },
                             shape = RoundedCornerShape(8.dp),
                             color = if (isSelected) accentColor else AppPalette.card,
                             border = BorderStroke(1.dp, if (isSelected) accentColor else AppPalette.cardBorder)
