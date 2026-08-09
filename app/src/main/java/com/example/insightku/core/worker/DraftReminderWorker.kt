@@ -16,8 +16,8 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.insightku.MainActivity
-import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.R
+import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.core.i18n.LocaleHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -85,10 +85,8 @@ class DraftReminderWorker @AssistedInject constructor(
 
         // Sebut jumlah saja — tanpa nominal/merchant. Nada ajakan ringan, bukan tagihan.
         val ctx = LocaleHelper.wrapContext(applicationContext)
-        val body = if (count == 1)
-            ctx.getString(R.string.draft_reminder_body_singular)
-        else
-            ctx.getString(R.string.draft_reminder_body_plural, count)
+        val body =
+            ctx.resources.getQuantityString(R.plurals.draft_reminder_body_plural, count, count)
 
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)

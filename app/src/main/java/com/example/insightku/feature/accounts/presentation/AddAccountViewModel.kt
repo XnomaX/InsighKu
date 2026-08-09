@@ -46,7 +46,7 @@ class AddAccountViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 accountName = name,
-                nameError = if (name.isBlank()) "Account name is required" else null
+                nameError = if (name.isBlank()) context.getString(R.string.error_account_name_required) else null
             )
         }
     }
@@ -61,7 +61,7 @@ class AddAccountViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 balance = balance,
-                balanceError = if (!isValid) "Invalid balance format" else null
+                balanceError = if (!isValid) context.getString(R.string.error_invalid_balance) else null
             )
         }
     }
@@ -90,13 +90,13 @@ class AddAccountViewModel @Inject constructor(
         // Validate
         var hasError = false
         if (currentState.accountName.isBlank()) {
-            _uiState.update { it.copy(nameError = "Account name is required") }
+            _uiState.update { it.copy(nameError = context.getString(R.string.error_account_name_required)) }
             hasError = true
         }
 
         val balance = currentState.balance.toDoubleOrNull() ?: 0.0
         if (currentState.balance.isNotEmpty() && balance < 0) {
-            _uiState.update { it.copy(balanceError = "Balance cannot be negative") }
+            _uiState.update { it.copy(balanceError = context.getString(R.string.error_balance_negative)) }
             hasError = true
         }
 

@@ -3,35 +3,49 @@ package com.example.insightku.feature.planning.goal.data.repository
 import android.content.Context
 import android.util.Log
 import androidx.room.withTransaction
-import com.example.insightku.R
-import com.example.insightku.core.data.local.database.InsightKuDatabase
-import com.example.insightku.core.notification.AutoAllocationNotificationHelper
-import com.example.insightku.core.worker.SyncGoalWorker
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.insightku.R
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.TransactionDao
-import com.example.insightku.core.utils.AppConstants
-import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.local.database.InsightKuDatabase
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.feature.planning.goal.data.local.dao.*
-import com.example.insightku.feature.planning.goal.data.model.*
-import com.example.insightku.feature.planning.goal.domain.model.*
+import com.example.insightku.core.notification.AutoAllocationNotificationHelper
+import com.example.insightku.core.worker.SyncGoalWorker
+import com.example.insightku.feature.planning.goal.data.local.dao.AccountAllocationRow
+import com.example.insightku.feature.planning.goal.data.local.dao.AutoAllocationRuleDao
+import com.example.insightku.feature.planning.goal.data.local.dao.ContributionDao
+import com.example.insightku.feature.planning.goal.data.local.dao.DailyTargetDao
+import com.example.insightku.feature.planning.goal.data.local.dao.GoalAccountDao
+import com.example.insightku.feature.planning.goal.data.local.dao.GoalDao
+import com.example.insightku.feature.planning.goal.data.model.ContributionEntity
+import com.example.insightku.feature.planning.goal.data.model.ContributionType
+import com.example.insightku.feature.planning.goal.data.model.DailyTargetEntity
+import com.example.insightku.feature.planning.goal.data.model.GoalAccountEntity
+import com.example.insightku.feature.planning.goal.data.model.GoalEntity
+import com.example.insightku.feature.planning.goal.data.model.GoalStatus
+import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
+import com.example.insightku.feature.planning.goal.domain.model.Contribution
+import com.example.insightku.feature.planning.goal.domain.model.DailyTarget
+import com.example.insightku.feature.planning.goal.domain.model.Goal
+import com.example.insightku.feature.planning.goal.domain.model.GoalSummary
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,7 +55,6 @@ class GoalRepository @Inject constructor(
     private val goalDao: GoalDao,
     private val contributionDao: ContributionDao,
     private val goalAccountDao: GoalAccountDao,
-    private val reservedBalanceDao: ReservedBalanceDao,
     private val autoAllocationRuleDao: AutoAllocationRuleDao,
     private val dailyTargetDao: DailyTargetDao,
     private val accountDao: AccountDao,
@@ -283,8 +296,6 @@ class GoalRepository @Inject constructor(
         }
     }
 
-    suspend fun getActiveGoalCount(): Int = goalDao.getActiveGoalCount()
-
     suspend fun contribute(
         goalId: String,
         accountId: String,
@@ -467,27 +478,6 @@ class GoalRepository @Inject constructor(
         }
     }
 
-    suspend fun getGoalProgress(goalId: String): GoalProgress {
-        val goal = goalDao.getGoalById(goalId) ?: return GoalProgress.empty(goalId)
-        val currentAmount = contributionDao.getTotalContributed(goalId)
-        val totalWithdrawn = contributionDao.getTotalWithdrawn(goalId)
-        val contributionCount = contributionDao.getContributionCount(goalId)
-        val thirtyDaysAgo = LocalDate.now().minusDays(30).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val avgDaily = contributionDao.getAverageDailyContribution(goalId, thirtyDaysAgo)
-        val deadline = goal.deadline?.let {
-            val deadlineDate = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
-            ChronoUnit.DAYS.between(LocalDate.now(), deadlineDate).toInt().coerceAtLeast(0)
-        }
-        return GoalProgress(
-            goalId = goalId, currentAmount = currentAmount, targetAmount = goal.targetAmount,
-            totalWithdrawn = totalWithdrawn,
-            progressPercent = if (goal.targetAmount > 0) ((currentAmount / goal.targetAmount) * 100).coerceIn(0.0, 100.0) else 0.0,
-            remainingAmount = (goal.targetAmount - currentAmount).coerceAtLeast(0.0),
-            daysRemaining = deadline, isOnTrack = true,
-            averageDailyContribution = avgDaily, contributionCount = contributionCount
-        )
-    }
-
     suspend fun linkAccountToGoal(goalId: String, accountId: String, allocationPercent: Double = 100.0, isPrimary: Boolean = false): Result<Unit> {
         return try {
             if (isPrimary) goalAccountDao.clearPrimaryForGoal(goalId)
@@ -505,12 +495,6 @@ class GoalRepository @Inject constructor(
 
     /** All goal↔account links as a stream (re-emits on any link change). */
     fun getAllGoalAccountLinks(): Flow<List<GoalAccountEntity>> = goalAccountDao.getAllGoalAccounts()
-
-    fun getLinkedAccountsWithInfo(goalId: String): Flow<List<Pair<GoalAccountEntity, Account?>>> {
-        return goalAccountDao.getGoalAccountsByGoal(goalId).map { entities ->
-            entities.map { entity -> entity to accountDao.getAccountById(entity.accountId) }
-        }
-    }
 
     fun getDailyTarget(): Flow<DailyTarget> {
         val today = LocalDate.now().atStartOfDay(ZoneId.systemDefault())
@@ -534,16 +518,6 @@ class GoalRepository @Inject constructor(
     fun getAutoAllocationRules(): Flow<List<AutoAllocationRule>> {
         return combine(
             autoAllocationRuleDao.getAllRules(),
-            goalDao.getAllGoalsIncludingArchived()
-        ) { entities, goals ->
-            val goalMap = goals.associateBy { it.id }
-            entities.map { entity -> AutoAllocationRule.fromEntity(entity, goalMap[entity.goalId]?.name ?: "") }
-        }.flowOn(Dispatchers.IO)
-    }
-
-    fun getEnabledRules(): Flow<List<AutoAllocationRule>> {
-        return combine(
-            autoAllocationRuleDao.getEnabledRules(),
             goalDao.getAllGoalsIncludingArchived()
         ) { entities, goals ->
             val goalMap = goals.associateBy { it.id }
@@ -590,19 +564,6 @@ class GoalRepository @Inject constructor(
 
     suspend fun setRuleEnabled(ruleId: String, enabled: Boolean): Result<Unit> {
         return try { autoAllocationRuleDao.setRuleEnabled(ruleId, enabled); Result.success(Unit) }
-        catch (e: Exception) { Result.failure(e) }
-    }
-
-    fun getReservedBalance(accountId: String): Flow<Double> = reservedBalanceDao.getTotalReservedForAccountFlow(accountId)
-    suspend fun getAvailableBalance(accountId: String): Double? = reservedBalanceDao.getAvailableBalance(accountId)
-
-    suspend fun reserveFunds(accountId: String, amount: Double, goalId: String?): Result<Unit> {
-        return try { reservedBalanceDao.increaseReservation(accountId, amount, goalId); Result.success(Unit) }
-        catch (e: Exception) { Result.failure(e) }
-    }
-
-    suspend fun releaseReservedFunds(accountId: String, amount: Double): Result<Unit> {
-        return try { reservedBalanceDao.decreaseReservation(accountId, amount); Result.success(Unit) }
         catch (e: Exception) { Result.failure(e) }
     }
 
@@ -654,86 +615,6 @@ class GoalRepository @Inject constructor(
         }
     }
 
-    /**
-     * One-time migration: fix contributions with epoch (0L) timestamps.
-     * Attempts to recover the real timestamp from the linked Transaction's
-     * [Transaction.date] field via [Transaction.referenceId].
-     */
-    private var legacyTimestampFixRun = false
-
-    suspend fun fixLegacyContributionTimestamps() {
-        if (legacyTimestampFixRun) return
-        legacyTimestampFixRun = true
-        try {
-            val cutoff = com.example.insightku.core.utils.AppConstants.EPOCH_CUTOFF_MS
-            val broken = contributionDao.getContributionsWithEpochTimestamps(cutoff)
-            if (broken.isEmpty()) return
-            Log.d(TAG, "Fixing ${broken.size} contribution(s) with epoch timestamps")
-            var fixed = 0
-            for (contribution in broken) {
-                val newTimestamp = resolveContributionTimestamp(contribution)
-                contributionDao.updateContributionTimestamp(contribution.id, newTimestamp)
-                fixed++
-            }
-            Log.d(TAG, "Fixed $fixed contribution timestamp(s)")
-        } catch (e: Exception) {
-            Log.w(TAG, "fixLegacyContributionTimestamps failed", e)
-        }
-    }
-
-    private suspend fun resolveContributionTimestamp(contribution: ContributionEntity): Long {
-        // 1) If transactionId is set, use the Transaction's date
-        if (!contribution.transactionId.isNullOrBlank()) {
-            val tx = transactionDao.getTransactionById(contribution.transactionId)
-            if (tx != null && tx.date > AppConstants.EPOCH_CUTOFF_MS) return tx.date
-        }
-        // 2) If referenceId links a Transaction to this contribution, use that Transaction's date
-        //    (Transaction.referenceId == contribution.id for linked records)
-        val linkedTx = transactionDao.getTransactionById(contribution.id)
-        if (linkedTx != null && linkedTx.date > AppConstants.EPOCH_CUTOFF_MS) return linkedTx.date
-        // 3) Use the goal's createdAt as best-effort
-        val goal = goalDao.getGoalById(contribution.goalId)
-        if (goal != null && goal.createdAt > AppConstants.EPOCH_CUTOFF_MS) return goal.createdAt
-        // 4) Final fallback: now
-        return System.currentTimeMillis()
-    }
-
-    suspend fun refreshGoalsFromFirestore(userId: String) {
-        try {
-            val snapshot = firestore.collection("users").document(userId).collection("goals").get().await()
-            val remoteGoals = snapshot.documents.mapNotNull { doc ->
-                doc.data?.let { data ->
-                    GoalEntity(id = doc.id, name = data["name"] as? String ?: "",
-                        targetAmount = (data["targetAmount"] as? Number)?.toDouble() ?: 0.0,
-                        deadline = (data["deadline"] as? Number)?.toLong(),
-                        status = data["status"] as? String ?: "active",
-                        autoAllocate = data["autoAllocate"] as? Boolean ?: false,
-                        allocationPriority = (data["allocationPriority"] as? Number)?.toInt() ?: 0,
-                        iconName = data["iconName"] as? String ?: "savings",
-                        color = data["color"] as? String ?: "#7C4DFF",
-                        notes = data["notes"] as? String ?: "",
-                        reminderEnabled = data["reminderEnabled"] as? Boolean ?: false,
-                        createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L,
-                        updatedAt = (data["updatedAt"] as? Number)?.toLong() ?: 0L, isSynced = true)
-                }
-            }
-            goalDao.insertGoalsFromRemote(remoteGoals)
-
-            val contribSnapshot = firestore.collection("users").document(userId).collection("contributions").get().await()
-            val remoteContributions = contribSnapshot.documents.mapNotNull { doc ->
-                doc.data?.let { data ->
-                    ContributionEntity(id = doc.id, goalId = data["goalId"] as? String ?: "",
-                        accountId = data["accountId"] as? String ?: "",
-                        amount = (data["amount"] as? Number)?.toDouble() ?: 0.0,
-                        type = data["type"] as? String ?: "manual",
-                        transactionId = data["transactionId"] as? String,
-                        notes = data["notes"] as? String ?: "",
-                        createdAt = (data["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(), isSynced = true)
-                }
-            }
-            contributionDao.insertContributionsFromRemote(remoteContributions)
-        } catch (e: Exception) { Log.w(TAG, "refreshGoalsFromFirestore: failed", e) }
-    }
 }
 
 private fun Goal.toFirestoreMap(): Map<String, Any?> = mapOf(

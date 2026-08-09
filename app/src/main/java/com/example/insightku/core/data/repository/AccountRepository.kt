@@ -1,13 +1,12 @@
 package com.example.insightku.core.data.repository
 
+import androidx.room.withTransaction
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.local.database.InsightKuDatabase
 import com.example.insightku.core.data.model.Account
-import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.feature.planning.goal.data.local.dao.GoalAccountDao
 import com.google.firebase.firestore.FirebaseFirestore
-import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -31,12 +30,6 @@ class AccountRepository @Inject constructor(
 
     fun getAllAccounts(): Flow<List<Account>> = accountDao.getAllAccounts()
 
-    fun getAccountsByType(type: String): Flow<List<Account>> = accountDao.getAccountsByType(type)
-
-    fun getMoneyAccounts(): Flow<List<Account>> = accountDao.getMoneyAccounts()
-
-    fun getCreditCardAccounts(): Flow<List<Account>> = accountDao.getCreditCardAccounts()
-
     fun getTotalNetWorth(): Flow<Double?> = accountDao.getTotalNetWorth()
 
     fun getTotalAssets(): Flow<Double?> = accountDao.getTotalAssets()
@@ -44,16 +37,6 @@ class AccountRepository @Inject constructor(
     fun getTotalLiabilities(): Flow<Double?> = accountDao.getTotalLiabilities()
 
     suspend fun getAccountById(id: String): Account? = accountDao.getAccountById(id)
-
-    suspend fun getDefaultAccount(): Account? = accountDao.getDefaultAccount()
-
-    /** Get transactions for a specific account as a Flow. */
-    fun getTransactionsByAccountIdFlow(accountId: String) =
-        transactionDao.getTransactionsByAccountIdFlow(accountId)
-
-    /** Get all transactions for a specific account (one-shot). */
-    suspend fun getTransactionsByAccountId(accountId: String): List<Transaction> =
-        transactionDao.getTransactionsByAccountId(accountId)
 
     // ─── Write (Room + Firestore) ─────────────────────────────────────────────
 
@@ -63,10 +46,6 @@ class AccountRepository @Inject constructor(
 
     suspend fun updateAccount(account: Account) {
         accountDao.updateAccount(account)
-    }
-
-    suspend fun clearAllDefaults() {
-        accountDao.clearAllDefaults()
     }
 
     suspend fun setAsDefault(accountId: String) {
@@ -108,27 +87,6 @@ class AccountRepository @Inject constructor(
         }
     }
 
-    suspend fun deactivateAccount(accountId: String) {
-        accountDao.deactivateAccount(accountId)
-    }
-
-    // ─── Balance ──────────────────────────────────────────────────────────────
-
-    suspend fun updateBalance(accountId: String, delta: Double) {
-        accountDao.updateBalance(accountId, delta)
-    }
-
-    suspend fun recalculateAccountBalance(accountId: String) {
-        val calculatedBalance = accountDao.calculateBalanceFromTransactions(accountId)
-        accountDao.setBalance(accountId, calculatedBalance)
-    }
-
-    suspend fun recalculateAllAccountBalances() {
-        val accountIds = accountDao.getAllAccountIdsWithTransactions()
-        for (accountId in accountIds) {
-            recalculateAccountBalance(accountId)
-        }
-    }
 }
 
 

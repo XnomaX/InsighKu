@@ -1,30 +1,58 @@
 package com.example.insightku.feature.analytics.presentation
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
-import com.example.insightku.core.ui.theme.AppPalette
-import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.i18n.AnalyticsStrings
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.utils.CategoryUtils
-import com.example.insightku.feature.analytics.domain.*
-import com.example.insightku.feature.analytics.presentation.components.*
+import com.example.insightku.feature.analytics.domain.AnalyticsInsights
+import com.example.insightku.feature.analytics.domain.AnalyticsPeriodType
+import com.example.insightku.feature.analytics.domain.DaySummary
+import com.example.insightku.feature.analytics.domain.SpendingMood
+import com.example.insightku.feature.analytics.domain.TrendPoint
+import com.example.insightku.feature.analytics.presentation.components.AnalyticsEmptyState
+import com.example.insightku.feature.analytics.presentation.components.AnalyticsSectionHeader
+import com.example.insightku.feature.analytics.presentation.components.AnalyticsSkeleton
+import com.example.insightku.feature.analytics.presentation.components.CategoryBar
+import com.example.insightku.feature.analytics.presentation.components.HeroInsightCard
+import com.example.insightku.feature.analytics.presentation.components.InsightChip
+import com.example.insightku.feature.analytics.presentation.components.NarrativeCard
 
 @Composable
 fun AnalyticsScreen(
@@ -504,8 +532,13 @@ private fun DailyBarChart(summaries: List<DaySummary>, modifier: Modifier = Modi
                             .width(16.dp)
                             .height(barHeight)
                             .background(
-                                color = if (day.isToday) AppPalette.accent else AppPalette.accent.copy(alpha = 0.4f),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
+                                color = if (day.isToday) AppPalette.accent else AppPalette.accent.copy(
+                                    alpha = 0.4f
+                                ),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                                    topStart = 4.dp,
+                                    topEnd = 4.dp
+                                )
                             )
                     )
 
@@ -624,14 +657,26 @@ private fun MiniTrendChart(points: List<TrendPoint>, modifier: Modifier = Modifi
                                 modifier = Modifier
                                     .width(8.dp)
                                     .height((point.income / maxVal * 100).dp.coerceAtLeast(2.dp))
-                                    .background(AppPalette.success, shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                                    .background(
+                                        AppPalette.success,
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                                            topStart = 2.dp,
+                                            topEnd = 2.dp
+                                        )
+                                    )
                             )
                             // Expense bar
                             Box(
                                 modifier = Modifier
                                     .width(8.dp)
                                     .height((point.expense / maxVal * 100).dp.coerceAtLeast(2.dp))
-                                    .background(AppPalette.error, shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                                    .background(
+                                        AppPalette.error,
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                                            topStart = 2.dp,
+                                            topEnd = 2.dp
+                                        )
+                                    )
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
@@ -696,13 +741,25 @@ private fun AnnualBarChart(points: List<com.example.insightku.feature.analytics.
                                 modifier = Modifier
                                     .width(6.dp)
                                     .height((point.income / maxVal * 100).dp.coerceAtLeast(2.dp))
-                                    .background(AppPalette.success, shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                                    .background(
+                                        AppPalette.success,
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                                            topStart = 2.dp,
+                                            topEnd = 2.dp
+                                        )
+                                    )
                             )
                             Box(
                                 modifier = Modifier
                                     .width(6.dp)
                                     .height((point.expense / maxVal * 100).dp.coerceAtLeast(2.dp))
-                                    .background(AppPalette.error, shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                                    .background(
+                                        AppPalette.error,
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                                            topStart = 2.dp,
+                                            topEnd = 2.dp
+                                        )
+                                    )
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))

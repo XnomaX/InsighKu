@@ -4,35 +4,72 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CloudUpload
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
+import androidx.core.graphics.toColorInt
 import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
@@ -49,7 +86,13 @@ import com.example.insightku.core.utils.CurrencyUtils
 internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (GoalDetailEvent) -> Unit) {
     val isWithdraw = uiState.showWithdrawDialog
     val goal = uiState.goal ?: return
-    val goalColor = remember(goal.color) { try { Color(android.graphics.Color.parseColor(goal.color)) } catch (e: Exception) { PurpleViolet } }
+    val goalColor = remember(goal.color) {
+        try {
+            Color(goal.color.toColorInt())
+        } catch (_: Exception) {
+            PurpleViolet
+        }
+    }
     val amount = uiState.contributionAmount.toDoubleOrNull() ?: 0.0
     val currentSaved = goal.currentAmount
     val target = goal.targetAmount
@@ -59,7 +102,7 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
     val newPercent = if (target > 0) (newTotal / target * 100).coerceIn(0.0, 100.0) else 0.0
     val isAmountValid = amount > 0 && (!isWithdraw || amount <= currentSaved)
     val exceedsTarget = !isWithdraw && newTotal > target
-    val showPreview = isAmountValid && amount > 0
+    val showPreview = isAmountValid
     val displayPercent = if (showPreview) newPercent else currentPercent
     val animatedDisplayPercent by animateFloatAsState(targetValue = displayPercent.toFloat() / 100f, animationSpec = spring(dampingRatio = 0.7f, stiffness = 200f), label = "previewProgress")
 
@@ -75,12 +118,39 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
         containerColor = AppPalette.card,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = { Box(modifier = Modifier.padding(top = 8.dp, bottom = 8.dp).size(40.dp, 4.dp).clip(RoundedCornerShape(2.dp)).background(AppPalette.cardBorder)) }
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 8.dp, bottom = 8.dp)
+                    .size(40.dp, 4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(AppPalette.cardBorder)
+            )
+        }
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).navigationBarsPadding().padding(bottom = 32.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 32.dp)
+        ) {
             // ── 1. Goal Header ──────────────────────────────────────────
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(goalColor.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) { Icon(getGoalIcon(goal.iconName), contentDescription = null, tint = goalColor, modifier = Modifier.size(24.dp)) }
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(goalColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        getGoalIcon(goal.iconName),
+                        contentDescription = null,
+                        tint = goalColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(if (isWithdraw) stringResource(R.string.goal_contribution_withdraw) else stringResource(R.string.goal_contribution_add), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
                     Text(goal.name, style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted)
@@ -109,8 +179,27 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
                     }
                     Spacer(Modifier.height(12.dp))
                     // Progress bar
-                    Box(modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(AppPalette.cardBorder)) {
-                        Box(modifier = Modifier.fillMaxWidth(animatedDisplayPercent).fillMaxHeight().clip(RoundedCornerShape(5.dp)).background(Brush.horizontalGradient(listOf(goalColor.copy(alpha = 0.7f), goalColor))))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(AppPalette.cardBorder)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(animatedDisplayPercent)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(5.dp))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(
+                                            goalColor.copy(alpha = 0.7f),
+                                            goalColor
+                                        )
+                                    )
+                                )
+                        )
                     }
                     // Remaining target
                     Spacer(Modifier.height(8.dp))
@@ -156,10 +245,20 @@ OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.f
                         color = AppPalette.cardElevated,
                         border = BorderStroke(1.dp, goalColor.copy(alpha = 0.4f))
                     ) {
-                        Column(modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
+                        Column(
+                            modifier = Modifier
+                                .heightIn(max = 280.dp)
+                                .verticalScroll(rememberScrollState())
+                        ) {
                             displayAccounts.forEachIndexed { index, account ->
                                 val isSelected = account.id == uiState.selectedAccountId
-                                val accountColor = remember(account.color) { try { Color(android.graphics.Color.parseColor(account.color)) } catch (e: Exception) { PurpleViolet } }
+                                val accountColor = remember(account.color) {
+                                    try {
+                                        Color(account.color.toColorInt())
+                                    } catch (e: Exception) {
+                                        PurpleViolet
+                                    }
+                                }
                                 val accountIcon = when (account.type) { AccountType.CASH -> Icons.Outlined.Payments; AccountType.BANK_ACCOUNT -> Icons.Outlined.AccountBalance; AccountType.E_WALLET -> Icons.Outlined.AccountBalanceWallet; AccountType.CREDIT_CARD -> Icons.Outlined.CreditCard }
                                 Row(
                                     modifier = Modifier
@@ -174,12 +273,23 @@ OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.f
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Box(
-                                        modifier = Modifier.size(40.dp).clip(CircleShape).background(if (isSelected) accountColor.copy(alpha = 0.15f) else AppPalette.cardBorder.copy(alpha = 0.3f)),
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (isSelected) accountColor.copy(alpha = 0.15f) else AppPalette.cardBorder.copy(
+                                                    alpha = 0.3f
+                                                )
+                                            ),
                                         contentAlignment = Alignment.Center
                                     ) { Icon(accountIcon, contentDescription = null, tint = if (isSelected) accountColor else AppPalette.textMuted, modifier = Modifier.size(20.dp)) }
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(account.balance), style = MaterialTheme.typography.bodySmall, color = if (account.balance > 0) SuccessColor else ExpenseRed)
+                                        Text(
+                                            CurrencyUtils.formatAmountCompact(account.balance),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (account.balance > 0) SuccessColor else ExpenseRed
+                                        )
                                     }
                                     if (isSelected) { Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = accountColor, modifier = Modifier.size(20.dp)) }
                                 }
@@ -211,26 +321,88 @@ OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.f
             Spacer(Modifier.height(20.dp))
             val isSubmitting = uiState.isSubmitting
             val canSubmit = isAmountValid && !exceedsTarget && !isSubmitting
-            Button(onClick = { if (isWithdraw) onEvent(GoalDetailEvent.SubmitWithdrawal) else onEvent(GoalDetailEvent.SubmitContribution) }, modifier = Modifier.fillMaxWidth().height(56.dp), enabled = canSubmit, shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = if (isWithdraw) WarningYellow else goalColor, disabledContainerColor = AppPalette.cardBorder), elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 4.dp)) {
+            Button(
+                onClick = {
+                    if (isWithdraw) onEvent(GoalDetailEvent.SubmitWithdrawal) else onEvent(
+                        GoalDetailEvent.SubmitContribution
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = canSubmit,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isWithdraw) WarningYellow else goalColor,
+                    disabledContainerColor = AppPalette.cardBorder
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 4.dp
+                )
+            ) {
                 if (isSubmitting) { CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.5.dp) }
                 else { Text(if (isWithdraw) stringResource(R.string.goal_dialog_withdraw) else stringResource(R.string.goal_dialog_save_contribution), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (canSubmit) Color.White else AppPalette.textMuted) }
             }
             Spacer(Modifier.height(8.dp))
-            TextButton(onClick = { onEvent(GoalDetailEvent.DismissDialog) }, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text(stringResource(R.string.cancel), style = MaterialTheme.typography.titleMedium, color = AppPalette.textMuted) }
+            TextButton(
+                onClick = { onEvent(GoalDetailEvent.DismissDialog) }, modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text(
+                    stringResource(R.string.cancel),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = AppPalette.textMuted
+                )
+            }
         }
     }
 }
 
 @Composable
 internal fun AccountDropdownSelector(account: Account?, isWithdraw: Boolean, isExpanded: Boolean, onClick: () -> Unit) {
-    val accountColor = remember(account?.color) { try { Color(android.graphics.Color.parseColor(account?.color ?: "#9C27B0")) } catch (e: Exception) { PurpleViolet } }
+    val accountColor = remember(account?.color) {
+        try {
+            Color((account?.color ?: "#9C27B0").toColorInt())
+        } catch (_: Exception) {
+            PurpleViolet
+        }
+    }
     val accountIcon = when (account?.type) { AccountType.CASH -> Icons.Outlined.Payments; AccountType.BANK_ACCOUNT -> Icons.Outlined.AccountBalance; AccountType.E_WALLET -> Icons.Outlined.AccountBalanceWallet; AccountType.CREDIT_CARD -> Icons.Outlined.CreditCard; else -> Icons.Outlined.AccountBalance }
     val borderColor by animateColorAsState(targetValue = if (isExpanded) accountColor.copy(alpha = 0.4f) else AppPalette.cardBorder, animationSpec = tween(200), label = "border")
     Surface(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = AppPalette.cardElevated, border = BorderStroke(1.dp, borderColor)) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(modifier = Modifier.size(44.dp).clip(CircleShape).background(accountColor.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) { Icon(accountIcon, contentDescription = null, tint = accountColor, modifier = Modifier.size(22.dp)) }
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(accountColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    accountIcon,
+                    contentDescription = null,
+                    tint = accountColor,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
             Column(modifier = Modifier.weight(1f)) {
-                if (account != null) { Text(account.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(account.balance), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = if (account.balance > 0) SuccessColor else ExpenseRed) }
+                if (account != null) {
+                    Text(
+                        account.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppPalette.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    ); Text(
+                        CurrencyUtils.formatAmountCompact(account.balance),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = if (account.balance > 0) SuccessColor else ExpenseRed
+                    )
+                }
                 else { Text(if (isWithdraw) stringResource(R.string.goal_dialog_select_destination) else stringResource(R.string.goal_dialog_select_source), style = MaterialTheme.typography.bodyLarge, color = AppPalette.textMuted) }
             }
             Icon(imageVector = if (isExpanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown, contentDescription = null, tint = AppPalette.textMuted, modifier = Modifier.size(22.dp))

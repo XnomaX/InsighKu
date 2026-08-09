@@ -40,7 +40,8 @@ class ApproveAllocationDraftUseCase @Inject constructor(
         data class Failed(val message: String) : Outcome
     }
 
-    suspend fun approve(draftId: String): Outcome = try {
+    suspend fun approve(draftId: String): Outcome {
+        return try {
         val draft = draftRepository.getById(draftId)
         if (draft == null || draft.draftType != DraftType.AUTO_ALLOCATION) {
             return Outcome.DraftNotFound
@@ -82,5 +83,6 @@ class ApproveAllocationDraftUseCase @Inject constructor(
         throw e
     } catch (e: Exception) {
         Outcome.Failed(e.message ?: context.getString(R.string.error_approve_allocation))
+    }
     }
 }

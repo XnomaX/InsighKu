@@ -2,6 +2,7 @@ package com.example.insightku.feature.home.domain
 
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.feature.home.domain.CategoryMemory.Companion.MIN_SIGHTINGS
 
 /**
  * One learned association: when the user logs [merchant], they most often file it under [category].
@@ -62,16 +63,6 @@ class CategoryMemory {
             .take(MAX_MEMORIES_SURFACED)
     }
 
-    /**
-     * Suggest a category for a freshly-typed [title], or null if there's no confident memory. Matching
-     * is case-insensitive and trimmed so "GoFood" and "gofood " resolve to the same merchant. Returns
-     * null on blank input — the caller should leave the field untouched rather than guess.
-     */
-    fun suggestCategory(title: String, all: List<Transaction>): String? {
-        val key = title.trim().lowercase()
-        if (key.isEmpty()) return null
-        return derive(all).firstOrNull { it.merchant.trim().lowercase() == key }?.category
-    }
 }
 
 

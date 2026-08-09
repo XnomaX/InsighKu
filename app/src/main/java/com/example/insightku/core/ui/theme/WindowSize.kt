@@ -2,8 +2,10 @@ package com.example.insightku.core.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /**
  * Tiga ukuran breakpoint layar, sama dengan Material3 WindowSizeClass.
@@ -19,12 +21,13 @@ enum class WindowSize { Compact, Medium, Expanded }
 
 @Composable
 fun rememberWindowSize(): WindowSize {
-    val config = LocalConfiguration.current
-    return remember(config.screenWidthDp) {
+    val containerWidth =
+        with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    return remember(containerWidth) {
         when {
-            config.screenWidthDp < 600  -> WindowSize.Compact
-            config.screenWidthDp < 840  -> WindowSize.Medium
-            else                        -> WindowSize.Expanded
+            containerWidth < 600.dp -> WindowSize.Compact
+            containerWidth < 840.dp -> WindowSize.Medium
+            else -> WindowSize.Expanded
         }
     }
 }

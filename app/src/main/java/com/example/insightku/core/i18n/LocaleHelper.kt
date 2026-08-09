@@ -1,9 +1,7 @@
 package com.example.insightku.core.i18n
 
-import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import java.util.Locale
@@ -47,12 +45,7 @@ object LocaleHelper {
             return currentLocales[0]?.language ?: "en"
         }
         // No explicit selection — detect device language
-        val deviceLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            context.resources.configuration.locales[0]
-        } else {
-            @Suppress("DEPRECATION")
-            context.resources.configuration.locale
-        }
+        val deviceLocale = context.resources.configuration.locales[0]
         val deviceCode = deviceLocale?.language ?: "en"
         return if (SUPPORTED_LOCALES.any { it.code == deviceCode }) deviceCode else "en"
     }
@@ -71,15 +64,6 @@ object LocaleHelper {
         return context.createConfigurationContext(config)
     }
 
-    /**
-     * Get the display name for a language code in the current locale.
-     */
-    fun getDisplayName(languageCode: String): String {
-        val locale = Locale.forLanguageTag(languageCode)
-        return locale.getDisplayLanguage(locale).replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(locale) else it.toString()
-        }
-    }
 }
 
 /**

@@ -28,13 +28,13 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): InsightKuDatabase {
         // .build() is cheap; open + migrations run on first DAO access (already off main via Room).
+        // No migrations: schema starts at version 1 (app never shipped). A future schema change
+        // must add an explicit migration — never `fallbackToDestructiveMigration` (data loss).
         return Room.databaseBuilder(
             context,
             InsightKuDatabase::class.java,
             "insightku_database"
         )
-            .addMigrations(*InsightKuDatabase.ALL_MIGRATIONS)
-            .fallbackToDestructiveMigration(true)
             .build()
     }
 
@@ -97,11 +97,6 @@ object DatabaseModule {
     @Provides
     fun provideGoalAccountDao(database: InsightKuDatabase): com.example.insightku.feature.planning.goal.data.local.dao.GoalAccountDao {
         return database.goalAccountDao()
-    }
-
-    @Provides
-    fun provideReservedBalanceDao(database: InsightKuDatabase): com.example.insightku.feature.planning.goal.data.local.dao.ReservedBalanceDao {
-        return database.reservedBalanceDao()
     }
 
     @Provides

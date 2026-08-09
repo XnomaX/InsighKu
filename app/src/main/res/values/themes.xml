@@ -1,4 +1,4 @@
-﻿<resources xmlns:tools="http://schemas.android.com/tools">
+﻿<resources>
     <!-- Light Theme -->
     <style name="Theme.InsightKu" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary colors -->
@@ -33,7 +33,6 @@
 
         <!-- Navigation bar -->
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightNavigationBar">true</item>
 
         <!-- Window flags -->
         <item name="android:windowTranslucentStatus">false</item>

@@ -34,7 +34,8 @@ This plan defines functional, technical, and usability testing for InsighKu as a
 
 ## Entry Criteria
 
-- BUG-03 is resolved: Room destructive fallback has been removed and migrations tested.
+- BUG-03 is resolved: Room dB reset to version 1; destructive fallback removed; schema baseline at
+  `app/schemas/.../1.json`.
 - Build completes successfully.
 - Test data/account can be reset without affecting production or participant data.
 - OCR/LSTM cases are run only after their feature implementation is complete.
@@ -193,6 +194,6 @@ SUS target is `[ASUMSI - perlu dikalibrasi]`.
 
 - All P0 and P1 known issues are resolved or formally justified before final evaluation.
 - Core functional cases pass.
-- Room migration is verified.
+- Room schema v1 baseline is committed; any future upgrade has a `MigrationTestHelper` test.
 - OCR/LSTM evaluation results are recorded if those features are included in the final thesis scope.
 - Usability evidence, consent records, anonymized task results, SUS results, and limitations are ready for the thesis report.

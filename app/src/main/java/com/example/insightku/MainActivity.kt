@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.core.graphics.toColorInt
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -139,7 +140,7 @@ class MainActivity : AppCompatActivity() {
             currencyCode = theme.currencyCode,
             comfortMode = theme.comfortMode,
             insightTone = theme.insightTone,
-            accent = Color(android.graphics.Color.parseColor(theme.accentColorHex)),
+            accent = Color(theme.accentColorHex.toColorInt()),
             visualDensity = theme.visualDensity,
             hideAmounts = theme.hideAmounts,
         ) {

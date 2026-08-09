@@ -4,50 +4,31 @@
     <color name="primary">#5A2A82</color>
     <color name="primary_variant">#7C3AED</color>
     <color name="secondary">#03DAC5</color>
-    <color name="secondary_variant">#018786</color>
     
     <!-- Light Theme Colors -->
     <color name="background_light">#FFFFFF</color>
     <!-- Launch splash canvas — must match AppPalette.background light (#FAF9FE) -->
     <color name="splash_background">#FAF9FE</color>
-    <color name="surface_light">#FFFFFF</color>
-    <color name="on_primary_light">#FFFFFF</color>
-    <color name="on_secondary_light">#000000</color>
     <color name="on_background_light">#000000</color>
     <color name="on_surface_light">#000000</color>
     
     <!-- Dark Theme Colors -->
     <color name="background_dark">#121212</color>
-    <color name="surface_dark">#1E1E1E</color>
-    <color name="on_primary_dark">#FFFFFF</color>
-    <color name="on_secondary_dark">#000000</color>
     <color name="on_background_dark">#FFFFFF</color>
     <color name="on_surface_dark">#FFFFFF</color>
     
     <!-- Splash Screen Colors — must match AppPalette.background -->
-    <color name="splash_background_light">#FAF9FE</color>
-    <color name="splash_background_night">#0F0A1E</color>
 
     <!-- Status Colors -->
-    <color name="success">#10B981</color>
     <color name="error">#EF4444</color>
-    <color name="warning">#F59E0B</color>
-    <color name="info">#3B82F6</color>
     
     <!-- Common Colors -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
-    <color name="transparent">#00000000</color>
     
     <!-- Gray Scale -->
-    <color name="gray_50">#F9FAFB</color>
     <color name="gray_100">#F3F4F6</color>
-    <color name="gray_200">#E5E7EB</color>
-    <color name="gray_300">#D1D5DB</color>
     <color name="gray_400">#9CA3AF</color>
-    <color name="gray_500">#6B7280</color>
     <color name="gray_600">#4B5563</color>
-    <color name="gray_700">#374151</color>
     <color name="gray_800">#1F2937</color>
-    <color name="gray_900">#111827</color>
 </resources>

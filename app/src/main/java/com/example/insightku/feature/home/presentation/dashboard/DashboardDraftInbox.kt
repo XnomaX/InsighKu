@@ -4,7 +4,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,21 +20,40 @@ import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Savings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.insightku.R
 import com.example.insightku.core.data.model.DraftConfidence
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.DraftType
 import com.example.insightku.core.data.model.TransactionType
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
-import com.example.insightku.core.ui.theme.*
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.core.ui.theme.ExpenseRed
+import com.example.insightku.core.ui.theme.IncomeGreen
+import com.example.insightku.core.ui.theme.SuccessColor
+import com.example.insightku.core.ui.theme.WarningYellow
 
 @Composable
 fun DraftInboxSection(
@@ -51,7 +77,7 @@ fun DraftInboxSection(
                 color = AppPalette.textPrimary
             )
             Text(
-                stringResource(R.string.draft_inbox_subtitle, drafts.size),
+                pluralStringResource(R.plurals.draft_inbox_subtitle, drafts.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted
             )
@@ -91,7 +117,7 @@ fun DraftInboxSection(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            stringResource(R.string.draft_inbox_more, hiddenCount),
+                            pluralStringResource(R.plurals.draft_inbox_more, hiddenCount),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
                             color = NavPurple

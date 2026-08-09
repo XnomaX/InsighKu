@@ -1,10 +1,4 @@
 package com.example.insightku.core.ui.components.dialogs
-import com.example.insightku.core.ui.components.dialogs.IconOption
-import com.example.insightku.core.ui.components.dialogs.BudgetLimitInput
-import com.example.insightku.core.ui.components.dialogs.RecurringPeriodSelector
-import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
-import com.example.insightku.core.ui.components.dialogs.CategoryIconInfo
-import com.example.insightku.core.i18n.NumberFormatter
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -12,7 +6,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,8 +22,105 @@ import androidx.compose.material.icons.automirrored.filled.AssignmentReturn
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.AutoGraph
+import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.BakeryDining
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.BeachAccess
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.CardMembership
+import androidx.compose.material.icons.filled.CastForEducation
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Celebration
+import androidx.compose.material.icons.filled.Chair
+import androidx.compose.material.icons.filled.Checkroom
+import androidx.compose.material.icons.filled.ChildCare
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material.icons.filled.Copyright
+import androidx.compose.material.icons.filled.CurrencyBitcoin
+import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.Diamond
+import androidx.compose.material.icons.filled.DinnerDining
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Elderly
+import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Fastfood
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.filled.Handyman
+import androidx.compose.material.icons.filled.Healing
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.HomeWork
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Icecream
+import androidx.compose.material.icons.filled.Laptop
+import androidx.compose.material.icons.filled.LocalAtm
+import androidx.compose.material.icons.filled.LocalBar
+import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.LocalLaundryService
+import androidx.compose.material.icons.filled.LocalParking
+import androidx.compose.material.icons.filled.LocalTaxi
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.MiscellaneousServices
+import androidx.compose.material.icons.filled.MoreTime
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.OndemandVideo
+import androidx.compose.material.icons.filled.Park
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Percent
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Redeem
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.SportsSoccer
+import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Subscriptions
+import androidx.compose.material.icons.filled.TheaterComedy
+import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.TwoWheeler
+import androidx.compose.material.icons.filled.VideoCall
+import androidx.compose.material.icons.filled.VideogameAsset
+import androidx.compose.material.icons.filled.VolunteerActivism
+import androidx.compose.material.icons.filled.Watch
+import androidx.compose.material.icons.filled.Water
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WorkOutline
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,13 +128,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
-import com.example.insightku.core.data.model.CategoryType
-import com.example.insightku.core.utils.CurrencyUtils
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.utils.digitsToLong
 import kotlin.math.roundToInt
 
@@ -173,10 +270,6 @@ val incomeCategoryIcons = listOf(
     CategoryIconInfo("Others",          Icons.Default.Category,             Color(0xFF79747E))
 )
 
-// ─── Backward-compat alias (used by existing code that references defaultCategoryIcons) ──
-
-val defaultCategoryIcons = expenseCategoryIcons
-
 // ─── Global CategoryIconResolver — single source of truth ────────────────────
 //
 // Maps a category icon name string → ImageVector + Color.
@@ -310,7 +403,6 @@ object CategoryIconResolver {
     }
 
     fun resolveIcon(iconName: String?): ImageVector = resolve(iconName).icon
-    fun resolveColor(iconName: String?): Color = resolve(iconName).color
 
     private fun fallback() = CategoryIconInfo(
         name  = "Others",

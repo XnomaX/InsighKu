@@ -2,27 +2,39 @@ package com.example.insightku.feature.planning.goal.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
+import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.core.ui.theme.SuccessColor
-import com.example.insightku.core.i18n.DateFormatter
-import com.example.insightku.core.i18n.NumberFormatter
 import java.time.ZoneId
 
 @Composable
@@ -52,18 +64,22 @@ internal fun TimelineEventItem(event: GoalTimelineEvent, goalColor: androidx.com
         TimelineEventType.MILESTONE_25, TimelineEventType.MILESTONE_50, TimelineEventType.MILESTONE_75, TimelineEventType.MILESTONE_90 -> goalColor
         else -> PurpleViolet
     }
-    val icon = when (event.type) {
-        TimelineEventType.GOAL_CREATED -> Icons.Outlined.Flag
-        TimelineEventType.FIRST_CONTRIBUTION -> Icons.Outlined.Star
-        TimelineEventType.MILESTONE_25, TimelineEventType.MILESTONE_50, TimelineEventType.MILESTONE_75, TimelineEventType.MILESTONE_90 -> Icons.Outlined.Stars
-        TimelineEventType.GOAL_COMPLETED -> Icons.Outlined.CheckCircle
-        TimelineEventType.WITHDRAWAL -> Icons.Outlined.ArrowDownward
-        else -> Icons.Outlined.Event
-    }
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(iconColor))
-            if (!isLast) { Box(modifier = Modifier.width(2.dp).height(40.dp).background(AppPalette.cardBorder)) }
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(iconColor)
+            )
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .height(40.dp)
+                        .background(AppPalette.cardBorder)
+                )
+            }
         }
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -81,8 +97,17 @@ internal fun TimelineEventItem(event: GoalTimelineEvent, goalColor: androidx.com
 @Composable
 internal fun EmptyTimelineCard(goalColor: androidx.compose.ui.graphics.Color) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(Dimens.CardRadius), colors = CardDefaults.cardColors(containerColor = AppPalette.card), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp), border = BorderStroke(1.dp, AppPalette.cardBorder)) {
-        Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(modifier = Modifier.size(56.dp).clip(CircleShape).background(goalColor.copy(alpha = 0.08f)), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(goalColor.copy(alpha = 0.08f)), contentAlignment = Alignment.Center
+            ) {
                 Icon(Icons.Outlined.Flag, null, tint = goalColor.copy(alpha = 0.5f), modifier = Modifier.size(28.dp))
             }
             Spacer(Modifier.height(12.dp))

@@ -1,8 +1,8 @@
 package com.example.insightku.feature.auth.domain
 
-import com.example.insightku.feature.auth.data.AuthRepository
-import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.data.repository.CategoryRepository
+import com.example.insightku.core.data.repository.TransactionRepository
+import com.example.insightku.feature.auth.data.AuthRepository
 import javax.inject.Inject
 
 /**

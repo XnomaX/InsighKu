@@ -1,17 +1,27 @@
 package com.example.insightku.feature.home.presentation.dashboard
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,21 +32,27 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
-import com.example.insightku.core.ui.theme.*
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.core.ui.theme.ExpenseRed
+import com.example.insightku.core.ui.theme.IncomeGreen
 import com.example.insightku.feature.home.presentation.PremiumFlameIcon
 import com.example.insightku.feature.home.presentation.flameConfig
 import java.util.Calendar
@@ -46,14 +62,16 @@ import java.util.Locale
 fun DailyStreakCard(
     currentStreak: Int,
     hasTrackedToday: Boolean,
-    repairAvailable: Boolean = false,
-    freezeCount: Int = 0,
-    onCardClick: () -> Unit = {},
     onAddTransaction: () -> Unit,
-    onUseRepair: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    repairAvailable: Boolean = false,
+    onCardClick: () -> Unit = {},
+    onUseRepair: () -> Unit = {}
 ) {
-    val displayedStreak = if (hasTrackedToday) currentStreak else 0
+    // BUG-07: show the real streak — resetting to 0 before logging today hid existing
+    // history and read as a broken/competitive counter. The status/motivation copy already
+    // frames "not yet today" warmly (streak_waiting / streak_start_today).
+    val displayedStreak = currentStreak
     val config = flameConfig(displayedStreak)
     val weekDays = listOf("M", "T", "W", "T", "F", "S", "S")
     val activeDays = minOf(currentStreak, 7).let { if (hasTrackedToday) it.coerceAtLeast(1) else it }
@@ -77,7 +95,9 @@ fun DailyStreakCard(
     }
 
     Surface(
-        modifier        = modifier.fillMaxWidth().clickable { onCardClick() },
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onCardClick() },
         shape           = RoundedCornerShape(Dimens.CardRadiusLarge),
         color           = AppPalette.card,
         tonalElevation  = 0.dp,
@@ -87,7 +107,10 @@ fun DailyStreakCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Dimens.CardInnerPaddingLarge, vertical = Dimens.CardInnerPaddingLarge),
+                .padding(
+                    horizontal = Dimens.CardInnerPaddingLarge,
+                    vertical = Dimens.CardInnerPaddingLarge
+                ),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // -- Hero row ------------------------------------------------------
@@ -97,7 +120,9 @@ fun DailyStreakCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
-                    modifier = Modifier.weight(1f).padding(end = 12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Status pill
@@ -220,7 +245,9 @@ fun DailyStreakCard(
             } else {
                 if (repairAvailable) {
                     Surface(
-                        modifier = Modifier.fillMaxWidth().clickable { onUseRepair() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onUseRepair() },
                         shape = RoundedCornerShape(Dimens.ButtonRadius),
                         color = NavPurple
                     ) {
@@ -241,7 +268,9 @@ fun DailyStreakCard(
                     }
                 }
                 Surface(
-                    modifier = Modifier.fillMaxWidth().clickable { onAddTransaction() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onAddTransaction() },
                     shape = RoundedCornerShape(Dimens.ButtonRadius),
                     color = if (repairAvailable) AppPalette.cardBorder else NavPurple
                 ) {
@@ -269,8 +298,6 @@ fun DailyStreakCard(
 
 @Composable
 fun StreakCelebrationDialog(streak: Int, onDismiss: () -> Unit) {
-    val config = flameConfig(streak)
-
     val headline = when {
         streak >= 100 -> stringResource(R.string.celebration_legendary)
         streak >= 30  -> stringResource(R.string.celebration_on_fire)
@@ -336,7 +363,9 @@ fun StreakCelebrationDialog(streak: Int, onDismiss: () -> Unit) {
                 }
 
                 Surface(
-                    modifier = Modifier.fillMaxWidth().clickable { onDismiss() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onDismiss() },
                     shape = RoundedCornerShape(Dimens.ButtonRadius),
                     color = NavPurple
                 ) {
@@ -370,7 +399,9 @@ fun StreakDetailSheet(
             modifier        = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 // -- Header ----------------------------------------------------
@@ -527,13 +558,17 @@ fun StreakDetailSheet(
                                                     .clip(RoundedCornerShape(6.dp))
                                                     .background(
                                                         when {
-                                                            tracked  -> NavPurple.copy(alpha = 0.85f)
+                                                            tracked -> NavPurple.copy(alpha = 0.85f)
                                                             cell.isFuture -> Color.Transparent
-                                                            else     -> AppPalette.cardBorder
+                                                            else -> AppPalette.cardBorder
                                                         }
                                                     )
                                                     .then(
-                                                        if (cell.isToday) Modifier.border(1.5.dp, NavPurple, RoundedCornerShape(6.dp))
+                                                        if (cell.isToday) Modifier.border(
+                                                            1.5.dp,
+                                                            NavPurple,
+                                                            RoundedCornerShape(6.dp)
+                                                        )
                                                         else Modifier
                                                     ),
                                                 contentAlignment = Alignment.Center
@@ -566,7 +601,9 @@ fun StreakDetailSheet(
                 }
 
                 Surface(
-                    modifier = Modifier.fillMaxWidth().clickable { onDismiss() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onDismiss() },
                     shape = RoundedCornerShape(Dimens.ButtonRadius),
                     color = NavPurple
                 ) {
@@ -582,7 +619,12 @@ fun StreakDetailSheet(
 @Composable
 internal fun LegendDot(color: Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(Modifier.size(10.dp).clip(CircleShape).background(color))
+        Box(
+            Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
         Text(label, style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
     }
 }

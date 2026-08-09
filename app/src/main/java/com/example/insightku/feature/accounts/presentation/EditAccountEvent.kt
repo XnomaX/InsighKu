@@ -1,6 +1,5 @@
 package com.example.insightku.feature.accounts.presentation
 
-import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 
 /**

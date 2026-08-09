@@ -1,14 +1,21 @@
 package com.example.insightku.feature.home.presentation.dashboard
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,22 +25,28 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
-import com.example.insightku.core.ui.theme.*
-import com.example.insightku.core.utils.CurrencyUtils
 import com.example.insightku.core.i18n.DateFormatter
-import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.core.ui.theme.ExpenseRed
+import com.example.insightku.core.ui.theme.IncomeGreen
+import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.feature.home.presentation.PremiumFlameIcon
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
 
@@ -131,7 +144,9 @@ fun DashboardHeader(
                 }
                 // Notification bell
                 Surface(
-                    modifier = Modifier.size(38.dp).clip(CircleShape),
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape),
                     shape = CircleShape,
                     color = AppPalette.card,
                     border = BorderStroke(1.dp, AppPalette.cardBorder)
@@ -179,7 +194,8 @@ fun StickyFinanceStatusBar(
     hasTrackedToday: Boolean = false,
     freezeCount: Int = 0
 ) {
-    val displayedStreak = if (hasTrackedToday) currentStreak else 0
+    // BUG-07: show the real streak rather than resetting to 0 until today is logged.
+    val displayedStreak = currentStreak
     val isFrozen = freezeCount > 0 && !hasTrackedToday
 
     Surface(
@@ -197,9 +213,19 @@ fun StickyFinanceStatusBar(
             verticalAlignment     = Alignment.CenterVertically
         ) {
             StickyStatItem(Icons.Default.ArrowUpward, IncomeGreen, formatCurrencyShort(monthlyIncome))
-            Box(Modifier.size(4.dp).clip(CircleShape).background(AppPalette.cardBorder))
+            Box(
+                Modifier
+                    .size(4.dp)
+                    .clip(CircleShape)
+                    .background(AppPalette.cardBorder)
+            )
             StickyStatItem(Icons.Default.ArrowDownward, ExpenseRed, formatCurrencyShort(monthlyExpenses))
-            Box(Modifier.size(4.dp).clip(CircleShape).background(AppPalette.cardBorder))
+            Box(
+                Modifier
+                    .size(4.dp)
+                    .clip(CircleShape)
+                    .background(AppPalette.cardBorder)
+            )
             Row(
                 verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -218,7 +244,10 @@ fun StickyFinanceStatusBar(
                     label = "streak_count"
                 ) { streak ->
                     Text(
-                        text       = if (streak > 0) stringResource(R.string.dashboard_streak_days, streak) else "—",
+                        text = if (streak > 0) pluralStringResource(
+                            R.plurals.dashboard_streak_days,
+                            streak
+                        ) else "—",
                         style      = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color      = if (hasTrackedToday) NavPurple else AppPalette.textMuted

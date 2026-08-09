@@ -34,15 +34,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -58,15 +56,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.insightku.R
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
-import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
 
 private val SheetPurple: Color @Composable get() = LocalAccent.current
 private val SheetBorder: Color @Composable get() = AppPalette.cardBorder
@@ -86,7 +84,6 @@ fun AddAccountDialog(
     if (!isOpen) return
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(isOpen) {
         if (isOpen) viewModel.resetForm()
@@ -101,7 +98,10 @@ fun AddAccountDialog(
         containerColor = AppPalette.card,
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
         dragHandle = {
-            Box(                 Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -150,7 +150,12 @@ fun AddAccountDialog(
                 )
             }
 
-            Box(Modifier.fillMaxWidth().height(1.dp).background(SheetBorder))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(SheetBorder)
+            )
 
             Spacer(Modifier.height(18.dp))
 
@@ -496,8 +501,8 @@ internal fun ColorPicker(
         accountColors.forEach { color ->
             val isSelected = selectedColor == color
             val parsedColor = try {
-                Color(android.graphics.Color.parseColor(color))
-            } catch (e: Exception) {
+                Color(color.toColorInt())
+            } catch (_: Exception) {
                 SheetPurple
             }
 
@@ -508,7 +513,8 @@ internal fun ColorPicker(
                     .background(parsedColor)
                     .then(
                         if (isSelected) {
-                            Modifier.border(3.dp, Color.White, CircleShape)
+                            Modifier
+                                .border(3.dp, Color.White, CircleShape)
                                 .border(2.dp, parsedColor, CircleShape)
                         } else {
                             Modifier

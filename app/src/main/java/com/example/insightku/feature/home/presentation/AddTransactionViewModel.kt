@@ -4,17 +4,12 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
-import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.data.model.Category
-import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.model.Transaction
-import com.example.insightku.feature.auth.data.AuthRepository
-import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.core.data.repository.DraftTransactionRepository
-import com.example.insightku.feature.home.domain.AddTransactionUseCase
-import com.example.insightku.feature.home.domain.CategoryMemory
 import com.example.insightku.core.utils.ErrorBus
+import com.example.insightku.feature.home.domain.AddTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -22,8 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -38,10 +31,7 @@ data class AddTransactionUiState(
 @HiltViewModel
 class AddTransactionViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository,
-    private val authRepository: AuthRepository,
-    private val preferencesDataStore: UserPreferencesDataStore,
     private val draftRepository: DraftTransactionRepository,
     private val addTransactionUseCase: AddTransactionUseCase,
     private val errorBus: ErrorBus
@@ -50,8 +40,6 @@ class AddTransactionViewModel @Inject constructor(
     companion object {
         private const val TAG = "AddTransactionViewModel"
     }
-
-    private val categoryMemory = CategoryMemory()
 
     // All categories — for backward compat
     val categories: StateFlow<List<Category>> = categoryRepository
@@ -105,20 +93,6 @@ class AddTransactionViewModel @Inject constructor(
 
     fun clearSavedState() {
         _uiState.update { it.copy(savedSuccessfully = false, error = null) }
-    }
-
-    /**
-     * Suggest a category for a freshly-typed merchant [title] from the user's own logging history —
-     * the real, backend-free category learning. Returns null when learning is off, the merchant was
-     * forgotten, or there's no confident memory yet (caller should leave the field untouched).
-     */
-    suspend fun suggestedCategory(title: String): String? {
-        if (title.isBlank()) return null
-        if (!preferencesDataStore.categoryLearningEnabled.first()) return null
-        val forgotten = preferencesDataStore.forgottenMerchants.first()
-        if (title.trim().lowercase() in forgotten) return null
-        val transactions = transactionRepository.getAllTransactions().first()
-        return categoryMemory.suggestCategory(title, transactions)
     }
 }
 

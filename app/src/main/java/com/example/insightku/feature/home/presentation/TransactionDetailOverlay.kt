@@ -2,14 +2,49 @@ package com.example.insightku.feature.home.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudQueue
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,14 +56,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.feature.home.presentation.TransactionCategoryIcon
-import com.example.insightku.feature.home.presentation.resolveCategoryIcon
 import com.example.insightku.core.ui.theme.AppPalette
 
 // --- Premium Transaction Detail Overlay --------------------------------------
@@ -51,7 +85,6 @@ fun TransactionDetailOverlay(
     val prefix      = txAmountPrefix(txType)
     val showCat     = txShowCategory(txType)
     val canEdit     = txAllowsEdit(txType)
-    val canDelete   = txAllowsDelete(txType)
 
     // Resolve category color for badge (icon is handled by shared TransactionCategoryIcon)
     val resolved = resolveCategoryIcon(transaction.category, transaction.type, categoryMap)
@@ -62,8 +95,19 @@ fun TransactionDetailOverlay(
         onDismissRequest = onDismiss,
         containerColor   = TxCard,
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {             Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.width(40.dp).height(4.dp).clip(CircleShape).background(TxCardBorder))
+        dragHandle = {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(CircleShape)
+                        .background(TxCardBorder)
+                )
             }
         }
     ) {
@@ -74,7 +118,10 @@ fun TransactionDetailOverlay(
         ) {
             // -- Hero section ----------------------------------------------
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 8.dp, bottom = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 8.dp, bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -94,7 +141,12 @@ fun TransactionDetailOverlay(
                     if (showCat && transaction.category.isNotBlank()) {
                         Surface(shape = RoundedCornerShape(50.dp), color = catColor.copy(alpha = 0.10f)) {
                             Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Box(Modifier.size(5.dp).clip(CircleShape).background(catColor))
+                                Box(
+                                    Modifier
+                                        .size(5.dp)
+                                        .clip(CircleShape)
+                                        .background(catColor)
+                                )
                                 Text(transaction.category, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = catColor)
                             }
                         }
@@ -107,10 +159,20 @@ fun TransactionDetailOverlay(
                 Text("$prefix ${formatCurrencyRp(transaction.amount)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = amountColor, letterSpacing = (-0.5).sp)
             }
 
-            Box(Modifier.fillMaxWidth().height(1.dp).background(TxCardBorder))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(TxCardBorder)
+            )
 
             // -- Info grid -------------------------------------------------
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PremiumInfoTile(Icons.Default.CalendarMonth, stringResource(R.string.tx_detail_date), formatFullDate(transaction.date), accent, Modifier.weight(1f))
                     PremiumInfoTile(Icons.Default.AccessTime, stringResource(R.string.tx_detail_time), transaction.time, accent, Modifier.weight(1f))
@@ -125,7 +187,9 @@ fun TransactionDetailOverlay(
                         AccountType.CREDIT_CARD -> Icons.Default.CreditCard
                         null -> Icons.Default.AccountBalance
                     }
-                    val accountColor = account?.let { runCatching { Color(android.graphics.Color.parseColor(it.color)) }.getOrDefault(AppPalette.defaultBlue) } ?: AppPalette.defaultBlue
+                    val accountColor = account?.let {
+                        runCatching { Color(it.color.toColorInt()) }.getOrDefault(AppPalette.defaultBlue)
+                    } ?: AppPalette.defaultBlue
                     PremiumInfoTile(accountIcon, stringResource(R.string.tx_detail_account), account?.name ?: stringResource(R.string.tx_detail_no_account), accountColor, Modifier.weight(1f))
                     // Sync status
                     PremiumInfoTile(
@@ -177,11 +241,27 @@ fun TransactionDetailOverlay(
             }
 
             // -- Action buttons (type-dependent) --------------------------------
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 // Edit + Delete for editable types (Income, Expense, Balance Adjustment)
                 if (canEdit) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Surface(Modifier.weight(1f).height(50.dp).clickable { onEdit(transaction) }, RoundedCornerShape(16.dp), TxTint, border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.3f))) {
+                        Surface(
+                            Modifier
+                                .weight(1f)
+                                .height(50.dp)
+                                .clickable { onEdit(transaction) },
+                            RoundedCornerShape(16.dp),
+                            TxTint,
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                accent.copy(alpha = 0.3f)
+                            )
+                        ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Icon(Icons.Default.Edit, null, tint = accent, modifier = Modifier.size(16.dp))
@@ -189,7 +269,14 @@ fun TransactionDetailOverlay(
                                 }
                             }
                         }
-                        Surface(Modifier.weight(1f).height(50.dp).clickable { showDeleteDialog = true }, RoundedCornerShape(16.dp), TxExpenseRed.copy(alpha = 0.10f)) {
+                        Surface(
+                            Modifier
+                                .weight(1f)
+                                .height(50.dp)
+                                .clickable { showDeleteDialog = true },
+                            RoundedCornerShape(16.dp),
+                            TxExpenseRed.copy(alpha = 0.10f)
+                        ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Icon(Icons.Default.Delete, null, tint = TxExpenseRed, modifier = Modifier.size(16.dp))
@@ -201,7 +288,18 @@ fun TransactionDetailOverlay(
                 }
                 // Goal Contribution/Withdrawal: View Goal button
                 if (txType == TransactionType.GOAL_CONTRIBUTION || txType == TransactionType.GOAL_WITHDRAWAL || txType == TransactionType.AUTO_ALLOCATION) {
-                    Surface(Modifier.fillMaxWidth().height(50.dp).clickable { onDismiss() }, RoundedCornerShape(16.dp), TxTint, border = androidx.compose.foundation.BorderStroke(1.dp, TxGoalPurple.copy(alpha = 0.3f))) {
+                    Surface(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .clickable { onDismiss() },
+                        RoundedCornerShape(16.dp),
+                        TxTint,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            TxGoalPurple.copy(alpha = 0.3f)
+                        )
+                    ) {
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.Flag, null, tint = TxGoalPurple, modifier = Modifier.size(16.dp))
@@ -212,7 +310,18 @@ fun TransactionDetailOverlay(
                 }
                 // Transfer: View Transfer Details button
                 if (txType == TransactionType.TRANSFER_OUT || txType == TransactionType.TRANSFER_IN) {
-                    Surface(Modifier.fillMaxWidth().height(50.dp).clickable { onDismiss() }, RoundedCornerShape(16.dp), TxTint, border = androidx.compose.foundation.BorderStroke(1.dp, TxTransferBlue.copy(alpha = 0.3f))) {
+                    Surface(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .clickable { onDismiss() },
+                        RoundedCornerShape(16.dp),
+                        TxTint,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            TxTransferBlue.copy(alpha = 0.3f)
+                        )
+                    ) {
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.SwapHoriz, null, tint = TxTransferBlue, modifier = Modifier.size(16.dp))
@@ -224,10 +333,18 @@ fun TransactionDetailOverlay(
                 // Duplicate only for editable types
                 if (canEdit && onDuplicate != null) {
                     Surface(
-                        Modifier.fillMaxWidth().height(46.dp).clickable {
-                            onDuplicate(transaction.copy(id = java.util.UUID.randomUUID().toString(), date = System.currentTimeMillis()))
-                            onDismiss()
-                        }, RoundedCornerShape(16.dp), TxTint,
+                        Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                            .clickable {
+                                onDuplicate(
+                                    transaction.copy(
+                                        id = java.util.UUID.randomUUID().toString(),
+                                        date = System.currentTimeMillis()
+                                    )
+                                )
+                                onDismiss()
+                            }, RoundedCornerShape(16.dp), TxTint,
                         border = androidx.compose.foundation.BorderStroke(1.dp, TxCardBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -284,7 +401,10 @@ private fun PremiumInfoTile(
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Box(
-                    modifier = Modifier.size(24.dp).clip(RoundedCornerShape(7.dp)).background(color.copy(alpha = 0.14f)),
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(color.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(icon, null, tint = color, modifier = Modifier.size(13.dp))
@@ -322,7 +442,10 @@ private fun PremiumInfoTileWide(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
-                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(10.dp)).background(color.copy(alpha = 0.14f)),
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(color.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))

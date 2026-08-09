@@ -9,6 +9,7 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.example.insightku.core.data.repository.BankConsentRepository
 import com.example.insightku.core.data.repository.DraftTransactionRepository
+import com.example.insightku.core.i18n.DateFormatter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -16,7 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import com.example.insightku.core.i18n.DateFormatter
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
@@ -192,11 +192,13 @@ class BankNotificationListenerService : NotificationListenerService() {
     private fun memoryInfo(): String {
         return try {
             val mi = ActivityManager.MemoryInfo()
-            (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(mi)
+            (getSystemService(ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(mi)
             val usedMb = (mi.totalMem - mi.availMem) / 1_048_576
             val totalMb = mi.totalMem / 1_048_576
             "mem=${usedMb}/${totalMb}MB"
-        } catch (e: Exception) { "mem=unknown" }
+        } catch (_: Exception) {
+            "mem=unknown"
+        }
     }
 
     companion object {

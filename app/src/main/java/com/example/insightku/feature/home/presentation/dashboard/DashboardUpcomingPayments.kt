@@ -3,27 +3,40 @@ package com.example.insightku.feature.home.presentation.dashboard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
-import androidx.compose.ui.res.stringResource
-import com.example.insightku.R
-import com.example.insightku.core.ui.theme.*
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.core.ui.theme.ExpenseRed
+import com.example.insightku.core.ui.theme.IncomeGreen
+import com.example.insightku.core.ui.theme.WarningYellow
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
 
 @Composable
@@ -62,7 +75,10 @@ fun UpcomingPaymentsSection(
                 )
                 Text(
                     if (noPayments) stringResource(R.string.dashboard_no_payments_soon)
-                    else stringResource(R.string.dashboard_payments_due_count, dueSoonRecurring.size + dueSoonInstallments.size),
+                    else pluralStringResource(
+                        R.plurals.dashboard_payments_due_count,
+                        dueSoonRecurring.size + dueSoonInstallments.size
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
@@ -77,12 +93,17 @@ fun UpcomingPaymentsSection(
                 border   = BorderStroke(1.dp, AppPalette.cardBorder)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 28.dp, horizontal = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 28.dp, horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Box(
-                        modifier = Modifier.size(52.dp).clip(CircleShape).background(NavPurple.copy(alpha = 0.07f)),
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(NavPurple.copy(alpha = 0.07f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.CheckCircle, null, tint = NavPurple.copy(alpha = 0.45f), modifier = Modifier.size(26.dp))
@@ -120,13 +141,6 @@ private fun UpcomingRecurringRow(
 ) {
     val daysUntil = ((budget.nextDue - now) / 86400000L).toInt()
     val isOverdue = daysUntil < 0
-    val dueBadgeLabel = when {
-        isOverdue && daysUntil == -1 -> "Yesterday"
-        isOverdue -> "Overdue by ${-daysUntil}d"
-        daysUntil == 0 -> "Today"
-        daysUntil == 1 -> "Tomorrow"
-        else -> "in ${daysUntil}d"
-    }
     val dueBadgeColor = when {
         isOverdue -> ExpenseRed
         daysUntil <= 2 -> ExpenseRed
@@ -217,13 +231,6 @@ private fun UpcomingInstallmentRow(
 ) {
     val daysUntil = ((installment.nextDueDate - now) / 86400000L).toInt()
     val isOverdue = daysUntil < 0
-    val dueBadgeLabel = when {
-        isOverdue && daysUntil == -1 -> "Yesterday"
-        isOverdue -> "Overdue by ${-daysUntil}d"
-        daysUntil == 0 -> "Today"
-        daysUntil == 1 -> "Tomorrow"
-        else -> "in ${daysUntil}d"
-    }
     val dueBadgeColor = when {
         isOverdue -> ExpenseRed
         daysUntil <= 2 -> ExpenseRed

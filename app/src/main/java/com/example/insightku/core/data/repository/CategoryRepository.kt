@@ -5,7 +5,6 @@ import com.example.insightku.core.data.local.dao.CategoryDao
 import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -37,8 +36,6 @@ class CategoryRepository @Inject constructor(
     fun getIncomeCategories(): Flow<List<Category>> =
         categoryDao.getUserCategoriesByType(CategoryType.INCOME.name)
 
-    suspend fun getCategoryById(id: String): Category? = categoryDao.getCategoryById(id)
-
     // ─── Write (Room + Firestore) ─────────────────────────────────────────────
 
     suspend fun insertCategory(category: Category, userId: String) {
@@ -57,58 +54,12 @@ class CategoryRepository @Inject constructor(
         Log.d("InsightKu", "updateCategory: Firestore write SUCCESS id=${category.id}")
     }
 
-    suspend fun deleteCategory(categoryId: String, userId: String) {
-        Log.d("InsightKu", "deleteCategory: id=$categoryId userId=$userId")
-        categoryDao.deleteCategory(categoryId)
-        firestore.collection("users").document(userId)
-            .collection("categories").document(categoryId).delete().await()
-        Log.d("InsightKu", "deleteCategory: Firestore delete SUCCESS id=$categoryId")
-    }
-
     // ─── Firestore Sync ───────────────────────────────────────────────────────
 
-    /**
-     * One-time migration: renames Firestore field "systemCategory" → "isSystemCategory".
-     * Idempotent — safe to call repeatedly.
-     */
-    suspend fun migrateCategoryFieldNames(userId: String) {
-        try {
-            val colRef = firestore.collection("users").document(userId).collection("categories")
-            val snapshot = colRef.get().await()
-            val batch = firestore.batch()
-            var count = 0
-
-            for (doc in snapshot.documents) {
-                val data = doc.data ?: continue
-                if (data.containsKey("systemCategory") && !data.containsKey("isSystemCategory")) {
-                    val value = data["systemCategory"]
-                    batch.update(doc.reference, mapOf(
-                        "isSystemCategory" to value,
-                        "systemCategory" to FieldValue.delete()
-                    ))
-                    count++
-                }
-            }
-
-            if (count > 0) {
-                batch.commit().await()
-                Log.d("InsightKu", "migrateCategoryFieldNames: migrated $count docs")
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w("InsightKu", "migrateCategoryFieldNames: failed (will retry next refresh)", e)
-        }
-    }
-
     suspend fun refreshCategories(userId: String) {
-        migrateCategoryFieldNames(userId)
-
         val snapshot = firestore.collection("users").document(userId)
             .collection("categories").get().await()
         val categories = snapshot.toObjects(Category::class.java)
-            // SAFETY NET: if migration failed and docs still have old field, patch from ID prefix
-            .map { if (it.id.startsWith("system-") && !it.isSystemCategory) it.copy(isSystemCategory = true) else it }
         // IGNORE strategy — never restore a category deleted locally
         categoryDao.insertCategoriesFromRemote(categories)
     }
@@ -141,7 +92,7 @@ class CategoryRepository @Inject constructor(
                 .collection("categories").document(categoryId).delete().await()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Offline — Room already updated
         }
     }

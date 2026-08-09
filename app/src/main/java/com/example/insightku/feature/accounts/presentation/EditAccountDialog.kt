@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -35,15 +34,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -60,14 +57,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
-import com.example.insightku.core.ui.theme.Dimens
-import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.CurrencyUtils
 
@@ -91,7 +86,6 @@ fun EditAccountDialog(
     if (!isOpen) return
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(isOpen, account.id) {
@@ -107,7 +101,10 @@ fun EditAccountDialog(
         containerColor = AppPalette.card,
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
         dragHandle = {
-            Box(                 Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -181,7 +178,12 @@ fun EditAccountDialog(
                 )
             }
 
-            Box(Modifier.fillMaxWidth().height(1.dp).background(SheetBorder))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(SheetBorder)
+            )
 
             Spacer(Modifier.height(18.dp))
 

@@ -3,20 +3,16 @@ package com.example.insightku.core.data.repository
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.BudgetAllocationDao
 import com.example.insightku.core.data.local.dao.BudgetDao
-import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.domain.model.AccountAllocation
 import com.example.insightku.core.domain.model.BudgetAllocationDetail
-import com.example.insightku.core.domain.model.ContributionDetail
 import com.example.insightku.core.domain.model.GoalAllocationDetail
 import com.example.insightku.feature.planning.goal.data.local.dao.ContributionDao
-import com.example.insightku.feature.planning.goal.data.local.dao.GoalDao
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -105,24 +101,6 @@ class AccountAllocationRepository @Inject constructor(
     }
 
     /**
-     * Get complete allocation information for an account.
-     *
-     * @param accountId The account ID
-     * @return AccountAllocation with full breakdown, or null if account not found
-     */
-    suspend fun getAccountAllocation(accountId: String): AccountAllocation? =
-        getAllAccountAllocations().first().find { it.account.id == accountId }
-
-    /**
-     * Get account allocation as a Flow for reactive updates.
-     *
-     * @param accountId The account ID
-     * @return Flow of AccountAllocation, or null while the account doesn't exist
-     */
-    fun getAccountAllocationFlow(accountId: String): Flow<AccountAllocation?> =
-        getAllAccountAllocations().map { allocations -> allocations.find { it.account.id == accountId } }
-
-    /**
      * Get all accounts with their allocation information.
      *
      * Fully Flow-driven: re-emits on any account, contribution, or goal change
@@ -132,8 +110,6 @@ class AccountAllocationRepository @Inject constructor(
      * @return Flow of list of AccountAllocation
      */
     fun getAllAccountAllocations(): Flow<List<AccountAllocation>> {
-        val (periodStart, periodEnd) = getCurrentBudgetPeriod()
-
         return combine(
             accountDao.getAllAccounts(),
             contributionDao.getTotalAllocatedFromAccountFlow(""),  // invalidation trigger
@@ -173,100 +149,4 @@ class AccountAllocationRepository @Inject constructor(
         }.flowOn(Dispatchers.IO)
     }
 
-    /**
-     * Get contribution history for an account.
-     *
-     * @param accountId The account ID
-     * @param limit Maximum number of contributions to return
-     * @return List of ContributionDetail sorted by date (newest first)
-     */
-    suspend fun getAccountContributionHistory(
-        accountId: String,
-        limit: Int = 50
-    ): List<ContributionDetail> {
-        val contributions = contributionDao.getContributionsFromAccount(accountId).first()
-        return contributions.take(limit).mapNotNull { entity ->
-            val goalEntity = goalDao.getGoalById(entity.goalId)
-            ContributionDetail(
-                contributionId = entity.id,
-                goalId = entity.goalId,
-                goalName = goalEntity?.name ?: "Unknown Goal",
-                goalColor = goalEntity?.color ?: "#7C4DFF",
-                amount = entity.amount,
-                date = entity.createdAt,
-                type = entity.type,
-                notes = entity.notes
-            )
-        }
-    }
-
-    /**
-     * Get contribution history for an account as a Flow.
-     */
-    fun getAccountContributionHistoryFlow(accountId: String): Flow<List<ContributionDetail>> {
-        return contributionDao.getContributionsFromAccount(accountId).map { entities ->
-            entities.mapNotNull { entity ->
-                val goalEntity = goalDao.getGoalById(entity.goalId)
-                ContributionDetail(
-                    contributionId = entity.id,
-                    goalId = entity.goalId,
-                    goalName = goalEntity?.name ?: "Unknown Goal",
-                    goalColor = goalEntity?.color ?: "#7C4DFF",
-                    amount = entity.amount,
-                    date = entity.createdAt,
-                    type = entity.type,
-                    notes = entity.notes
-                )
-            }
-        }
-    }
-
-    /**
-     * Get total available cash across all accounts.
-     */
-    fun getTotalAvailableCash(): Flow<Double> {
-        return getAllAccountAllocations().map { allocations ->
-            allocations.sumOf { it.availableCash }
-        }
-    }
-
-    /**
-     * Get total allocated to goals across all accounts.
-     */
-    fun getTotalAllocatedToGoals(): Flow<Double> {
-        return getAllAccountAllocations().map { allocations ->
-            allocations.sumOf { it.allocatedToGoals }
-        }
-    }
-
-    /**
-     * Get detailed allocation breakdown for a specific goal.
-     *
-     * @param goalId The goal ID
-     * @return List of per-account allocations for this goal
-     */
-    suspend fun getGoalAllocationDetails(goalId: String): List<GoalAllocationDetail> {
-        val goalEntity = goalDao.getGoalByIdActive(goalId) ?: return emptyList()
-
-        // Get all contributions for this goal and group by account
-        val contributions = contributionDao.getContributionsByGoal(goalId).first()
-
-        return contributions
-            .filter { it.amount > 0 } // Only positive contributions
-            .groupBy { it.accountId }
-            .mapNotNull { (accountId, accountContributions) ->
-                val totalAllocated = accountContributions.sumOf { it.amount }
-                GoalAllocationDetail(
-                    goalId = goalId,
-                    goalName = goalEntity.name,
-                    goalIcon = goalEntity.iconName,
-                    goalColor = goalEntity.color,
-                    allocatedAmount = totalAllocated,
-                    targetAmount = goalEntity.targetAmount,
-                    progressPercent = if (goalEntity.targetAmount > 0) {
-                        (totalAllocated / goalEntity.targetAmount * 100).coerceIn(0.0, 100.0)
-                    } else 0.0
-                )
-            }
-    }
 }

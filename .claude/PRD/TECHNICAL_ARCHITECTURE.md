@@ -183,9 +183,13 @@ Each transaction belongs to one account. Analytics and budget calculations consu
 
 Raw notification content stays on device. The user must review before a draft becomes a confirmed transaction.
 
-### Database safety requirement
+### Database reset — version 1
 
-The current database builder uses destructive fallback migration. This is a P0 issue. Before research data collection, explicit Room migrations must be added and destructive fallback removed.
+The app has never been deployed, so the Room database was reset to **version 1** and all historical
+migration code was removed. `DatabaseModule.kt` uses a plain `Room.databaseBuilder(...).build()` (no
+`addMigrations`, no `fallbackToDestructiveMigration`). The generated schema baseline lives in
+`app/schemas/.../1.json` (`exportSchema = true`). A future schema change must add an explicit Room
+migration; `fallbackToDestructiveMigration` remains forbidden (data-loss risk for any future user).
 
 ## Repository and Use-Case Flows
 
@@ -219,6 +223,14 @@ BankNotificationListenerService
 ```
 
 The parser supports multiple Indonesian bank and e-wallet packages and assigns HIGH, MEDIUM, or LOW confidence. It must not bypass user review.
+
+**Notification dismiss now cleans up.** `DraftTransactionManager` attaches the draft id to the
+notification deep link and to the dismiss action extra. `DismissNotificationReceiver` is a
+Hilt-injected broadcast receiver (`@AndroidEntryPoint` + field
+`@Inject DraftTransactionRepository`); on dismiss it cancels the OS notification and soft-dismisses
+then purges the related draft row (device-local), so a "detected transaction" never lingers in the
+Inbox after the user taps Dismiss. The receiver uses `goAsync()` + `Dispatchers.IO` because the
+repository methods are suspend.
 
 ### Analytics flow
 
@@ -278,12 +290,27 @@ OCR confidence and field-level errors should be visible to the user. No extracte
 | `GoalReminderWorker` | Check and notify goal reminders |
 | notification keepalive/restart services | Improve listener recovery after OS interruption |
 
+## Settings persistence (smart-capture kit)
+
+`SettingsViewModel` now persists every displayed preference to DataStore rather than leaving them as
+local-only UI state:
+
+- `smartCaptureEnabled`, `categoryLearningEnabled`, and `habitGoal` (mapped to the existing
+  `streakGoal` key) are read back in the single `combine` and written on toggle.
+- "Forget merchant" writes to `forgottenMerchants` and refreshes the learned-memory transparency
+  list (derived on-device via `CategoryMemory.derive`, filtered against the forgotten set).
+- `budgetAlerts` maps onto the existing push-notifications preference (no new opt-out added).
+- Learned-merchant memory rows appear only when category learning is enabled and there are memories
+  to show.
+
 ## Security and Privacy
 
 - Firebase authentication controls user identity.
 - Financial data is local-first and syncs after confirmation.
-- Notification permission is explicit and followed by a source whitelist.
+- Notification permission is explicit and followed by a source whitelist; dismissing a draft
+  notification purges the on-device draft row.
 - Notification raw content and drafts are local-only.
+- `DraftTransaction` is never written to Firestore.
 - OCR permissions, image retention, and storage policy are `[ASUMSI - perlu konfirmasi]` and must be documented before usability testing.
 - Do not log raw receipt images, tokens, passwords, or raw notification content in release builds.
 

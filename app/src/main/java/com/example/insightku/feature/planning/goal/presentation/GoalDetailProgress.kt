@@ -2,26 +2,39 @@ package com.example.insightku.feature.planning.goal.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
+import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.SuccessColor
-import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 
 @Composable
@@ -38,12 +51,40 @@ internal fun ProgressSection(goal: Goal, goalColor: Color, animatedProgress: Flo
             }
             Spacer(Modifier.height(16.dp))
             Box(modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.fillMaxWidth().height(14.dp).clip(RoundedCornerShape(7.dp)).background(AppPalette.cardBorder))
-                Box(modifier = Modifier.fillMaxWidth(progress).height(14.dp).clip(RoundedCornerShape(7.dp)).background(Brush.horizontalGradient(listOf(barColor.copy(alpha = 0.7f), barColor))))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(AppPalette.cardBorder)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    barColor.copy(alpha = 0.7f),
+                                    barColor
+                                )
+                            )
+                        )
+                )
                 listOf(0.25f, 0.5f, 0.75f).forEach { milestone ->
                     val isPassed = progress >= milestone
-                    Box(modifier = Modifier.fillMaxWidth(milestone).height(14.dp), contentAlignment = Alignment.CenterEnd) {
-                        Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(if (isPassed) Color.White else AppPalette.cardBorder))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(milestone)
+                            .height(14.dp), contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(if (isPassed) Color.White else AppPalette.cardBorder)
+                        )
                     }
                 }
             }

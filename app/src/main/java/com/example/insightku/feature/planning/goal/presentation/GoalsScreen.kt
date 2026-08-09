@@ -1,36 +1,75 @@
 package com.example.insightku.feature.planning.goal.presentation
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Archive
+import androidx.compose.material.icons.outlined.CheckCircleOutline
+import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.PauseCircleOutline
+import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.Savings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.insightku.core.ui.components.dialogs.PremiumDialog
-import com.example.insightku.core.ui.components.dialogs.PremiumDialogType
-import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.dialogs.PremiumDialog
+import com.example.insightku.core.ui.components.dialogs.PremiumDialogType
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -49,10 +88,18 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel(), onNavigateToGoalDet
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(AppPalette.background)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppPalette.background)
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (uiState.isLoading) {
-                Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f), contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator(color = LocalAccent.current, modifier = Modifier.size(28.dp), strokeWidth = 2.dp)
                 }
             } else {
@@ -156,7 +203,18 @@ private fun GoalsContent(uiState: GoalsUiState, onEvent: (GoalsEvent) -> Unit, m
         // ── Auto-allocation rules ─────────────────────────────────────────
         if (uiState.autoAllocationRules.isNotEmpty()) {
             item { Spacer(modifier = Modifier.height(8.dp)); Text(text = stringResource(R.string.auto_allocation_rules), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary) }
-            item { AutoAllocationRulesSection(rules = uiState.autoAllocationRules, onToggle = { ruleId, enabled -> onEvent(GoalsEvent.ToggleAutoAllocationRule(ruleId, enabled)) }, onEdit = { rule -> onEvent(GoalsEvent.ShowEditAutoAllocationRuleDialog(rule)) }, onDelete = { ruleId -> onEvent(GoalsEvent.DeleteAutoAllocationRule(ruleId)) }) }
+            item {
+                AutoAllocationRulesSection(
+                    rules = uiState.autoAllocationRules,
+                    onToggle = { ruleId, enabled ->
+                        onEvent(
+                            GoalsEvent.ToggleAutoAllocationRule(
+                                ruleId,
+                                enabled
+                            )
+                        )
+                    })
+            }
         }
 
         item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -224,7 +282,12 @@ private fun GoalFilterTabs(
             ) {
                 Icon(Icons.Outlined.Archive, null, tint = AppPalette.textMuted, modifier = Modifier.size(16.dp))
                 if (archivedCount > 0) {
-                    Text(stringResource(R.string.goals_archived_count, archivedCount), style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted, fontWeight = FontWeight.Medium)
+                    Text(
+                        pluralStringResource(R.plurals.goals_archived_count, archivedCount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AppPalette.textMuted,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
@@ -278,7 +341,9 @@ private fun GoalFilterChip(label: String, count: Int, isSelected: Boolean, onCli
 @Composable
 private fun EmptyTabState(tab: GoalFilterTab, onCreateGoal: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val icon = when (tab) {
@@ -286,7 +351,12 @@ private fun EmptyTabState(tab: GoalFilterTab, onCreateGoal: () -> Unit) {
             GoalFilterTab.ACTIVE -> Icons.Outlined.Flag
             GoalFilterTab.COMPLETED -> Icons.Outlined.CheckCircleOutline
         }
-        Box(modifier = Modifier.size(72.dp).clip(CircleShape).background(AppPalette.cardElevated), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(AppPalette.cardElevated), contentAlignment = Alignment.Center
+        ) {
             Icon(imageVector = icon, contentDescription = null, tint = AppPalette.textMuted, modifier = Modifier.size(36.dp))
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -314,7 +384,9 @@ private fun EmptyTabState(tab: GoalFilterTab, onCreateGoal: () -> Unit) {
         Spacer(modifier = Modifier.height(20.dp))
         Button(
             onClick = onCreateGoal,
-            modifier = Modifier.fillMaxWidth(0.8f).height(52.dp),
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .height(52.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = LocalAccent.current)
         ) {
@@ -329,8 +401,18 @@ private fun EmptyTabState(tab: GoalFilterTab, onCreateGoal: () -> Unit) {
 
 @Composable
 private fun EmptyGoalsState(onCreateGoal: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(modifier = Modifier.size(88.dp).clip(CircleShape).background(LocalAccent.current.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(88.dp)
+                .clip(CircleShape)
+                .background(LocalAccent.current.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
             Icon(imageVector = Icons.Outlined.Savings, contentDescription = null, tint = LocalAccent.current, modifier = Modifier.size(44.dp))
         }
         Spacer(modifier = Modifier.height(20.dp))
@@ -340,7 +422,9 @@ private fun EmptyGoalsState(onCreateGoal: () -> Unit) {
         Spacer(modifier = Modifier.height(28.dp))
         Button(
             onClick = onCreateGoal,
-            modifier = Modifier.fillMaxWidth(0.8f).height(52.dp),
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .height(52.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = LocalAccent.current)
         ) {
@@ -354,11 +438,18 @@ private fun EmptyGoalsState(onCreateGoal: () -> Unit) {
 // ─── Auto-Allocation Rules ────────────────────────────────────────────────────
 
 @Composable
-private fun AutoAllocationRulesSection(rules: List<AutoAllocationRule>, onToggle: (String, Boolean) -> Unit, onEdit: (AutoAllocationRule) -> Unit, onDelete: (String) -> Unit) {
+private fun AutoAllocationRulesSection(
+    rules: List<AutoAllocationRule>,
+    onToggle: (String, Boolean) -> Unit
+) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = AppPalette.card), border = BorderStroke(1.dp, AppPalette.cardBorder)) {
         Column {
             rules.forEachIndexed { index, rule ->
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp), verticalAlignment = Alignment.CenterVertically
+                ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = rule.goalName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                         Text(text = rule.description, style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
@@ -380,7 +471,25 @@ private fun DialogHost(dialogState: GoalsDialogState, onEvent: (GoalsEvent) -> U
     when (dialogState) {
         is GoalsDialogState.None -> {}
         is GoalsDialogState.AddGoal -> { AddGoalDialog(initialDeadline = dialogState.deadline, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onCreateGoal = { name, amount, deadline, icon, color, notes, reminder -> onEvent(GoalsEvent.CreateGoal(name, amount, deadline, icon, color, notes, reminder)) }) }
-        is GoalsDialogState.EditGoal -> { EditGoalDialog(goal = dialogState.goal, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onSave = { name, amount, deadline, icon, color, notes, reminder -> onEvent(GoalsEvent.UpdateGoal(dialogState.goal.id, name, amount, deadline, icon, color, notes, reminder)) }, onArchive = { onEvent(GoalsEvent.ShowArchiveGoalDialog(dialogState.goal.id)) }, onPause = { onEvent(GoalsEvent.PauseGoal(dialogState.goal.id)) }, onResume = { onEvent(GoalsEvent.ResumeGoal(dialogState.goal.id)) }) }
+        is GoalsDialogState.EditGoal -> {
+            EditGoalDialog(
+                goal = dialogState.goal,
+                onDismiss = { onEvent(GoalsEvent.DismissDialog) },
+                onSave = { name, amount, deadline, icon, color, notes, reminder ->
+                    onEvent(
+                        GoalsEvent.UpdateGoal(
+                            dialogState.goal.id,
+                            name,
+                            amount,
+                            deadline,
+                            icon,
+                            color,
+                            notes,
+                            reminder
+                        )
+                    )
+                })
+        }
         is GoalsDialogState.ArchiveGoal -> {
             PremiumDialog(type = PremiumDialogType.ARCHIVE, customIcon = Icons.Outlined.Archive, title = stringResource(R.string.goals_archive),
                 message = stringResource(R.string.archive_goal_desc, dialogState.goalName),
@@ -388,10 +497,32 @@ private fun DialogHost(dialogState: GoalsDialogState, onEvent: (GoalsEvent) -> U
                 dismissText = stringResource(R.string.cancel), onConfirm = { onEvent(GoalsEvent.ArchiveGoal(dialogState.goalId)) }, onDismiss = { onEvent(GoalsEvent.DismissDialog) })
         }
         is GoalsDialogState.Contribute -> { val goal = uiState.goals.find { it.id == dialogState.goalId }; if (goal != null) { ContributionBottomSheet(goal = goal, accounts = uiState.accounts, accountAllocations = uiState.accountAllocations, initialAccountId = dialogState.selectedAccountId, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onContribute = { accountId, amount -> onEvent(GoalsEvent.Contribute(dialogState.goalId, accountId, amount)) }) } }
-        is GoalsDialogState.Withdraw -> { val goal = uiState.goals.find { it.id == dialogState.goalId }; if (goal != null) { WithdrawalBottomSheet(goal = goal, accounts = uiState.accounts, accountAllocations = uiState.accountAllocations, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onWithdraw = { accountId: String, amount: Double -> onEvent(GoalsEvent.Withdraw(dialogState.goalId, accountId, amount)) }) } }
+        is GoalsDialogState.Withdraw -> {
+            val goal = uiState.goals.find { it.id == dialogState.goalId }; if (goal != null) {
+                WithdrawalBottomSheet(
+                    goal = goal,
+                    accounts = uiState.accounts,
+                    onDismiss = { onEvent(GoalsEvent.DismissDialog) },
+                    onWithdraw = { accountId: String, amount: Double ->
+                        onEvent(
+                            GoalsEvent.Withdraw(
+                                dialogState.goalId,
+                                accountId,
+                                amount
+                            )
+                        )
+                    })
+            }
+        }
         is GoalsDialogState.SetDailyTarget -> { SetDailyTargetDialog(currentAmount = dialogState.amount, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onSet = { amount -> onEvent(GoalsEvent.SetDailyTarget(amount)) }, onClear = { onEvent(GoalsEvent.ClearDailyTarget) }) }
         is GoalsDialogState.AddAutoAllocationRule, is GoalsDialogState.EditAutoAllocationRule -> { val rule = (dialogState as? GoalsDialogState.EditAutoAllocationRule)?.rule; val goalId = rule?.goalId ?: (dialogState as? GoalsDialogState.AddAutoAllocationRule)?.goalId; val goal = goalId?.let { id -> uiState.goals.find { it.id == id } }; AutoAllocationDialog(rule = rule, goal = goal, accounts = uiState.accounts, expenseCategories = uiState.expenseCategories, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onSave = { newRule -> if (rule != null) { onEvent(GoalsEvent.UpdateAutoAllocationRule(newRule)) } else { onEvent(GoalsEvent.AddAutoAllocationRule(newRule)) } }, onDelete = if (rule != null) { ruleId -> onEvent(GoalsEvent.DeleteAutoAllocationRule(ruleId)) } else null, onNavigateToAccounts = null) }
-        is GoalsDialogState.GoalDetail -> { val goal = uiState.goals.find { it.id == dialogState.goalId }; if (goal != null) { GoalDetailScreen(goal = goal, dailyTarget = uiState.dailyTarget, contributions = uiState.selectedGoalContributions, onBack = { onEvent(GoalsEvent.DismissDialog) }, onEdit = { onEvent(GoalsEvent.ShowEditGoalDialog(goal.id)) }, onSetDailyTarget = { onEvent(GoalsEvent.ShowSetDailyTargetDialog) }, onSave = { onEvent(GoalsEvent.ShowContributeDialog(goal.id)) }, onWithdraw = { onEvent(GoalsEvent.ShowWithdrawDialog(goal.id)) }) } }
+        is GoalsDialogState.GoalDetail -> {
+            val goalId = dialogState.goalId; GoalDetailScreen(
+                goalId = goalId,
+                onBack = { onEvent(GoalsEvent.DismissDialog) },
+                onNavigateToAccounts = { onEvent(GoalsEvent.DismissDialog) },
+                onGoalArchived = { onEvent(GoalsEvent.DismissDialog) })
+        }
         is GoalsDialogState.LinkAccount, is GoalsDialogState.SelectAccount -> {}
         is GoalsDialogState.DeleteGoalConfirm -> {
             PremiumDialog(type = PremiumDialogType.DELETE, customIcon = Icons.Outlined.DeleteForever, title = stringResource(R.string.goal_delete_title),
@@ -455,7 +586,11 @@ private fun SetDailyTargetDialog(currentAmount: String, onDismiss: () -> Unit, o
 }
 
 @Composable
-private fun EditGoalDialog(goal: Goal, onDismiss: () -> Unit, onSave: (name: String, amount: Double, deadline: java.time.LocalDate, icon: String, color: String, notes: String, reminderEnabled: Boolean) -> Unit, onArchive: () -> Unit, onPause: () -> Unit, onResume: () -> Unit) {
+private fun EditGoalDialog(
+    goal: Goal,
+    onDismiss: () -> Unit,
+    onSave: (name: String, amount: Double, deadline: java.time.LocalDate, icon: String, color: String, notes: String, reminderEnabled: Boolean) -> Unit
+) {
     AddGoalDialog(
         initialDeadline = goal.deadline,
         initialName = goal.name,

@@ -7,7 +7,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -19,10 +30,27 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Receipt
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,8 +68,6 @@ import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
-import com.example.insightku.feature.home.presentation.TransactionCategoryIcon
-import com.example.insightku.feature.home.presentation.resolveCategoryIcon
 import com.example.insightku.core.utils.TimeUtils
 import kotlin.math.abs
 
@@ -245,11 +271,11 @@ private fun PremiumTxHeader(
 private fun TxSummaryCard(
     label: String,
     amount: Double?,
-    count: Int? = null,
     color: Color,
     bg: Color,
     icon: ImageVector,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    count: Int? = null
 ) {
     Surface(
         modifier  = modifier,
@@ -348,17 +374,16 @@ private fun PremiumFilterRow(
     filterType: FilterType,
     onFilterTypeChanged: (FilterType) -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
     val filters = listOf(
-        FilterType.ALL         to context.getString(R.string.tx_filter_all),
-        FilterType.INCOME      to context.getString(R.string.tx_filter_income),
-        FilterType.EXPENSE     to context.getString(R.string.tx_filter_expense),
-        FilterType.TRANSFER    to context.getString(R.string.tx_filter_transfer),
-        FilterType.GOAL        to context.getString(R.string.tx_filter_goals),
-        FilterType.AUTO_ALLOC  to context.getString(R.string.tx_filter_auto),
-        FilterType.TODAY       to context.getString(R.string.tx_filter_today),
-        FilterType.WEEK        to context.getString(R.string.tx_filter_this_week),
-        FilterType.MONTH       to context.getString(R.string.tx_filter_this_month)
+        FilterType.ALL to stringResource(R.string.tx_filter_all),
+        FilterType.INCOME to stringResource(R.string.tx_filter_income),
+        FilterType.EXPENSE to stringResource(R.string.tx_filter_expense),
+        FilterType.TRANSFER to stringResource(R.string.tx_filter_transfer),
+        FilterType.GOAL to stringResource(R.string.tx_filter_goals),
+        FilterType.AUTO_ALLOC to stringResource(R.string.tx_filter_auto),
+        FilterType.TODAY to stringResource(R.string.tx_filter_today),
+        FilterType.WEEK to stringResource(R.string.tx_filter_this_week),
+        FilterType.MONTH to stringResource(R.string.tx_filter_this_month)
     )
 
     val accent = TxAccent
@@ -522,9 +547,9 @@ fun TxGroupHeader(label: String, count: Int, modifier: Modifier = Modifier) {
 fun PremiumTransactionCard(
     transaction: Transaction,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     categoryMap: Map<String, Category> = emptyMap(),
-    accountMap: Map<String, Account> = emptyMap(),
-    modifier: Modifier = Modifier
+    accountMap: Map<String, Account> = emptyMap()
 ) {
     // Resolve category color for badge (icon is handled by shared TransactionCategoryIcon)
     val resolved = resolveCategoryIcon(transaction.category, transaction.type, categoryMap)
@@ -700,10 +725,4 @@ private fun PremiumEmptyState(modifier: Modifier = Modifier) {
             lineHeight = 20.sp
         )
     }
-}
-
-// Keep old TransactionListItem for backward compat (used in previews)
-@Composable
-fun TransactionListItem(transaction: Transaction, onClick: () -> Unit) {
-    PremiumTransactionCard(transaction = transaction, onClick = onClick)
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+    UnusedTranslation: false positive — folder values-in (Indonesian, legacy
+    locale tag required by Android runtime; see LocaleFolderDetector) is
+    compared against localeConfig which declares BCP-47 "id". Both are
+    correct: Java/Android rewrites "id"->"in" at runtime, so the folder is
+    loaded, while localeConfig must use BCP-47 "id". Lint cannot see that
+    they are the same language.
+-->
+<lint>
+    <issue id="UnusedTranslation" severity="ignore" />
+</lint>

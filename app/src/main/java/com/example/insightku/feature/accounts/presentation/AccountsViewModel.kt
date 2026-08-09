@@ -4,9 +4,6 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
-import com.example.insightku.core.data.model.Account
-import com.example.insightku.core.data.model.AccountType
-import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.data.repository.AccountAllocationRepository
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.feature.auth.data.AuthRepository
@@ -18,7 +15,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
@@ -77,27 +73,6 @@ class AccountsViewModel @Inject constructor(
                 .collect { state ->
                     _uiState.value = state
                 }
-        }
-    }
-
-    /**
-     * Load transactions for a specific account (All Transactions filtered by accountId).
-     * This powers the Account Detail screen — no separate history table needed.
-     */
-    fun loadAccountTransactions(accountId: String) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(selectedAccountId = accountId)
-            try {
-                accountRepository.getTransactionsByAccountIdFlow(accountId).collect { transactions ->
-                    _uiState.value = _uiState.value.copy(accountTransactions = transactions)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    error = e.message ?: context.getString(R.string.error_load_account_transactions)
-                )
-            }
         }
     }
 

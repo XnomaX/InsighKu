@@ -13,17 +13,25 @@ This is the solo-developer execution plan derived from `docs/PRD.md` and `DESIGN
 
 ## Phase 0 — Baseline and Data Safety
 
-### P0.1 Replace destructive Room migration
+### P0.1 Replace destructive Room migration — **DONE (verified compile)**
 
-- Remove `fallbackToDestructiveMigration(true)`.
-- Define migrations for current schema versions in `InsightKuDatabase`.
-- Test upgrade using a database populated with transactions, drafts, accounts, budgets, and goals.
+- Since the app was never deployed, the Room database was **reset to version 1**: all `Migration_*`
+  files and inline `MIGRATION_*` definitions were deleted, `InsightKuDatabase` now declares
+  `version = 1`, and `DatabaseModule.kt` uses a plain `Room.databaseBuilder(...).build()` (no
+  `addMigrations`, no `fallbackToDestructiveMigration`).
+- Room schema baseline exported to `app/schemas/.../1.json` (`exportSchema = true` +
+  `room.schemaLocation`).
+- Legacy Firestore category-field migration (`migrateCategoryFieldNames`) and legacy
+  contribution-timestamp repair (`fixLegacyContributionTimestamps`, `EPOCH_CUTOFF_MS`) removed — no
+  production users exist, so Firestore data is recreated from scratch.
+- `[OPEN]` per TEST_PLAN: add Room `MigrationTestHelper` upgrade test *from the v1 baseline* before
+  any future schema change / participant gate.
 
 Acceptance criteria:
 
-- Existing local data survives supported upgrades.
-- Automated migration test passes.
-- No destructive fallback remains in production database configuration.
+- ~~No destructive fallback remains~~ — DONE.
+- ~~Existing local data survives upgrades~~ — N/A; no users, schema starts at v1.
+- Automated migration test passes — tracked for future schema changes (no test source set present).
 
 ### P0.2 Establish baseline QA
 
@@ -33,8 +41,39 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-- Baseline behavior is documented.
+- Baseline behavior is described.
 - P1 blockers are known before new feature work begins.
+
+### P0.3 Baseline bug-fix pass — **DONE (compile-verified)**, session 2026-08-07
+
+Closed the tracked P0/P2/P3 defects and several untracked ones. All changes compile (
+`:app:compileDebugKotlin` green):
+
+- BUG-03 destructive fallback removed (above).
+- BUG-04 dashboard `"??"` error placeholder → calm glyph + copy + retry.
+- BUG-07 streak no longer shows 0 before today is logged; real `currentStreak` always shown (
+  `DashboardStreak`/`DashboardTopBar`).
+- BUG-08 failed AUTO allocation now fires `showAllocationSkippedNotification` instead of being
+  swallowed (`AddTransactionUseCase`).
+- BUG-09 misleading "AI Forecast" / "AI-powered analysis" copy retitled "Spending Forecast" / "Based
+  on your recent activity" (`values` + `values-in`).
+- BUG-10 permission onboarding verified: trust-first 5-step flow + toggle routes to
+  Notification-Listener settings; no code change needed.
+- Settings: smart-capture/category-learning/habit-goal now persist to DataStore and reload;
+  budget-alerts maps to notification toggle; Set-Memory "forget" now persists + refreshes learned
+  list; `learnedMemories` list actually populated.
+- Dismissing a bank notification now also purges the related draft row (`DraftTransactionManager`
+  passes `draftId`; `DismissNotificationReceiver` is now Hilt `@AndroidEntryPoint` + `goAsync()`).
+- Hardcoded English validation strings in Login/Add-Account/Edit-Account/Dashboard ViewModels →
+  localized resources (`values` + `values-in`).
+- `AllocationItemCard` no longer hardcodes `"IDR"`; uses `LocalCurrencyCode.current`.
+- `AutoTransactionWorker` backfill capped (`MAX_BACKFILL_PER_PAYMENT = 12`) to stop ledger floods
+  after long offline gaps.
+- Build-infra fixes that blocked compilation: removed duplicate `splashscreen` version line in
+  `gradle/libs.versions.toml`; converted `gradlew` shebang/script from CRLF to LF.
+
+Remaining OPEN tracked defects: BUG-01 (OCR mock), BUG-02 (forecast data/LSTM), BUG-05 (NLS
+battery), BUG-06 (parser samples). See `KNOWN_ISSUES.md`.
 
 ## Phase 1 — Design-System Foundation
 
