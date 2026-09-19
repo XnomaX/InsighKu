@@ -1,0 +1,8 @@
+# InsighKu receipt-scan Flask server.
+# NOTE: torch is NOT listed here — install it separately:
+#   - HF Spaces / Docker: the Dockerfile installs the CPU wheel.
+#   - local/VPS: see https://pytorch.org/get-started/locally/
+flask>=3.0
+transformers
+pillow>=10.0
+gunicorn>=21.2

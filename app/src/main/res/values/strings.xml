@@ -1072,6 +1072,7 @@
 
     <!-- Receipt Scanner Dialog -->
     <string name="scanner_title">Scan Receipt</string>
+    <string name="scanner_title_income">Scan Income Document</string>
     <string name="scanner_subtitle">Use our AI to automatically extract details.</string>
     <string name="scanner_scanning">Scanning…</string>
     <string name="scanner_processing">Processing…</string>
@@ -1093,6 +1094,8 @@
     <string name="scanner_cat_food">Food</string>
     <string name="scanner_cat_transport">Transport</string>
     <string name="scanner_cat_shopping">Shopping</string>
+    <string name="scanner_error_offline">No internet connection. Receipt scan needs an online connection.</string>
+    <string name="scanner_error_generic">Could not scan the receipt. Please try again.</string>
 
     <!-- Premium Date Picker -->
     <string name="date_picker_title">Select Date</string>

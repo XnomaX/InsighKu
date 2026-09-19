@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Receipt-scan server secrets & artifacts — never commit.
+# .api_key holds the shared X-API-Key; the model snapshot is large and
+# fetched from the private HF repo at runtime.
+.api_key
+model/
+*.safetensors

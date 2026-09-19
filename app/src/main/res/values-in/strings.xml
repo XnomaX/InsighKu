@@ -1014,6 +1014,7 @@
 
     <!-- Receipt Scanner Dialog -->
     <string name="scanner_title">Pindai Struk</string>
+    <string name="scanner_title_income">Pindai Dokumen Pemasukan</string>
     <string name="scanner_subtitle">Gunakan AI kami untuk mengekstrak detail secara otomatis.</string>
     <string name="scanner_scanning">Memindai…</string>
     <string name="scanner_processing">Memproses…</string>
@@ -1035,6 +1036,8 @@
     <string name="scanner_cat_food">Makanan</string>
     <string name="scanner_cat_transport">Transportasi</string>
     <string name="scanner_cat_shopping">Belanja</string>
+    <string name="scanner_error_offline">Tidak ada koneksi internet. Pemindai struk memerlukan koneksi online.</string>
+    <string name="scanner_error_generic">Gagal memindai struk. Silakan coba lagi.</string>
 
     <!-- Premium Date Picker -->
     <string name="date_picker_title">Pilih Tanggal</string>

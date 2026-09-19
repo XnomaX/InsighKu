@@ -79,15 +79,21 @@ import com.example.insightku.BuildConfig
 import com.example.insightku.R
 import com.example.insightku.core.data.model.DraftTransaction
 import com.example.insightku.core.data.model.DraftType
+import com.example.insightku.core.data.model.Account
+import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.navigation.Route
 import com.example.insightku.core.notification.NotificationTransactionData
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
+import com.example.insightku.core.utils.toAmountOrZero
 import com.example.insightku.feature.accounts.presentation.AccountsScreen
 import com.example.insightku.feature.accounts.presentation.AccountsViewModel
 import com.example.insightku.feature.analytics.presentation.AnalyticsScreen
 import com.example.insightku.feature.home.presentation.AddTransactionDialog
+import com.example.insightku.feature.home.presentation.ReceiptScannerDialog
+import com.example.insightku.feature.home.presentation.ReceiptScannerViewModel
+import com.example.insightku.feature.home.presentation.TransactionFormData
 import com.example.insightku.feature.home.presentation.AddTransactionViewModel
 import com.example.insightku.feature.home.presentation.DashboardEvent
 import com.example.insightku.feature.home.presentation.DashboardScreen
@@ -186,11 +192,17 @@ fun MainScreen(
     val accountsViewModel: AccountsViewModel = hiltViewModel()
     val accountsUiState by accountsViewModel.uiState.collectAsStateWithLifecycle()
     val accounts = accountsUiState.accounts
+    val scannerViewModel: ReceiptScannerViewModel = hiltViewModel()
+    val scannerUiState by scannerViewModel.uiState.collectAsStateWithLifecycle()
     var showAddTransactionDialog   by remember { mutableStateOf(false) }
     var pendingStreakPopup          by remember { mutableStateOf(false) }
     var pendingBudgetingAction      by remember { mutableStateOf<BudgetingAction?>(null) }
     // Prefill source for AddTransaction: either the launch deep link, or a tapped draft.
     var activeDraftData            by remember { mutableStateOf<NotificationTransactionData?>(null) }
+
+    // Receipt scanner (online-only Donut/Flask). Receipts are expenses.
+    var showScanner                by remember { mutableStateOf(false) }
+    var scannerIsIncome           by remember { mutableStateOf(false) }
 
     // Allocation draft review sheet state
     var showAllocationReviewSheet  by remember { mutableStateOf(false) }
@@ -221,6 +233,7 @@ fun MainScreen(
     val anyDialogOpen by remember {
         derivedStateOf {
             showAddTransactionDialog ||
+            showScanner ||
             budgetingUiState.dialogState !is DialogState.None
         }
     }
@@ -417,7 +430,12 @@ fun MainScreen(
             onTransactionAdded = { transaction ->
                 addTransactionViewModel.addTransaction(transaction, activeDraftData?.draftId)
             },
-            onOpenScanner      = {},
+            onOpenScanner      = {
+                // Receipts are expenses; reset any prior scan state and open the scanner.
+                scannerIsIncome = false
+                scannerViewModel.reset()
+                showScanner = true
+            },
             expenseCategories  = expenseCategories,
             incomeCategories   = incomeCategories,
             accounts          = accounts,
@@ -430,6 +448,38 @@ fun MainScreen(
                 }
                 showAddTransactionDialog = false
             }
+        )
+    }
+
+    // Receipt scanner overlay (online-only Donut/Flask). On confirm, map the
+    // scanned form to a Transaction using the default account and route it
+    // through AddTransactionViewModel (same path as manual entry).
+    if (showScanner) {
+        ReceiptScannerDialog(
+            isOpen = showScanner,
+            isIncome = scannerIsIncome,
+            uiState = scannerUiState,
+            accounts = accounts,
+            onDismiss = { showScanner = false },
+            onImageSelected = { uri, fromCamera ->
+                scannerViewModel.scanReceipt(uri, scannerIsIncome, deleteAfterRead = fromCamera)
+            },
+            onConfirm = { form ->
+                showScanner = false
+                addTransactionViewModel.addTransaction(
+                    Transaction(
+                        title = form.merchant,
+                        amount = form.amount.toAmountOrZero(),
+                        category = form.category,
+                        description = form.description,
+                        date = form.dateMillis,
+                        accountId = form.accountId,
+                        type = if (form.isIncome) TransactionType.INCOME else TransactionType.EXPENSE
+                    ),
+                    null
+                )
+            },
+            onRetry = { scannerViewModel.reset() }
         )
     }
 

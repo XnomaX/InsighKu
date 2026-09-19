@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose.compiler)
@@ -11,6 +13,13 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// Local config (gitignored) — e.g. the receipt-scan API base URL.
+val localProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(f.inputStream())
+}
+fun prop(key: String): String = (localProperties.getProperty(key) ?: "").trim()
+
 android {
     namespace = "com.example.insightku"
     compileSdk = 36
@@ -23,6 +32,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Receipt-scan (Donut/Flask) API. Online-only — no offline fallback.
+        // Read from local.properties so the URL is never committed.
+        buildConfigField(
+            "String",
+            "RECEIPT_API_BASE_URL",
+            "\"${prop("receiptApiBaseUrl").trimEnd('/')}\""
+        )
+        buildConfigField("String", "RECEIPT_API_KEY", "\"${prop("receiptApiKey")}\"")
     }
 
     buildTypes {
@@ -115,6 +133,9 @@ dependencies {
 
     // DataStore Preferences
     implementation(libs.datastore.preferences)
+
+    // Networking — receipt-scan API (Donut/Flask, online-only)
+    implementation(libs.okhttp)
 
     // Lottie
     implementation(libs.lottie.compose)
