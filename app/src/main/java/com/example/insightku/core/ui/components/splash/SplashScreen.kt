@@ -19,7 +19,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
-import com.example.insightku.core.ui.theme.Dimens
 
 @Composable
 fun SplashScreen(

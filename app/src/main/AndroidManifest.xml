@@ -32,6 +32,19 @@
         </intent>
     </queries>
 
+    <!-- UnusedTranslation is intentionally suppressed.
+         MEASURED: res/values-in is a symlink to res/values-id and aapt2 emits
+         both configs from that one source — `aapt2 dump configurations` on the
+         built debug APK lists `id` and `in`, and e.g. string/appearance
+         resolves to "Tampilan" in each.
+         INFERENCE (documentation-backed, NOT verified on a device — no emulator
+         or handset was attached during this change): Android 15 stopped
+         converting Indonesian "id" to the obsolete "in" for apps targeting
+         API 35+, which this app does, so shipping both configs is what keeps
+         Indonesian resolving across the API 24-36 range.
+         locales_config declares only "id"; adding "in" was avoided because it
+         is expected to surface a duplicate Indonesian row in the Android 13+
+         per-app language picker — that picker behaviour was not verified. -->
     <application
         android:name=".InsightKuApplication"
         android:allowBackup="true"
@@ -44,6 +57,7 @@
         android:theme="@style/Theme.InsightKu"
         android:hardwareAccelerated="true"
         android:localeConfig="@xml/locales_config"
+        tools:ignore="UnusedTranslation"
         tools:targetApi="33">
         
         <activity

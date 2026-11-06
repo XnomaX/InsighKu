@@ -13,7 +13,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
-import java.util.concurrent.TimeUnit
 
 private const val TAG = "PaymentReminderWorker"
 

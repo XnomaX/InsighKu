@@ -1,7 +1,6 @@
 package com.example.insightku.core.utils
 
 import com.example.insightku.core.i18n.DateFormatter
-import java.util.Locale
 
 object TimeUtils {
 

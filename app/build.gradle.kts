@@ -74,6 +74,41 @@ android {
             it.useJUnitPlatform()
         }
     }
+
+    lint {
+        // LocaleFolder wants res/values-id renamed to values-in, citing the
+        // legacy java.util.Locale rewriting of Indonesian "id" -> "in". That
+        // rewriting does not apply at this target SDK: Android 15 removed the
+        // conversion for apps targeting API 35+, and this app targets 36.
+        //
+        // MEASURED on the built debug APK: res/values-in is a symlink to
+        // res/values-id, `aapt2 dump configurations` lists both `id` and `in`,
+        // and a sampled string resolves identically under each qualifier.
+        //
+        // INFERRED FROM DOCUMENTATION, NOT VERIFIED ON A DEVICE (no emulator or
+        // handset was attached): that carrying both qualifiers is what keeps
+        // Indonesian resolving across API 24-36 — "id" on API 35+ and "in" on
+        // API <= 34, where the runtime is documented to still use the legacy
+        // code. Per-qualifier runtime resolution was not exercised.
+        //
+        // Suppressed rather than acted on: the suggested rename would discard
+        // the modern code that targetSdk 36 requires.
+        disable += "LocaleFolder"
+
+        // The dependency versions below are a deliberately pinned known-good
+        // baseline (see .omp/AGENTS.md "Known-good facts"). These two checks
+        // only report that a newer release exists — GradleDependency for
+        // AndroidX/Google artifacts, NewerVersionAvailable for everything else
+        // (it also queries Maven Central on every run, making lint slow).
+        // Upgrading is a separate, evidence-backed decision, not a lint fix,
+        // so the noise is silenced instead of chased.
+        //
+        // Deliberately NOT disabled: OldTargetApi and AndroidGradlePluginVersion
+        // stay visible because raising compileSdk/targetSdk or the AGP/Gradle
+        // version changes runtime behaviour and needs its own review.
+        disable += "GradleDependency"
+        disable += "NewerVersionAvailable"
+    }
 }
 
 kotlin {

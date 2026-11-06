@@ -55,9 +55,6 @@ internal fun txShowCategory(type: TransactionType): Boolean = TransactionTypePre
 /** Whether this type allows editing. */
 internal fun txAllowsEdit(type: TransactionType): Boolean = TransactionTypePresentation.forType(type).allowsEdit
 
-/** Whether this type allows deletion. */
-internal fun txAllowsDelete(type: TransactionType): Boolean = TransactionTypePresentation.forType(type).allowsDelete
-
 // --- Enums --------------------------------------------------------------------
 enum class FilterType { ALL, INCOME, EXPENSE, TRANSFER, GOAL, AUTO_ALLOC, TODAY, WEEK, MONTH }
 enum class SortType   { NEWEST, OLDEST, HIGHEST, LOWEST, CATEGORY }

@@ -277,7 +277,6 @@
     <string name="transaction_date_label">TANGGAL</string>
     <string name="transaction_notes_label">CATATAN (OPSIONAL)</string>
     <string name="transaction_amount_hint">Jumlah (Rp)</string>
-    <string name="transaction_confirm">Konfirmasi</string>
 
     <!-- Transaction List -->
     <string name="tx_list_title">Semua Transaksi</string>
@@ -357,15 +356,6 @@
     <!-- Recurring -->
     <string name="recurring_add">Tambah Pembayaran Berulang</string>
     <string name="recurring_empty">Belum ada pembayaran berulang.</string>
-    <string name="cat_subscriptions">Langganan</string>
-    <string name="cat_utilities">Utilitas</string>
-    <string name="cat_insurance">Asuransi</string>
-    <string name="cat_rent_mortgage">Sewa/KPR</string>
-    <string name="cat_loan_payments">Cicilan Pinjaman</string>
-    <string name="cat_memberships">Keanggotaan</string>
-    <string name="cat_donations">Donasi</string>
-    <string name="cat_others">Lainnya</string>
-    <string name="recurring_manage_desc">Kelola pembayaran berulang dan langganan Anda.</string>
 
     <!-- Settings - Identity -->
     <string name="settings_identity_greeting">Hai, %1$s</string>
@@ -982,41 +972,12 @@
     <string name="error_total_required">Jumlah total wajib diisi</string>
     <string name="error_monthly_required">Pembayaran bulanan wajib diisi</string>
     <string name="error_months_required">Total bulan wajib diisi</string>
-    <string name="error_paid_exceeds">Bulan dibayar tidak boleh melebihi total</string>
-    <string name="recurring_budgets_title">Pembayaran Berulang</string>
-    <string name="recurring_budgets_add_title">Tambah Pembayaran Berulang</string>
-    <string name="recurring_budgets_edit_title">Edit Pembayaran Berulang</string>
-    <string name="recurring_budgets_next">Selanjutnya: %1$s</string>
-    <string name="recurring_budgets_name_label">Nama Pembayaran</string>
-    <string name="recurring_budgets_amount_label">Jumlah</string>
-    <string name="recurring_budgets_category">Kategori</string>
-    <string name="recurring_budgets_frequency">Frekuensi</string>
-    <string name="recurring_budgets_reminder">Pengingat</string>
-    <string name="recurring_budgets_reminder_start">Tanggal Mulai Pengingat</string>
-    <string name="recurring_budgets_reminder_time">Waktu Pengingat</string>
-    <string name="recurring_budgets_notifications">Notifikasi</string>
-    <string name="recurring_budgets_notifications_desc">Dapatkan pengingat sebelum jatuh tempo</string>
-    <string name="recurring_budgets_no_accounts">Tidak ada akun tersedia. Buat akun terlebih dahulu.</string>
-    <string name="recurring_budgets_delete_msg">Apakah Anda yakin ingin menghapus pembayaran berulang \"%1$s\"? Tindakan ini tidak dapat dibatalkan.</string>
-    <string name="recurring_budgets_overdue">Terlambat</string>
-    <string name="recurring_budgets_today">Hari Ini</string>
-    <string name="recurring_budgets_tomorrow">Besok</string>
-    <plurals name="recurring_budgets_in_days">
-        <item quantity="other">Dalam %1$d hari</item>
-    </plurals>
-    <string name="recurring_reminder_1day">1 hari sebelumnya</string>
-    <string name="recurring_reminder_3days">3 hari sebelumnya</string>
-    <string name="recurring_reminder_7days">7 hari sebelumnya</string>
-    <string name="recurring_reminder_14days">14 hari sebelumnya</string>
-    <string name="recurring_select_category">Pilih Kategori</string>
-    <string name="recurring_select_reminder">Pilih Waktu</string>
-    <string name="recurring_select_date">Pilih Tanggal</string>
+    <string name="error_paid_exceeds">Bulan terbayar tidak boleh melebihi total</string>
 
     <!-- Receipt Scanner Dialog -->
     <string name="scanner_title">Pindai Struk</string>
     <string name="scanner_title_income">Pindai Dokumen Pemasukan</string>
     <string name="scanner_subtitle">Gunakan AI kami untuk mengekstrak detail secara otomatis.</string>
-    <string name="scanner_scanning">Memindai…</string>
     <string name="scanner_processing">Memproses…</string>
     <string name="scanner_scan_receipt">Pindai Struk Anda</string>
     <string name="scanner_scan_income_doc">Pindai Dokumen Pendapatan Anda</string>
@@ -1028,8 +989,6 @@
     <string name="scanner_extracting_income">AI sedang mengekstrak detail pendapatan…</string>
     <string name="scanner_receipt_scanned">Struk dipindai! Tinjau dan tambahkan detail.</string>
     <string name="scanner_income_scanned">Dokumen pendapatan dipindai! Tinjau dan tambahkan detail.</string>
-    <string name="scanner_ai_extracted">AI telah mengekstrak detailnya. Silakan tinjau.</string>
-    <string name="scanner_merchant">Pedagang</string>
     <string name="scanner_cat_salary">Gaji</string>
     <string name="scanner_cat_freelance">Freelance</string>
     <string name="scanner_cat_gift">Hadiah</string>
@@ -1374,7 +1333,6 @@
     <string name="scan_receipt">Pindai Struk</string>
     <string name="add_category">Tambah Kategori</string>
     <string name="edit_category">Edit Kategori</string>
-    <string name="save">Simpan</string>
     <string name="cancel">Batal</string>
     <string name="delete">Hapus</string>
     <string name="edit">Edit</string>

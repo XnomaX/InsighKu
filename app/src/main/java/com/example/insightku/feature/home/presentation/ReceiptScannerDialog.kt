@@ -35,7 +35,6 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.EditCalendar
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.WifiOff
@@ -68,6 +67,14 @@ import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
+
+/**
+ * MediaStore-based capture needs API 29+: `VOLUME_EXTERNAL_PRIMARY` and
+ * `RELATIVE_PATH` are both Q additions, and below Q writing to MediaStore
+ * requires WRITE_EXTERNAL_STORAGE, which this app deliberately does not
+ * request. Below Q the scanner offers the gallery picker only.
+ */
+private val CAMERA_CAPTURE_SUPPORTED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
 
 @Composable
 fun ReceiptScannerDialog(
@@ -102,6 +109,14 @@ fun ReceiptScannerDialog(
     }
 
     fun launchCamera() {
+        // Guard: the API-29 surface below is unreachable because the button is
+        // hidden below Q (CAMERA_CAPTURE_SUPPORTED). Kept as a hard check so the
+        // invariant holds even if another call site is added later.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            onRetry()
+            return
+        }
+
         // Capture straight into MediaStore instead of a FileProvider URI.
         //
         // The FileProvider + cross-app grant approach fails on this device's
@@ -120,14 +135,12 @@ fun ReceiptScannerDialog(
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, "receipt_${System.currentTimeMillis()}.jpg")
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/InsightKu")
-                // Do NOT set IS_PENDING=1 here: a pending row is owned by this
-                // app, so the camera app (different uid) cannot write it without
-                // a per-URI grant — and per-URI grants are broken on this ROM.
-                // Leaving it non-pending lets a camera app with media-write
-                // access update the row. We still delete it after the scan.
-            }
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/InsightKu")
+            // Do NOT set IS_PENDING=1 here: a pending row is owned by this
+            // app, so the camera app (different uid) cannot write it without
+            // a per-URI grant — and per-URI grants are broken on this ROM.
+            // Leaving it non-pending lets a camera app with media-write
+            // access update the row. We still delete it after the scan.
         }
         val uri = resolver.insert(collection, values)
         if (uri == null) {
@@ -171,6 +184,7 @@ fun ReceiptScannerDialog(
                             ScanState.READY -> ReadyToScanContent(
                                 isIncome = isIncome,
                                 onTakePhoto = ::launchCamera,
+                                showTakePhoto = CAMERA_CAPTURE_SUPPORTED,
                                 onGallery = {
                                     pickFromGallery.launch(
                                         androidx.activity.result.PickVisualMediaRequest(
@@ -259,7 +273,11 @@ private fun ScannerHeader(isIncome: Boolean, onClose: () -> Unit) {
 fun ReadyToScanContent(
     isIncome: Boolean,
     onTakePhoto: () -> Unit,
-    onGallery: () -> Unit
+    onGallery: () -> Unit,
+    // MediaStore capture is API 29+ only (see launchCamera). Below that the
+    // button is hidden so users are routed to the gallery picker, which the
+    // AndroidX photo-picker backport supports on every API we target.
+    showTakePhoto: Boolean = true
 ) {
     val accent = if (isIncome) IncomeGreen else LocalAccent.current
     Column(
@@ -288,24 +306,32 @@ fun ReadyToScanContent(
             fontWeight = FontWeight.SemiBold,
             color = AppPalette.textPrimary
         )
-        Text(
-            stringResource(if (isIncome) R.string.scanner_point_camera_income else R.string.scanner_point_camera_receipt),
-            style = MaterialTheme.typography.bodySmall,
-            color = AppPalette.textMuted,
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
+        if (showTakePhoto) {
+            Text(
+                stringResource(if (isIncome) R.string.scanner_point_camera_income else R.string.scanner_point_camera_receipt),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppPalette.textMuted,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+        // Below API 29 the helper line is omitted rather than re-worded: the
+        // camera-specific copy would not apply, and the generic fallback
+        // (scanner_subtitle) is already rendered by ScannerHeader above, which
+        // would show the same sentence twice.
         Spacer(Modifier.height(8.dp))
-        PillButton(
-            text = stringResource(R.string.scanner_take_photo),
-            icon = Icons.Default.CameraAlt,
-            onClick = onTakePhoto,
-            containerColor = accent
-        )
+        if (showTakePhoto) {
+            PillButton(
+                text = stringResource(R.string.scanner_take_photo),
+                icon = Icons.Default.CameraAlt,
+                onClick = onTakePhoto,
+                containerColor = accent
+            )
+        }
         GhostPillButton(
             text = stringResource(R.string.scanner_upload_gallery),
             icon = Icons.Default.Upload,
             onClick = onGallery,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = if (showTakePhoto) 8.dp else 0.dp)
         )
     }
 }

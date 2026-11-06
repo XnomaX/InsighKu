@@ -4,5 +4,11 @@
      backport. Tags are BCP-47 and must match AppLanguage codes ("id", "en"). -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <locale android:name="en" />
+    <!-- Modern BCP-47 code only. The legacy Indonesian code "in" is shipped as
+         a second resource config via the res/values-in -> values-id symlink so
+         that both qualifiers exist in the APK (verified with aapt2). It is
+         deliberately absent here: adding it is expected to render a second
+         "Indonesian" entry in the Android 13+ per-app language picker, though
+         that picker behaviour was not verified on a device. -->
     <locale android:name="id" />
 </locale-config>

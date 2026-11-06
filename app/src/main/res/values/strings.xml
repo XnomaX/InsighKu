@@ -108,7 +108,6 @@
     <string name="back_exit_hint">Press back again to exit</string>
 
     <!-- Common -->
-    <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
@@ -337,7 +336,6 @@
     <string name="transaction_date_label">DATE</string>
     <string name="transaction_notes_label">NOTES (OPTIONAL)</string>
     <string name="transaction_amount_hint">Amount (Rp)</string>
-    <string name="transaction_confirm">Confirm</string>
 
     <!-- Transaction List -->
     <string name="tx_list_title">All Transactions</string>
@@ -418,15 +416,6 @@
     <!-- Recurring -->
     <string name="recurring_add">Add Recurring Payment</string>
     <string name="recurring_empty">No recurring payments yet.</string>
-    <string name="cat_subscriptions">Subscriptions</string>
-    <string name="cat_utilities">Utilities</string>
-    <string name="cat_insurance">Insurance</string>
-    <string name="cat_rent_mortgage">Rent/Mortgage</string>
-    <string name="cat_loan_payments">Loan Payments</string>
-    <string name="cat_memberships">Memberships</string>
-    <string name="cat_donations">Donations</string>
-    <string name="cat_others">Others</string>
-    <string name="recurring_manage_desc">Manage your recurring payments and subscriptions.</string>
 
     <!-- Common -->
     <string name="clear">Clear</string>
@@ -1040,41 +1029,11 @@
     <string name="error_monthly_required">Monthly payment is required</string>
     <string name="error_months_required">Total months is required</string>
     <string name="error_paid_exceeds">Paid months cannot exceed total</string>
-    <string name="recurring_budgets_title">Recurring Payments</string>
-    <string name="recurring_budgets_add_title">Add Recurring Payment</string>
-    <string name="recurring_budgets_edit_title">Edit Recurring Payment</string>
-    <string name="recurring_budgets_next">Next: %1$s</string>
-    <string name="recurring_budgets_name_label">Payment Name</string>
-    <string name="recurring_budgets_amount_label">Amount</string>
-    <string name="recurring_budgets_category">Category</string>
-    <string name="recurring_budgets_frequency">Frequency</string>
-    <string name="recurring_budgets_reminder">Reminder</string>
-    <string name="recurring_budgets_reminder_start">Reminder Start Date</string>
-    <string name="recurring_budgets_reminder_time">Reminder Timing</string>
-    <string name="recurring_budgets_notifications">Notifications</string>
-    <string name="recurring_budgets_notifications_desc">Get reminded before the due date</string>
-    <string name="recurring_budgets_no_accounts">No accounts available. Create an account first.</string>
-    <string name="recurring_budgets_delete_msg">Are you sure you want to delete recurring payment \"%1$s\"? This action cannot be undone.</string>
-    <string name="recurring_budgets_overdue">Overdue</string>
-    <string name="recurring_budgets_today">Today</string>
-    <string name="recurring_budgets_tomorrow">Tomorrow</string>
-    <plurals name="recurring_budgets_in_days">
-        <item quantity="one">In %1$d day</item>
-        <item quantity="other">In %1$d days</item>
-    </plurals>
-    <string name="recurring_reminder_1day">1 day before</string>
-    <string name="recurring_reminder_3days">3 days before</string>
-    <string name="recurring_reminder_7days">7 days before</string>
-    <string name="recurring_reminder_14days">14 days before</string>
-    <string name="recurring_select_category">Select Category</string>
-    <string name="recurring_select_reminder">Select Timing</string>
-    <string name="recurring_select_date">Select Date</string>
 
     <!-- Receipt Scanner Dialog -->
     <string name="scanner_title">Scan Receipt</string>
     <string name="scanner_title_income">Scan Income Document</string>
     <string name="scanner_subtitle">Use our AI to automatically extract details.</string>
-    <string name="scanner_scanning">Scanning…</string>
     <string name="scanner_processing">Processing…</string>
     <string name="scanner_scan_receipt">Scan Your Receipt</string>
     <string name="scanner_scan_income_doc">Scan Your Income Document</string>
@@ -1086,8 +1045,6 @@
     <string name="scanner_extracting_income">AI is extracting income details…</string>
     <string name="scanner_receipt_scanned">Receipt scanned! Review and add details.</string>
     <string name="scanner_income_scanned">Income document scanned! Review and add details.</string>
-    <string name="scanner_ai_extracted">AI extracted the details. Please review.</string>
-    <string name="scanner_merchant">Merchant</string>
     <string name="scanner_cat_salary">Salary</string>
     <string name="scanner_cat_freelance">Freelance</string>
     <string name="scanner_cat_gift">Gift</string>

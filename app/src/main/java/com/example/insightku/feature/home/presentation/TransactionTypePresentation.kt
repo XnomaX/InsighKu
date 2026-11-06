@@ -25,7 +25,6 @@ enum class TransactionTypePresentation(
     @StringRes val labelRes: Int,
     val showAmountPrefix: Boolean = false,
     val allowsEdit: Boolean = false,
-    val allowsDelete: Boolean = false,
     val showCategory: Boolean = false
 ) {
     INCOME(
@@ -34,7 +33,6 @@ enum class TransactionTypePresentation(
         labelRes = R.string.type_income,
         showAmountPrefix = true,
         allowsEdit = true,
-        allowsDelete = true,
         showCategory = true
     ),
     EXPENSE(
@@ -43,7 +41,6 @@ enum class TransactionTypePresentation(
         labelRes = R.string.type_expense,
         showAmountPrefix = true,
         allowsEdit = true,
-        allowsDelete = true,
         showCategory = true
     ),
     TRANSFER_OUT(
@@ -75,8 +72,7 @@ enum class TransactionTypePresentation(
         icon = Icons.Default.Tune,
         color = AppPalette.warning,
         labelRes = R.string.type_balance_adjustment,
-        allowsEdit = true,
-        allowsDelete = true
+        allowsEdit = true
     );
 
     /**

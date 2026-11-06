@@ -2,8 +2,6 @@ package com.example.insightku.core.ui.theme
 
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 
 enum class InsightTone {
     GENTLE, WARM, DIRECT;
