@@ -4,15 +4,17 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
+import com.example.insightku.feature.analytics.domain.AnalyticsInsights
+import com.example.insightku.feature.analytics.domain.AnalyticsPeriodType
 import com.example.insightku.feature.analytics.domain.GetAnalyticsInsightsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
@@ -81,3 +83,20 @@ class AnalyticsViewModel @Inject constructor(
         }
     }
 }
+
+
+// --- Analytics MVI contract (Event.kt, State.kt) -------------------------------
+
+sealed class AnalyticsEvent {
+    data class SelectPeriod(val period: AnalyticsPeriodType) : AnalyticsEvent()
+    object LoadAnalytics : AnalyticsEvent()
+    object RefreshData : AnalyticsEvent()
+    object Retry : AnalyticsEvent()
+}
+
+data class AnalyticsUiState(
+    val isLoading: Boolean = true,
+    val selectedPeriod: AnalyticsPeriodType = AnalyticsPeriodType.WEEKLY,
+    val insights: AnalyticsInsights? = null,
+    val error: String? = null
+)

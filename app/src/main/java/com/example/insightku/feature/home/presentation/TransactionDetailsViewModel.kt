@@ -4,16 +4,18 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
+import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.Transaction
-import com.example.insightku.feature.auth.data.AuthRepository
-import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.data.repository.CategoryRepository
-import com.example.insightku.feature.home.domain.GetTransactionsUseCase
+import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.utils.ErrorBus
+import com.example.insightku.feature.auth.data.AuthRepository
+import com.example.insightku.feature.home.domain.GetTransactionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -97,4 +99,15 @@ class TransactionDetailsViewModel @Inject constructor(
 }
 
 
+// --- TransactionDetails MVI contract (State.kt) ----------------------
 
+/**
+ * UI state for the transaction details (ledger) screen.
+ * Consolidates the previously separate transactions/categories/isLoading flows
+ * into a single state holder, consistent with the other features.
+ */
+data class TransactionDetailsUiState(
+    val transactions: List<Transaction> = emptyList(),
+    val categories: List<Category> = emptyList(),
+    val isLoading: Boolean = true
+)

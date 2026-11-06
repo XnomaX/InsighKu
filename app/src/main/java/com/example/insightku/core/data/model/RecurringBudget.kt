@@ -29,4 +29,12 @@ data class RecurringBudget(
     val reminderDaysBefore: Int = 3
 )
 
+// --- BudgetFrequency (recurring budget cadence) --------------------
 
+enum class BudgetFrequency {
+    WEEKLY,
+    BIWEEKLY,
+    MONTHLY,
+    QUARTERLY,
+    YEARLY
+}

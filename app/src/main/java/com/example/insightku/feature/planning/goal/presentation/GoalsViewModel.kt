@@ -9,16 +9,23 @@ import com.example.insightku.core.data.model.CategoryType
 import com.example.insightku.core.data.repository.AccountAllocationRepository
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.repository.CategoryRepository
+import com.example.insightku.core.domain.model.AccountAllocation
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
+import com.example.insightku.feature.planning.goal.data.model.GoalAccountEntity
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
+import com.example.insightku.feature.planning.goal.domain.model.Contribution
 import com.example.insightku.feature.planning.goal.domain.model.DailyTarget
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import com.example.insightku.feature.planning.goal.domain.model.GoalSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.Instant
+import java.time.LocalDate
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,10 +34,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDate
-import java.util.UUID
-import javax.inject.Inject
 
 private data class CoreGoalsData(
     val goals: List<Goal>,
@@ -479,3 +482,169 @@ class GoalsViewModel @Inject constructor(
     }
 
 }
+
+
+// --- Goals MVI contract (Event.kt, UiState.kt) -----------------------------------
+
+sealed class GoalsEvent {
+    data object LoadGoals : GoalsEvent()
+    data class ShowAddGoalDialog(val prefillDeadline: LocalDate? = null) : GoalsEvent()
+    data class ShowEditGoalDialog(val goalId: String) : GoalsEvent()
+    data class ShowArchiveGoalDialog(val goalId: String) : GoalsEvent()
+    data class ShowContributeDialog(val goalId: String) : GoalsEvent()
+    data class ShowWithdrawDialog(val goalId: String) : GoalsEvent()
+    data class ShowLinkAccountDialog(val goalId: String) : GoalsEvent()
+    data class ShowSelectAccountDialog(val goalId: String, val action: String) : GoalsEvent()
+    data object ShowSetDailyTargetDialog : GoalsEvent()
+    data class ShowAddAutoAllocationRuleDialog(val goalId: String?) : GoalsEvent()
+    data class ShowEditAutoAllocationRuleDialog(val rule: AutoAllocationRule) : GoalsEvent()
+    data class ShowGoalDetail(val goalId: String) : GoalsEvent()
+    data object DismissDialog : GoalsEvent()
+    data object ClearError : GoalsEvent()
+    data object ClearSnackbar : GoalsEvent()
+    data class CreateGoal(
+        val name: String,
+        val targetAmount: Double,
+        val deadline: LocalDate,  // required — goals must have a deadline
+        val iconName: String,
+        val color: String,
+        val notes: String = "",
+        val reminderEnabled: Boolean = false,
+        val linkedAccountIds: List<String> = emptyList()
+    ) : GoalsEvent()
+    data class UpdateGoal(
+        val id: String,
+        val name: String,
+        val targetAmount: Double,
+        val deadline: LocalDate,  // required — goals must have a deadline
+        val iconName: String,
+        val color: String,
+        val notes: String,
+        val reminderEnabled: Boolean
+    ) : GoalsEvent()
+    data class DeleteGoal(val goalId: String) : GoalsEvent()
+    data class UpdateGoalStatus(val goalId: String, val status: GoalStatus) : GoalsEvent()
+    data class ArchiveGoal(val goalId: String) : GoalsEvent()
+    data class PauseGoal(val goalId: String) : GoalsEvent()
+    data class ResumeGoal(val goalId: String) : GoalsEvent()
+    data class Contribute(val goalId: String, val accountId: String, val amount: Double, val notes: String = "") : GoalsEvent()
+    data class Withdraw(val goalId: String, val accountId: String, val amount: Double, val notes: String = "") : GoalsEvent()
+    data class LinkAccount(val goalId: String, val accountId: String, val allocationPercent: Double = 100.0, val isPrimary: Boolean = false) : GoalsEvent()
+    data class UnlinkAccount(val goalId: String, val accountId: String) : GoalsEvent()
+    data class SetPrimaryAccount(val goalId: String, val accountId: String) : GoalsEvent()
+    data class SetDailyTarget(val amount: Double) : GoalsEvent()
+    data object ClearDailyTarget : GoalsEvent()
+    data class AddAutoAllocationRule(val rule: AutoAllocationRule) : GoalsEvent()
+    data class UpdateAutoAllocationRule(val rule: AutoAllocationRule) : GoalsEvent()
+    data class DeleteAutoAllocationRule(val ruleId: String) : GoalsEvent()
+    data class ToggleAutoAllocationRule(val ruleId: String, val enabled: Boolean) : GoalsEvent()
+    data class SetGoalAutoAllocate(val goalId: String, val enabled: Boolean) : GoalsEvent()
+    data class ShowAddBudgetDialog(val categoryType: CategoryType = CategoryType.EXPENSE) : GoalsEvent()
+    data class SelectAccount(val accountId: String) : GoalsEvent()
+
+    // ── Redesigned events ───────────────────────────────────────────────────
+    data class SelectTab(val tab: GoalFilterTab) : GoalsEvent()
+    data object ShowArchivedGoals : GoalsEvent()
+    data object DismissArchivedSheet : GoalsEvent()
+    data class ShowGoalActionsSheet(val goalId: String) : GoalsEvent()
+    data object DismissActionsSheet : GoalsEvent()
+    data class RestoreGoal(val goalId: String) : GoalsEvent()
+    data class DeleteGoalPermanently(val goalId: String) : GoalsEvent()
+    data class ShowDeleteGoalConfirm(val goalId: String) : GoalsEvent()
+    data class ShowRestoreGoalConfirm(val goalId: String) : GoalsEvent()
+    data object DismissCompletionCelebration : GoalsEvent()
+
+    // ── Funds flows (envelope model) ────────────────────────────────────────
+    /** Entry point for completing a goal — checks for allocated funds first. */
+    data class RequestCompleteGoal(val goalId: String) : GoalsEvent()
+    /** Complete keeping funds in their current accounts (envelope release). */
+    data class CompleteGoalKeepFunds(val goalId: String) : GoalsEvent()
+    /** Complete and transfer allocated funds to another account. */
+    data class CompleteGoalTransferFunds(val goalId: String, val targetAccountId: String) : GoalsEvent()
+    /** Delete returning funds to their original accounts (envelope release). */
+    data class DeleteGoalReturnFunds(val goalId: String) : GoalsEvent()
+    /** Delete after transferring allocated funds to another account. */
+    data class DeleteGoalTransferFunds(val goalId: String, val targetAccountId: String) : GoalsEvent()
+}
+
+/**
+ * Filter tabs for the Goals screen.
+ * - [ACTIVE]: Active goals in progress
+ * - [PAUSED]: Paused goals (on hold)
+ */
+enum class GoalFilterTab { ACTIVE, PAUSED, COMPLETED }
+
+data class GoalsUiState(
+    // ── Status-separated goal lists ─────────────────────────────────────────
+    val activeGoals: List<Goal> = emptyList(),
+    val pausedGoals: List<Goal> = emptyList(),
+    val completedGoals: List<Goal> = emptyList(),
+    val archivedGoals: List<Goal> = emptyList(),
+
+    // ── Legacy combined list (kept for dialog lookups) ──────────────────────
+    val goals: List<Goal> = emptyList(),
+
+    val dailyTarget: DailyTarget = DailyTarget.empty(),
+    val autoAllocationRules: List<AutoAllocationRule> = emptyList(),
+    val goalSummary: GoalSummary? = null,
+    val accounts: List<Account> = emptyList(),
+    val accountAllocations: Map<String, AccountAllocation> = emptyMap(),
+    val expenseCategories: List<CategoryInfo> = emptyList(),
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val snackbarMessage: String? = null,
+    val selectedGoal: Goal? = null,
+    val selectedGoalContributions: List<Contribution> = emptyList(),
+    val linkedAccounts: Map<String, List<GoalAccountEntity>> = emptyMap(),
+    val dialogState: GoalsDialogState = GoalsDialogState.None,
+
+    // ── Redesigned state ────────────────────────────────────────────────────
+    val selectedTab: GoalFilterTab = GoalFilterTab.ACTIVE,
+    val showArchivedSheet: Boolean = false,
+    val showActionsSheet: Boolean = false,
+    val actionsGoalId: String? = null,
+    val showCompletionCelebration: Boolean = false,
+    val completionGoalName: String = ""
+) {
+    val hasGoals: Boolean get() = goals.isNotEmpty()
+
+    /** Currently displayed goals based on the selected tab. */
+    val displayedGoals: List<Goal>
+        get() = when (selectedTab) {
+            GoalFilterTab.ACTIVE -> activeGoals
+            GoalFilterTab.PAUSED -> pausedGoals
+            GoalFilterTab.COMPLETED -> completedGoals
+        }
+
+    val activeGoalCount: Int get() = activeGoals.size
+    val pausedGoalCount: Int get() = pausedGoals.size
+    val completedGoalCount: Int get() = completedGoals.size
+    val archivedGoalCount: Int get() = archivedGoals.size
+
+    companion object {
+        fun initial() = GoalsUiState()
+    }
+}
+
+sealed class GoalsDialogState {
+    data object None : GoalsDialogState()
+    data class AddGoal(val deadline: LocalDate? = null) : GoalsDialogState()
+    data class EditGoal(val goal: Goal) : GoalsDialogState()
+    data class ArchiveGoal(val goalId: String, val goalName: String) : GoalsDialogState()
+    data class Contribute(val goalId: String, val selectedAccountId: String?) : GoalsDialogState()
+    data class Withdraw(val goalId: String, val selectedAccountId: String?) : GoalsDialogState()
+    data class SetDailyTarget(val amount: String) : GoalsDialogState()
+    data class AddAutoAllocationRule(val goalId: String?) : GoalsDialogState()
+    data class EditAutoAllocationRule(val rule: AutoAllocationRule) : GoalsDialogState()
+    data class GoalDetail(val goalId: String) : GoalsDialogState()
+    data class LinkAccount(val goalId: String) : GoalsDialogState()
+    data class SelectAccount(val goalId: String, val action: AccountAction) : GoalsDialogState()
+    // ── New dialog states for redesign ──────────────────────────────────────
+    data class DeleteGoalConfirm(val goalId: String, val goalName: String) : GoalsDialogState()
+    data class RestoreGoalConfirm(val goalId: String, val goalName: String) : GoalsDialogState()
+    // ── Funds dialogs (envelope model) ──────────────────────────────────────
+    data class CompleteGoalFunds(val goalId: String, val goalName: String, val goalIcon: String, val goalColor: String, val fundsByAccount: Map<String, Double>) : GoalsDialogState()
+    data class DeleteGoalFunds(val goalId: String, val goalName: String, val goalIcon: String, val goalColor: String, val fundsByAccount: Map<String, Double>) : GoalsDialogState()
+}
+
+enum class AccountAction { CONTRIBUTE, WITHDRAW }

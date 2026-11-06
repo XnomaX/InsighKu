@@ -10,7 +10,9 @@ import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.VisualDensity
 import com.example.insightku.feature.auth.domain.LogoutUseCase
 import com.example.insightku.feature.home.domain.CategoryMemory
+import com.example.insightku.feature.home.domain.MerchantMemory
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +20,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -251,3 +252,80 @@ class SettingsViewModel @Inject constructor(
         }
     }
 }
+
+
+// --- Settings MVI contract (Event.kt, State.kt) --------------------------------
+
+sealed class SettingsEvent {
+    object LoadSettings : SettingsEvent()
+    object ShowLogoutDialog : SettingsEvent()
+    object HideLogoutDialog : SettingsEvent()
+    object ConfirmLogout : SettingsEvent()
+    object ClearError : SettingsEvent()
+
+    data class OnThemeChange(val isDarkMode: Boolean) : SettingsEvent()
+    data class OnComfortModeToggle(val enabled: Boolean) : SettingsEvent()
+    data class OnInsightToneChange(val tone: InsightTone) : SettingsEvent()
+    data class OnAccentChange(val hex: String) : SettingsEvent()
+    data class OnVisualDensityChange(val density: VisualDensity) : SettingsEvent()
+    data class OnHideAmountsToggle(val hidden: Boolean) : SettingsEvent()
+    data class OnHabitGoalChange(val goal: Int) : SettingsEvent()
+    data class OnCurrencyChange(val currencyCode: String) : SettingsEvent()
+    data class OnLanguageChange(val language: AppLanguage) : SettingsEvent()
+    data class OnDefaultInputChange(val mode: InputMode) : SettingsEvent()
+    data class OnPushNotificationsToggle(val enabled: Boolean) : SettingsEvent()
+    data class OnBudgetAlertsToggle(val enabled: Boolean) : SettingsEvent()
+    data class OnWhatsAppToggle(val enabled: Boolean) : SettingsEvent()
+    data class OnBiometricToggle(val enabled: Boolean) : SettingsEvent()
+    data class OnSmartCaptureToggle(val enabled: Boolean) : SettingsEvent()
+    data class OnCategoryLearningToggle(val enabled: Boolean) : SettingsEvent()
+    data class OnForgetMemory(val merchant: String) : SettingsEvent()
+    data class OnBankNotificationToggle(val enabled: Boolean) : SettingsEvent()
+}
+
+enum class InputMode { OCR, MANUAL }
+
+enum class AppLanguage(val code: String) { ID("id"), EN("en") }
+
+data class SettingsUiState(
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val userEmail: String = "",
+    val userName: String = "",
+    val showLogoutDialog: Boolean = false,
+
+    // Appearance
+    val isDarkMode: Boolean = false,
+    val comfortMode: Boolean = false,
+    val insightTone: InsightTone = InsightTone.WARM,
+    val accentColorHex: String = "#7C4DFF",
+    val visualDensity: VisualDensity = VisualDensity.COMFORTABLE,
+    val hideAmounts: Boolean = false,
+
+    // Habit
+    val habitGoal: Int = 7,
+
+    // Currency & Language
+    val currencyCode: String = "IDR",
+    val appLanguage: AppLanguage = AppLanguage.ID,
+
+    // Input
+    val defaultInputMode: InputMode = InputMode.MANUAL,
+
+    // Notifications
+    val pushNotificationsEnabled: Boolean = true,
+    val budgetAlertsEnabled: Boolean = true,
+
+    // Integrations
+    val whatsappEnabled: Boolean = false,
+    val biometricEnabled: Boolean = false,
+
+    // Smart capture
+    val smartCaptureEnabled: Boolean = false,
+    val categoryLearningEnabled: Boolean = true,
+    val learnedMemories: List<MerchantMemory> = emptyList(),
+
+    // Bank notification auto-capture
+    /** Apakah fitur baca notifikasi bank untuk draft transaksi diaktifkan. */
+    val bankNotificationEnabled: Boolean = false
+)

@@ -1,6 +1,7 @@
 package com.example.insightku.feature.planning.budget.presentation
 
 import android.content.Context
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
@@ -23,6 +24,8 @@ import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.feature.planning.budget.domain.DefaultBudgetCategories
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Calendar
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,8 +33,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Calendar
-import javax.inject.Inject
 
 @HiltViewModel
 class BudgetingViewModel @Inject constructor(
@@ -482,4 +483,124 @@ class BudgetingViewModel @Inject constructor(
         }
         return start.timeInMillis..end.timeInMillis
     }
+}
+
+
+// --- Budgeting MVI contract (Action.kt, Event.kt, State.kt) -------------------------------
+
+/**
+ * One-shot actions dispatched from Home/Dashboard to the Budgeting screen.
+ * Consumed by the screen's LaunchedEffect, then cleared.
+ */
+sealed class BudgetingAction {
+    data object OpenCreateGoal : BudgetingAction()
+    data object NavigateToGoals : BudgetingAction()
+    data class OpenCreateBudget(
+        val categoryType: CategoryType = CategoryType.EXPENSE
+    ) : BudgetingAction()
+}
+
+sealed class BudgetingEvent {
+    // General
+    object LoadBudgetData : BudgetingEvent()
+    object RefreshData : BudgetingEvent()
+    object ClearError : BudgetingEvent()
+
+    // Category dialogs
+    data class ShowAddBudgetDialog(val categoryType: CategoryType) : BudgetingEvent()
+    object HideAddBudgetDialog : BudgetingEvent()
+    data class AddCategory(val category: Category) : BudgetingEvent()
+    data class ShowEditBudgetDialog(val category: BudgetCategory) : BudgetingEvent()
+    object HideEditBudgetDialog : BudgetingEvent()
+    data class UpdateCategory(val category: Category) : BudgetingEvent()
+    data class ShowDeleteConfirmDialog(val category: BudgetCategory) : BudgetingEvent()
+    object HideDeleteConfirmDialog : BudgetingEvent()
+    data class ConfirmDeleteCategory(val categoryId: String, val categoryName: String) : BudgetingEvent()
+    data class DeleteCategory(val categoryId: String) : BudgetingEvent()
+
+    // Recurring payment dialogs
+    object ShowAddRecurringDialog : BudgetingEvent()
+    data class ShowEditRecurringDialog(val budget: RecurringBudget) : BudgetingEvent()
+    object HideRecurringDialog : BudgetingEvent()
+    data class AddRecurringBudget(val budget: RecurringBudget) : BudgetingEvent()
+    data class UpdateRecurringBudget(val budget: RecurringBudget) : BudgetingEvent()
+    data class DeleteRecurringBudget(val budget: RecurringBudget) : BudgetingEvent()
+
+    // Installment dialogs
+    object ShowAddInstallmentDialog : BudgetingEvent()
+    data class ShowEditInstallmentDialog(val installment: Installment) : BudgetingEvent()
+    object HideInstallmentDialog : BudgetingEvent()
+    data class AddInstallment(val installment: Installment) : BudgetingEvent()
+    data class UpdateInstallment(val installment: Installment) : BudgetingEvent()
+    data class DeleteInstallment(val installmentId: String) : BudgetingEvent()
+}
+
+@Immutable
+data class BudgetingUiState(
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val totalBudget: Double = 0.0,
+    val totalSpent: Double = 0.0,
+    val budgetCategories: List<BudgetCategory> = emptyList(),
+    val incomeCategories: List<BudgetCategory> = emptyList(),
+    val recurringBudgets: List<RecurringBudget> = emptyList(),
+    val installments: List<Installment> = emptyList(),
+    val dialogState: DialogState = DialogState.None,
+    val hasExpenseCategories: Boolean = false,
+    val hasIncomeCategories: Boolean = false,
+    val rawCategories: List<Category> = emptyList(),
+    val accounts: List<Account> = emptyList()
+) {
+    val remainingBudget: Double get() = totalBudget - limitedSpent
+    val limitedSpent: Double get() = budgetCategories.filter { it.hasLimit }.sumOf { it.spentAmount }
+    val unlimitedSpent: Double get() = budgetCategories.filterNot { it.hasLimit }.sumOf { it.spentAmount }
+    val budgetUtilizationPercentage: Double get() = if (totalBudget > 0) (limitedSpent / totalBudget) * 100 else 0.0
+    val overBudgetCategories: List<BudgetCategory> get() = budgetCategories.filter { it.isOverBudget }
+    val allCategoriesForPicker: List<Category> get() = rawCategories.filter { !it.isSystemCategory }
+}
+
+sealed class DialogState {
+    data object None : DialogState()
+    data class AddBudget(val categoryType: CategoryType) : DialogState()
+    data class EditBudget(val category: BudgetCategory) : DialogState()
+    data class DeleteConfirm(val category: BudgetCategory) : DialogState()
+    data class ManageRecurring(val budgets: List<RecurringBudget>) : DialogState()
+    data object AddRecurringPayment : DialogState()
+    data class EditRecurringPayment(val budget: RecurringBudget) : DialogState()
+    data object AddInstallment : DialogState()
+    data class EditInstallment(val installment: Installment) : DialogState()
+}
+
+enum class BudgetHealth {
+    Unlimited,
+    Good,
+    Warning,
+    Over
+}
+
+@Immutable
+data class BudgetCategory(
+    val id: String,
+    val name: String,
+    val budgetedAmount: Double?,
+    val spentAmount: Double,
+    val color: String,
+    val icon: String,
+    val recurringPeriod: String? = null,
+    val isSystemCategory: Boolean = false,
+    val categoryType: CategoryType = CategoryType.EXPENSE
+) {
+    val hasLimit: Boolean get() = (budgetedAmount ?: 0.0) > 0.0
+    val limitAmount: Double get() = budgetedAmount ?: 0.0
+    val remainingAmount: Double get() = if (hasLimit) limitAmount - spentAmount else 0.0
+    val utilizationPercentage: Double get() = if (hasLimit) (spentAmount / limitAmount) * 100 else 0.0
+    val progressFraction: Float get() = (utilizationPercentage / 100.0).coerceIn(0.0, 1.0).toFloat()
+    val isOverBudget: Boolean get() = hasLimit && spentAmount > limitAmount
+    val health: BudgetHealth
+        get() = when {
+            !hasLimit -> BudgetHealth.Unlimited
+            utilizationPercentage < 70.0 -> BudgetHealth.Good
+            utilizationPercentage <= 100.0 -> BudgetHealth.Warning
+            else -> BudgetHealth.Over
+        }
 }

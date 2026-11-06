@@ -7,6 +7,9 @@ import com.example.insightku.R
 import com.example.insightku.core.data.local.preferences.SessionManager
 import com.example.insightku.core.data.local.preferences.UserPreferencesDataStore
 import com.example.insightku.core.data.model.Category
+import com.example.insightku.core.data.model.DraftTransaction
+import com.example.insightku.core.data.model.Installment
+import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.data.repository.AccountRepository
@@ -28,6 +31,8 @@ import com.example.insightku.feature.planning.goal.data.repository.GoalRepositor
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Calendar
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,8 +41,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Calendar
-import javax.inject.Inject
 
 private const val TAG = "DashboardViewModel"
 
@@ -473,3 +476,120 @@ class DashboardViewModel @Inject constructor(
         }
     }
 }
+
+
+// --- Dashboard MVI contract (Event.kt, State.kt) -------------------------------
+
+sealed class DashboardEvent {
+    object LoadDashboardData : DashboardEvent()
+    object RefreshData : DashboardEvent()
+    object ClearError : DashboardEvent()
+    object ToggleBalanceVisibility : DashboardEvent()
+    object UseStreakRepair : DashboardEvent()
+    data class AddTransaction(val transaction: Transaction) : DashboardEvent()
+    data class ToggleForecastPeriod(val period: String) : DashboardEvent()
+    data class MarkRecurringPaid(val budget: RecurringBudget) : DashboardEvent()
+    data class MarkInstallmentPaid(val installment: Installment) : DashboardEvent()
+    data class SetStreakGoal(val days: Int) : DashboardEvent()
+    // Draft Inbox: dismiss menandai DISMISSED (hilang dari Inbox) untuk jendela undo;
+    // undo mengembalikan PENDING; commitDismiss hard-delete setelah jendela habis.
+    data class DismissDraft(val draftId: String) : DashboardEvent()
+    data class UndoDismissDraft(val draftId: String) : DashboardEvent()
+    data class CommitDismissDraft(val draftId: String) : DashboardEvent()
+
+    // Auto-allocation draft approval/rejection
+    data class ApproveAllocationDraft(val draftId: String) : DashboardEvent()
+    data class RejectAllocationDraft(val draftId: String) : DashboardEvent()
+    object ClearSnackbar : DashboardEvent()
+}
+
+/**
+ * Represents the entire state for the Dashboard screen.
+ */
+data class DashboardUiState(
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val userName: String = "User",
+    val totalBalance: Double = 0.0,
+    val monthlyIncome: Double = 0.0,
+    val monthlyExpenses: Double = 0.0,
+    val isBalanceVisible: Boolean = true,
+    val weeklyForecastData: List<Float> = emptyList(),
+    val monthlyForecastData: List<Float> = emptyList(),
+    val aiInsightMessage: String = "",
+    val recentTransactions: List<TransactionItem> = emptyList(),
+    // ── Streak system ──────────────────────────────────────────────────────────
+    val currentStreak: Int = 0,
+    val bestStreak: Int = 0,
+    val hasTrackedToday: Boolean = false,
+    val freezeCount: Int = 0,
+    val isPerfectStreak: Boolean = false,
+    val streakGoal: Int = 7,
+    val repairAvailable: Boolean = false,
+    val repairExpiryMs: Long = 0L,
+    val repairDayKey: String? = null,
+    val streakMilestone: StreakMilestone? = null,
+    // ──────────────────────────────────────────────────────────────────────────
+    val forecastPeriod: ForecastPeriod = ForecastPeriod.WEEKLY,
+    val recurringBudgets: List<RecurringBudget> = emptyList(),
+    val installments: List<Installment> = emptyList(),
+    val budgetCategorySpending: List<BudgetSpendingItem> = emptyList(),
+    val monthlySavings: Double = 0.0,
+    val insightMessages: List<String> = emptyList(),
+    // Draft Inbox — draft hasil deteksi notifikasi bank yang menunggu ditinjau.
+    val pendingDrafts: List<DraftTransaction> = emptyList(),
+    // ── Goals Preview ────────────────────────────────────────────────────────
+    val previewGoals: List<Goal> = emptyList(),
+    val totalGoalCount: Int = 0,
+    val hasActiveGoals: Boolean = false,
+    // ── Budget Preview ────────────────────────────────────────────────────────
+    val previewBudgets: List<BudgetSpendingItem> = emptyList(),
+    val totalBudgetCount: Int = 0,
+    val hasActiveBudgets: Boolean = false,
+    // ── Account Balances ──────────────────────────────────────────────────────
+    val totalAccountBalance: Double = 0.0,
+    val accountCount: Int = 0,
+    // ── Snackbar ──────────────────────────────────────────────────────────────
+    val snackbarMessage: String? = null
+)
+
+enum class ForecastPeriod {
+    WEEKLY, MONTHLY
+}
+
+enum class StreakMilestone(val days: Int, val label: String) {
+    DAY_3(3, "3-Day Habit"),
+    DAY_7(7, "Week Warrior"),
+    DAY_14(14, "Two Week Strong"),
+    DAY_30(30, "Monthly Master"),
+    DAY_100(100, "Century Legend");
+
+    companion object {
+        fun forStreak(streak: Int): StreakMilestone? =
+            entries.sortedByDescending { it.days }.firstOrNull { streak >= it.days }
+
+        fun next(streak: Int): StreakMilestone? =
+            entries.sortedBy { it.days }.firstOrNull { it.days > streak }
+    }
+}
+
+data class TransactionItem(
+    val id: String,
+    val title: String,
+    val category: String,
+    val amount: Double,
+    val time: String,
+    val isIncome: Boolean = false,
+    val iconName: String,
+    val colorHex: String,
+    val transactionType: TransactionType = TransactionType.EXPENSE
+)
+
+data class BudgetSpendingItem(
+    val id: String = "",
+    val categoryName: String,
+    val iconName: String,
+    val colorHex: String,
+    val spent: Double,
+    val limit: Double?
+)

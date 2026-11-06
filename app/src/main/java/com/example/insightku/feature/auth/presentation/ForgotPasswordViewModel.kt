@@ -5,11 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.ForgotPasswordUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * ForgotPasswordViewModel — refactored.
@@ -64,3 +64,18 @@ class ForgotPasswordViewModel @Inject constructor(
     }
 }
 
+
+// --- ForgotPassword MVI contract (Event.kt, State.kt) --------------------------
+
+sealed class ForgotPasswordEvent {
+    data class EmailChanged(val email: String) : ForgotPasswordEvent()
+    object Submit : ForgotPasswordEvent()
+    object Reset : ForgotPasswordEvent()
+}
+
+data class ForgotPasswordState(
+    val email: String = "",
+    val isLoading: Boolean = false,
+    val isEmailSent: Boolean = false,
+    val error: String? = null
+)

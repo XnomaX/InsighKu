@@ -9,11 +9,11 @@ import com.example.insightku.feature.auth.domain.GoogleSignInUseCase
 import com.example.insightku.feature.auth.domain.LoginUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
@@ -100,3 +100,25 @@ class LoginViewModel @Inject constructor(
     }
 }
 
+
+// --- Login MVI contract (Event.kt, State.kt) -----------------------------------
+
+sealed class LoginEvent {
+    data class EmailChanged(val value: String) : LoginEvent()
+    data class PasswordChanged(val value: String) : LoginEvent()
+    object Submit : LoginEvent()
+    object ClearError : LoginEvent()
+    data class GoogleSignIn(val idToken: String) : LoginEvent()
+}
+
+data class LoginUiState(
+    val email: String = "",
+    val password: String = "",
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val loginSuccess: Boolean = false,
+    val emailError: String? = null,
+    val passwordError: String? = null
+) {
+    val isLoginEnabled: Boolean get() = email.isNotBlank() && password.isNotBlank() && emailError == null && passwordError == null
+}

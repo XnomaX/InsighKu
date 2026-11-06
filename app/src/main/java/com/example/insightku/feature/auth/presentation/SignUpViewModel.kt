@@ -2,16 +2,16 @@ package com.example.insightku.feature.auth.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.SignUpUseCase
 import com.example.insightku.feature.auth.presentation.SignUpEvent
 import com.example.insightku.feature.auth.presentation.SignUpState
-import com.example.insightku.core.utils.ErrorBus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * SignUpViewModel — full refactor dari versi lama.
@@ -159,3 +159,38 @@ class SignUpViewModel @Inject constructor(
     }
 }
 
+
+// --- SignUp MVI contract (Event.kt, State.kt) ----------------------------------
+
+sealed class SignUpEvent {
+    data class NameChanged(val value: String) : SignUpEvent()
+    data class EmailChanged(val value: String) : SignUpEvent()
+    data class PasswordChanged(val value: String) : SignUpEvent()
+    data class ConfirmPasswordChanged(val value: String) : SignUpEvent()
+    object Submit : SignUpEvent()
+    object ClearError : SignUpEvent()
+}
+
+data class SignUpState(
+    val name: String = "",
+    val email: String = "",
+    val password: String = "",
+    val confirmPassword: String = "",
+    val isLoading: Boolean = false,
+    val success: Boolean = false,
+    val error: String? = null,
+    val nameError: String? = null,
+    val emailError: String? = null,
+    val passwordError: String? = null,
+    val confirmPasswordError: String? = null
+) {
+    val isSignUpEnabled: Boolean
+        get() = name.isNotBlank()
+            && email.isNotBlank()
+            && password.isNotBlank()
+            && confirmPassword.isNotBlank()
+            && nameError == null
+            && emailError == null
+            && passwordError == null
+            && confirmPasswordError == null
+}

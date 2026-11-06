@@ -16,3 +16,10 @@ data class User(
     val totalTransactions: Int = 0
 )
 
+// --- UserData (auth session DTO) --------------------
+
+data class UserData(
+    val email: String = "",
+    val name: String = "",
+    val token: String = ""
+)

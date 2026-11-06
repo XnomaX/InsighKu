@@ -2,12 +2,13 @@ package com.example.insightku.core.ui.components.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.core.data.local.preferences.SessionManager
 import com.example.insightku.core.ui.components.splash.SplashEvent
 import com.example.insightku.core.ui.components.splash.SplashState
 import com.example.insightku.core.ui.components.splash.SplashUiEvent
-import com.example.insightku.core.data.local.preferences.SessionManager
 import com.example.insightku.feature.auth.data.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
@@ -93,4 +93,20 @@ class SplashViewModel @Inject constructor(
 }
 
 
+// --- Splash MVI contract (Event.kt, State.kt) ----------------------------------
 
+sealed class SplashEvent {
+    object CheckAuthStatus : SplashEvent()
+    object NavigationComplete : SplashEvent()
+}
+
+sealed class SplashUiEvent {
+    object NavigateToAuth : SplashUiEvent()
+    object NavigateToHome : SplashUiEvent()
+}
+
+data class SplashState(
+    val isLoading: Boolean = true,
+    val isUserLoggedIn: Boolean = false,
+    val isCheckingComplete: Boolean = false
+)

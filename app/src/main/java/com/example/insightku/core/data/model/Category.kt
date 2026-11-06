@@ -29,4 +29,9 @@ data class Category(
     }.getOrDefault(CategoryType.EXPENSE)
 }
 
+// --- CategoryType (transaction category kind) --------------------
 
+enum class CategoryType {
+    EXPENSE,
+    INCOME
+}

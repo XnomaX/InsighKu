@@ -18,6 +18,10 @@ import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRu
 import com.example.insightku.feature.planning.goal.domain.model.Contribution
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Instant
+import java.time.LocalDate
+import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,10 +31,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDate
-import javax.inject.Inject
-import kotlin.time.Duration.Companion.seconds
 
 private const val CONTRIBUTION_PAGE_SIZE = 20
 
@@ -347,3 +347,115 @@ private data class GoalDetailUpdate(
     val contributionSummary: ContributionSummary,
     val timelineEvents: List<GoalTimelineEvent>
 )
+
+
+// --- GoalDetail MVI contract (Event.kt, UiState.kt) ------------------------------
+
+sealed class GoalDetailEvent {
+    data class LoadGoal(val goalId: String) : GoalDetailEvent()
+    data object RefreshGoal : GoalDetailEvent()
+    data object EditGoal : GoalDetailEvent()
+    data class SaveGoalEdit(
+        val name: String,
+        val targetAmount: Double,
+        val deadline: java.time.LocalDate,
+        val iconName: String,
+        val color: String,
+        val notes: String,
+        val reminderEnabled: Boolean
+    ) : GoalDetailEvent()
+    data class UpdateAmount(val amount: String) : GoalDetailEvent()
+    data class UpdateNotes(val notes: String) : GoalDetailEvent()
+    data class SelectAccount(val accountId: String) : GoalDetailEvent()
+    data object ShowContributeDialog : GoalDetailEvent()
+    data object ShowWithdrawDialog : GoalDetailEvent()
+    data object SubmitContribution : GoalDetailEvent()
+    data object SubmitWithdrawal : GoalDetailEvent()
+    data object DismissDialog : GoalDetailEvent()
+    data object ClearSnackbar : GoalDetailEvent()
+    data object ClearError : GoalDetailEvent()
+    data object ShowAutoAllocationDialog : GoalDetailEvent()
+    data class ShowEditAutoAllocationRule(val rule: AutoAllocationRule) : GoalDetailEvent()
+    data class AddAutoAllocationRule(val rule: AutoAllocationRule) : GoalDetailEvent()
+    data class UpdateAutoAllocationRule(val rule: AutoAllocationRule) : GoalDetailEvent()
+    data class DeleteAutoAllocationRule(val ruleId: String) : GoalDetailEvent()
+    data class ToggleAutoAllocationRule(val ruleId: String, val enabled: Boolean) : GoalDetailEvent()
+
+    data object LoadMoreContributions : GoalDetailEvent()
+    data object ArchiveGoal : GoalDetailEvent()
+    data object DeleteGoal : GoalDetailEvent()
+    data object ConfirmArchive : GoalDetailEvent()
+    data object ConfirmDelete : GoalDetailEvent()
+
+    // ── Status Actions ───────────────────────────────────────────────────
+    data object PauseGoal : GoalDetailEvent()
+    data object ResumeGoal : GoalDetailEvent()
+    data object CompleteGoal : GoalDetailEvent()
+
+    // ── Extend Deadline ────────────────────────────────────────────────────
+    data object ShowExtendDeadlineDialog : GoalDetailEvent()
+    data class ConfirmExtendDeadline(val newDeadline: java.time.LocalDate) : GoalDetailEvent()
+
+    // ── Funds flows (envelope model) ────────────────────────────────────────
+    data object CompleteGoalKeepFunds : GoalDetailEvent()
+    data class CompleteGoalTransferFunds(val targetAccountId: String) : GoalDetailEvent()
+    data object DeleteGoalReturnFunds : GoalDetailEvent()
+    data class DeleteGoalTransferFunds(val targetAccountId: String) : GoalDetailEvent()
+}
+
+data class GoalDetailUiState(
+    val isLoading: Boolean = true,
+    val goal: Goal? = null,
+    val contributions: List<Contribution> = emptyList(),
+    val timelineEvents: List<GoalTimelineEvent> = emptyList(),
+    val allocationRules: List<AutoAllocationRule> = emptyList(),
+    val linkedAccounts: List<com.example.insightku.core.data.model.Account> = emptyList(),
+    val accountMap: Map<String, com.example.insightku.core.data.model.Account> = emptyMap(),
+    val accountAllocations: Map<String, com.example.insightku.core.domain.model.AccountAllocation> = emptyMap(),
+    val totalContributions: Int = 0,
+    val latestContribution: Contribution? = null,
+    val averageContribution: Double = 0.0,
+    val lastActivityDate: java.time.Instant? = null,
+    val hasGoal: Boolean = false,
+    val error: String? = null,
+    val snackbarMessage: String? = null,
+    val showContributeDialog: Boolean = false,
+    val showWithdrawDialog: Boolean = false,
+    val showSuccessAnimation: Boolean = false,
+    val successMessage: String = "",
+    val showEditGoalDialog: Boolean = false,
+    val showDeleteConfirmDialog: Boolean = false,
+    val showArchiveConfirmDialog: Boolean = false,
+    val showAutoAllocationDialog: Boolean = false,
+    val editingAutoAllocationRule: AutoAllocationRule? = null,
+    val contributionAmount: String = "",
+    val contributionNotes: String = "",
+    val selectedAccountId: String? = null,
+    val isSubmitting: Boolean = false,
+    val isInsufficientFunds: Boolean = false,
+    val shortfall: Double = 0.0,
+    val hasUnsyncedChanges: Boolean = false,
+    val contributionPage: Int = 0,
+    val isLoadingMore: Boolean = false,
+    val hasMoreContributions: Boolean = false,
+    val showExtendDeadlineDialog: Boolean = false,
+    val expenseCategories: List<CategoryInfo> = emptyList(),
+    // ── Funds dialogs (envelope model): non-null = show dialog ──────────────
+    val completeFunds: Map<String, Double>? = null,
+    val deleteFunds: Map<String, Double>? = null
+) {
+    companion object { fun initial() = GoalDetailUiState() }
+}
+
+data class GoalTimelineEvent(
+    val id: String,
+    val type: TimelineEventType,
+    val title: String,
+    val description: String,
+    val date: java.time.Instant,
+    val amount: Double? = null
+)
+
+enum class TimelineEventType {
+    GOAL_CREATED, FIRST_CONTRIBUTION, MILESTONE_25, MILESTONE_50, MILESTONE_75, MILESTONE_90, GOAL_COMPLETED, WITHDRAWAL
+}
