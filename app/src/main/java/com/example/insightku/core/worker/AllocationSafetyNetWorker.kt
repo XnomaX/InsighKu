@@ -45,6 +45,24 @@ class AllocationSafetyNetWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
+        // LogoutUseCase wipes Room (transactions, categories, recurring budgets,
+        // installments, and drafts so nothing leaks across users) but nothing calls
+        // cancelUniqueWork, so this request — enqueued by AddTransactionUseCase with a
+        // 5-second delay — can still fire during or just after that wipe. The existing
+        // `transaction == null` exit covers the common case, but a stale row read before
+        // the wipe could still produce a goal contribution and an allocation draft against
+        // a database that was just emptied. Checking the session closes that race.
+        //
+        // Unlike the sibling workers this one looks up by transaction id rather than
+        // enumerating by userId, so the guard exists for the race, not for scoping.
+        // Result.success() consumes the "AllocationSafetyNet_$transactionId" unique-work
+        // slot, so the allocation is not retried if the user signs back in — acceptable
+        // because sign-out just discarded the transaction it would have allocated.
+        if (authRepository.getCurrentUserId() == null) {
+            Log.d(TAG, "No authenticated user — skipping safety-net allocation")
+            return Result.success()
+        }
+
         val transactionId = inputData.getString(KEY_TRANSACTION_ID)
         if (transactionId.isNullOrBlank()) {
             Log.d(TAG, "No transactionId provided — skipping")
