@@ -111,6 +111,50 @@ android {
     }
 }
 
+/**
+ * Indonesian resource-qualifier backport.
+ *
+ * Android reports the legacy language code "in" for Indonesian on API <= 34
+ * (`LocaleHelper` documents this), so the APK must ship BOTH the `values-id`
+ * (modern, API 35+) and `values-in` (legacy) qualifiers or Indonesian users
+ * silently fall back to English. `locales_config.xml` deliberately lists only
+ * "id", so the `values-in` folder is the sole carrier of the legacy qualifier.
+ *
+ * It used to be a git symlink (`values-in -> values-id`). A fresh Windows clone
+ * materialises symlinks as a 9-byte text file unless Developer Mode/admin is
+ * enabled, which makes AGP see a *file* named `values-in`, drops the qualifier
+ * with no build error, and breaks Indonesian for whoever clones. Generate a real
+ * copy into the build directory instead: OS-independent, and never duplicated in
+ * source control.
+ */
+abstract class GenerateValuesIn : DefaultTask() {
+    @get:InputDirectory
+    abstract val sourceDir: DirectoryProperty
+
+    /** Res *root* — the parent of the `values-in` qualifier folder this task writes. */
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        val qualifierDir = File(outputDir.get().asFile, "values-in")
+        qualifierDir.deleteRecursively()
+        sourceDir.get().asFile.copyRecursively(qualifierDir, overwrite = true)
+    }
+}
+
+val generateValuesIn = tasks.register<GenerateValuesIn>("generateValuesIn") {
+    sourceDir.set(layout.projectDirectory.dir("src/main/res/values-id"))
+    outputDir.set(layout.buildDirectory.dir("generated/locale-res"))
+}
+
+// Register the res ROOT (not the qualifier folder) through the Variant API — AGP
+// rejects a plain Provider on the legacy SourceSet API. `addGeneratedSourceDirectory`
+// wires this task into resource merging itself, so no extra `dependsOn` is needed.
+androidComponents.onVariants { variant ->
+    variant.sources.res?.addGeneratedSourceDirectory(generateValuesIn) { it.outputDir }
+}
+
 kotlin {
     compilerOptions {
         // KT-73255: Hilt/Dagger @ApplicationContext on constructor props should hit param+field

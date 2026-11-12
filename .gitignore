@@ -46,7 +46,9 @@ Thumbs.db
 *.hprof
 
 # Firebase
-# google-services.json (download from Firebase Console if excluded)
+# google-services.json holds this Firebase project's keys; the cloner supplies
+# their own (README > Getting Started > Configure Firebase).
+google-services.json
 # Firebase hosting
 node_modules/
 package-lock.json
@@ -67,3 +69,10 @@ gradle-daemon-jvm.properties
 
 #Ai
 .claude/
+.omp/
+
+# Backend (Flask receipt/forecast server + model artifacts) — kept local, not
+# shipped with the Android source. The app builds and runs without it; receipt
+# scanning and forecasting are online-only and report an error notice when the
+# API base URL is unset in local.properties.
+server/
