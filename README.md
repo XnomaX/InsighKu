@@ -162,7 +162,10 @@ InsightKu can auto-detect transactions from the following notification sources:
 
 ### Prerequisites
 - Android Studio Ladybug or later
-- JDK 11+
+- JDK 17 or newer. Gradle 9.6.1 and AGP 9.3.3 both refuse to run on Java 11,
+  and `java -version` must report 17+. (`sourceCompatibility = 11` in
+  `app/build.gradle.kts` is the bytecode target for the app, not the JDK that
+  runs the build.)
 - Firebase project with Auth and Firestore enabled
 - `google-services.json` in `app/` directory
 
@@ -170,7 +173,7 @@ InsightKu can auto-detect transactions from the following notification sources:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/InsighKu.git
+   git clone https://github.com/XnomaX/InsighKu.git
    cd InsighKu
    ```
 
@@ -178,7 +181,14 @@ InsightKu can auto-detect transactions from the following notification sources:
    - Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
    - Enable **Authentication** (Email/Password + Google)
    - Enable **Cloud Firestore**
+   - Under **Authentication → Sign-in method → Google**, add a **Web application**
+     OAuth client. `LoginScreen` reads the generated `R.string.default_web_client_id`
+     for Credential Manager, so the project will not compile without it.
    - Download `google-services.json` and place it in `app/`
+
+   > The build fails with `File google-services.json is missing` or
+   > `Unresolved reference 'default_web_client_id'` until this file is in place.
+   > It is intentionally not committed: it carries your project's client keys.
 
 3. **Build and Run**
    ```bash
