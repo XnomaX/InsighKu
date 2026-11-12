@@ -52,6 +52,7 @@ import com.example.insightku.feature.auth.presentation.components.AuthTextField
 import com.example.insightku.feature.auth.presentation.components.GoogleAuthButton
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -90,11 +91,19 @@ fun LoginScreen(
                 ) {
                     val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data)
                     viewModel.onEvent(LoginEvent.GoogleSignIn(googleIdToken.idToken))
+                } else {
+                    viewModel.onEvent(LoginEvent.GoogleSignInFailed)
                 }
             } catch (_: NoCredentialException) {
-                // No saved Google credential — silently ignore; user can sign up manually
+                viewModel.onEvent(LoginEvent.GoogleAccountUnavailable)
             } catch (e: GetCredentialException) {
                 android.util.Log.e("LoginScreen", "Google Sign-In error: ${e.message}")
+                viewModel.onEvent(LoginEvent.GoogleSignInFailed)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("LoginScreen", "Google Sign-In error: ${e.message}")
+                viewModel.onEvent(LoginEvent.GoogleSignInFailed)
             }
         }
     }

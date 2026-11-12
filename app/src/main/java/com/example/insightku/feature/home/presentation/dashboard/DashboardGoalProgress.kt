@@ -12,15 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,7 +63,6 @@ fun GoalsPreviewSection(
                     color = AppPalette.textPrimary
                 )
                 val subtitle = when {
-                    totalCount == 0 -> stringResource(R.string.dashboard_no_active_goals)
                     totalCount <= 3 -> pluralStringResource(
                         R.plurals.dashboard_active_goals_count,
                         totalCount,
@@ -79,11 +76,13 @@ fun GoalsPreviewSection(
                         totalCount
                     )
                 }
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
+                if (totalCount > 0) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppPalette.textMuted
+                    )
+                }
             }
             if (totalCount > 3) {
                 Surface(
@@ -104,51 +103,30 @@ fun GoalsPreviewSection(
         }
 
         if (goals.isEmpty()) {
-            // Empty state
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape    = RoundedCornerShape(Dimens.CardRadiusLarge),
                 color    = AppPalette.card,
                 border   = BorderStroke(1.dp, AppPalette.cardBorder)
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 28.dp, horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                            .background(NavPurple.copy(alpha = 0.08f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            null,
-                            tint = NavPurple.copy(alpha = 0.45f),
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
                     Text(
                         stringResource(R.string.dashboard_no_active_goals),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppPalette.textPrimary
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppPalette.textMuted
                     )
-                    Surface(
-                        modifier = Modifier.clickable(onClick = onCreateGoal),
-                        shape = RoundedCornerShape(Dimens.ButtonRadius),
-                        color = NavPurple
-                    ) {
+                    TextButton(onClick = onCreateGoal) {
                         Text(
                             stringResource(R.string.dashboard_create_goal),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            color = NavPurple
                         )
                     }
                 }
