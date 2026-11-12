@@ -792,6 +792,9 @@ private fun MainNavHost(
         }
         composable(Route.ANALYSIS) { AnalyticsScreen() }
         composable(Route.BUDGETING) {
+            LaunchedEffect(budgetingViewModel) {
+                budgetingViewModel.onEvent(BudgetingEvent.RefreshData)
+            }
             BudgetingScreen(
                 viewModel = budgetingViewModel,
                 onNavigateToGoalDetail = onNavigateToGoalDetail,
@@ -865,5 +868,4 @@ private fun MainNavHost(
 
     }
 }
-
 

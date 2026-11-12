@@ -385,8 +385,9 @@ class DashboardViewModel @Inject constructor(
         // The state built below is localized with exactly this locale, so record it here —
         // `onLocaleChanged` compares against it to decide whether a re-derivation is needed.
         derivedLanguage = LocaleHelper.getCurrentLanguageCode(context)
+        // The Room transaction stream is already ordered by date descending; reuse it here
+        // rather than sorting the full history on every database emission.
         val recentTransactions = transactions
-            .sortedByDescending { it.date }
             .take(5)
             .map { t ->
                 val matchedCat = categoryMap[t.category.normalizedCategoryName()]

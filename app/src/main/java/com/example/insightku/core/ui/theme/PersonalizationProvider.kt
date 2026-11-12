@@ -29,7 +29,7 @@ enum class VisualDensity(val spacing: Float) {
 
 val LocalComfortMode = compositionLocalOf { false }
 val LocalInsightTone = compositionLocalOf { InsightTone.WARM }
-val LocalAccent = compositionLocalOf { Color(0xFF7C4DFF) }
+val LocalAccent = compositionLocalOf { AccentPalette.DEFAULT_COLOR }
 val LocalVisualDensity = compositionLocalOf { VisualDensity.COMFORTABLE }
 val LocalHideAmounts = compositionLocalOf { false }
 val LocalCurrencyCode = compositionLocalOf { "IDR" }

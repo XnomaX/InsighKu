@@ -23,6 +23,7 @@ import com.example.insightku.core.data.local.preferences.UserPreferencesDataStor
 import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.notification.NotificationTransactionData
 import com.example.insightku.core.ui.components.InsightKuApp
+import com.example.insightku.core.ui.theme.AccentPalette
 import com.example.insightku.core.ui.theme.InsightKuTheme
 import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.VisualDensity
@@ -51,7 +52,7 @@ class MainActivity : AppCompatActivity() {
         val currencyCode: String = "IDR",
         val comfortMode: Boolean = false,
         val insightTone: InsightTone = InsightTone.WARM,
-        val accentColorHex: String = "#7C4DFF",
+        val accentColorHex: String = AccentPalette.DEFAULT_HEX,
         val visualDensity: VisualDensity = VisualDensity.COMFORTABLE,
         val hideAmounts: Boolean = false,
     )

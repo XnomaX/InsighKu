@@ -302,6 +302,9 @@
     <string name="settings_insight_tone_desc">Pick the voice that feels right</string>
     <string name="settings_visual_density">Visual density</string>
     <string name="settings_visual_density_desc">How tightly content is packed</string>
+    <string name="settings_density_comfortable">Comfortable</string>
+    <string name="settings_density_cozy">Cozy</string>
+    <string name="settings_density_compact">Compact</string>
     <string name="settings_habit_goal">Your habit goal</string>
     <string name="settings_habit_goal_desc">Days a week you want to check in</string>
     <string name="settings_currency_desc">Used everywhere amounts appear</string>
@@ -327,6 +330,15 @@
     <string name="app_info_made_with_love">Made with care</string>
     <string name="settings_accent_color">Accent color</string>
     <string name="settings_accent_color_desc">Recolors the whole app instantly</string>
+    <string name="settings_accent_apricot">Apricot</string>
+    <string name="settings_accent_honey">Honey</string>
+    <string name="settings_accent_sage">Sage</string>
+    <string name="settings_accent_sky">Sky</string>
+    <string name="settings_accent_lilac">Lilac</string>
+    <string name="add_transaction_discard_title">Discard this transaction?</string>
+    <string name="add_transaction_discard_message">Your entries will be lost if you discard them.</string>
+    <string name="add_transaction_keep_editing">Keep editing</string>
+    <string name="add_transaction_discard">Discard</string>
     <string name="settings_smart_capture_body_long">When on, InsightKu quietly learns from how you log things to make tracking faster. It only ever uses your own transactions, and you can pause it anytime.</string>
     <string name="settings_learn_categories_empty_detail">Nothing learned yet — once you log a place a couple of times, it will show up here.</string>
 

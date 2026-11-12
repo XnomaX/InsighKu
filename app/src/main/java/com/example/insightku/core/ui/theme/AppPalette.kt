@@ -7,6 +7,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 
 
+object AccentPalette {
+    const val DEFAULT_HEX = "#F59E72"
+    val DEFAULT_COLOR = Color(0xFFF59E72)
+    val SUPPORTED_HEX = setOf(DEFAULT_HEX, "#E7B84B", "#7FAE92", "#79AFCB", "#A898CF")
+}
+
 object AppPalette {
     val isDark: Boolean
         @Composable @ReadOnlyComposable
@@ -36,8 +42,8 @@ object AppPalette {
 
     // ── Semantic UI colors (shared across screens) ────────────────────────
 
-    /** Brand accent — purple. */
-    val accent: Color = Color(0xFF7C4DFF)
+    /** Brand accent — Apricot, the default from the curated warm palette. */
+    val accent: Color = AccentPalette.DEFAULT_COLOR
     /** Primary brand color (dark purple). */
     val primary: Color = Color(0xFF5A2A82)
     /** Success / positive indicator. */

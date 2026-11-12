@@ -31,7 +31,7 @@ fun InsightKuTheme(
     currencyCode: String = "IDR",
     comfortMode: Boolean = false,
     insightTone: InsightTone = InsightTone.WARM,
-    accent: Color = Color(0xFF7C4DFF),
+    accent: Color = AccentPalette.DEFAULT_COLOR,
     visualDensity: VisualDensity = VisualDensity.COMFORTABLE,
     hideAmounts: Boolean = false,
     content: @Composable () -> Unit

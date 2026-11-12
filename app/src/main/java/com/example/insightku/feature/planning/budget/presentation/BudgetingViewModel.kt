@@ -69,7 +69,6 @@ class BudgetingViewModel @Inject constructor(
 
     init {
         loadBudgetData()
-        refreshData()
     }
 
     fun onEvent(event: BudgetingEvent) {

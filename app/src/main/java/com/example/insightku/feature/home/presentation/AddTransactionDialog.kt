@@ -47,10 +47,12 @@ import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -138,6 +140,9 @@ fun AddTransactionDialog(
     var currentStep by remember { mutableStateOf<AddTransactionStep>(AddTransactionStep.ModeSelection) }
     var formData    by remember { mutableStateOf(TransactionFormData()) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var isFormDirty by remember { mutableStateOf(false) }
+    var showDiscardConfirmation by remember { mutableStateOf(false) }
+    var launchScannerAfterDiscard by remember { mutableStateOf(false) }
 
     val focusManager       = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -152,6 +157,7 @@ fun AddTransactionDialog(
     LaunchedEffect(isOpen) {
         if (isOpen) {
             isAnyFieldFocused = false
+            isFormDirty = notificationData != null
             if (notificationData != null) {
                 // Pre-fill from notification — skip ModeSelection, go straight to ManualForm
                 formData = TransactionFormData(
@@ -170,6 +176,16 @@ fun AddTransactionDialog(
 }
     }
 
+    fun requestDismiss(openScannerAfterDiscard: Boolean = false) {
+        if (isFormDirty) {
+            launchScannerAfterDiscard = openScannerAfterDiscard
+            showDiscardConfirmation = true
+        } else {
+            onDismiss()
+            if (openScannerAfterDiscard) onOpenScanner()
+        }
+    }
+
     // Satu fungsi terpusat untuk handle back — dipanggil dari BackHandler DAN onDismissRequest
     fun handleBack() {
         when {
@@ -186,7 +202,7 @@ fun AddTransactionDialog(
                 currentStep = AddTransactionStep.ModeSelection
             }
             // Prioritas 3: di ModeSelection → tutup dialog
-            else -> onDismiss()
+            else -> requestDismiss()
         }
     }
 
@@ -206,11 +222,11 @@ fun AddTransactionDialog(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.5f))
-            .pointerInput(Unit) {
+            .pointerInput(isFormDirty, currentStep) {
                 detectTapGestures(onTap = {
                     focusManager.clearFocus()
                     keyboardController?.hide()
-                    onDismiss()
+                    requestDismiss()
                 })
             },
         contentAlignment = Alignment.Center
@@ -255,7 +271,7 @@ fun AddTransactionDialog(
                     onClose = {
                         focusManager.clearFocus()
                         keyboardController?.hide()
-                        onDismiss()
+                        requestDismiss()
                     }
                 )
 
@@ -275,12 +291,15 @@ fun AddTransactionDialog(
                 ) { step ->
                     when (step) {
                         AddTransactionStep.ModeSelection -> ModeSelectionContent(
-                            onOCRSelected = { onDismiss(); onOpenScanner() },
+                            onOCRSelected = { requestDismiss(openScannerAfterDiscard = true) },
                             onManualSelected = { currentStep = AddTransactionStep.ManualForm }
                         )
                         AddTransactionStep.ManualForm -> ManualFormContent(
                             formData = formData,
-                            onFormDataChanged = { formData = it },
+                            onFormDataChanged = {
+                                formData = it
+                                isFormDirty = true
+                            },
                             onFocusChanged = { isAnyFieldFocused = it },
                             categories = if (formData.isIncome) incomeCategories
                                          else expenseCategories,
@@ -321,9 +340,40 @@ fun AddTransactionDialog(
             initialMillis  = formData.dateMillis,
             onDateSelected = { millis ->
                 formData = formData.copy(dateMillis = millis)
+                isFormDirty = true
                 showDatePicker = false
             },
             onDismiss = { showDatePicker = false }
+        )
+    }
+    if (showDiscardConfirmation) {
+        AlertDialog(
+            onDismissRequest = {
+                showDiscardConfirmation = false
+                launchScannerAfterDiscard = false
+            },
+            title = { Text(stringResource(R.string.add_transaction_discard_title)) },
+            text = { Text(stringResource(R.string.add_transaction_discard_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val openScanner = launchScannerAfterDiscard
+                        launchScannerAfterDiscard = false
+                        isFormDirty = false
+                        showDiscardConfirmation = false
+                        onDismiss()
+                        if (openScanner) onOpenScanner()
+                    }
+                ) { Text(stringResource(R.string.add_transaction_discard)) }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDiscardConfirmation = false
+                        launchScannerAfterDiscard = false
+                    }
+                ) { Text(stringResource(R.string.add_transaction_keep_editing)) }
+            }
         )
     }
 }
@@ -777,8 +827,6 @@ fun ColumnScope.ManualFormContent(
 }
     }
 }
-
-
 
 
 

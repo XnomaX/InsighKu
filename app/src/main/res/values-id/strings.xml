@@ -238,6 +238,9 @@
     <string name="settings_insight_tone_desc">Pilih suara yang terasa pas</string>
     <string name="settings_visual_density">Kepadatan visual</string>
     <string name="settings_visual_density_desc">Seberapa rapat konten ditampilkan</string>
+    <string name="settings_density_comfortable">Lapang</string>
+    <string name="settings_density_cozy">Seimbang</string>
+    <string name="settings_density_compact">Ringkas</string>
     <string name="settings_habit_goal">Target kebiasaan Anda</string>
     <string name="settings_habit_goal_desc">Hari dalam seminggu Anda ingin check in</string>
     <string name="settings_currency_desc">Digunakan di semua tampilan jumlah</string>
@@ -263,6 +266,15 @@
     <string name="app_info_made_with_love">Dibuat dengan perhatian</string>
     <string name="settings_accent_color">Warna aksen</string>
     <string name="settings_accent_color_desc">Mewarnai seluruh aplikasi secara instan</string>
+    <string name="settings_accent_apricot">Aprikot</string>
+    <string name="settings_accent_honey">Madu</string>
+    <string name="settings_accent_sage">Sage</string>
+    <string name="settings_accent_sky">Biru langit</string>
+    <string name="settings_accent_lilac">Lilac</string>
+    <string name="add_transaction_discard_title">Buang transaksi ini?</string>
+    <string name="add_transaction_discard_message">Data yang Anda masukkan akan hilang jika dibuang.</string>
+    <string name="add_transaction_keep_editing">Lanjut mengedit</string>
+    <string name="add_transaction_discard">Buang</string>
     <string name="settings_smart_capture_body_long">Ketika aktif, InsightKu belajar dari cara Anda mencatat untuk membuat pelacakan lebih cepat.</string>
     <string name="settings_learn_categories_empty_detail">Belum ada yang dipelajari — setelah Anda mencatat sebuah tempat beberapa kali, tempat itu akan muncul di sini.</string>
 

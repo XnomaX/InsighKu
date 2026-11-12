@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.insightku.core.ui.theme.AccentPalette
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -168,9 +169,10 @@ class UserPreferencesDataStore @Inject constructor(
         preferences[FORGOTTEN_MERCHANTS_KEY] ?: emptySet()
     }
 
-    /** Brand accent color (hex string) — recolors the app via LocalAccent. Default brand purple. */
+    /** Brand accent color (hex string) — only approved warm accents are surfaced to the app. */
     val accentColor: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[ACCENT_COLOR_KEY] ?: "#7C4DFF"
+        val stored = preferences[ACCENT_COLOR_KEY]?.uppercase()
+        if (stored != null && stored in AccentPalette.SUPPORTED_HEX) stored else AccentPalette.DEFAULT_HEX
     }
 
     /** Visual density — "comfortable" / "cozy" / "compact" spacing scale. */
@@ -418,4 +420,3 @@ class UserPreferencesDataStore @Inject constructor(
         }
     }
 }
-
