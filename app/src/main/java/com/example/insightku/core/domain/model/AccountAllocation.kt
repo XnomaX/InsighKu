@@ -183,29 +183,4 @@ data class BudgetAllocationDetail(
         }
 }
 
-/**
- * Contribution detail for history/reporting.
- *
- * @param contributionId Unique contribution ID
- * @param goalId The goal the contribution was made to
- * @param goalName Name of the goal
- * @param amount Contribution amount
- * @param date Date of contribution
- * @param type Type of contribution (manual, auto_allocation, withdrawal)
- */
-data class ContributionDetail(
-    val contributionId: String,
-    val goalId: String,
-    val goalName: String,
-    val goalColor: String,
-    val amount: Double,
-    val date: Long,
-    val type: String,
-    val notes: String = ""
-) {
-    val isWithdrawal: Boolean
-        get() = type == "withdrawal" || amount < 0
 
-    val displayAmount: Double
-        get() = if (isWithdrawal) -amount else amount
-}
