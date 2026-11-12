@@ -236,65 +236,12 @@ fun DashboardScreenContent(
                     )
                 )
             }
+            // Actionable activity follows the balance so recent and pending items are quick to find.
             item {
-                DailyStreakCard(
-                    currentStreak    = uiState.currentStreak,
-                    hasTrackedToday  = uiState.hasTrackedToday,
-                    trackedDayKeys   = uiState.trackedDayKeys,
-                    repairAvailable  = uiState.repairAvailable,
-                    onCardClick      = { showStreakDetail = true },
-                    onAddTransaction = onAddTransactionForStreak,
-                    onUseRepair      = { onEvent(DashboardEvent.UseStreakRepair) },
-                    modifier         = Modifier.padding(
-                        horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical   = Dimens.CardSpacing
-                    )
-                )
-            }
-            item {
-                InsightsSection(
-                    insightMessages = uiState.insightMessages,
-                    modifier        = Modifier.padding(
-                        horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical   = Dimens.CardSpacing
-                    )
-                )
-            }
-            // Goals preview list (always shown — handles empty state)
-            item {
-                GoalsPreviewSection(
-                    goals = uiState.previewGoals,
-                    totalCount = uiState.totalGoalCount,
-                    isBalanceVisible = !LocalHideAmounts.current,
-                    onClickGoal = { onNavigateToGoals() },
-                    onClickViewAll = onNavigateToGoals,
-                    onCreateGoal = { onCreateGoal() },
-                    modifier = Modifier.padding(
-                        horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical = Dimens.CardSpacing
-                    )
-                )
-            }
-            // Budget preview list (always shown — handles empty state)
-            item {
-                BudgetPreviewSection(
-                    budgets = uiState.previewBudgets,
-                    totalCount = uiState.totalBudgetCount,
-                    isBalanceVisible = !LocalHideAmounts.current,
-                    onClickViewAll = onNavigateToBudgeting,
-                    onNavigateToBudgeting = onNavigateToBudgeting,
-                    onCreateBudget = onCreateBudget,
-                    modifier = Modifier.padding(
-                        horizontal = Dimens.ScreenHorizontalPadding,
-                        vertical = Dimens.CardSpacing
-                    )
-                )
-            }
-            item {
-                AiForecastCard(
-                    forecast       = uiState.forecast,
-                    selectedPeriod = uiState.forecastPeriod,
-                    onPeriodChange = { onEvent(DashboardEvent.ToggleForecastPeriod(it)) },
+                RecentTransactionsPreview(
+                    transactions   = uiState.recentTransactions,
+                    onViewAllClick = onNavigateToTransactionDetails,
+                    onAddTransaction = onAddTransaction,
                     modifier       = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical   = Dimens.CardSpacing
@@ -314,9 +261,62 @@ fun DashboardScreenContent(
                 )
             }
             item {
-                RecentTransactionsPreview(
-                    transactions   = uiState.recentTransactions,
-                    onViewAllClick = onNavigateToTransactionDetails,
+                BudgetPreviewSection(
+                    budgets = uiState.previewBudgets,
+                    totalCount = uiState.totalBudgetCount,
+                    isBalanceVisible = !LocalHideAmounts.current,
+                    onClickViewAll = onNavigateToBudgeting,
+                    onNavigateToBudgeting = onNavigateToBudgeting,
+                    onCreateBudget = onCreateBudget,
+                    modifier = Modifier.padding(
+                        horizontal = Dimens.ScreenHorizontalPadding,
+                        vertical = Dimens.CardSpacing
+                    )
+                )
+            }
+            item {
+                GoalsPreviewSection(
+                    goals = uiState.previewGoals,
+                    totalCount = uiState.totalGoalCount,
+                    isBalanceVisible = !LocalHideAmounts.current,
+                    onClickGoal = { onNavigateToGoals() },
+                    onClickViewAll = onNavigateToGoals,
+                    onCreateGoal = onCreateGoal,
+                    modifier = Modifier.padding(
+                        horizontal = Dimens.ScreenHorizontalPadding,
+                        vertical = Dimens.CardSpacing
+                    )
+                )
+            }
+            item {
+                InsightsSection(
+                    insightMessages = uiState.insightMessages,
+                    modifier        = Modifier.padding(
+                        horizontal = Dimens.ScreenHorizontalPadding,
+                        vertical   = Dimens.CardSpacing
+                    )
+                )
+            }
+            item {
+                DailyStreakCard(
+                    currentStreak    = uiState.currentStreak,
+                    hasTrackedToday  = uiState.hasTrackedToday,
+                    trackedDayKeys   = uiState.trackedDayKeys,
+                    repairAvailable  = uiState.repairAvailable,
+                    onCardClick      = { showStreakDetail = true },
+                    onAddTransaction = onAddTransactionForStreak,
+                    onUseRepair      = { onEvent(DashboardEvent.UseStreakRepair) },
+                    modifier         = Modifier.padding(
+                        horizontal = Dimens.ScreenHorizontalPadding,
+                        vertical   = Dimens.CardSpacing
+                    )
+                )
+            }
+            item {
+                AiForecastCard(
+                    forecast       = uiState.forecast,
+                    selectedPeriod = uiState.forecastPeriod,
+                    onPeriodChange = { onEvent(DashboardEvent.ToggleForecastPeriod(it)) },
                     modifier       = Modifier.padding(
                         horizontal = Dimens.ScreenHorizontalPadding,
                         vertical   = Dimens.CardSpacing

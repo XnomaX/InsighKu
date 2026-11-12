@@ -40,6 +40,7 @@
     <string name="signup_title">Create your account</string>
     <string name="signup_subtitle">Start your journey to smarter financial tracking</string>
     <string name="signup_button">Create Account</string>
+    <string name="signup_terms_privacy_notice">By creating an account, you acknowledge that your use of InsightKu is covered by its Terms of Service and Privacy Policy.</string>
     <string name="creating_account">Creating account…</string>
     <string name="name_label">Full Name</string>
     <string name="name_placeholder">Enter your full name</string>
@@ -151,10 +152,9 @@
     <string name="password_strength_good">Good</string>
     <string name="password_strength_strong">Strong</string>
     <string name="password_strength_excellent">Excellent</string>
-    <string name="password_req_length">At least 8 characters</string>
+    <string name="password_req_length">At least 6 characters</string>
     <string name="password_req_number">Contains a number</string>
     <string name="password_req_letter">Contains a letter</string>
-    <string name="password_req_special">Contains a special character</string>
 
     <!-- Transactions -->
     <string name="add_transaction_title">Add Transaction</string>
@@ -764,6 +764,8 @@
     <string name="dashboard_recent">Recent</string>
     <string name="dashboard_latest_activity">Latest financial activity</string>
     <string name="dashboard_view_all">View All</string>
+    <string name="dashboard_empty_transactions_hint">Add a transaction to see your activity here.</string>
+    <string name="dashboard_add_first_transaction">Add transaction</string>
 
     <!-- Dashboard Forecast -->
     <string name="dashboard_spending_forecast">Spending Forecast</string>
@@ -1556,7 +1558,8 @@
     <string name="error_delete_installment">Failed to delete installment</string>
     <string name="error_login_user_not_found">Login failed: user not found</string>
     <string name="error_registration_failed">Registration failed</string>
-    <string name="error_google_signin_failed">Google Sign-In failed</string>
+    <string name="error_google_signin_failed">Google sign-in could not be completed. Check your internet connection and Google account, then try again or sign in with email and password.</string>
+    <string name="error_google_account_unavailable">No Google account was available. Add an account to your device, then try again or sign in with email and password.</string>
     <string name="error_user_not_logged_in">User not logged in</string>
 
     <!-- Notification strings -->
