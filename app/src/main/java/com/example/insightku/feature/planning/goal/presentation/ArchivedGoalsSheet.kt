@@ -96,7 +96,7 @@ fun ArchivedGoalsSheet(
                         color = AppPalette.textPrimary
                     )
                     Text(
-                        pluralStringResource(R.plurals.goals_archived_subtitle, archivedGoals.size),
+                        pluralStringResource(R.plurals.goals_archived_subtitle, archivedGoals.size, archivedGoals.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted
                     )

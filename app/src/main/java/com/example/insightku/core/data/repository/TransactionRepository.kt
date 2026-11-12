@@ -9,9 +9,11 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.insightku.R
 import com.example.insightku.core.data.local.dao.AccountDao
 import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.local.database.InsightKuDatabase
+import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.worker.SyncTransactionWorker
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.abs
 
 /**
  * TransactionRepository — mengorkestrasi Room (offline cache) dan Firestore (remote).
@@ -51,6 +54,34 @@ class TransactionRepository @Inject constructor(
 ) {
     companion object {
         private const val TAG = "TransactionRepository"
+
+        /** Pure rule behind [assertSufficientBalance]: would [delta] drive [account] below zero? */
+        internal fun wouldGoNegative(account: Account?, delta: Double): Boolean =
+            account != null && account.isAsset && delta < 0.0 && account.balance + delta < 0.0
+
+        /**
+         * Balance [account] would hold after an edit is saved, mirroring
+         * [updateTransaction]'s net-delta rule: on the original account the stored
+         * transaction's effect is reversed first, so raising an Rp80k expense to Rp120k
+         * on a Rp100k balance projects Rp60k and stays saveable, while moving that edit
+         * to another account must cover the full Rp120k.
+         */
+        internal fun projectedBalanceAfterEdit(
+            account: Account?,
+            originalAccountId: String,
+            originalType: TransactionType,
+            originalAmount: Double,
+            newType: TransactionType,
+            newAmount: Double
+        ): Double? = account?.let { acct ->
+            val base = if (acct.id == originalAccountId)
+                acct.balance - balanceDeltaOf(originalType, originalAmount)
+            else acct.balance
+            base + balanceDeltaOf(newType, newAmount)
+        }
+
+        private fun balanceDeltaOf(type: TransactionType, amount: Double): Double =
+            TransactionType.balanceDelta(type, abs(amount))
     }
     // ─── Transaction ───────────────────────────────────────────────────────────
 
@@ -98,6 +129,9 @@ class TransactionRepository @Inject constructor(
         database.withTransaction {
             if (transaction.accountId.isNotBlank()) {
                 val delta = TransactionType.balanceDelta(transaction.type, transaction.amount)
+                // Inside the Room transaction: AutoTransactionWorker shares this path, so a
+                // check outside could pass on a balance a concurrent writer already spent.
+                assertSufficientBalance(transaction.accountId, delta)
                 accountDao.updateBalance(transaction.accountId, delta)
             }
             transactionDao.insertTransaction(localTransaction)
@@ -116,6 +150,21 @@ class TransactionRepository @Inject constructor(
             // Jadwalkan one-shot recovery worker agar sync segera terjadi saat
             // network kembali, tanpa menunggu periodic worker berikutnya.
             scheduleSyncRecovery()
+        }
+    }
+
+    /**
+     * Asset accounts must never go negative. Throws before any balance write when
+     * [delta] would push the account below zero; credit cards are liabilities, so a
+     * growing (positive) debt balance is their normal state and is not checked.
+     */
+    private suspend fun assertSufficientBalance(accountId: String, delta: Double) {
+        if (delta >= 0.0 || accountId.isBlank()) return
+        val account = accountDao.getAccountById(accountId) ?: return
+        if (wouldGoNegative(account, delta)) {
+            throw IllegalArgumentException(
+                context.getString(R.string.error_insufficient_balance, account.name)
+            )
         }
     }
 
@@ -149,11 +198,14 @@ class TransactionRepository @Inject constructor(
 
             if (original.accountId == transaction.accountId) {
                 // Same account: apply net delta (reverse old + apply new)
+                assertSufficientBalance(original.accountId, reverseDelta + newDelta)
                 if (original.accountId.isNotBlank()) {
                     accountDao.updateBalance(original.accountId, reverseDelta + newDelta)
                 }
             } else {
                 // Account changed: reverse on old account, apply on new account
+                assertSufficientBalance(original.accountId, reverseDelta)
+                assertSufficientBalance(transaction.accountId, newDelta)
                 if (original.accountId.isNotBlank()) {
                     accountDao.updateBalance(original.accountId, reverseDelta)
                 }
@@ -174,6 +226,7 @@ class TransactionRepository @Inject constructor(
             }
         } else if (transaction.accountId.isNotBlank()) {
             val newDelta = TransactionType.balanceDelta(transaction.type, transaction.amount)
+            assertSufficientBalance(transaction.accountId, newDelta)
             accountDao.updateBalance(transaction.accountId, newDelta)
         }
 
@@ -201,8 +254,11 @@ class TransactionRepository @Inject constructor(
         }
 
         if (transaction != null && transaction.accountId.isNotBlank()) {
-            // Restore account balance: reverse the transaction's effect
+            // Restore account balance: reverse the transaction's effect. Reversing an
+            // already-spent income is a negative delta — refuse it instead of driving
+            // the account below zero.
             val reverseDelta = -TransactionType.balanceDelta(transaction.type, transaction.amount)
+            assertSufficientBalance(transaction.accountId, reverseDelta)
             accountDao.updateBalance(transaction.accountId, reverseDelta)
         }
 

@@ -68,11 +68,13 @@ fun BudgetPreviewSection(
                     totalCount == 0 -> stringResource(R.string.dashboard_no_active_budgets)
                     totalCount <= 3 -> pluralStringResource(
                         R.plurals.dashboard_active_budgets_count,
+                        totalCount,
                         totalCount
                     )
 
                     else -> pluralStringResource(
                         R.plurals.dashboard_budgets_of_count,
+                        budgets.size,
                         budgets.size,
                         totalCount
                     )
@@ -183,7 +185,7 @@ fun BudgetPreviewSection(
 
             if (totalCount > 3) {
                 Text(
-                    pluralStringResource(R.plurals.dashboard_more_budgets, totalCount - 3),
+                    pluralStringResource(R.plurals.dashboard_more_budgets, totalCount - 3, totalCount - 3),
                     style = MaterialTheme.typography.labelMedium,
                     color = NavPurple,
                     modifier = Modifier

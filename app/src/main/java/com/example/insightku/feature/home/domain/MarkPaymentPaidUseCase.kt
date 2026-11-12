@@ -1,6 +1,7 @@
 package com.example.insightku.feature.home.domain
 
 import android.content.Context
+import com.example.insightku.R
 import com.example.insightku.core.data.model.BudgetFrequency
 import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
@@ -10,6 +11,7 @@ import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.core.data.repository.InstallmentRepository
 import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.core.data.repository.TransactionRepository
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.utils.normalizedCategoryName
 import com.example.insightku.core.worker.PaymentReminderHelper
 import com.example.insightku.feature.auth.data.AuthRepository
@@ -61,7 +63,7 @@ class MarkPaymentPaidUseCase @Inject constructor(
             category = resolveCategory(budget.categoryId, budget.name),
             type = TransactionType.EXPENSE,
             date = System.currentTimeMillis(),
-            description = "Recurring payment: ${budget.name}",
+            description = str(R.string.tx_recurring_payment_desc, budget.name),
             accountId = budget.accountId ?: ""
         )
         transactionRepository.addTransaction(tx, userId)
@@ -101,7 +103,12 @@ class MarkPaymentPaidUseCase @Inject constructor(
             category = resolveCategory(installment.categoryId, installment.name),
             type = TransactionType.EXPENSE,
             date = System.currentTimeMillis(),
-            description = "Installment payment: ${installment.name} (${installment.paidMonths + 1}/${installment.totalMonths})",
+            description = str(
+                R.string.tx_installment_payment_desc,
+                installment.name,
+                installment.paidMonths + 1,
+                installment.totalMonths
+            ),
             accountId = installment.accountId ?: ""
         )
         transactionRepository.addTransaction(tx, userId)
@@ -123,4 +130,12 @@ class MarkPaymentPaidUseCase @Inject constructor(
     } catch (e: Exception) {
         Result.failure(e)
     }
+
+    /**
+     * `@ApplicationContext` carries the system locale rather than the in-app one,
+     * so wrap via [LocaleHelper]; the same pattern the other domain use cases use.
+     * Called once per payment mark, never in a loop.
+     */
+    private fun str(resId: Int, vararg args: Any?): String =
+        LocaleHelper.wrapContext(context).getString(resId, *args)
 }

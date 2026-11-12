@@ -9,6 +9,7 @@ import com.example.insightku.core.data.repository.InstallmentRepository
 import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.feature.auth.data.AuthRepository
 import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.utils.TimeUtils
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
@@ -49,7 +50,6 @@ class PaymentReminderWorker @AssistedInject constructor(
         }
 
         val now = System.currentTimeMillis()
-        val dayMs = 24 * 60 * 60 * 1000L
 
         Log.d(TAG, "Worker started at ${DateFormatter.formatDateTimeFull(now)}")
 
@@ -59,7 +59,7 @@ class PaymentReminderWorker @AssistedInject constructor(
             val activeRecurring = allRecurring.filter { it.isActive }
 
             for (budget in activeRecurring) {
-                val daysUntilDue = ((budget.nextDue - now) / dayMs).toInt()
+                val daysUntilDue = TimeUtils.daysBetween(now, budget.nextDue)
                 PaymentReminderHelper.sendReminder(
                     context = applicationContext,
                     paymentId = "recurring_${budget.id}",
@@ -75,7 +75,7 @@ class PaymentReminderWorker @AssistedInject constructor(
             val activeInstallments = allInstallments.filter { it.isActive && !it.isCompleted }
 
             for (installment in activeInstallments) {
-                val daysUntilDue = ((installment.nextDueDate - now) / dayMs).toInt()
+                val daysUntilDue = TimeUtils.daysBetween(now, installment.nextDueDate)
                 PaymentReminderHelper.sendReminder(
                     context = applicationContext,
                     paymentId = "installment_${installment.id}",

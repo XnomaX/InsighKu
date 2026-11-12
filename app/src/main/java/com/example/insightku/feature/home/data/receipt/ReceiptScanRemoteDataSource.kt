@@ -16,8 +16,18 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 /**
+ * Server returned a non-2xx response. Carries the status code so the caller can
+ * localize a user-facing message without forwarding the raw response body, which
+ * may contain server internals.
+ */
+class ScanServerException(val code: Int) : IOException("Receipt scan server error $code")
+
+/**
  * Calls the Flask/Donut receipt-scan API over OkHttp. Online-only — the caller
  * (ReceiptScanRepository) gates on connectivity first. No caching of any kind.
+ *
+ * Messages thrown here are developer diagnostics for logcat; the user-facing
+ * copy is resolved by [ReceiptScanRepository], which has a Context.
  */
 @Singleton
 class ReceiptScanRemoteDataSource @Inject constructor(
@@ -43,16 +53,17 @@ class ReceiptScanRemoteDataSource @Inject constructor(
                 .post(body)
             if (apiKey.isNotBlank()) requestBuilder.header("X-API-Key", apiKey)
 
-            try {
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    val raw = response.body?.string().orEmpty()
-                    if (!response.isSuccessful) {
-                        throw IOException("Server error ${response.code}: ${raw.take(200)}")
-                    }
-                    parseResponse(raw)
+            // No catch here: ScanServerException and SocketTimeoutException both
+            // propagate unchanged so the Repository can classify them by type.
+            client.newCall(requestBuilder.build()).execute().use { response ->
+                val raw = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    // Log the body for diagnosis; never put it in the exception
+                    // message, which can reach the UI.
+                    android.util.Log.w(TAG, "scan-receipt ${response.code}: ${raw.take(300)}")
+                    throw ScanServerException(response.code)
                 }
-            } catch (e: java.net.SocketTimeoutException) {
-                throw IOException("Request timed out — server may be slow or offline", e)
+                parseResponse(raw)
             }
         }
 
@@ -74,5 +85,9 @@ class ReceiptScanRemoteDataSource @Inject constructor(
             items = items,
             rawText = obj.optString("raw_text")
         )
+    }
+
+    private companion object {
+        const val TAG = "ReceiptScanDS"
     }
 }

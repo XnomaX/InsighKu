@@ -136,6 +136,7 @@ class CalculateStreakUseCase @Inject constructor(
             currentStreak = streak,
             bestStreak = bestStreak,
             hasTrackedToday = hasTrackedToday,
+            trackedDayKeys = txDayKeys,
             freezeCount = updatedFreezeCount,
             isPerfectStreak = updatedPerfect,
             streakGoal = streakGoal,
@@ -174,6 +175,8 @@ class CalculateStreakUseCase @Inject constructor(
         val currentStreak: Int,
         val bestStreak: Int,
         val hasTrackedToday: Boolean,
+        /** "yyyyMMdd" keys of every day that has at least one transaction. */
+        val trackedDayKeys: Set<String>,
         val freezeCount: Int,
         val isPerfectStreak: Boolean,
         val streakGoal: Int,

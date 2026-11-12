@@ -1,6 +1,5 @@
 package com.example.insightku.core.i18n
 
-import androidx.appcompat.app.AppCompatDelegate
 import java.util.Locale
 
 /**
@@ -15,13 +14,12 @@ import java.util.Locale
  */
 object AnalyticsStrings {
 
-    private fun currentLocale(): Locale {
-        val locales = AppCompatDelegate.getApplicationLocales()
-        return if (!locales.isEmpty) locales[0] ?: Locale.getDefault()
-        else Locale.getDefault()
-    }
+    // Delegated, not reimplemented: LocaleHelper normalizes the legacy "in" code and is the
+    // single resolver the formatters use, so insight copy and formatted numbers can never
+    // disagree about which language is active.
+    private fun currentLocale(): Locale = LocaleHelper.currentLocale()
 
-    private fun isIndonesian(): Boolean = currentLocale().language == "id"
+    private fun isIndonesian(): Boolean = LocaleHelper.isIndonesian(currentLocale())
 
     // ══════════════════════════════════════════════════════════════════════════════
     // PERIOD SELECTOR (used by AnalyticsPeriod.kt)
@@ -109,11 +107,11 @@ object AnalyticsStrings {
     // ══════════════════════════════════════════════════════════════════════════════
 
     // Weekly
-    fun heroWeekAtGlance(): String = if (isIndonesian()) "Minggu Anda sekilas" else "Your week at a glance"
+    fun heroWeekAtGlance(): String = if (isIndonesian()) "Ringkasan minggu Anda" else "Your week at a glance"
     fun heroWeekStartLogging(): String = if (isIndonesian()) "Mulai mencatat transaksi untuk melihat wawasan mingguan" else "Start logging transactions to see weekly insights"
     fun heroStayedUnderAvg(days: Int): Pair<String, String> {
         return if (isIndonesian()) {
-            "Anda tetap di bawah rata-rata selama $days dari 7 hari" to "Kebiasaan belanja yang konsisten membangun kesehatan keuangan jangka panjang"
+            "Anda tetap di bawah rata-rata pada $days dari 7 hari" to "Kebiasaan belanja yang konsisten membangun kesehatan keuangan jangka panjang"
         } else {
             "You stayed under your average for $days of 7 days" to "Consistent spending habits build long-term financial health"
         }
@@ -127,7 +125,7 @@ object AnalyticsStrings {
     }
     fun heroSpendingPickedUp(delta: Int): Pair<String, String> {
         return if (isIndonesian()) {
-            "Pengeluaran naik $delta% dari minggu lalu" to "Pengeluaran akhir pekan terus mempengaruhi total Anda"
+            "Pengeluaran naik $delta% dari minggu lalu" to "Pengeluaran akhir pekan terus memengaruhi total Anda"
         } else {
             "Spending picked up $delta% from last week" to "Weekend spending continues to influence your total"
         }
@@ -141,7 +139,7 @@ object AnalyticsStrings {
     }
 
     // Monthly
-    fun heroMonthAtGlance(): String = if (isIndonesian()) "Bulan Anda sekilas" else "Your month at a glance"
+    fun heroMonthAtGlance(): String = if (isIndonesian()) "Ringkasan bulan Anda" else "Your month at a glance"
     fun heroMonthStartLogging(): String = if (isIndonesian()) "Mulai mencatat transaksi untuk melihat wawasan kesehatan keuangan" else "Start logging transactions to see financial health insights"
     fun heroSavedPctIncome(pct: Int): Pair<String, String> {
         return if (isIndonesian()) {
@@ -180,7 +178,7 @@ object AnalyticsStrings {
     }
 
     // Annual
-    fun heroYearAtGlance(): String = if (isIndonesian()) "Tahun Anda sekilas" else "Your year in review"
+    fun heroYearAtGlance(): String = if (isIndonesian()) "Tinjauan tahun Anda" else "Your year in review"
     fun heroYearStartLogging(): String = if (isIndonesian()) "Mulai mencatat transaksi untuk melihat perjalanan keuangan Anda" else "Start logging transactions to see your financial journey"
     fun heroExpensesDroppedYear(delta: Int): Pair<String, String> {
         return if (isIndonesian()) {
@@ -205,7 +203,7 @@ object AnalyticsStrings {
     }
     fun heroYearTracked(months: Int): Pair<String, String> {
         return if (isIndonesian()) {
-            "Tahun dengan $months bulan tercatat" to "Cerita keuangan Anda mulai terbentuk"
+            "$months bulan tercatat tahun ini" to "Cerita keuangan Anda mulai terbentuk"
         } else {
             "A year of $months months tracked" to "Your financial story is taking shape"
         }
@@ -216,13 +214,13 @@ object AnalyticsStrings {
     // ══════════════════════════════════════════════════════════════════════════════
 
     // Personality
-    fun personalityWeekend(): String = if (isIndonesian()) "Akhir pekan adalah tempat uang Anda paling keras" else "Weekends are where your money goes loud"
-    fun personalityWeekday(): String = if (isIndonesian()) "Anda belanja dalam burst fokus selama seminggu" else "You spend in focused bursts during the week"
-    fun personalitySteady(): String = if (isIndonesian()) "Anda menjaga ritme yang stabil dan mudah dengan uang Anda" else "You keep a steady, easy rhythm with your money"
+    fun personalityWeekend(): String = if (isIndonesian()) "Uang Anda paling banyak keluar di akhir pekan" else "Weekends are where your money goes loud"
+    fun personalityWeekday(): String = if (isIndonesian()) "Anda belanja terkonsentrasi pada hari kerja" else "You spend in focused bursts during the week"
+    fun personalitySteady(): String = if (isIndonesian()) "Anda menjaga ritme keuangan yang stabil dan tenang" else "You keep a steady, easy rhythm with your money"
     fun personalityOnboarding(): String = if (isIndonesian()) "Terus mencatat — wawasan muncul setelah beberapa transaksi" else "Keep logging — insights appear after a few transactions"
 
     // Two Yous
-    fun twoYousDiverge(): String = if (isIndonesian()) "Akhir Pekan Anda dan Hari Kerja Anda pada dasarnya dua orang berbeda." else "Weekend You and Weekday You are basically two different people."
+    fun twoYousDiverge(): String = if (isIndonesian()) "Akhir pekan Anda dan hari kerja Anda pada dasarnya dua orang berbeda." else "Weekend You and Weekday You are basically two different people."
     fun twoYousSame(): String = if (isIndonesian()) "Ternyata Anda hampir sama sepanjang minggu." else "Turns out you're pretty much the same person all week."
     fun twoYousGap(): String = if (isIndonesian()) "Ada kesenjangan antara pengeluaran hari kerja dan akhir pekan Anda." else "There's a gap between your weekday and weekend spending."
 
@@ -238,7 +236,7 @@ object AnalyticsStrings {
     }
 
     // Noticing
-    fun noticingNightOwl(): String = if (isIndonesian()) "Sebagian besar pengeluaran Anda terjadi di akhir pekan — hari libur bertambah lebih dari yang terasa." else "A good slice of your spending happens on weekends — the days off add up more than they feel like."
+    fun noticingNightOwl(): String = if (isIndonesian()) "Sebagian besar pengeluaran Anda terjadi di akhir pekan — pengeluaran hari libur menumpuk lebih banyak dari yang terasa." else "A good slice of your spending happens on weekends — the days off add up more than they feel like."
 
     // Mood
     fun moodCalm(): String = if (isIndonesian()) "Lebih tenang belakangan ini" else "Calmer lately"
@@ -247,7 +245,7 @@ object AnalyticsStrings {
 
     // Rhythm
     fun rhythmLoudest(dayName: String): String {
-        if (isIndonesian()) return "$dayName adalah hari pengeluaran paling keras Anda"
+        if (isIndonesian()) return "$dayName adalah hari dengan pengeluaran terbesar Anda"
         return "${dayName}s are your loudest spending days"
     }
 

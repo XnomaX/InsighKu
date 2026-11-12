@@ -34,7 +34,39 @@ object LocaleHelper {
     }
 
     /**
-     * Get the current effective language code.
+     * The app's effective locale: the user-selected per-app language when set,
+     * otherwise the device locale. Use for locale-sensitive *formatting* outside
+     * a Compose context (ViewModels, domain, workers), where `LocalContext` is
+     * unavailable; Compose code keeps using `LocalContext`/`Configuration`.
+     * Without this, `NumberFormatter`'s `Locale.getDefault()` default embeds
+     * system-locale digits inside app-locale sentences.
+     *
+     * The returned [Locale] is used as-is by `SimpleDateFormat`/`NumberFormat`, which treat
+     * the legacy code "in" as an alias of "id" — but string comparisons do not, so every
+     * language gate in this codebase goes through [isIndonesian] rather than comparing
+     * `language == "id"` directly.
+     */
+    fun currentLocale(): Locale {
+        val locales = AppCompatDelegate.getApplicationLocales()
+        return if (!locales.isEmpty) locales[0] ?: Locale.getDefault() else Locale.getDefault()
+    }
+
+    /**
+     * True when [code] is Indonesian, accepting both the modern ISO 639-1 code and the
+     * obsolete one. On API <= 34 a device set to Indonesian can report "in" (see
+     * [normalizeLanguageCode]); every language gate in the formatting and copy layers must
+     * accept both, or an Indonesian UI silently renders English dates, units and insight
+     * sentences. Comparing codes rather than round-tripping a [Locale] keeps this provable
+     * on the JVM, where `Locale` constructors convert legacy codes at construction time.
+     */
+    fun isIndonesianCode(code: String): Boolean = code == "id" || code == "in"
+
+    /** Indonesian regardless of whether the platform reports "id" or the legacy "in". */
+    fun isIndonesian(locale: Locale): Boolean = isIndonesianCode(locale.language)
+
+
+    /**
+     * Get the current effective language code (modern ISO 639-1, e.g. "id"/"en").
      *
      * Returns the user-selected language if set, otherwise falls back
      * to the device language if supported, then English.
@@ -42,12 +74,33 @@ object LocaleHelper {
     fun getCurrentLanguageCode(context: Context): String {
         val currentLocales = AppCompatDelegate.getApplicationLocales()
         if (!currentLocales.isEmpty) {
-            return currentLocales[0]?.language ?: "en"
+            return normalizeLanguageCode(currentLocales[0]?.language ?: "en")
         }
         // No explicit selection — detect device language
         val deviceLocale = context.resources.configuration.locales[0]
-        val deviceCode = deviceLocale?.language ?: "en"
+        val deviceCode = normalizeLanguageCode(deviceLocale?.language ?: "en")
         return if (SUPPORTED_LOCALES.any { it.code == deviceCode }) deviceCode else "en"
+    }
+
+    /**
+     * Map the pre-Android-15 obsolete language codes to their modern ISO 639-1
+     * forms. Android 15 stopped converting Indonesian "id" to the legacy "in"
+     * (and Hebrew "he"/"iw", Yiddish "yi"/"ji") for apps targeting API 35+; on
+     * API <= 34 a device set to Indonesian reports "in", which never equals the
+     * [SUPPORTED_LOCALES] code "id".
+     *
+     * Without this the device-locale fallback returned "en", so notifications and
+     * workers that build their Context through [wrapContext] rendered English for
+     * Indonesian-locale users who had never picked a language in-app (the path
+     * reached before the first Activity launch calls applyLocale). The mapping is
+     * a no-op for codes that are already modern, so it is correct whether or not
+     * the platform still applies the legacy conversion.
+     */
+    internal fun normalizeLanguageCode(code: String): String = when (code) {
+        "in" -> "id"   // Indonesian
+        "iw" -> "he"   // Hebrew
+        "ji" -> "yi"   // Yiddish
+        else -> code
     }
 
     /**

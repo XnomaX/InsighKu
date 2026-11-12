@@ -533,7 +533,7 @@ private fun DeadlineBadge(daysLeft: Int, deadline: String, isOverdue: Boolean) {
                 text = when {
                     isOverdue -> stringResource(R.string.goal_card_overdue)
                     daysLeft <= 0 -> stringResource(R.string.goal_card_due_today)
-                    daysLeft <= 7 -> pluralStringResource(R.plurals.goal_card_days_left, daysLeft)
+                    daysLeft <= 7 -> pluralStringResource(R.plurals.goal_card_days_left, daysLeft, daysLeft)
                     else -> deadline
                 },
                 style = MaterialTheme.typography.labelSmall,

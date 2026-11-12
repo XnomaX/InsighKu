@@ -10,6 +10,7 @@ import com.example.insightku.core.data.repository.AccountAllocationRepository
 import com.example.insightku.core.data.repository.AccountRepository
 import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.core.domain.model.AccountAllocation
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.ContributionType
 import com.example.insightku.feature.planning.goal.data.model.GoalAccountEntity
@@ -54,6 +55,22 @@ class GoalsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(GoalsUiState.initial())
     val uiState: StateFlow<GoalsUiState> = _uiState.asStateFlow()
+
+    /**
+     * Localized string lookup for snackbar/error copy.
+     *
+     * `@ApplicationContext` carries the system locale, not the in-app one, so
+     * this wraps it via [LocaleHelper] — the same pattern used by the 14 other
+     * non-Composable call sites.
+     *
+     * Deliberately NOT cached: a ViewModel survives the Activity recreation that
+     * `AppCompatDelegate.setApplicationLocales` triggers, so a cached wrapper
+     * would keep resolving the *previous* language after the user switches.
+     * These messages are emitted once per user action (never in a loop), so the
+     * per-call `createConfigurationContext` is not a concern.
+     */
+    private fun str(resId: Int, vararg args: Any?): String =
+        LocaleHelper.wrapContext(context).getString(resId, *args)
 
     init { loadData() }
 
@@ -197,8 +214,8 @@ class GoalsViewModel @Inject constructor(
                 createdAt = Instant.now(), updatedAt = Instant.now()
             )
             goalRepository.createGoal(goal).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Goal created successfully") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_create_goal)) } }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = str(R.string.goal_created_success)) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: str(R.string.error_create_goal)) } }
         }
     }
 
@@ -206,20 +223,20 @@ class GoalsViewModel @Inject constructor(
         viewModelScope.launch {
             val existingGoal = findGoalAcrossAll(event.id)
             if (existingGoal == null) {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, error = "Goal not found") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, error = str(R.string.goal_not_found)) }
                 return@launch
             }
             val updatedGoal = existingGoal.copy(name = event.name, targetAmount = event.targetAmount, deadline = event.deadline, iconName = event.iconName, color = event.color, notes = event.notes, reminderEnabled = event.reminderEnabled, updatedAt = Instant.now())
             goalRepository.updateGoal(updatedGoal).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Goal updated") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_update_goal)) } }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = str(R.string.goal_updated)) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: str(R.string.error_update_goal)) } }
         }
     }
 
     private fun updateGoalStatus(goalId: String, status: GoalStatus) {
         viewModelScope.launch {
             goalRepository.updateGoalStatus(goalId, status).onSuccess {
-                val message = when (status) { GoalStatus.COMPLETED -> "Congratulations! Goal completed!"; GoalStatus.PAUSED -> "Goal paused"; GoalStatus.ACTIVE -> "Goal resumed"; GoalStatus.ARCHIVED -> "Goal archived" }
+                val message = when (status) { GoalStatus.COMPLETED -> str(R.string.goal_completed_congrats); GoalStatus.PAUSED -> str(R.string.goal_paused); GoalStatus.ACTIVE -> str(R.string.goal_resumed); GoalStatus.ARCHIVED -> str(R.string.goal_archived) }
                 _uiState.update { it.copy(
                     snackbarMessage = message,
                     showActionsSheet = false,
@@ -232,7 +249,7 @@ class GoalsViewModel @Inject constructor(
     private fun archiveGoal(goalId: String) {
         viewModelScope.launch {
             goalRepository.archiveGoal(goalId).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, showActionsSheet = false, actionsGoalId = null, snackbarMessage = "Goal archived") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, showActionsSheet = false, actionsGoalId = null, snackbarMessage = str(R.string.goal_archived)) }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
         }
     }
@@ -243,9 +260,9 @@ class GoalsViewModel @Inject constructor(
                 _uiState.update { it.copy(
                     dialogState = GoalsDialogState.None,
                     showArchivedSheet = false,
-                    snackbarMessage = "Goal restored to active"
+                    snackbarMessage = str(R.string.goal_restored_active)
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_restore_goal)) } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: str(R.string.error_restore_goal)) } }
         }
     }
 
@@ -255,9 +272,9 @@ class GoalsViewModel @Inject constructor(
                 _uiState.update { it.copy(
                     dialogState = GoalsDialogState.None,
                     showArchivedSheet = false,
-                    snackbarMessage = "Goal permanently deleted"
+                    snackbarMessage = str(R.string.goal_permanently_deleted)
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_delete_goal)) } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: str(R.string.error_delete_goal)) } }
         }
     }
 
@@ -286,11 +303,11 @@ class GoalsViewModel @Inject constructor(
                 _uiState.update { it.copy(
                     dialogState = GoalsDialogState.None,
                     showActionsSheet = false, actionsGoalId = null,
-                    snackbarMessage = "Congratulations! Goal completed!",
+                    snackbarMessage = str(R.string.goal_completed_congrats),
                     showCompletionCelebration = true,
                     completionGoalName = goal?.name ?: ""
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_complete_goal)) } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: str(R.string.error_complete_goal)) } }
         }
     }
 
@@ -301,11 +318,11 @@ class GoalsViewModel @Inject constructor(
                 _uiState.update { it.copy(
                     dialogState = GoalsDialogState.None,
                     showActionsSheet = false, actionsGoalId = null,
-                    snackbarMessage = "Goal completed — funds transferred",
+                    snackbarMessage = str(R.string.goal_completed_funds_transferred),
                     showCompletionCelebration = true,
                     completionGoalName = goal?.name ?: ""
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_transfer_funds)) } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: str(R.string.error_transfer_funds)) } }
         }
     }
 
@@ -315,9 +332,9 @@ class GoalsViewModel @Inject constructor(
                 _uiState.update { it.copy(
                     dialogState = GoalsDialogState.None,
                     showArchivedSheet = false,
-                    snackbarMessage = "Goal deleted — funds transferred"
+                    snackbarMessage = str(R.string.goal_deleted_funds_transferred)
                 ) }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_delete_goal)) } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: str(R.string.error_delete_goal)) } }
         }
     }
 
@@ -331,7 +348,7 @@ class GoalsViewModel @Inject constructor(
                 notes = event.notes
             ).onSuccess {
                 val goal = _uiState.value.goals.find { it.id == event.goalId }
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "${NumberFormatter.formatCurrency(event.amount)} added to ${goal?.name ?: "goal"}") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = str(R.string.goal_contribution_added, NumberFormatter.formatCurrency(event.amount), goal?.name ?: str(R.string.goal_name_fallback))) }
                 // The repository auto-completes a goal when it reaches its target.
                 // If that happened and funds are allocated, ask what to do with them.
                 val refreshed = goalRepository.getGoalById(event.goalId)
@@ -341,22 +358,22 @@ class GoalsViewModel @Inject constructor(
                         _uiState.update { it.copy(dialogState = GoalsDialogState.CompleteGoalFunds(event.goalId, refreshed.name, refreshed.iconName, refreshed.color, funds)) }
                     }
                 }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_contribute)) } }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: str(R.string.error_contribute)) } }
         }
     }
 
     private fun withdraw(event: GoalsEvent.Withdraw) {
         viewModelScope.launch {
             goalRepository.withdraw(goalId = event.goalId, accountId = event.accountId, amount = event.amount, notes = event.notes).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "${NumberFormatter.formatCurrency(event.amount)} withdrawn") }
-            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_withdraw)) } }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = str(R.string.goal_amount_withdrawn, NumberFormatter.formatCurrency(event.amount))) }
+            }.onFailure { e -> _uiState.update { it.copy(error = e.message ?: str(R.string.error_withdraw)) } }
         }
     }
 
     private fun linkAccount(event: GoalsEvent.LinkAccount) {
         viewModelScope.launch {
             goalRepository.linkAccountToGoal(goalId = event.goalId, accountId = event.accountId, allocationPercent = event.allocationPercent, isPrimary = event.isPrimary).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Account linked to goal") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = str(R.string.goal_account_linked)) }
                 loadLinkedAccounts(event.goalId)
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
         }
@@ -365,7 +382,7 @@ class GoalsViewModel @Inject constructor(
     private fun unlinkAccount(goalId: String, accountId: String) {
         viewModelScope.launch {
             goalRepository.unlinkAccountFromGoal(goalId, accountId).onSuccess {
-                _uiState.update { it.copy(snackbarMessage = "Account unlinked") }
+                _uiState.update { it.copy(snackbarMessage = str(R.string.goal_account_unlinked)) }
                 loadLinkedAccounts(goalId)
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
         }
@@ -386,7 +403,16 @@ class GoalsViewModel @Inject constructor(
     private fun setDailyTarget(amount: Double) {
         viewModelScope.launch {
             goalRepository.setDailyTarget(amount).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = if (amount > 0) "Daily target set to ${NumberFormatter.formatCurrency(amount)}" else "Daily target cleared") }
+                _uiState.update {
+                    it.copy(
+                        dialogState = GoalsDialogState.None,
+                        snackbarMessage = if (amount > 0) {
+                            str(R.string.goal_daily_target_set, NumberFormatter.formatCurrency(amount))
+                        } else {
+                            str(R.string.goal_daily_target_cleared)
+                        }
+                    )
+                }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
         }
     }
@@ -394,7 +420,7 @@ class GoalsViewModel @Inject constructor(
     private fun clearDailyTarget() {
         viewModelScope.launch {
             goalRepository.clearDailyTarget().onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Daily target cleared") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = str(R.string.goal_daily_target_cleared)) }
             }
         }
     }
@@ -402,7 +428,7 @@ class GoalsViewModel @Inject constructor(
     private fun addAutoAllocationRule(rule: AutoAllocationRule) {
         viewModelScope.launch {
             goalRepository.addAutoAllocationRule(rule).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Auto-allocation rule added") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = str(R.string.goal_rule_added)) }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
         }
     }
@@ -410,7 +436,7 @@ class GoalsViewModel @Inject constructor(
     private fun updateAutoAllocationRule(rule: AutoAllocationRule) {
         viewModelScope.launch {
             goalRepository.updateAutoAllocationRule(rule).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Rule updated") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = str(R.string.goal_rule_updated)) }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
         }
     }
@@ -418,7 +444,7 @@ class GoalsViewModel @Inject constructor(
     private fun deleteAutoAllocationRule(ruleId: String) {
         viewModelScope.launch {
             goalRepository.deleteAutoAllocationRule(ruleId).onSuccess {
-                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = "Rule deleted") }
+                _uiState.update { it.copy(dialogState = GoalsDialogState.None, snackbarMessage = str(R.string.goal_rule_deleted)) }
             }.onFailure { e -> _uiState.update { it.copy(error = e.message) } }
         }
     }

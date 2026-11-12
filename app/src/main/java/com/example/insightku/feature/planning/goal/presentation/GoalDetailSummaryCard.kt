@@ -69,6 +69,7 @@ internal fun GoalSummaryCard(goal: Goal, goalColor: androidx.compose.ui.graphics
                             R.string.goal_summary_overdue
                         ); goal.daysRemaining == 0 -> stringResource(R.string.goal_summary_today); else -> pluralStringResource(
                             R.plurals.goal_summary_days,
+                            goal.daysRemaining ?: 0,
                             goal.daysRemaining ?: 0
                         )
                     }

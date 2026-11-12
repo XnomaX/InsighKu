@@ -76,6 +76,7 @@ import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.FitText
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -178,7 +179,7 @@ internal fun AmountHeroCard(
             textAlign = TextAlign.Center
         )
         Text(
-            text = if (isIncome) "Income amount" else "Expense amount",
+            text = stringResource(if (isIncome) R.string.income_amount else R.string.expense_amount),
             style = MaterialTheme.typography.labelSmall,
             color = accentColor.copy(alpha = 0.6f)
         )
@@ -438,7 +439,7 @@ internal fun CategoryChipSelector(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(12.dp), tint = primary.copy(alpha = 0.7f))
-            Text(stringResource(R.string.transaction_form_add_category), style = MaterialTheme.typography.labelSmall, color = primary.copy(alpha = 0.7f))
+            FitText(stringResource(R.string.transaction_form_add_category), style = MaterialTheme.typography.labelSmall, color = primary.copy(alpha = 0.7f))
         }
     }
 }

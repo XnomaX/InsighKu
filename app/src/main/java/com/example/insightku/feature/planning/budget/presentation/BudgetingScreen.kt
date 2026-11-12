@@ -5,7 +5,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,18 +19,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +42,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.core.data.model.Category
 import com.example.insightku.core.data.model.CategoryType
+import com.example.insightku.core.ui.components.FitText
+import com.example.insightku.core.ui.components.SectionHeaderWithAdd
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -160,7 +157,7 @@ fun BudgetingScreen(
                                 modifier = Modifier.size(18.dp),
                                 tint = if (selected) LocalAccent.current else MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Text(
+                            FitText(
                                 text = tabLabel,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
@@ -228,14 +225,17 @@ fun BudgetingScreenContent(
 
         // ── EXPENSE BUDGETS SECTION ──────────────────────────────────────
         item {
-            BudgetSectionLabel(
+            SectionHeaderWithAdd(
                 title = stringResource(R.string.budget_expense_budgets),
                 subtitle = categoryListSubtitle(uiState),
-                onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
+                addLabel = stringResource(R.string.add_category),
+                tint = LocalAccent.current,
+                onAdd = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,
                     vertical = 8.dp
-                )
+                ),
+                addContentDescription = stringResource(R.string.cd_add_category)
             )
         }
 
@@ -278,14 +278,17 @@ fun BudgetingScreenContent(
 
         // ── INCOME SOURCES SECTION ───────────────────────────────────────
         item {
-            IncomeSectionLabel(
+            SectionHeaderWithAdd(
                 title = stringResource(R.string.budget_income_sources),
                 subtitle = if (uiState.incomeCategories.isEmpty()) stringResource(R.string.no_income_sources)
                 else pluralStringResource(
                     R.plurals.income_sources_count,
+                    uiState.incomeCategories.size,
                     uiState.incomeCategories.size
                 ),
-                onAddCategory = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
+                addLabel = stringResource(R.string.add_source),
+                tint = AppPalette.success,
+                onAdd = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,
                     vertical = 8.dp
@@ -357,122 +360,6 @@ fun BudgetingScreenContent(
                     CircularProgressIndicator(
                         color = LocalAccent.current
                     )
-                }
-            }
-        }
-    }
-}
-
-// ─── Section Labels ───────────────────────────────────────────────────────────
-
-@Composable
-private fun BudgetSectionLabel(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-    onAddCategory: (() -> Unit)? = null
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AppPalette.textPrimary
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
-            }
-            if (onAddCategory != null) {
-                Surface(
-                    modifier = Modifier.clickable { onAddCategory() },
-                    shape = RoundedCornerShape(50.dp),
-                    color = AppPalette.card,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, LocalAccent.current)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = stringResource(R.string.cd_add_category),
-                            modifier = Modifier.size(14.dp),
-                            tint = LocalAccent.current
-                        )
-                        Text(
-                            text = stringResource(R.string.add_category),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = LocalAccent.current
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun IncomeSectionLabel(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-    onAddCategory: (() -> Unit)? = null
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AppPalette.textPrimary
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
-            }
-            if (onAddCategory != null) {
-                Surface(
-                    modifier = Modifier.clickable { onAddCategory() },
-                    shape = RoundedCornerShape(50.dp),
-                    color = AppPalette.card,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AppPalette.success)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = AppPalette.success
-                        )
-                        Text(
-                            text = stringResource(R.string.add_source),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AppPalette.success
-                        )
-                    }
                 }
             }
         }

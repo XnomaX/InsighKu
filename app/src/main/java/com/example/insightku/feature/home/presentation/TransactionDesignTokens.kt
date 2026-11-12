@@ -1,15 +1,18 @@
 package com.example.insightku.feature.home.presentation
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
+import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.home.presentation.TransactionTypePresentation
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
+import com.example.insightku.core.utils.TimeUtils
 import java.util.Calendar
 import kotlin.math.abs
 
@@ -65,7 +68,7 @@ internal enum class TxGroup { TODAY, YESTERDAY, THIS_WEEK, THIS_MONTH, OLDER }
 internal fun getTxGroup(dateMillis: Long): TxGroup {
     val now   = Calendar.getInstance()
     val txCal = Calendar.getInstance().apply { timeInMillis = dateMillis }
-    val diffDays = ((now.timeInMillis - dateMillis) / 86_400_000L).toInt()
+    val diffDays = TimeUtils.daysBetween(dateMillis, now.timeInMillis)
     return when {
         now.get(Calendar.YEAR) == txCal.get(Calendar.YEAR) &&
         now.get(Calendar.DAY_OF_YEAR) == txCal.get(Calendar.DAY_OF_YEAR) -> TxGroup.TODAY
@@ -90,6 +93,56 @@ internal fun TxGroup.label(): String = when (this) {
 
 internal fun formatFullDate(dateMillis: Long): String =
     DateFormatter.formatDateTime(dateMillis)
+
+/** Value written by `GoalRepository` when a goal completes and funds move out. */
+internal const val TX_SOURCE_TRANSFER = "transfer"
+
+/**
+ * Goal name for a goal-completion transfer, or null for every other row.
+ *
+ * `sourceModule` and `goalName` are locale-neutral markers already persisted by
+ * `GoalRepository`, so this is how we recognise those rows without pattern
+ * matching on prose.
+ */
+private fun transferGoalName(transaction: Transaction): String? =
+    if (transaction.sourceModule == TX_SOURCE_TRANSFER) {
+        transaction.goalName?.takeIf { it.isNotBlank() }
+    } else {
+        null
+    }
+
+/**
+ * Title to display for [transaction], localized at render time.
+ *
+ * Goal-completion transfers are written with an English title because
+ * `GoalRepository` is not Composable and the row is replicated to Firestore.
+ * `TRANSFER_OUT`/`TRANSFER_IN` also have `allowsEdit = false`, so users cannot
+ * correct the text themselves — without this the English string is permanent in
+ * both the UI and the synced record.
+ *
+ * Resolving at render time (rather than localizing before persisting) means: no
+ * schema change, no migration, rows written under any earlier language display
+ * correctly, and switching app language updates them instead of freezing the
+ * language chosen at write time into immutable financial history.
+ */
+internal fun txDisplayTitle(transaction: Transaction, context: Context): String {
+    val goalName = transferGoalName(transaction) ?: return transaction.title
+    return context.getString(R.string.tx_transfer_from_goal_title, goalName)
+}
+
+/**
+ * Notes text to display for [transaction]. Same reasoning as [txDisplayTitle];
+ * returns null when the row has no description at all.
+ *
+ * Callers that match on this text (transaction search) must match against the
+ * resolved value, not the stored one, or a user searching in their own language
+ * will not find rows written while the app was in another.
+ */
+internal fun txDisplayDescription(transaction: Transaction, context: Context): String? {
+    val description = transaction.description ?: return null
+    val goalName = transferGoalName(transaction) ?: return description
+    return context.getString(R.string.tx_transfer_from_goal_desc, goalName)
+}
 
 internal fun formatCurrencyRp(amount: Double): String =
     NumberFormatter.formatCurrency(abs(amount))

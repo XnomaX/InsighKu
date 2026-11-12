@@ -213,8 +213,8 @@ fun AddGoalDialog(
                     .padding(24.dp)
                     .navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                GoalFormField(label = stringResource(R.string.add_goal_name_label), value = name, onValueChange = { name = it; nameError = null }, placeholder = "e.g. Emergency Fund, Vacation", error = nameError, accentColor = GoalPurple)
-                GoalFormField(label = stringResource(R.string.add_goal_amount_label), value = CurrencyUtils.formatInputThousands(targetAmountText), onValueChange = { targetAmountText = CurrencyUtils.stripThousands(it); amountError = null }, placeholder = "e.g. 5.000.000", keyboardType = KeyboardType.Number, prefix = NumberFormatter.getCurrencySymbol(), accentColor = GoalPurple, error = amountError)
+                GoalFormField(label = stringResource(R.string.add_goal_name_label), value = name, onValueChange = { name = it; nameError = null }, placeholder = stringResource(R.string.add_goal_name_placeholder), error = nameError, accentColor = GoalPurple)
+                GoalFormField(label = stringResource(R.string.add_goal_amount_label), value = CurrencyUtils.formatInputThousands(targetAmountText), onValueChange = { targetAmountText = CurrencyUtils.stripThousands(it); amountError = null }, placeholder = stringResource(R.string.add_goal_amount_placeholder), keyboardType = KeyboardType.Number, prefix = NumberFormatter.getCurrencySymbol(), accentColor = GoalPurple, error = amountError)
                 if (currentAmount != null) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.add_goal_saved_label), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)

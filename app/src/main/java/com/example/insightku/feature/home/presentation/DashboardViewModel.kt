@@ -17,6 +17,7 @@ import com.example.insightku.core.data.repository.CategoryRepository
 import com.example.insightku.core.data.repository.DraftTransactionRepository
 import com.example.insightku.core.data.repository.InstallmentRepository
 import com.example.insightku.core.data.repository.RecurringBudgetRepository
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.core.utils.TimeUtils
@@ -26,7 +27,11 @@ import com.example.insightku.feature.home.domain.ApproveAllocationDraftUseCase
 import com.example.insightku.feature.home.domain.BuildInsightMessagesUseCase
 import com.example.insightku.feature.home.domain.CalculateStreakUseCase
 import com.example.insightku.feature.home.domain.GetTransactionsUseCase
+import com.example.insightku.feature.home.domain.InsightMessage
 import com.example.insightku.feature.home.domain.MarkPaymentPaidUseCase
+import com.example.insightku.feature.home.domain.forecast.ForecastExpenseUseCase
+import com.example.insightku.feature.home.domain.forecast.ForecastNotice
+import com.example.insightku.feature.home.domain.forecast.ForecastUi
 import com.example.insightku.feature.planning.goal.data.repository.GoalRepository
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -53,6 +58,7 @@ class DashboardViewModel @Inject constructor(
     private val buildInsightMessagesUseCase: BuildInsightMessagesUseCase,
     private val markPaymentPaidUseCase: MarkPaymentPaidUseCase,
     private val approveAllocationDraftUseCase: ApproveAllocationDraftUseCase,
+    private val forecastExpenseUseCase: ForecastExpenseUseCase,
     private val categoryRepository: CategoryRepository,
     private val recurringBudgetRepository: RecurringBudgetRepository,
     private val installmentRepository: InstallmentRepository,
@@ -68,10 +74,40 @@ class DashboardViewModel @Inject constructor(
     val uiState = _uiState.asStateFlow()
 
     private var loadJob: Job? = null
-    private var userNameJob: Job? = null
+
+    /**
+     * Language the copy currently in [_uiState] was built in, or null before the first build.
+     *
+     * `updateStateFromTransactions` bakes localized text into the state it emits —
+     * `txDisplayTitle(t, localizedContext)` for goal-transfer rows and
+     * `TimeUtils.toShortRelativeTime` for the time column — and `localizedContext` is
+     * resolved once per rebuild from the *then* applied locale. The Room `combine` only
+     * re-emits on data changes, and this ViewModel survives the Activity recreation that
+     * `setApplicationLocales` triggers, so without a re-derivation those fields stay in the
+     * previous language while every `stringResource` around them (including the advice
+     * cards, which resolve at composition) switches — producing rows in one language
+     * sitting next to insights in another.
+     */
+    private var derivedLanguage: String? = null
+
+    /**
+     * Re-derive the dashboard when the applied locale differs from the one the current state
+     * was built in. No-op until the first build completes, which keeps the first composition
+     * from issuing a duplicate load on top of `init`.
+     */
+    fun onLocaleChanged() {
+        val current = LocaleHelper.getCurrentLanguageCode(context)
+        val used = derivedLanguage
+        if (used != null && used != current) loadDashboardData()
+    }
+    private var forecastJob: Job? = null
+
+    // Gate for maybeLoadForecast — see its doc comment for why the signature is
+    // (date, amount) pairs rather than whole Transaction entities.
+    private var lastForecastSignature: List<Pair<Long, Double>>? = null
+    private var lastForecastOrigin: Long = 0L
 
     init {
-        loadUserName()
         loadDashboardData()
         loadGoalProgress()
         loadBudgetProgress()
@@ -116,15 +152,6 @@ class DashboardViewModel @Inject constructor(
             is DashboardEvent.ApproveAllocationDraft -> approveAllocationDraft(event.draftId)
             is DashboardEvent.RejectAllocationDraft -> rejectAllocationDraft(event.draftId)
             DashboardEvent.ClearSnackbar -> _uiState.update { it.copy(snackbarMessage = null) }
-        }
-    }
-
-    private fun loadUserName() {
-        userNameJob?.cancel()
-        userNameJob = viewModelScope.launch {
-            sessionManager.userName.collect { name ->
-                _uiState.update { it.copy(userName = name.ifBlank { "User" }) }
-            }
         }
     }
 
@@ -226,7 +253,12 @@ class DashboardViewModel @Inject constructor(
             } catch (_: Exception) {
                 val hasData = _uiState.value.recentTransactions.isNotEmpty()
                 if (!hasData) {
-                    val msg = "Tidak dapat memuat data. Periksa koneksi internet."
+                    // Was a hardcoded Indonesian literal; this file already uses
+                    // getString for its other six error paths (:166, :260, :270,
+                    // :289, :291, :293). Composed from the two existing
+                    // resources so the English text keeps the connectivity hint.
+                    val msg = context.getString(R.string.cannot_load_data) + ". " +
+                        context.getString(R.string.check_connection)
                     _uiState.update { it.copy(isLoading = false, error = msg) }
                 }
             }
@@ -237,7 +269,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             addTransactionUseCase(transaction)
                 .onFailure { exception ->
-                    val msg = exception.message ?: "Gagal menambah transaksi"
+                    val msg = exception.message ?: context.getString(R.string.error_save_transaction)
                     _uiState.update { it.copy(error = msg) }
                     errorBus.send(msg)
                 }
@@ -290,8 +322,20 @@ class DashboardViewModel @Inject constructor(
                             )
                         )
                     }
-                is ApproveAllocationDraftUseCase.Outcome.Allocated ->
-                    _uiState.update { it.copy(snackbarMessage = "${NumberFormatter.formatCurrency(outcome.amount)} allocated to ${outcome.goalName ?: "goal"}") }
+                is ApproveAllocationDraftUseCase.Outcome.Allocated -> {
+                    // @ApplicationContext carries the SYSTEM locale, so wrap before
+                    // resolving — same reason as localizedContext in buildDashboardState.
+                    val res = LocaleHelper.wrapContext(context)
+                    _uiState.update {
+                        it.copy(
+                            snackbarMessage = res.getString(
+                                R.string.alloc_draft_approved_snackbar,
+                                NumberFormatter.formatCurrency(outcome.amount),
+                                outcome.goalName ?: res.getString(R.string.goal_name_fallback)
+                            )
+                        )
+                    }
+                }
                 is ApproveAllocationDraftUseCase.Outcome.Failed ->
                     _uiState.update { it.copy(error = outcome.message) }
             }
@@ -330,6 +374,17 @@ class DashboardViewModel @Inject constructor(
 
         // Build lookup map
         val categoryMap = categories.associateBy { it.name.normalizedCategoryName() }
+        // `context` here is @ApplicationContext, which does NOT carry the in-app
+        // locale on API <= 32 (AppCompat applies per-app locales to Activity
+        // contexts, not the application context). Wrapping once — outside the
+        // loop, not per row — makes txDisplayTitle resolve in the user's chosen
+        // language, matching TransactionDetailOverlay (a composable that reads
+        // LocalContext, already locale-wrapped). Without this the dashboard row
+        // could show English while the detail overlay showed Indonesian.
+        val localizedContext = LocaleHelper.wrapContext(context)
+        // The state built below is localized with exactly this locale, so record it here —
+        // `onLocaleChanged` compares against it to decide whether a re-derivation is needed.
+        derivedLanguage = LocaleHelper.getCurrentLanguageCode(context)
         val recentTransactions = transactions
             .sortedByDescending { it.date }
             .take(5)
@@ -337,7 +392,7 @@ class DashboardViewModel @Inject constructor(
                 val matchedCat = categoryMap[t.category.normalizedCategoryName()]
                 TransactionItem(
                     id = t.id,
-                    title = t.title,
+                    title = txDisplayTitle(t, localizedContext),
                     category = t.category,
                     amount = t.amount,
                     time = TimeUtils.toShortRelativeTime(t.date),
@@ -410,6 +465,7 @@ class DashboardViewModel @Inject constructor(
                 currentStreak = streakResult.currentStreak,
                 bestStreak = streakResult.bestStreak,
                 hasTrackedToday = streakResult.hasTrackedToday,
+                trackedDayKeys = streakResult.trackedDayKeys,
                 freezeCount = streakResult.freezeCount,
                 isPerfectStreak = streakResult.isPerfectStreak,
                 streakGoal = streakResult.streakGoal,
@@ -426,7 +482,91 @@ class DashboardViewModel @Inject constructor(
                 hasActiveBudgets = previewBudgets.isNotEmpty()
             )
         }
+
+        // Runs on every Room emission; the signature gate inside decides whether
+        // the expense population actually changed and a fetch is warranted.
+        maybeLoadForecast(transactions)
     }
+
+    /**
+     * Fetch the expense forecast, gated so the dashboard's Room stream cannot
+     * hammer the model server.
+     *
+     * Driven from [updateStateFromTransactions] rather than `init`: a first-run
+     * user opens the dashboard with zero transactions, then adds some, and the
+     * combine re-emits. Calling this only from `init` left the card empty until
+     * the process was recreated.
+     *
+     * The gate keys on `date`/`amount` — the only fields the server consumes —
+     * plus the origin day. Keying on whole [Transaction] entities would re-fire
+     * on every Firestore sync, because `isSynced` flips false→true via a Room
+     * UPDATE that invalidates the table and re-emits `getAllTransactions()`,
+     * with no change in spending. `origin` is included so a long-lived process
+     * rolls over at midnight instead of silently keeping yesterday's forecast.
+     */
+    private fun maybeLoadForecast(transactions: List<Transaction>) {
+        val origin = startOfToday()
+        val expenses = transactions.filter {
+            it.type == TransactionType.EXPENSE && it.amount > 0.0
+        }
+        val signature = expenses.map { it.date to it.amount }
+        if (signature == lastForecastSignature && origin == lastForecastOrigin) return
+        // Latch BEFORE launching. The data source uses a blocking OkHttp
+        // execute(), so cancelling a job does not abort the in-flight request;
+        // deferring the latch until success let a burst of Room emissions (a
+        // Firestore sync lands in several write batches) each cancel the
+        // previous job and fire another real forecast call for identical data.
+        // Transient failures release the latch below so they still retry.
+        lastForecastSignature = signature
+        lastForecastOrigin = origin
+
+        forecastJob?.cancel()
+        forecastJob = viewModelScope.launch {
+            try {
+                // The dashboard aggregates every account (see totalBalance), so
+                // the forecast is asked for the same population. `account_id`
+                // only partitions the server-side panel; one aggregate key
+                // matches what the rest of this screen displays.
+                val accountId = sessionManager.userId.first().ifBlank { "all" }
+                // An empty `expenses` list is deliberately NOT short-circuited
+                // here: ForecastRepository turns it into
+                // Refused(REFUSAL_NO_EXPENSE_HISTORY) without a network call, so
+                // the card shows honest "needs more history" copy instead of
+                // staying on the generic empty state.
+                val ui = forecastExpenseUseCase(
+                    accountId = accountId,
+                    originMillis = origin,
+                    transactions = expenses
+                )
+                _uiState.update { it.copy(forecast = ui) }
+                // Offline and transport errors are transient: release the latch
+                // so the next Room emission retries. A model Refused stays
+                // latched because it is deterministic for this exact data.
+                if (ui.notice is ForecastNotice.Offline || ui.notice is ForecastNotice.Error) {
+                    lastForecastSignature = null
+                    lastForecastOrigin = 0L
+                }
+            } catch (e: CancellationException) {
+                // Cancelled by a newer emission that already latched its own
+                // signature — leave that one in place.
+                throw e
+            } catch (e: Exception) {
+                // A forecast failure must never blank the dashboard: leave the
+                // existing state and let the card keep showing its empty state.
+                // Release the latch too, or an exception from userId.first()
+                // would strand the card until the data changes.
+                lastForecastSignature = null
+                lastForecastOrigin = 0L
+                android.util.Log.w(TAG, "forecast skipped: ${e.message}")
+            }
+        }
+    }
+
+    /** Epoch millis of today at 00:00 local time — the forecast origin day D. */
+    private fun startOfToday(): Long = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
 
     /** Inclusive [start, end] epoch-millis range covering the current calendar month. */
     private fun currentMonthRange(): Pair<Long, Long> {
@@ -509,19 +649,18 @@ sealed class DashboardEvent {
 data class DashboardUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
-    val userName: String = "User",
     val totalBalance: Double = 0.0,
     val monthlyIncome: Double = 0.0,
     val monthlyExpenses: Double = 0.0,
     val isBalanceVisible: Boolean = true,
-    val weeklyForecastData: List<Float> = emptyList(),
-    val monthlyForecastData: List<Float> = emptyList(),
-    val aiInsightMessage: String = "",
+    val forecast: ForecastUi = ForecastUi.EMPTY,
     val recentTransactions: List<TransactionItem> = emptyList(),
     // ── Streak system ──────────────────────────────────────────────────────────
     val currentStreak: Int = 0,
     val bestStreak: Int = 0,
     val hasTrackedToday: Boolean = false,
+    /** "yyyyMMdd" keys of days with ≥1 transaction; drives the week strip checks. */
+    val trackedDayKeys: Set<String> = emptySet(),
     val freezeCount: Int = 0,
     val isPerfectStreak: Boolean = false,
     val streakGoal: Int = 7,
@@ -535,7 +674,7 @@ data class DashboardUiState(
     val installments: List<Installment> = emptyList(),
     val budgetCategorySpending: List<BudgetSpendingItem> = emptyList(),
     val monthlySavings: Double = 0.0,
-    val insightMessages: List<String> = emptyList(),
+    val insightMessages: List<InsightMessage> = emptyList(),
     // Draft Inbox — draft hasil deteksi notifikasi bank yang menunggu ditinjau.
     val pendingDrafts: List<DraftTransaction> = emptyList(),
     // ── Goals Preview ────────────────────────────────────────────────────────

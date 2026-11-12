@@ -33,10 +33,11 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.IncomeGreen
 import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.core.ui.theme.WarningYellow
+import com.example.insightku.feature.home.domain.InsightMessage
 
 @Composable
 fun InsightsSection(
-    insightMessages: List<String>,
+    insightMessages: List<InsightMessage>,
     modifier: Modifier = Modifier
 ) {
     if (insightMessages.isEmpty()) return
@@ -92,7 +93,7 @@ fun InsightsSection(
                         Icon(icon, null, tint = tint, modifier = Modifier.size(16.dp))
                     }
                     Text(
-                        text     = msg,
+                        text     = stringResource(msg.resId, *msg.args.toTypedArray()),
                         style    = MaterialTheme.typography.bodySmall,
                         color    = AppPalette.textPrimary,
                         modifier = Modifier.weight(1f),

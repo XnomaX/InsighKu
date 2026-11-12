@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.utils.CurrencyUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -31,7 +32,13 @@ class AutoAllocationNotificationHelper @Inject constructor(
 ) {
     companion object {
         const val CHANNEL_ID_AUTO_ALLOCATION = "auto_allocation_channel"
-        const val CHANNEL_NAME_AUTO_ALLOCATION = "Auto Allocation"
+        /**
+         * Channel name resource rather than a constant: this string is shown to the user in
+         * Android's notification settings, so it has to follow the app language. Resolved
+         * through [LocaleHelper.wrapContext] at creation time, matching the other channel
+         * helpers (GoalReminderHelper, PaymentReminderHelper, DraftReminderWorker).
+         */
+        private val CHANNEL_NAME_RES = R.string.alloc_notif_channel_name
         const val NOTIFICATION_ID_ALLOCATION_SUCCESS = 5001
         const val NOTIFICATION_ID_ALLOCATION_SKIPPED = 5002
         const val NOTIFICATION_ID_GOAL_COMPLETED = 5003
@@ -44,12 +51,13 @@ class AutoAllocationNotificationHelper @Inject constructor(
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ctx = LocaleHelper.wrapContext(context)
             val channel = NotificationChannel(
                 CHANNEL_ID_AUTO_ALLOCATION,
-                CHANNEL_NAME_AUTO_ALLOCATION,
+                ctx.getString(CHANNEL_NAME_RES),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = context.getString(R.string.alloc_notif_channel_desc)
+                description = ctx.getString(R.string.alloc_notif_channel_desc)
             }
             val notificationManager = context.getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
@@ -60,9 +68,14 @@ class AutoAllocationNotificationHelper @Inject constructor(
      * Show notification for successful auto-allocation.
      */
     fun showAllocationSuccessNotification(goalName: String, amount: Double) {
-        val formattedAmount = CurrencyUtils.formatAmount(amount)
-        val title = context.getString(R.string.alloc_notif_success_title)
-        val message = context.getString(R.string.alloc_notif_success_msg, formattedAmount, goalName)
+        // @ApplicationContext carries the SYSTEM locale, not the in-app one, so wrap before
+        // resolving — otherwise an app=id / system=en user gets English notifications here
+        // even though every one of these keys is translated in values-id. The amount is
+        // formatted from the same wrapped context so digits and text agree.
+        val ctx = LocaleHelper.wrapContext(context)
+        val formattedAmount = CurrencyUtils.formatAmount(amount, locale = ctx.resources.configuration.locales[0])
+        val title = ctx.getString(R.string.alloc_notif_success_title)
+        val message = ctx.getString(R.string.alloc_notif_success_msg, formattedAmount, goalName)
 
         showNotification(
             notificationId = NOTIFICATION_ID_ALLOCATION_SUCCESS + abs(goalName.hashCode()),
@@ -76,8 +89,9 @@ class AutoAllocationNotificationHelper @Inject constructor(
      * Show notification when allocation is skipped due to insufficient balance.
      */
     fun showAllocationSkippedNotification(goalName: String, accountName: String) {
-        val title = context.getString(R.string.alloc_notif_skipped_title)
-        val message = context.getString(R.string.alloc_notif_skipped_msg, goalName, accountName)
+        val ctx = LocaleHelper.wrapContext(context)
+        val title = ctx.getString(R.string.alloc_notif_skipped_title)
+        val message = ctx.getString(R.string.alloc_notif_skipped_msg, goalName, accountName)
 
         showNotification(
             notificationId = NOTIFICATION_ID_ALLOCATION_SKIPPED + abs(goalName.hashCode()),
@@ -91,8 +105,9 @@ class AutoAllocationNotificationHelper @Inject constructor(
      * Show notification when a goal is completed and auto-allocation stops.
      */
     fun showGoalCompletedNotification(goalName: String) {
-        val title = context.getString(R.string.alloc_notif_completed_title)
-        val message = context.getString(R.string.alloc_notif_completed_msg, goalName)
+        val ctx = LocaleHelper.wrapContext(context)
+        val title = ctx.getString(R.string.alloc_notif_completed_title)
+        val message = ctx.getString(R.string.alloc_notif_completed_msg, goalName)
 
         showNotification(
             notificationId = NOTIFICATION_ID_GOAL_COMPLETED + abs(goalName.hashCode()),

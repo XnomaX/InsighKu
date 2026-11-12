@@ -107,8 +107,8 @@ class DraftTransactionManager {
         createChannelIfNeeded(context)
 
         val notifId    = draftId.hashCode()
-        val amountText = NumberFormatter.formatCurrency(parsed.amount)
         val ctx = LocaleHelper.wrapContext(context)
+        val amountText = NumberFormatter.formatCurrency(parsed.amount, locale = ctx.resources.configuration.locales[0])
         val typeLabel  = when (parsed.type) {
             TransactionType.INCOME  -> ctx.getString(R.string.draft_type_income)
             TransactionType.EXPENSE -> ctx.getString(R.string.draft_type_expense)
@@ -267,7 +267,7 @@ class DraftTransactionManager {
         createAllocationChannelIfNeeded(context)
 
         val notifId = draftId.hashCode()
-        val amountText = NumberFormatter.formatCurrency(amount)
+        val amountText = NumberFormatter.formatCurrency(amount, locale = LocaleHelper.wrapContext(context).resources.configuration.locales[0])
 
         // Deep link URI: opens allocation draft review
         val deepLinkUri = "insightku://allocation-draft".toUri().buildUpon()

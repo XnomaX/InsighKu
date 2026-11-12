@@ -13,6 +13,7 @@ import com.example.insightku.core.data.repository.InstallmentRepository
 import com.example.insightku.core.data.repository.RecurringBudgetRepository
 import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.feature.auth.data.AuthRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -75,7 +76,7 @@ class AutoTransactionWorker @AssistedInject constructor(
                     category      = budget.name,
                     type          = TransactionType.EXPENSE,
                     date          = nextDue,
-                    description   = "Auto: ${budget.name}",
+                    description   = str(R.string.tx_auto_recurring_desc, budget.name),
                     accountId     = budget.accountId ?: "",
                     isSynced      = false
                 )
@@ -87,7 +88,7 @@ class AutoTransactionWorker @AssistedInject constructor(
                     AutoTransactionNotificationHelper.notify(
                         context     = applicationContext,
                         txId        = tx.id,
-                        title       = applicationContext.getString(R.string.notification_auto_prefix, budget.name),
+                        title       = str(R.string.notification_auto_prefix, budget.name),
                         amount      = budget.amount,
                         isRecurring = true
                     )
@@ -146,7 +147,12 @@ class AutoTransactionWorker @AssistedInject constructor(
                     category      = installment.name,
                     type          = TransactionType.EXPENSE,
                     date          = nextDue,
-                    description   = "Auto cicilan: ${installment.name} (${paidMonths + 1}/${installment.totalMonths})",
+                    description   = str(
+                        R.string.tx_auto_installment_desc,
+                        installment.name,
+                        paidMonths + 1,
+                        installment.totalMonths
+                    ),
                     accountId     = installment.accountId ?: "",
                     isSynced      = false
                 )
@@ -157,7 +163,7 @@ class AutoTransactionWorker @AssistedInject constructor(
                     AutoTransactionNotificationHelper.notify(
                         context     = applicationContext,
                         txId        = tx.id,
-                        title       = applicationContext.getString(R.string.notification_installment_prefix, installment.name),
+                        title       = str(R.string.notification_installment_prefix, installment.name),
                         amount      = installment.monthlyPayment,
                         isRecurring = false
                     )
@@ -226,4 +232,12 @@ class AutoTransactionWorker @AssistedInject constructor(
         /** Cap on auto-backfilled occurrences per payment per run — prevents ledger floods. */
         const val MAX_BACKFILL_PER_PAYMENT = 12
     }
+
+    /**
+     * `applicationContext` carries the system locale rather than the in-app one,
+     * so wrap via [LocaleHelper]; persisted descriptions must follow the user's
+     * chosen language. Called once per created transaction, never in a loop.
+     */
+    private fun str(resId: Int, vararg args: Any?): String =
+        LocaleHelper.wrapContext(applicationContext).getString(resId, *args)
 }

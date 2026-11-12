@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.FitText
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -147,7 +148,7 @@ fun BudgetCategoryCard(
                         color = AppPalette.textMuted
                     )
                     Text(
-                        text = if (category.hasLimit) NumberFormatter.formatCurrency(category.remainingAmount) else stringResource(R.string.category_no_limit),
+                        text = if (category.hasLimit) formatCurrencyPlain(category.remainingAmount) else stringResource(R.string.category_no_limit),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (category.hasLimit) statusColor else LocalAccent.current,
@@ -221,7 +222,7 @@ internal fun BudgetStatePill(text: String, color: Color) {
         color = color.copy(alpha = 0.12f),
         contentColor = color
     ) {
-        Text(
+        FitText(
             text = text,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
             style = MaterialTheme.typography.labelSmall,
@@ -281,7 +282,7 @@ internal fun IncomeCategoryCard(
                 )
                 Text(
                     text = if (category.spentAmount > 0)
-                        stringResource(R.string.income_this_month, NumberFormatter.formatCurrency(category.spentAmount))
+                        stringResource(R.string.income_this_month, formatCurrencyPlain(category.spentAmount))
                     else stringResource(R.string.no_income_recorded),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
@@ -289,7 +290,7 @@ internal fun IncomeCategoryCard(
             }
             if (category.spentAmount > 0) {
                 Text(
-                    text = NumberFormatter.formatCurrency(category.spentAmount),
+                    text = NumberFormatter.formatCurrencyCompact(category.spentAmount),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = AppPalette.success
@@ -374,7 +375,7 @@ internal fun EmptyBudgetState(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(36.dp),
+                .padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -392,7 +393,7 @@ internal fun EmptyBudgetState(
                     tint = LocalAccent.current.copy(alpha = 0.5f)
                 )
             }
-            Text(
+            FitText(
                 text = stringResource(R.string.empty_budget_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -406,25 +407,27 @@ internal fun EmptyBudgetState(
                 textAlign = TextAlign.Center
             )
             Surface(
-                modifier = Modifier.clickable(onClick = onAddCategory),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50.dp))
+                    .clickable(onClick = onAddCategory),
                 shape = RoundedCornerShape(50.dp),
                 color = AppPalette.card,
                 border = BorderStroke(1.dp, LocalAccent.current)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.Add,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(14.dp),
                         tint = LocalAccent.current
                     )
-                    Text(
+                    FitText(
                         stringResource(R.string.add_category),
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = LocalAccent.current
                     )
@@ -482,7 +485,9 @@ internal fun EmptyIncomeState(
                 textAlign = TextAlign.Center
             )
             Surface(
-                modifier = Modifier.clickable(onClick = onAddCategory),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50.dp))
+                    .clickable(onClick = onAddCategory),
                 shape = RoundedCornerShape(50.dp),
                 color = AppPalette.card,
                 border = BorderStroke(1.dp, AppPalette.success)
@@ -498,7 +503,7 @@ internal fun EmptyIncomeState(
                         modifier = Modifier.size(14.dp),
                         tint = AppPalette.success
                     )
-                    Text(
+                    FitText(
                         stringResource(R.string.add_income_source),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,

@@ -165,6 +165,12 @@ fun AuthTextField(
     val focusManager = LocalFocusManager.current
 
     Column(modifier = modifier) {
+        // semantics {} is not a composable scope, so resolve the copy here.
+        val fieldDescription = if (isError && errorMessage != null) {
+            stringResource(R.string.cd_field_error, label, errorMessage)
+        } else {
+            stringResource(R.string.cd_field_input, label)
+        }
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
@@ -175,13 +181,7 @@ fun AuthTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester)
-                .semantics {
-                    contentDescription = if (isError && errorMessage != null) {
-                        "$label field, error: $errorMessage"
-                    } else {
-                        "$label input field"
-                    }
-                },
+                .semantics { contentDescription = fieldDescription },
             shape = InputShape,
             leadingIcon = {
                 Icon(
@@ -203,7 +203,9 @@ fun AuthTextField(
                     ) {
                         Icon(
                             if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (showPassword) "Hide password" else "Show password",
+                            contentDescription = stringResource(
+                                if (showPassword) R.string.cd_hide_password else R.string.cd_show_password
+                            ),
                             tint = AppPalette.textMuted,
                             modifier = Modifier.size(Dimens.IconSizeMedium)
                         )
@@ -211,7 +213,7 @@ fun AuthTextField(
                 } else if (value.isNotEmpty() && !isPassword) {
                     Icon(
                         if (isError) Icons.Default.Error else Icons.Default.Check,
-                        contentDescription = if (isError) "Invalid" else "Valid",
+                        contentDescription = stringResource(if (isError) R.string.cd_invalid else R.string.cd_valid),
                         tint = if (isError) AppPalette.error else AppPalette.success,
                         modifier = Modifier.size(18.dp)
                     )
@@ -303,18 +305,18 @@ fun AuthButton(
     contentColor: Color = Color.White,
     height: Dp = adaptiveDp(Dimens.ButtonHeightCompact, Dimens.ButtonHeightMedium, Dimens.ButtonHeightExpanded)
 ) {
+    // semantics {} is not a composable scope, so resolve the copy here.
+    val buttonDescription = when {
+        isLoading -> stringResource(R.string.cd_button_loading, text)
+        enabled -> stringResource(R.string.cd_button_enabled, text)
+        else -> stringResource(R.string.cd_button_disabled, text)
+    }
     Button(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .height(height)
-            .semantics {
-                contentDescription = when {
-                    isLoading -> "$text, loading"
-                    enabled -> "$text, enabled"
-                    else -> "$text, disabled"
-                }
-            },
+            .semantics { contentDescription = buttonDescription },
         enabled = enabled && !isLoading,
         colors = ButtonDefaults.buttonColors(
             containerColor = buttonColor,

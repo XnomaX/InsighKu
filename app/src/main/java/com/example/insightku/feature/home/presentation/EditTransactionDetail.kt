@@ -85,6 +85,7 @@ import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.data.repository.TransactionRepository
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.components.PremiumDatePicker
@@ -132,6 +133,25 @@ fun EditTransactionDetail(
 
     val isIncome    = type == TransactionType.INCOME
     val accentColor = if (isIncome) EditIncomeGreen else EditPurple
+
+    val parsedAmount = amountRaw.toAmountOrZero()
+    val selectedAccount = accounts.firstOrNull { it.id == accountId }
+    // Projected balance after this edit, mirroring TransactionRepository's net-delta
+    // maths: on the original account the old effect is reversed first, so editing an
+    // Rp80k expense to Rp120k on Rp100k leaves Rp60k and must stay saveable.
+    val projectedBalance = TransactionRepository.projectedBalanceAfterEdit(
+        account = selectedAccount,
+        originalAccountId = transaction.accountId,
+        originalType = transaction.type,
+        originalAmount = transaction.amount,
+        newType = type,
+        newAmount = parsedAmount
+    )
+    // Asset accounts may never go negative; credit cards are liabilities, where a
+    // growing debt balance is the normal state.
+    val insufficientBalance = projectedBalance != null
+            && selectedAccount?.isAsset == true
+            && projectedBalance < 0.0
 
     BackHandler { onDismiss() }
 
@@ -327,6 +347,19 @@ fun EditTransactionDetail(
                     .height(1.dp)
                     .background(EditBorder)
             )
+            // `insufficientBalance` already requires a non-null asset account
+            // (K2 tracks that implication), so no second null check is needed.
+            if (insufficientBalance) {
+                Text(
+                    text = stringResource(R.string.error_insufficient_balance, selectedAccount.name),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = EditExpenseRed,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -358,6 +391,7 @@ fun EditTransactionDetail(
                             )
                         )
                     },
+                    enabled = !insufficientBalance,
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp),

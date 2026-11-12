@@ -68,11 +68,13 @@ fun GoalsPreviewSection(
                     totalCount == 0 -> stringResource(R.string.dashboard_no_active_goals)
                     totalCount <= 3 -> pluralStringResource(
                         R.plurals.dashboard_active_goals_count,
+                        totalCount,
                         totalCount
                     )
 
                     else -> pluralStringResource(
                         R.plurals.dashboard_goals_of_count,
+                        goals.size,
                         goals.size,
                         totalCount
                     )
@@ -181,7 +183,7 @@ fun GoalsPreviewSection(
 
             if (totalCount > 3) {
                 Text(
-                    pluralStringResource(R.plurals.dashboard_more_goals, totalCount - 3),
+                    pluralStringResource(R.plurals.dashboard_more_goals, totalCount - 3, totalCount - 3),
                     style = MaterialTheme.typography.labelMedium,
                     color = NavPurple,
                     modifier = Modifier

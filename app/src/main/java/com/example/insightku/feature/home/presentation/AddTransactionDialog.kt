@@ -80,6 +80,7 @@ import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.toAmountOrZero
 
@@ -550,11 +551,26 @@ fun ColumnScope.ManualFormContent(
 ) {
     val focusManager = LocalFocusManager.current
 
+    val parsedAmount = formData.amount.toDoubleOrNull() ?: 0.0
+    val selectedAccount = accounts.firstOrNull { it.id == formData.accountId }
+    // An expense may not exceed the selected asset account's balance — saving would
+    // drive the account negative. Credit cards are liabilities: spending on one
+    // grows debt, which is their normal state.
+    val insufficientBalance = !formData.isIncome
+            && selectedAccount != null
+            && !selectedAccount.isLiability
+            && parsedAmount > selectedAccount.balance
+    // `insufficientBalance` already requires a non-null account (K2 tracks that
+    // implication), so no second null check is needed here.
+    val insufficientMessage = if (insufficientBalance)
+        stringResource(R.string.error_insufficient_balance, selectedAccount.name) else null
+
     // Form is valid only when all required fields are filled including account selection
     val isFormValid = formData.merchant.isNotBlank()
             && (formData.amount.toDoubleOrNull() ?: -1.0) > 0
             && formData.category.isNotBlank()
             && formData.accountId.isNotBlank()
+            && !insufficientBalance
 
     val saveBgColor = when {
         !isFormValid -> AppPalette.placeholder
@@ -625,6 +641,15 @@ fun ColumnScope.ManualFormContent(
                 accounts = accounts,
                 selectedAccountId = formData.accountId,
                 onAccountSelected = { onFormDataChanged(formData.copy(accountId = it)) }
+            )
+        }
+
+        if (insufficientMessage != null) {
+            Text(
+                text = insufficientMessage,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = ExpenseRed
             )
         }
 

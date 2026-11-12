@@ -28,6 +28,22 @@ object Dimens {
     val ChipRadius = 10.dp
     val BottomSheetRadius = 28.dp
 
+    // ─── Section-header add pill ──────────────────────────────────────────────
+    /**
+     * Fixed width of the section-header add pill.
+     *
+     * Sized from the widest shipped label — Indonesian "Tambah Kategori" at `labelMedium`
+     * measures ~100dp — plus the pill chrome that insets the label: 12dp padding x2, 14dp
+     * icon, 4dp gap = 42dp. At 144dp the label budget is 102dp, so that string renders at
+     * full size in both locales, and the longest Indonesian section title ("Anggaran
+     * Pengeluaran", ~167dp) still fits beside the pill on a 360dp screen instead of
+     * wrapping. The 1dp border is drawn on the edge and does not consume content width.
+     *
+     * See `AddPillChrome` / `AddPillLabelBudget` in SharedComponents.kt, which must be kept
+     * in step with this value.
+     */
+    val AddPillWidth = 144.dp
+
     // ─── Bottom Sheet tokens ────────────────────────────────────────────
     /** Corner radius for all bottom sheets. */
     // val BottomSheetRadius = 28.dp  // already defined above

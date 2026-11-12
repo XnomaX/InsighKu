@@ -15,7 +15,6 @@ import com.example.insightku.core.i18n.NumberFormatter
 object AutoTransactionNotificationHelper {
 
     private const val CHANNEL_ID   = "auto_transaction_channel"
-    private const val CHANNEL_NAME = "Transaksi Otomatis"
 
     fun notify(
         context: Context,
@@ -42,7 +41,7 @@ object AutoTransactionNotificationHelper {
 
         val ctx = LocaleHelper.wrapContext(context)
         val typeLabel  = if (isRecurring) ctx.getString(R.string.auto_tx_recurring) else ctx.getString(R.string.auto_tx_installment)
-        val amountText = NumberFormatter.formatCurrency(amount)
+        val amountText = NumberFormatter.formatCurrency(amount, locale = ctx.resources.configuration.locales[0])
 
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)

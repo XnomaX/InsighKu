@@ -63,8 +63,8 @@ class LoginViewModel @Inject constructor(
     }
 
     private fun validateAllFields(): Boolean {
-        val emailError = if (_uiState.value.email.isBlank()) "Email is required" else validateEmail(_uiState.value.email)
-        val passwordError = if (_uiState.value.password.isBlank()) "Password is required" else validatePassword(_uiState.value.password)
+        val emailError = if (_uiState.value.email.isBlank()) context.getString(R.string.error_email_empty) else validateEmail(_uiState.value.email)
+        val passwordError = if (_uiState.value.password.isBlank()) context.getString(R.string.error_password_empty) else validatePassword(_uiState.value.password)
         _uiState.update { it.copy(emailError = emailError, passwordError = passwordError) }
         return emailError == null && passwordError == null
     }
@@ -77,7 +77,7 @@ class LoginViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, loginSuccess = true) }
                 }
                 .onFailure { exception ->
-                    val errorMessage = exception.message ?: "An unknown error occurred"
+                    val errorMessage = exception.message ?: context.getString(R.string.error_something_went_wrong)
                     _uiState.update { it.copy(isLoading = false, error = errorMessage) }
                     errorBus.send(errorMessage)
                 }
@@ -92,7 +92,7 @@ class LoginViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, loginSuccess = true) }
                 }
                 .onFailure { exception ->
-                    val errorMessage = exception.message ?: "Google Sign-In gagal"
+                    val errorMessage = exception.message ?: context.getString(R.string.error_google_signin_failed)
                     _uiState.update { it.copy(isLoading = false, error = errorMessage) }
                     errorBus.send(errorMessage)
                 }

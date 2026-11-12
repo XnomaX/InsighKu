@@ -5,7 +5,6 @@ import com.example.insightku.core.i18n.NumberFormatter.formatCurrencyCompact
 import com.example.insightku.core.utils.CurrencyUtils
 import java.text.DecimalFormat
 import java.text.NumberFormat
-import java.util.Currency
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.floor
@@ -44,7 +43,7 @@ object NumberFormatter {
     fun formatNumber(
         value: Double,
         decimalPlaces: Int = 0,
-        locale: Locale = Locale.getDefault()
+        locale: Locale = LocaleHelper.currentLocale()
     ): String {
         if (value.isNaN() || value.isInfinite()) return "0"
         val fmt = NumberFormat.getNumberInstance(locale) as DecimalFormat
@@ -59,23 +58,9 @@ object NumberFormatter {
      * Indonesian: 1.234.567
      * English:    1,234,567
      */
-    fun formatInteger(value: Long, locale: Locale = Locale.getDefault()): String {
+    fun formatInteger(value: Long, locale: Locale = LocaleHelper.currentLocale()): String {
         val fmt = NumberFormat.getIntegerInstance(locale)
         return fmt.format(value)
-    }
-
-    /**
-     * Format a number for input fields (thousands separator while typing).
-     * Uses the given locale (default: Indonesian for backward compat).
-     */
-    fun formatInputThousands(
-        raw: String,
-        locale: Locale = Locale.forLanguageTag("in-ID")
-    ): String {
-        val digits = raw.filter { it.isDigit() }
-        if (digits.isEmpty()) return ""
-        val number = digits.toLongOrNull() ?: return digits
-        return NumberFormat.getIntegerInstance(locale).format(number)
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -87,7 +72,7 @@ object NumberFormatter {
      *
      * Indonesian IDR: Rp12.500 (no decimals)
      * English USD:    $12,500.00
-     * English IDR:    Rp 12,500 (no decimals)
+     * English IDR:    Rp12,500 (no decimals — the symbol is the currency's own, not CLDR's)
      *
      * @param amount The amount to format
      * @param currencyCode ISO 4217 currency code (e.g., "IDR", "USD")
@@ -96,7 +81,7 @@ object NumberFormatter {
     fun formatCurrency(
         amount: Double,
         currencyCode: String = "IDR",
-        locale: Locale = Locale.getDefault()
+        locale: Locale = LocaleHelper.currentLocale()
     ): String {
         if (amount.isNaN() || amount.isInfinite()) {
             val numFmt = NumberFormat.getNumberInstance(locale) as DecimalFormat
@@ -110,7 +95,14 @@ object NumberFormatter {
 
         return try {
             val fmt = NumberFormat.getCurrencyInstance(locale) as DecimalFormat
-            fmt.currency = Currency.getInstance(option.code)
+            // No `fmt.currency = ...` here: setting the Currency object makes DecimalFormat
+            // resolve the `¤` in its pattern from the Currency's CLDR symbol, which silently
+            // discards a decimalFormatSymbols override (under English that is "IDR", the
+            // bare code the user rejected). The fraction digits are set explicitly below,
+            // so the Currency object contributed nothing but the wrong glyph.
+            val symbols = fmt.decimalFormatSymbols
+            symbols.currencySymbol = getCurrencySymbol(currencyCode)
+            fmt.decimalFormatSymbols = symbols
             fmt.maximumFractionDigits = option.fractionDigits
             fmt.minimumFractionDigits = option.fractionDigits
             fmt.format(amount)
@@ -132,7 +124,7 @@ object NumberFormatter {
         amount: Double,
         isIncome: Boolean,
         currencyCode: String = "IDR",
-        locale: Locale = Locale.getDefault()
+        locale: Locale = LocaleHelper.currentLocale()
     ): String {
         val formatted = formatCurrency(abs(amount), currencyCode, locale)
         return if (isIncome) "+$formatted" else "-$formatted"
@@ -147,7 +139,7 @@ object NumberFormatter {
     fun formatCurrencyCompact(
         amount: Double,
         currencyCode: String = "IDR",
-        locale: Locale = Locale.getDefault()
+        locale: Locale = LocaleHelper.currentLocale()
     ): String {
         if (amount.isNaN() || amount.isInfinite()) {
             return formatCurrency(0.0, currencyCode, locale)
@@ -163,11 +155,20 @@ object NumberFormatter {
         }
 
         val option = CurrencyUtils.getOption(currencyCode)
-        val symbol = option.symbol
-        val isIndonesian = currencyCode == "IDR" || locale.language == "id"
+        // The glyph is the currency's own symbol ("Rp"), never the locale's CLDR rendering
+        // ("IDR" under English) — see formatCurrency for why a bare currency code in front
+        // of an amount was rejected. Units follow the currency's convention: IDR keeps
+        // Rb/Jt/M/T in every language (as it always has in this app), other currencies
+        // follow the locale's vocabulary.
+        val symbol = getCurrencySymbol(currencyCode)
+        val isIndonesian = currencyCode == "IDR" || LocaleHelper.isIndonesian(locale)
 
         val result = resolveCompact(absAmount, locale, isIndonesian, minDecimals = 1)
-        return "$sign$symbol${result.scaled} ${result.suffix}"
+        // Indonesian convention separates number and unit ("Rp1,2 Jt"); IDR keeps that
+        // spacing in every language. Other currencies glue under English ("$200K"), as the
+        // removed CurrencyUtils.formatAmountCompact did for non-IDR codes.
+        val sep = if (isIndonesian) " " else ""
+        return "$sign$symbol${result.scaled}$sep${result.suffix}"
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -199,13 +200,13 @@ object NumberFormatter {
      */
     fun formatCompact(
         value: Double,
-        locale: Locale = Locale.getDefault()
+        locale: Locale = LocaleHelper.currentLocale()
     ): String {
         if (value.isNaN() || value.isInfinite()) return "0"
 
         val absValue = abs(value)
         val sign = if (value < 0) "-" else ""
-        val isIndonesian = locale.language == "id"
+        val isIndonesian = LocaleHelper.isIndonesian(locale)
 
         val result = resolveCompact(absValue, locale, isIndonesian, minDecimals = 0)
         return if (result.suffix.isEmpty()) {
@@ -220,16 +221,20 @@ object NumberFormatter {
      */
     fun formatCompact(
         value: Long,
-        locale: Locale = Locale.getDefault()
+        locale: Locale = LocaleHelper.currentLocale()
     ): String = formatCompact(value.toDouble(), locale)
 
     /**
-     * Get the current currency symbol (e.g., "Rp" for IDR, "$" for USD).
-     * Useful for input field prefixes where only the symbol is needed.
+     * The currency's own symbol ("Rp" for IDR, "$" for USD), identical in every language.
+     *
+     * Deliberately locale-independent: the CLDR table renders IDR as the bare code "IDR"
+     * under English, and a goal row mixing that with the compact form's "Rp" ("IDR0 /
+     * Rp200 Rb") is the defect reported from the device. [formatCurrency] and
+     * [formatCurrencyCompact] both take their glyph from here, so a prefix, a full amount
+     * and a compact amount can never disagree.
      */
-    fun getCurrencySymbol(currencyCode: String = "IDR"): String {
-        return CurrencyUtils.getOption(currencyCode).symbol
-    }
+    fun getCurrencySymbol(currencyCode: String = "IDR"): String =
+        CurrencyUtils.getOption(currencyCode).symbol
 
     // ══════════════════════════════════════════════════════════════════════════════
     // HELPER METHODS
@@ -239,7 +244,7 @@ object NumberFormatter {
      * Format a scaled value for display with max 1 decimal digit.
      * @param minDecimals Minimum fraction digits (1 for currency compact, 0 for standalone compact)
      */
-    private fun formatScale(value: Double, locale: Locale = Locale.getDefault(), minDecimals: Int = 1): String {
+    private fun formatScale(value: Double, locale: Locale = LocaleHelper.currentLocale(), minDecimals: Int = 1): String {
         return if (value == floor(value)) {
             formatInteger(value.toLong(), locale)
         } else {

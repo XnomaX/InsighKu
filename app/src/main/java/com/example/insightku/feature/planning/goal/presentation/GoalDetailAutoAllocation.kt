@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,6 +63,7 @@ internal fun AutoAllocationSection(
             title = stringResource(R.string.goal_auto_allocation),
             subtitle = if (rules.isEmpty()) stringResource(R.string.goal_auto_allocation_empty) else pluralStringResource(
                 R.plurals.goal_auto_allocation_count,
+                rules.size,
                 rules.size
             )
         )
@@ -121,6 +123,7 @@ internal fun AutoAllocationSection(
 
 @Composable
 internal fun AutoAllocationRuleItem(rule: AutoAllocationRule, goalColor: Color, onClick: () -> Unit, onToggle: (Boolean) -> Unit) {
+    val context = LocalContext.current
     val triggerIcon = when (rule.triggerType) {
         AllocationTriggerType.INCOME_RECEIVED -> Icons.AutoMirrored.Outlined.TrendingUp
         AllocationTriggerType.SPENDING_CATEGORY -> Icons.Outlined.Category
@@ -145,8 +148,8 @@ internal fun AutoAllocationRuleItem(rule: AutoAllocationRule, goalColor: Color, 
             Icon(triggerIcon, null, tint = goalColor, modifier = Modifier.size(20.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = rule.triggerLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(text = rule.description, style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(text = rule.triggerLabel(context), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text = rule.description(context), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Switch(checked = rule.isEnabled, onCheckedChange = onToggle, colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = SuccessColor, uncheckedThumbColor = AppPalette.textMuted, uncheckedTrackColor = AppPalette.cardBorder))
     }

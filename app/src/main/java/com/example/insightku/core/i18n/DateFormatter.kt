@@ -58,8 +58,8 @@ object DateFormatter {
      * Indonesian: 9 Juli 2026
      * English:    July 9, 2026
      */
-    fun formatFullDate(timestamp: Long, locale: Locale = Locale.getDefault()): String {
-        val pattern = if (locale.language == "id") "d MMMM yyyy" else "MMMM d, yyyy"
+    fun formatFullDate(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        val pattern = if (LocaleHelper.isIndonesian(locale)) "d MMMM yyyy" else "MMMM d, yyyy"
         return formatWith(pattern, locale, timestamp)
     }
 
@@ -69,8 +69,8 @@ object DateFormatter {
      * Indonesian: 09 Jul 2026
      * English:    Jul 9, 2026
      */
-    fun formatShortDate(timestamp: Long, locale: Locale = Locale.getDefault()): String {
-        val pattern = if (locale.language == "id") "dd MMM yyyy" else "MMM d, yyyy"
+    fun formatShortDate(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        val pattern = if (LocaleHelper.isIndonesian(locale)) "dd MMM yyyy" else "MMM d, yyyy"
         return formatWith(pattern, locale, timestamp)
     }
 
@@ -80,8 +80,8 @@ object DateFormatter {
      * Indonesian: 09/07/2026
      * English:    07/09/2026
      */
-    fun formatNumericDate(timestamp: Long, locale: Locale = Locale.getDefault()): String {
-        val pattern = if (locale.language == "id") "dd/MM/yyyy" else "MM/dd/yyyy"
+    fun formatNumericDate(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        val pattern = if (LocaleHelper.isIndonesian(locale)) "dd/MM/yyyy" else "MM/dd/yyyy"
         return formatWith(pattern, locale, timestamp)
     }
 
@@ -94,7 +94,7 @@ object DateFormatter {
      *
      * Example: 08:30:15, 21:45:00
      */
-    fun formatTimeFull(timestamp: Long, locale: Locale = Locale.getDefault()): String {
+    fun formatTimeFull(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
         return formatWith("HH:mm:ss", locale, timestamp)
     }
 
@@ -104,8 +104,8 @@ object DateFormatter {
      * Indonesian: 9 Juli 2026, 08:30:15
      * English:    July 9, 2026, 8:30:15 AM
      */
-    fun formatDateTimeFull(timestamp: Long, locale: Locale = Locale.getDefault()): String {
-        val pattern = if (locale.language == "id") "d MMMM yyyy, HH:mm:ss" else "MMMM d, yyyy, h:mm:ss a"
+    fun formatDateTimeFull(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        val pattern = if (LocaleHelper.isIndonesian(locale)) "d MMMM yyyy, HH:mm:ss" else "MMMM d, yyyy, h:mm:ss a"
         return formatWith(pattern, locale, timestamp)
     }
 
@@ -114,7 +114,7 @@ object DateFormatter {
      *
      * Example: 8:30 AM, 9:45 PM
      */
-    fun formatTime12h(timestamp: Long, locale: Locale = Locale.getDefault()): String {
+    fun formatTime12h(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
         return formatWith("h:mm a", locale, timestamp)
     }
 
@@ -124,8 +124,8 @@ object DateFormatter {
      * Indonesian: 08:30 (24h default)
      * English:    8:30 AM (12h default)
      */
-    fun formatTime(timestamp: Long, locale: Locale = Locale.getDefault()): String {
-        val pattern = if (locale.language == "id") "HH:mm" else "h:mm a"
+    fun formatTime(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        val pattern = if (LocaleHelper.isIndonesian(locale)) "HH:mm" else "h:mm a"
         return formatWith(pattern, locale, timestamp)
     }
 
@@ -139,8 +139,8 @@ object DateFormatter {
      * Indonesian: 9 Juli 2026, 08:30
      * English:    July 9, 2026, 8:30 AM
      */
-    fun formatDateTime(timestamp: Long, locale: Locale = Locale.getDefault()): String {
-        val pattern = if (locale.language == "id") "d MMMM yyyy, HH:mm" else "MMMM d, yyyy, h:mm a"
+    fun formatDateTime(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        val pattern = if (LocaleHelper.isIndonesian(locale)) "d MMMM yyyy, HH:mm" else "MMMM d, yyyy, h:mm a"
         return formatWith(pattern, locale, timestamp)
     }
 
@@ -150,8 +150,8 @@ object DateFormatter {
      * Indonesian: 09 Jul 2026, 08:30
      * English:    Jul 9, 2026, 8:30 AM
      */
-    fun formatShortDateTime(timestamp: Long, locale: Locale = Locale.getDefault()): String {
-        val pattern = if (locale.language == "id") "dd MMM yyyy, HH:mm" else "MMM d, yyyy, h:mm a"
+    fun formatShortDateTime(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        val pattern = if (LocaleHelper.isIndonesian(locale)) "dd MMM yyyy, HH:mm" else "MMM d, yyyy, h:mm a"
         return formatWith(pattern, locale, timestamp)
     }
 
@@ -165,8 +165,8 @@ object DateFormatter {
      * Indonesian: Hari Ini
      * English:    Today
      */
-    fun getTodayLabel(locale: Locale = Locale.getDefault()): String {
-        return if (locale.language == "id") "Hari Ini" else "Today"
+    fun getTodayLabel(locale: Locale = LocaleHelper.currentLocale()): String {
+        return if (LocaleHelper.isIndonesian(locale)) "Hari Ini" else "Today"
     }
 
     /**
@@ -175,8 +175,8 @@ object DateFormatter {
      * Indonesian: Besok
      * English:    Tomorrow
      */
-    fun getTomorrowLabel(locale: Locale = Locale.getDefault()): String {
-        return if (locale.language == "id") "Besok" else "Tomorrow"
+    fun getTomorrowLabel(locale: Locale = LocaleHelper.currentLocale()): String {
+        return if (LocaleHelper.isIndonesian(locale)) "Besok" else "Tomorrow"
     }
 
     /**
@@ -185,8 +185,8 @@ object DateFormatter {
      * Indonesian: Kemarin
      * English:    Yesterday
      */
-    fun getYesterdayLabel(locale: Locale = Locale.getDefault()): String {
-        return if (locale.language == "id") "Kemarin" else "Yesterday"
+    fun getYesterdayLabel(locale: Locale = LocaleHelper.currentLocale()): String {
+        return if (LocaleHelper.isIndonesian(locale)) "Kemarin" else "Yesterday"
     }
 
     /**
@@ -195,7 +195,7 @@ object DateFormatter {
      * Indonesian: Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu
      * English:    Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
      */
-    fun getDayOfWeek(timestamp: Long, locale: Locale = Locale.getDefault()): String {
+    fun getDayOfWeek(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
         return formatWith("EEEE", locale, timestamp)
     }
 
@@ -206,8 +206,49 @@ object DateFormatter {
      * Indonesian: Jan, Feb, Mar, Apr, Mei, Jun, Jul, Ags, Sep, Okt, Nov, Des
      * English:    Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
      */
-    fun getShortMonthName(timestamp: Long, locale: Locale = Locale.getDefault()): String {
+    fun getShortMonthName(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
         return formatWith("MMM", locale, timestamp)
+    }
+
+    /**
+     * Get abbreviated day-of-week name (3 letters).
+     *
+     * Indonesian: Sen, Sel, Rab, Kam, Jum, Sab, Min
+     * English:    Mon, Tue, Wed, Thu, Fri, Sat, Sun
+     */
+    fun getShortDayName(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        return formatWith("EEE", locale, timestamp)
+    }
+
+    /**
+     * Get a single-letter day-of-week name, for tight layouts (streak strips, chart gutters).
+     *
+     * Indonesian: S, S, R, K, J, S, M   (Senin…Minggu)
+     * English:    M, T, W, T, F, S, S   (Monday…Sunday)
+     *
+     * Derived from the first character of the abbreviated name rather than the `EEEEE` narrow
+     * pattern: `java.text.SimpleDateFormat` does not implement narrow day names — OpenJDK 17
+     * returns the *full* name for both `EEEEE` and `EEEEEE` (verified by running it), so a
+     * narrow pattern would overflow the 34dp cells this is used in. Taking the first character
+     * reproduces the English initials the UI had hardcoded and yields the correct Indonesian
+     * ones, using only the `EEE` pattern the rest of this class already depends on.
+     *
+     * Repeats are inherent to single letters and occur in both languages ("S" covers Senin and
+     * Sabtu in Indonesian; "S"/"T" cover Sat/Sun and Tue/Thu in English). Callers render these
+     * as a fixed Monday-first sequence, so position disambiguates them.
+     */
+    fun getNarrowDayName(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        return getShortDayName(timestamp, locale).take(1)
+    }
+
+    /**
+     * Get day-of-month with short month name, e.g. for chart bucket labels.
+     *
+     * Indonesian: 9 Nov
+     * English:    Nov 9
+     */
+    fun getDayMonth(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
+        return formatWith("d MMM", locale, timestamp)
     }
 
     /**
@@ -216,7 +257,7 @@ object DateFormatter {
      * Indonesian: Juli 2026
      * English:    July 2026
      */
-    fun formatMonthYear(timestamp: Long, locale: Locale = Locale.getDefault()): String {
+    fun formatMonthYear(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
         return formatWith("MMMM yyyy", locale, timestamp)
     }
 
@@ -234,7 +275,7 @@ object DateFormatter {
      * Indonesian: Baru saja, 1 menit lalu, 5 menit lalu, 1 jam lalu, Kemarin, 2 hari lalu, 1 minggu lalu, 1 bulan lalu, 1 tahun lalu
      * English:    Just now, 1 minute ago, 5 minutes ago, 1 hour ago, Yesterday, 2 days ago, 1 week ago, 1 month ago, 1 year ago
      */
-    fun formatRelativeTime(timestamp: Long, locale: Locale = Locale.getDefault()): String {
+    fun formatRelativeTime(timestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
         val now = System.currentTimeMillis()
         val delta = now - timestamp
 
@@ -249,32 +290,32 @@ object DateFormatter {
         val months = days / 30
 
         return when {
-            minutes < 1 -> if (locale.language == "id") "Baru saja" else "Just now"
+            minutes < 1 -> if (LocaleHelper.isIndonesian(locale)) "Baru saja" else "Just now"
             minutes < 60 -> if (minutes == 1L) {
-                if (locale.language == "id") "1 menit lalu" else "1 minute ago"
+                if (LocaleHelper.isIndonesian(locale)) "1 menit lalu" else "1 minute ago"
             } else {
-                if (locale.language == "id") "$minutes menit lalu" else "$minutes minutes ago"
+                if (LocaleHelper.isIndonesian(locale)) "$minutes menit lalu" else "$minutes minutes ago"
             }
-            hours < 2 -> if (locale.language == "id") "1 jam lalu" else "1 hour ago"
-            hours < 24 -> if (locale.language == "id") "$hours jam lalu" else "$hours hours ago"
+            hours < 2 -> if (LocaleHelper.isIndonesian(locale)) "1 jam lalu" else "1 hour ago"
+            hours < 24 -> if (LocaleHelper.isIndonesian(locale)) "$hours jam lalu" else "$hours hours ago"
             days == 1L -> getYesterdayLabel(locale)
-            days < 7 -> if (locale.language == "id") "$days hari lalu" else "$days days ago"
+            days < 7 -> if (LocaleHelper.isIndonesian(locale)) "$days hari lalu" else "$days days ago"
             weeks < 4 -> if (weeks == 1L) {
-                if (locale.language == "id") "1 minggu lalu" else "1 week ago"
+                if (LocaleHelper.isIndonesian(locale)) "1 minggu lalu" else "1 week ago"
             } else {
-                if (locale.language == "id") "$weeks minggu lalu" else "$weeks weeks ago"
+                if (LocaleHelper.isIndonesian(locale)) "$weeks minggu lalu" else "$weeks weeks ago"
             }
             months < 12 -> if (months == 1L) {
-                if (locale.language == "id") "1 bulan lalu" else "1 month ago"
+                if (LocaleHelper.isIndonesian(locale)) "1 bulan lalu" else "1 month ago"
             } else {
-                if (locale.language == "id") "$months bulan lalu" else "$months months ago"
+                if (LocaleHelper.isIndonesian(locale)) "$months bulan lalu" else "$months months ago"
             }
             else -> {
                 val years = months / 12
                 if (years == 1L) {
-                    if (locale.language == "id") "1 tahun lalu" else "1 year ago"
+                    if (LocaleHelper.isIndonesian(locale)) "1 tahun lalu" else "1 year ago"
                 } else {
-                    if (locale.language == "id") "$years tahun lalu" else "$years years ago"
+                    if (LocaleHelper.isIndonesian(locale)) "$years tahun lalu" else "$years years ago"
                 }
             }
         }
@@ -321,7 +362,7 @@ object DateFormatter {
      * Indonesian: Dalam 5 menit, Besok, Dalam 2 hari, Dalam 1 minggu
      * English:    In 5 minutes, Tomorrow, In 2 days, In 1 week
      */
-    fun formatFutureRelative(futureTimestamp: Long, locale: Locale = Locale.getDefault()): String {
+    fun formatFutureRelative(futureTimestamp: Long, locale: Locale = LocaleHelper.currentLocale()): String {
         val now = System.currentTimeMillis()
         val delta = futureTimestamp - now
 
@@ -337,27 +378,27 @@ object DateFormatter {
 
         return when {
             minutes < 1 -> getTodayLabel(locale)
-            minutes < 60 -> if (locale.language == "id") "Dalam $minutes menit" else "In $minutes minutes"
-            hours < 2 -> if (locale.language == "id") "Dalam 1 jam" else "In 1 hour"
-            hours < 24 -> if (locale.language == "id") "Dalam $hours jam" else "In $hours hours"
+            minutes < 60 -> if (LocaleHelper.isIndonesian(locale)) "Dalam $minutes menit" else "In $minutes minutes"
+            hours < 2 -> if (LocaleHelper.isIndonesian(locale)) "Dalam 1 jam" else "In 1 hour"
+            hours < 24 -> if (LocaleHelper.isIndonesian(locale)) "Dalam $hours jam" else "In $hours hours"
             days == 1L -> getTomorrowLabel(locale)
-            days < 7 -> if (locale.language == "id") "Dalam $days hari" else "In $days days"
+            days < 7 -> if (LocaleHelper.isIndonesian(locale)) "Dalam $days hari" else "In $days days"
             weeks < 4 -> if (weeks == 1L) {
-                if (locale.language == "id") "Dalam 1 minggu" else "In 1 week"
+                if (LocaleHelper.isIndonesian(locale)) "Dalam 1 minggu" else "In 1 week"
             } else {
-                if (locale.language == "id") "Dalam $weeks minggu" else "In $weeks weeks"
+                if (LocaleHelper.isIndonesian(locale)) "Dalam $weeks minggu" else "In $weeks weeks"
             }
             months < 12 -> if (months == 1L) {
-                if (locale.language == "id") "Dalam 1 bulan" else "In 1 month"
+                if (LocaleHelper.isIndonesian(locale)) "Dalam 1 bulan" else "In 1 month"
             } else {
-                if (locale.language == "id") "Dalam $months bulan" else "In $months months"
+                if (LocaleHelper.isIndonesian(locale)) "Dalam $months bulan" else "In $months months"
             }
             else -> {
                 val years = months / 12
                 if (years == 1L) {
-                    if (locale.language == "id") "Dalam 1 tahun" else "In 1 year"
+                    if (LocaleHelper.isIndonesian(locale)) "Dalam 1 tahun" else "In 1 year"
                 } else {
-                    if (locale.language == "id") "Dalam $years tahun" else "In $years years"
+                    if (LocaleHelper.isIndonesian(locale)) "Dalam $years tahun" else "In $years years"
                 }
             }
         }

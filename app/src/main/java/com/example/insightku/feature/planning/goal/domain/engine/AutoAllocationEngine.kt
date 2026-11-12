@@ -1,14 +1,18 @@
 package com.example.insightku.feature.planning.goal.domain.engine
 
+import android.content.Context
 import android.util.Log
+import com.example.insightku.R
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
 import com.example.insightku.feature.planning.goal.data.model.AllocationValueType
 import com.example.insightku.feature.planning.goal.data.model.CategoryBasedExecutionMode
 import com.example.insightku.feature.planning.goal.data.model.GoalStatus
 import com.example.insightku.feature.planning.goal.data.model.RoundUpMode
+import com.example.insightku.feature.planning.goal.data.model.ScheduledFrequency
 import com.example.insightku.feature.planning.goal.domain.model.AllocationSuggestion
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationResult
 import com.example.insightku.feature.planning.goal.domain.model.AutoAllocationRule
@@ -22,11 +26,27 @@ import kotlin.math.min
 
 @Singleton
 class AutoAllocationEngine @Inject constructor(
-    private val dataSource: AutoAllocationDataSource
+    private val dataSource: AutoAllocationDataSource,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context
 ) {
     companion object {
         private const val TAG = "AutoAllocationEngine"
     }
+
+    /**
+     * Localized copy for persisted allocation drafts. `@ApplicationContext`
+     * carries the system locale, hence the [LocaleHelper] wrap; drafts are
+     * created once per trigger event, never in a loop.
+     *
+     * [wrapped] is a property (not a per-call wrap) because the rule loops
+     * resolve one string per entity; [ruleDescription] was removed from
+     * [AllocationSuggestion] as dead, so `description(context)` is only ever
+     * resolved in the presentation layer with the app-locale context.
+     */
+    private val wrapped: Context get() = LocaleHelper.wrapContext(context)
+
+    private fun str(resId: Int, vararg args: Any?): String =
+        wrapped.getString(resId, *args)
     suspend fun processTransaction(transaction: Transaction): AutoAllocationResult {
         val enabledRules = dataSource.getEnabledRules()
         if (enabledRules.isEmpty()) {
@@ -47,7 +67,7 @@ class AutoAllocationEngine @Inject constructor(
         val autoExecuted = mutableListOf<AllocationSuggestion>()
 
         for (entity in enabledRules) {
-            val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal")
+            val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: str(R.string.alloc_goal_unknown))
             try {
                 val result = evaluateRule(rule, transaction, categoryIdToName, nameToCategoryId)
                 if (result != null) {
@@ -78,7 +98,7 @@ class AutoAllocationEngine @Inject constructor(
         val autoExecuted = mutableListOf<AllocationSuggestion>()
 
         for (entity in scheduledRules) {
-            val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal")
+            val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: str(R.string.alloc_goal_unknown))
             if (!shouldExecuteScheduled(rule)) {
                 Log.d(TAG, "[ScheduledSkip] Rule=${rule.id} Goal=${rule.goalName} — shouldExecuteScheduled=false (already fired or wrong day)")
                 continue
@@ -110,7 +130,7 @@ class AutoAllocationEngine @Inject constructor(
         val autoExecuted = mutableListOf<AllocationSuggestion>()
 
         for (entity in balanceRules) {
-            val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal")
+            val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: str(R.string.alloc_goal_unknown))
             try {
                 val result = evaluateBalanceAboveRule(rule)
                 if (result != null) {
@@ -160,7 +180,7 @@ class AutoAllocationEngine @Inject constructor(
         val actualAmount = min(allocationAmount, remainingToGoal)
         val availableCash = dataSource.getAvailableCash(sourceAccountId)
         if (availableCash < actualAmount) return null
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Income detected: ${formatCurrency(transaction.amount)}", rule.description, ruleId = rule.id)
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, str(R.string.alloc_reason_income, formatCurrency(transaction.amount)), ruleId = rule.id)
     }
 
     private suspend fun evaluateRoundUpRule(rule: AutoAllocationRule, transaction: Transaction): AllocationSuggestion? {
@@ -195,13 +215,13 @@ class AutoAllocationEngine @Inject constructor(
         if (availableCash < actualAmount) return null
 
         val modeLabel = when (rule.roundUpMode) {
-            RoundUpMode.ROUND_UP -> "Round up"
-            RoundUpMode.ROUND_DOWN -> "Round down"
-            RoundUpMode.ROUND_NEAREST -> "Round nearest"
+            RoundUpMode.ROUND_UP -> str(R.string.auto_alloc_round_up)
+            RoundUpMode.ROUND_DOWN -> str(R.string.auto_alloc_round_down)
+            RoundUpMode.ROUND_NEAREST -> str(R.string.auto_alloc_round_nearest)
         }
         return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name,
-            "$modeLabel: ${formatCurrency(transaction.amount)} → ${formatCurrency(roundedAmount)}",
-            rule.description, ruleId = rule.id)
+            str(R.string.alloc_reason_round, modeLabel, formatCurrency(transaction.amount), formatCurrency(roundedAmount)),
+            ruleId = rule.id)
     }
 
     private suspend fun evaluateSpendingCategoryRule(rule: AutoAllocationRule, transaction: Transaction, nameToCategoryId: Map<String, String>): AllocationSuggestion? {
@@ -227,7 +247,7 @@ class AutoAllocationEngine @Inject constructor(
         val actualAmount = min(allocationAmount, remainingToGoal)
         val availableCash = dataSource.getAvailableCash(sourceAccountId)
         if (availableCash < actualAmount) return null
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Spending in ${transaction.category}: ${formatCurrency(transaction.amount)}", rule.description, ruleId = rule.id)
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, str(R.string.alloc_reason_category, transaction.category, formatCurrency(transaction.amount)), ruleId = rule.id)
     }
 
     private suspend fun evaluateScheduledRule(rule: AutoAllocationRule): AllocationSuggestion? {
@@ -243,7 +263,7 @@ class AutoAllocationEngine @Inject constructor(
         val remainingToGoal = goal.targetAmount - currentAmount
         val actualAmount = min(allocationAmount, remainingToGoal)
         if (availableCash < actualAmount) return null
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, "Scheduled ${rule.scheduledFrequency.value} allocation", rule.description, ruleId = rule.id)
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, sourceAccountId, account.name, str(R.string.alloc_reason_scheduled, str(frequencyWord(rule.scheduledFrequency))), ruleId = rule.id)
     }
 
     private suspend fun evaluateBalanceAboveRule(rule: AutoAllocationRule): AllocationSuggestion? {
@@ -273,7 +293,7 @@ class AutoAllocationEngine @Inject constructor(
         val actualAmount = min(min(allocationAmount, remainingToGoal), maxAllocatable)
         if (actualAmount <= 0) return null
         
-        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, accountId, account.name, "Balance ${formatCurrency(account.balance)} exceeds ${formatCurrency(threshold)}", rule.description, ruleId = rule.id)
+        return AllocationSuggestion(rule.goalId, goal.name, actualAmount, accountId, account.name, str(R.string.alloc_reason_balance, formatCurrency(account.balance), formatCurrency(threshold)), ruleId = rule.id)
     }
 
     private fun shouldExecuteScheduled(rule: AutoAllocationRule): Boolean {
@@ -323,7 +343,7 @@ class AutoAllocationEngine @Inject constructor(
         val autoExecuted = mutableListOf<AllocationSuggestion>()
 
         for (entity in categoryRules) {
-            val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: "Unknown Goal")
+            val rule = AutoAllocationRule.fromEntity(entity, dataSource.getGoalById(entity.goalId)?.name ?: str(R.string.alloc_goal_unknown))
             try {
                 val result = evaluatePeriodicCategoryRule(rule)
                 if (result != null) {
@@ -377,11 +397,15 @@ class AutoAllocationEngine @Inject constructor(
         val availableCash = dataSource.getAvailableCash(sourceAccountId)
         if (availableCash < actualAmount) return null
 
-        val periodLabel = if (execMode == CategoryBasedExecutionMode.AFTER_DAILY_TOTAL) "today" else "this month"
+        val periodRes = if (execMode == CategoryBasedExecutionMode.AFTER_DAILY_TOTAL) {
+            R.string.alloc_reason_total_today
+        } else {
+            R.string.alloc_reason_total_month
+        }
         return AllocationSuggestion(
             rule.goalId, goal.name, actualAmount, sourceAccountId, account.name,
-            "Total spending $periodLabel: ${formatCurrency(totalSpending)}",
-            rule.description, ruleId = rule.id
+            str(periodRes, formatCurrency(totalSpending)),
+            ruleId = rule.id
         )
     }
 
@@ -436,5 +460,14 @@ class AutoAllocationEngine @Inject constructor(
         }.toDouble()
     }
 
-    private fun formatCurrency(amount: Double): String = NumberFormatter.formatCurrency(amount)
+    private fun formatCurrency(amount: Double): String =
+        NumberFormatter.formatCurrency(amount, locale = LocaleHelper.currentLocale())
+
+    /** Localized sentence word for the schedule frequency (not the enum token). */
+    private fun frequencyWord(frequency: ScheduledFrequency): Int = when (frequency) {
+        ScheduledFrequency.DAILY -> R.string.alloc_freq_daily
+        ScheduledFrequency.WEEKLY -> R.string.alloc_freq_weekly
+        ScheduledFrequency.BIWEEKLY -> R.string.alloc_freq_biweekly
+        ScheduledFrequency.MONTHLY -> R.string.alloc_freq_monthly
+    }
 }

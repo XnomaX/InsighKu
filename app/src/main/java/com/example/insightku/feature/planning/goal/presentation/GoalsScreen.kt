@@ -57,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -68,6 +69,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.FitText
 import com.example.insightku.core.ui.components.dialogs.PremiumDialog
 import com.example.insightku.core.ui.components.dialogs.PremiumDialogType
 import com.example.insightku.core.ui.theme.AppPalette
@@ -159,7 +161,12 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel(), onNavigateToGoalDet
 private fun GoalsContent(uiState: GoalsUiState, onEvent: (GoalsEvent) -> Unit, modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = Dimens.ContentBottomPadding),
+        contentPadding = PaddingValues(
+            start = Dimens.ScreenHorizontalPadding,
+            end = Dimens.ScreenHorizontalPadding,
+            top = 12.dp,
+            bottom = Dimens.ContentBottomPadding
+        ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // ── Tab Filter (Active / Paused) + Archive Access ─────────────────
@@ -283,7 +290,7 @@ private fun GoalFilterTabs(
                 Icon(Icons.Outlined.Archive, null, tint = AppPalette.textMuted, modifier = Modifier.size(16.dp))
                 if (archivedCount > 0) {
                     Text(
-                        pluralStringResource(R.plurals.goals_archived_count, archivedCount),
+                        pluralStringResource(R.plurals.goals_archived_count, archivedCount, archivedCount),
                         style = MaterialTheme.typography.labelMedium,
                         color = AppPalette.textMuted,
                         fontWeight = FontWeight.Medium
@@ -320,7 +327,7 @@ private fun GoalFilterChip(label: String, count: Int, isSelected: Boolean, onCli
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = textColor)
+            FitText(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = textColor)
             if (count > 0) {
                 Surface(shape = CircleShape, color = textColor.copy(alpha = 0.15f)) {
                     Text(
@@ -442,6 +449,7 @@ private fun AutoAllocationRulesSection(
     rules: List<AutoAllocationRule>,
     onToggle: (String, Boolean) -> Unit
 ) {
+    val context = LocalContext.current
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = AppPalette.card), border = BorderStroke(1.dp, AppPalette.cardBorder)) {
         Column {
             rules.forEachIndexed { index, rule ->
@@ -452,7 +460,7 @@ private fun AutoAllocationRulesSection(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = rule.goalName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
-                        Text(text = rule.description, style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
+                        Text(text = rule.description(context), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                     }
                     Switch(checked = rule.isEnabled, onCheckedChange = { onToggle(rule.id, it) })
                 }

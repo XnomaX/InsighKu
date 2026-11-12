@@ -10,11 +10,11 @@ import java.util.UUID
 /**
  * Account type representing the category of a financial account.
  */
-enum class AccountType(val displayName: String) {
-    CASH("Cash"),
-    BANK_ACCOUNT("Bank Account"),
-    E_WALLET("E-Wallet"),
-    CREDIT_CARD("Credit Card");
+enum class AccountType {
+    CASH,
+    BANK_ACCOUNT,
+    E_WALLET,
+    CREDIT_CARD;
 
     companion object {
         fun fromString(value: String): AccountType =

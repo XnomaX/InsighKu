@@ -2,11 +2,14 @@ package com.example.insightku.feature.home.data.receipt
 
 import android.content.Context
 import android.net.Uri
+import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.feature.home.domain.receipt.ReceiptScanResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.net.SocketTimeoutException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,7 +32,7 @@ class ReceiptScanRepository @Inject constructor(
         val (bytes, mime) = try {
             readImage(uri)
         } catch (e: Exception) {
-            return@withContext ReceiptScanResult.Error("Could not read the selected image")
+            return@withContext ReceiptScanResult.Error(str(R.string.scanner_error_read_image))
         }
 
         // For camera-captured photos we inserted a MediaStore row so the receipt
@@ -44,12 +47,31 @@ class ReceiptScanRepository @Inject constructor(
             }
         }
 
+        // Classify by exception type so the user gets an actionable, localized
+        // message. The data source deliberately throws code-only exceptions and
+        // logs raw bodies itself, so nothing server-internal is forwarded here.
         try {
             ReceiptScanResult.Success(remote.scan(bytes, mime))
+        } catch (e: IllegalArgumentException) {
+            // require(baseUrl.isNotBlank()) in the data source
+            ReceiptScanResult.Error(str(R.string.scanner_error_no_base_url))
+        } catch (e: SocketTimeoutException) {
+            ReceiptScanResult.Error(str(R.string.scanner_error_timeout))
+        } catch (e: ScanServerException) {
+            ReceiptScanResult.Error(str(R.string.scanner_error_server, e.code))
         } catch (e: Exception) {
-            ReceiptScanResult.Error(e.message ?: "Scan failed")
+            ReceiptScanResult.Error(e.message ?: str(R.string.scanner_error_scan_failed))
         }
     }
+
+    /**
+     * `@ApplicationContext` carries the system locale, not the in-app one, so
+     * wrap via [LocaleHelper] — required for the message to follow the user's
+     * chosen language on API <= 32. Called once per scan (an error path), never
+     * in a loop, so the per-call allocation is not a concern.
+     */
+    private fun str(resId: Int, vararg args: Any?): String =
+        LocaleHelper.wrapContext(context).getString(resId, *args)
 
     private fun readImage(uri: Uri): Pair<ByteArray, String> {
         val resolver = context.contentResolver

@@ -61,7 +61,9 @@ fun HeroBalanceCard(
         shape           = RoundedCornerShape(Dimens.CardRadiusLarge),
         color           = AppPalette.card,
         tonalElevation  = 0.dp,
-        shadowElevation = 4.dp,
+        // Border-only card: the elevation shadow drew a dark rim around the card
+        // edges on the light background (reported as "shadow dari tepi card").
+        shadowElevation = 0.dp,
         border          = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
@@ -102,6 +104,7 @@ fun HeroBalanceCard(
                                 Text(
                                     text = pluralStringResource(
                                         R.plurals.hero_account_count,
+                                        accountCount,
                                         accountCount
                                     ),
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),

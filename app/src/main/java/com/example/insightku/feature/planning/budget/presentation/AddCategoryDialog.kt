@@ -264,15 +264,15 @@ fun AddCategoryDialog(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text       = name.ifEmpty { "Category Name" },
+                                text       = name.ifEmpty { stringResource(R.string.add_category_name_placeholder) },
                                 style      = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color      = if (name.isEmpty()) AppPalette.placeholder else AppPalette.textPrimary
                             )
                             Text(
                                 text  = if (initialType == CategoryType.EXPENSE) {
-                                    if (budgetLimitText.isNotBlank()) "${NumberFormatter.formatCurrency(budgetLimitText.toAmountOrZero())} / month" else stringResource(R.string.add_category_no_limit)
-                                } else "Income tracking",
+                                    if (budgetLimitText.isNotBlank()) stringResource(R.string.recurring_per_month, NumberFormatter.formatCurrency(budgetLimitText.toAmountOrZero())) else stringResource(R.string.add_category_no_limit)
+                                } else stringResource(R.string.add_category_income_tracking),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppPalette.textMuted
                             )

@@ -1,6 +1,9 @@
 package com.example.insightku.feature.planning.goal.domain.model
 
+import android.content.Context
+import com.example.insightku.R
 import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.feature.planning.goal.data.model.AllocationTriggerType
 import com.example.insightku.feature.planning.goal.data.model.AllocationValueType
@@ -62,66 +65,108 @@ data class AutoAllocationRule(
         return "$h:$m"
     }
 
-    private fun dayOfWeekName(): String = when (scheduledDayOfWeek) {
-        1 -> "Monday"; 2 -> "Tuesday"; 3 -> "Wednesday"
-        4 -> "Thursday"; 5 -> "Friday"; 6 -> "Saturday"; 7 -> "Sunday"
-        else -> "Monday"
-    }
+    /**
+     * Localized copy for the rule list and persisted allocation drafts.
+     *
+     * Takes a [Context] because this domain model has no dependency-injection
+     * access; the two callers are a composable (`GoalDetailAutoAllocation`) and
+     * `AutoAllocationEngine`, which receives an `@ApplicationContext`. The copy
+     * is resolved at render/persist time — never cached on the model — so a
+     * language switch is reflected on the next render.
+     */
+    fun description(context: Context): String = descriptionInternal(context)
 
-    private fun dayOfMonthText(): String = if (scheduledDayOfMonth == -1) "Last day"
-        else "$scheduledDayOfMonth${ordinalSuffix(scheduledDayOfMonth)}"
-
-    private fun ordinalSuffix(n: Int): String = when {
-        n in 11..13 -> "th"
-        n % 10 == 1 -> "st"
-        n % 10 == 2 -> "nd"
-        n % 10 == 3 -> "rd"
-        else -> "th"
-    }
-
-    private fun biweeklyStartDateText(): String {
-        if (biweeklyStartDate <= 0) return "Not set"
-        return DateFormatter.formatShortDate(biweeklyStartDate)
-    }
-
-    val description: String get() = when (triggerType) {
+    private fun descriptionInternal(context: Context): String = when (triggerType) {
         AllocationTriggerType.INCOME_RECEIVED -> {
-            val base = if (allocationType == AllocationValueType.PERCENT) "Save ${allocationValue.toInt()}% of income" else "Save ${formatAmount(allocationValue)} from income"
-            if (minIncomeAmount > 0) "$base (min ${formatAmount(minIncomeAmount)})" else base
+            val base = if (allocationType == AllocationValueType.PERCENT) {
+                context.getString(R.string.auto_alloc_desc_income_percent, allocationValue.toInt())
+            } else {
+                context.getString(R.string.auto_alloc_desc_income_amount, formatAmount(allocationValue))
+            }
+            if (minIncomeAmount > 0) {
+                "$base " + context.getString(R.string.auto_alloc_desc_min_income, formatAmount(minIncomeAmount))
+            } else base
         }
-        AllocationTriggerType.SPENDING_CATEGORY -> if (allocationType == AllocationValueType.PERCENT) "Save ${allocationValue.toInt()}% from category spending" else "Save ${formatAmount(allocationValue)} from category spending"
+        AllocationTriggerType.SPENDING_CATEGORY ->
+            if (allocationType == AllocationValueType.PERCENT) {
+                context.getString(R.string.auto_alloc_desc_category_percent, allocationValue.toInt())
+            } else {
+                context.getString(R.string.auto_alloc_desc_category_amount, formatAmount(allocationValue))
+            }
         AllocationTriggerType.ROUND_UP -> when (roundUpMode) {
-            RoundUpMode.ROUND_UP -> "Round up to nearest ${formatAmount(roundUpIncrement)}"
-            RoundUpMode.ROUND_DOWN -> "Round down to nearest ${formatAmount(roundUpIncrement)}"
-            RoundUpMode.ROUND_NEAREST -> "Round to nearest ${formatAmount(roundUpIncrement)}"
+            RoundUpMode.ROUND_UP -> context.getString(R.string.auto_alloc_desc_round_up, formatAmount(roundUpIncrement))
+            RoundUpMode.ROUND_DOWN -> context.getString(R.string.auto_alloc_desc_round_down, formatAmount(roundUpIncrement))
+            RoundUpMode.ROUND_NEAREST -> context.getString(R.string.auto_alloc_desc_round_nearest, formatAmount(roundUpIncrement))
         }
-        AllocationTriggerType.DAILY -> "Every day at ${formatTime()}"
-        AllocationTriggerType.WEEKLY -> "Every ${dayOfWeekName()} at ${formatTime()}"
-        AllocationTriggerType.BIWEEKLY -> "Every 2 weeks from ${biweeklyStartDateText()} at ${formatTime()}"
-        AllocationTriggerType.MONTHLY -> "Every ${dayOfMonthText()} at ${formatTime()}"
+        AllocationTriggerType.DAILY -> context.getString(R.string.auto_alloc_desc_daily, formatTime())
+        AllocationTriggerType.WEEKLY -> context.getString(R.string.auto_alloc_desc_weekly, dayOfWeekName(context), formatTime())
+        AllocationTriggerType.BIWEEKLY -> context.getString(R.string.auto_alloc_desc_biweekly, biweeklyStartDateText(context), formatTime())
+        AllocationTriggerType.MONTHLY -> context.getString(R.string.auto_alloc_desc_monthly, dayOfMonthText(context), formatTime())
         AllocationTriggerType.BALANCE_ABOVE -> {
             val thresh = triggerParams?.threshold ?: 0.0
-            val base = if (allocationType == AllocationValueType.PERCENT) "Save ${allocationValue.toInt()}% when balance > ${formatAmount(thresh)}" else "Save ${formatAmount(allocationValue)} when balance > ${formatAmount(thresh)}"
-            if (minRemainingBalance > 0) "$base (keep ${formatAmount(minRemainingBalance)})" else base
+            val base = if (allocationType == AllocationValueType.PERCENT) {
+                context.getString(R.string.auto_alloc_desc_balance_percent, allocationValue.toInt(), formatAmount(thresh))
+            } else {
+                context.getString(R.string.auto_alloc_desc_balance_amount, formatAmount(allocationValue), formatAmount(thresh))
+            }
+            if (minRemainingBalance > 0) {
+                "$base " + context.getString(R.string.auto_alloc_desc_keep_balance, formatAmount(minRemainingBalance))
+            } else base
         }
     }
 
-    val triggerLabel: String get() = when (triggerType) {
-        AllocationTriggerType.INCOME_RECEIVED -> "Income-Based"
-        AllocationTriggerType.SPENDING_CATEGORY -> "Category-Based"
+    fun triggerLabel(context: Context): String = when (triggerType) {
+        AllocationTriggerType.INCOME_RECEIVED -> context.getString(R.string.auto_alloc_trigger_income)
+        AllocationTriggerType.SPENDING_CATEGORY -> context.getString(R.string.auto_alloc_trigger_category)
         AllocationTriggerType.ROUND_UP -> when (roundUpMode) {
-            RoundUpMode.ROUND_UP -> "Round-Up"
-            RoundUpMode.ROUND_DOWN -> "Round-Down"
-            RoundUpMode.ROUND_NEAREST -> "Round-Nearest"
+            // The rounding-mode selector (AutoAllocationDialog) labels these same
+            // enum values with this family; the trigger chip there labels the
+            // trigger type, so the two surfaces answer different questions.
+            RoundUpMode.ROUND_UP -> context.getString(R.string.auto_alloc_round_up)
+            RoundUpMode.ROUND_DOWN -> context.getString(R.string.auto_alloc_round_down)
+            RoundUpMode.ROUND_NEAREST -> context.getString(R.string.auto_alloc_round_nearest)
         }
-        AllocationTriggerType.DAILY -> "Daily"
-        AllocationTriggerType.WEEKLY -> "Weekly"
-        AllocationTriggerType.BIWEEKLY -> "Biweekly"
-        AllocationTriggerType.MONTHLY -> "Monthly"
-        AllocationTriggerType.BALANCE_ABOVE -> "Balance Threshold"
+        AllocationTriggerType.DAILY -> context.getString(R.string.auto_alloc_trigger_daily)
+        AllocationTriggerType.WEEKLY -> context.getString(R.string.auto_alloc_trigger_weekly)
+        AllocationTriggerType.BIWEEKLY -> context.getString(R.string.auto_alloc_trigger_biweekly)
+        AllocationTriggerType.MONTHLY -> context.getString(R.string.auto_alloc_trigger_monthly)
+        AllocationTriggerType.BALANCE_ABOVE -> context.getString(R.string.auto_alloc_trigger_balance)
     }
 
-    private fun formatAmount(amount: Double): String = NumberFormatter.formatCurrency(amount)
+    private fun dayOfWeekName(context: Context): String = when (scheduledDayOfWeek) {
+        1 -> context.getString(R.string.auto_alloc_day_monday)
+        2 -> context.getString(R.string.auto_alloc_day_tuesday)
+        3 -> context.getString(R.string.auto_alloc_day_wednesday)
+        4 -> context.getString(R.string.auto_alloc_day_thursday)
+        5 -> context.getString(R.string.auto_alloc_day_friday)
+        6 -> context.getString(R.string.auto_alloc_day_saturday)
+        7 -> context.getString(R.string.auto_alloc_day_sunday)
+        else -> context.getString(R.string.auto_alloc_day_monday)
+    }
+
+    private fun dayOfMonthText(context: Context): String =
+        if (scheduledDayOfMonth == -1) context.getString(R.string.auto_alloc_desc_last_day)
+        else context.getString(
+            R.string.auto_alloc_day_ordinal,
+            scheduledDayOfMonth,
+            ordinalSuffix(context, scheduledDayOfMonth)
+        )
+
+    private fun ordinalSuffix(context: Context, n: Int): String = when {
+        n in 11..13 -> context.getString(R.string.auto_alloc_ordinal_th)
+        n % 10 == 1 -> context.getString(R.string.auto_alloc_ordinal_st)
+        n % 10 == 2 -> context.getString(R.string.auto_alloc_ordinal_nd)
+        n % 10 == 3 -> context.getString(R.string.auto_alloc_ordinal_rd)
+        else -> context.getString(R.string.auto_alloc_ordinal_th)
+    }
+
+    private fun biweeklyStartDateText(context: Context): String {
+        if (biweeklyStartDate <= 0) return context.getString(R.string.auto_alloc_not_set)
+        return DateFormatter.formatShortDate(biweeklyStartDate, LocaleHelper.currentLocale())
+    }
+
+    private fun formatAmount(amount: Double): String =
+        NumberFormatter.formatCurrency(amount, locale = LocaleHelper.currentLocale())
 
     companion object {
         fun fromEntity(entity: AutoAllocationRuleEntity, goalName: String = ""): AutoAllocationRule {
@@ -181,7 +226,7 @@ data class AutoAllocationRule(
 data class AllocationSuggestion(
     val goalId: String, val goalName: String,
     val amount: Double, val sourceAccountId: String, val sourceAccountName: String,
-    val triggerDescription: String, val ruleDescription: String,
+    val triggerDescription: String,
     val ruleId: String = "",
     val id: String = UUID.randomUUID().toString(), val createdAt: Instant = Instant.now()
 )

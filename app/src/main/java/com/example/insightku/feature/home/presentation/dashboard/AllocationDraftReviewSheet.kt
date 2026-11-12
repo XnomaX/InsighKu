@@ -152,7 +152,7 @@ fun AllocationDraftReviewSheet(
                     draft.triggerTimestamp?.let { ts ->
                         DetailRow(
                             icon = Icons.Outlined.Schedule,
-                            label = "Execution Time",
+                            label = stringResource(R.string.allocation_review_execution_time),
                             value = DateFormatter.formatShortDateTime(ts)
                         )
                     }

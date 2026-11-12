@@ -536,7 +536,8 @@ fun PremiumBottomNav(
         shape           = RoundedCornerShape(32.dp),
         color           = NavBg,
         tonalElevation  = 0.dp,
-        shadowElevation = 4.dp,
+        // Border-only: the elevation shadow drew a dark band across the content above.
+        shadowElevation = 0.dp,
         border          = androidx.compose.foundation.BorderStroke(
             1.dp, NavBorder
         )
@@ -758,6 +759,9 @@ private fun MainNavHost(
                         launchSingleTop = true
                     }
                 },
+                onNavigateToNotifications      = if (BuildConfig.DEBUG) {
+                    { navController.navigate(Route.NOTIFICATION_DEBUG) }
+                } else null,
                 onNavigateToGoals              = onNavigateToGoals,
                 onNavigateToBudgeting          = {
                     navController.navigate(Route.BUDGETING) {

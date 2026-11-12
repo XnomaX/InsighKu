@@ -9,13 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -26,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.insightku.core.ui.components.FitText
 import com.example.insightku.feature.analytics.domain.AnalyticsPeriodType
 
 /**
@@ -77,7 +77,7 @@ fun PeriodSelector(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
+                        FitText(
                             text = period.displayName,
                             color = textColor,
                             fontSize = 15.sp,
@@ -88,31 +88,35 @@ fun PeriodSelector(
                 }
             }
 
-            // Indicator row
-            Box(
+            // Indicator row — mirrors the tab row's weight(1f) segments so the marker is
+            // always centred under its tab, at any screen width. The previous version
+            // computed `offset(x = (indicatorOffset * 360).dp)`, which assumed a 360dp-wide
+            // screen: on any other width the indicator drifted away from the selected tab.
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(16.dp),
-                contentAlignment = Alignment.TopStart
+                    .height(16.dp)
             ) {
-                // Calculate indicator offset: each tab is 1/3 of width, center it in selected segment
-                val indicatorOffset = when (selectedIndex) {
-                    0 -> 0.166f
-                    1 -> 0.5f
-                    2 -> 0.833f
-                    else -> 0.166f
+                periods.forEachIndexed { index, _ ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        if (index == selectedIndex) {
+                            Box(
+                                modifier = Modifier
+                                    .width(indicatorWidth)
+                                    .height(2.5.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = RoundedCornerShape(1.5.dp)
+                                    )
+                            )
+                        }
+                    }
                 }
-
-                Box(
-                    modifier = Modifier
-                        .offset(x = (indicatorOffset * 360).dp - indicatorWidth / 2)
-                        .width(indicatorWidth)
-                        .height(2.5.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(1.5.dp)
-                        )
-                )
             }
         }
     }

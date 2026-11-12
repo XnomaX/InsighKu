@@ -69,6 +69,7 @@ import com.example.insightku.core.data.model.Account
 import com.example.insightku.core.data.model.AccountType
 import com.example.insightku.core.domain.model.AccountAllocation
 import com.example.insightku.core.ui.components.DetailRow
+import com.example.insightku.core.ui.components.FitText
 import com.example.insightku.core.ui.components.SectionHeaderWithCount
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
@@ -201,16 +202,19 @@ private fun AccountsHeader(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    FitText(
                         text = stringResource(R.string.accounts_title),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppPalette.textPrimary
                     )
                     if (accountCount > 0) {
-                        Text(
-                            text = pluralStringResource(R.plurals.accounts_count, accountCount),
+                        FitText(
+                            text = pluralStringResource(R.plurals.accounts_count, accountCount, accountCount),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppPalette.textMuted
                         )
@@ -236,7 +240,7 @@ private fun AccountsHeader(
                             tint = accent,
                             modifier = Modifier.size(17.dp)
                         )
-                        Text(
+                        FitText(
                             text = stringResource(R.string.accounts_add),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
@@ -272,7 +276,7 @@ private fun AccountsList(
             if (!accountsOfType.isNullOrEmpty()) {
                 item(key = "header_${accountType.name}") {
                     SectionHeaderWithCount(
-                        title = accountType.displayName,
+                        title = accountTypeLabel(accountType),
                         count = accountsOfType.size
                     )
                 }
@@ -350,7 +354,7 @@ private fun AccountRow(
                 ) {
                     Icon(
                         imageVector = icon,
-                        contentDescription = account.type.displayName,
+                        contentDescription = accountTypeLabel(account.type),
                         tint = accountColor,
                         modifier = Modifier.size(24.dp)
                     )
@@ -395,7 +399,7 @@ private fun AccountRow(
                         )
                     } else {
                         Text(
-                            text = account.type.displayName,
+                            text = accountTypeLabel(account.type),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppPalette.textMuted
                         )
@@ -640,7 +644,7 @@ private fun AccountDetailSheet(
                 ) {
                     Icon(
                         imageVector = icon,
-                        contentDescription = account.type.displayName,
+                        contentDescription = accountTypeLabel(account.type),
                         tint = accountColor,
                         modifier = Modifier.size(36.dp)
                     )
@@ -659,7 +663,7 @@ private fun AccountDetailSheet(
 
                 // Type
                 Text(
-                    text = account.type.displayName,
+                    text = accountTypeLabel(account.type),
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppPalette.textMuted
                 )
@@ -755,7 +759,7 @@ private fun AccountDetailSheet(
                 // Account Type
                 DetailRow(
                     label = stringResource(R.string.account_detail_account_type),
-                    value = account.type.displayName
+                    value = accountTypeLabel(account.type)
                 )
 
                 // Notes (if present)

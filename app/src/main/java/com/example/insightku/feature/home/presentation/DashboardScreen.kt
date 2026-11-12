@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -68,12 +69,21 @@ fun DashboardScreen(
     onOpenDraft: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
     onDraftDismissed: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToNotifications: (() -> Unit)? = null,
     onNavigateToGoals: () -> Unit = {},
     onNavigateToBudgeting: () -> Unit = {},
     onCreateGoal: () -> Unit = {},
     onCreateBudget: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Re-derive when the applied language changes. The dashboard state bakes localized text
+    // (txDisplayTitle, relative times) resolved once per rebuild, and this ViewModel survives
+    // the Activity recreation that setApplicationLocales triggers — see DashboardViewModel.
+    // onLocaleChanged. Keyed on the configuration's language tag (snapshot state, so it
+    // re-runs); the ViewModel does its own comparison against what it built with.
+    val languageTag = LocalConfiguration.current.locales.toLanguageTags()
+    LaunchedEffect(languageTag) { viewModel.onLocaleChanged() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -125,6 +135,7 @@ fun DashboardScreen(
                     onOpenDraft = onOpenDraft,
                     onDraftDismissed = onDraftDismissed,
                     onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToNotifications = onNavigateToNotifications,
                     onNavigateToGoals = onNavigateToGoals,
                     onNavigateToBudgeting = onNavigateToBudgeting,
                     onCreateGoal = onCreateGoal,
@@ -147,6 +158,7 @@ fun DashboardScreenContent(
     onOpenDraft: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
     onDraftDismissed: (com.example.insightku.core.data.model.DraftTransaction) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToNotifications: (() -> Unit)? = null,
     onNavigateToGoals: () -> Unit = {},
     onNavigateToBudgeting: () -> Unit = {},
     onCreateGoal: () -> Unit = {},
@@ -188,13 +200,11 @@ fun DashboardScreenContent(
         ) {
             item {
                 DashboardHeader(
-                    userName           = uiState.userName,
-                    monthlySavings     = uiState.monthlySavings,
-                    currentStreak      = uiState.currentStreak,
                     isBalanceVisible   = !LocalHideAmounts.current,
                     isLoading          = uiState.isLoading,
                     onToggleVisibility = { onEvent(DashboardEvent.ToggleBalanceVisibility) },
-                    onNavigateToSettings = onNavigateToSettings
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToNotifications = onNavigateToNotifications
                 )
             }
             item {
@@ -230,6 +240,7 @@ fun DashboardScreenContent(
                 DailyStreakCard(
                     currentStreak    = uiState.currentStreak,
                     hasTrackedToday  = uiState.hasTrackedToday,
+                    trackedDayKeys   = uiState.trackedDayKeys,
                     repairAvailable  = uiState.repairAvailable,
                     onCardClick      = { showStreakDetail = true },
                     onAddTransaction = onAddTransactionForStreak,
@@ -281,9 +292,7 @@ fun DashboardScreenContent(
             }
             item {
                 AiForecastCard(
-                    weeklyData     = uiState.weeklyForecastData,
-                    monthlyData    = uiState.monthlyForecastData,
-                    aiInsight      = uiState.aiInsightMessage,
+                    forecast       = uiState.forecast,
                     selectedPeriod = uiState.forecastPeriod,
                     onPeriodChange = { onEvent(DashboardEvent.ToggleForecastPeriod(it)) },
                     modifier       = Modifier.padding(
@@ -340,6 +349,7 @@ fun DashboardScreenContent(
             currentStreak   = uiState.currentStreak,
             bestStreak      = uiState.bestStreak,
             hasTrackedToday = uiState.hasTrackedToday,
+            trackedDayKeys  = uiState.trackedDayKeys,
             onDismiss       = { showStreakDetail = false }
         )
     } // Scaffold

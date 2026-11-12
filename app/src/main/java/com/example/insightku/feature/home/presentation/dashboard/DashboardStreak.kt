@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -49,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.insightku.R
+import com.example.insightku.core.i18n.DateFormatter
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
@@ -58,12 +61,47 @@ import com.example.insightku.feature.home.presentation.flameConfig
 import java.util.Calendar
 import java.util.Locale
 
+/**
+ * Single-letter weekday labels, Monday-first, in the applied language.
+ *
+ * Indonesian: S S R K J S M (Senin…Minggu)
+ * English:    M T W T F S S (Monday…Sunday)
+ *
+ * One shared source for both weekday strips in this file — the 7-day progress strip and the
+ * 16×7 history grid header. They used to be two separate hardcoded English lists, so
+ * localizing one left the other rendering `M T W T F S S` a few hundred lines below it: two
+ * different weekday conventions visible on the same screen at once.
+ *
+ * The locale comes from [LocaleHelper], the same source `AnalyticsStrings.isIndonesian()` and
+ * `NumberFormatter` consult, so these initials cannot disagree in language with the copy and
+ * amounts rendered beside them. Keyed on the language tag so the list is recomputed on a
+ * recomposition that carries a new locale.
+ */
+@Composable
+private fun narrowWeekdayLabels(): List<String> {
+    val appLocale = LocaleHelper.currentLocale()
+    return remember(appLocale.toLanguageTag()) {
+        val monday = Calendar.getInstance().apply {
+            firstDayOfWeek = Calendar.MONDAY
+            set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        }
+        (0..6).map { offset ->
+            val day = (monday.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, offset) }
+            DateFormatter.getNarrowDayName(day.timeInMillis, appLocale)
+        }
+    }
+}
+
+/** One column of the "This week" strip: the calendar date and its tracked state. */
+private data class WeekDayCell(val dayOfMonth: Int, val tracked: Boolean)
+
 @Composable
 fun DailyStreakCard(
     currentStreak: Int,
     hasTrackedToday: Boolean,
     onAddTransaction: () -> Unit,
     modifier: Modifier = Modifier,
+    trackedDayKeys: Set<String> = emptySet(),
     repairAvailable: Boolean = false,
     onCardClick: () -> Unit = {},
     onUseRepair: () -> Unit = {}
@@ -73,8 +111,25 @@ fun DailyStreakCard(
     // frames "not yet today" warmly (streak_waiting / streak_start_today).
     val displayedStreak = currentStreak
     val config = flameConfig(displayedStreak)
-    val weekDays = listOf("M", "T", "W", "T", "F", "S", "S")
-    val activeDays = minOf(currentStreak, 7).let { if (hasTrackedToday) it.coerceAtLeast(1) else it }
+    // One cell per day of the current week (Monday-first): its calendar date and
+    // whether that exact date has a transaction. The strip used to light up the
+    // first `min(streak, 7)` weekdays, which contradicted the real tracked days as
+    // soon as the streak started mid-week (checks on Mon+Tue while the tracked
+    // Wednesday sat unchecked).
+    val weekCells = remember(trackedDayKeys) {
+        val fmt = java.text.SimpleDateFormat("yyyyMMdd", Locale.US)
+        val monday = Calendar.getInstance().apply {
+            firstDayOfWeek = Calendar.MONDAY
+            set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        }
+        (0..6).map { offset ->
+            val day = (monday.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, offset) }
+            WeekDayCell(
+                dayOfMonth = day.get(Calendar.DAY_OF_MONTH),
+                tracked = fmt.format(day.time) in trackedDayKeys
+            )
+        }
+    }
 
     val statusLabel = when {
         !hasTrackedToday && currentStreak > 0 -> stringResource(R.string.streak_log_today_restore)
@@ -101,7 +156,9 @@ fun DailyStreakCard(
         shape           = RoundedCornerShape(Dimens.CardRadiusLarge),
         color           = AppPalette.card,
         tonalElevation  = 0.dp,
-        shadowElevation = 4.dp,
+        // Border-only like the other dashboard cards: the elevation shadow drew a
+        // dark rim on the card edges.
+        shadowElevation = 0.dp,
         border          = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(
@@ -192,31 +249,21 @@ fun DailyStreakCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    weekDays.forEachIndexed { index, label ->
-                        val active = index < activeDays
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                    weekCells.forEach { cell ->
+                        // Checked day shows only the check; an unchecked day shows its
+                        // calendar date so the row reads as this week's real dates.
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(34.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (cell.tracked) NavPurple else AppPalette.cardBorder),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(34.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(if (active) NavPurple else AppPalette.cardBorder),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (active)
-                                    Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                else
-                                    Text(label, style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, fontSize = 10.sp)
-                            }
-                            Text(
-                                label,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 9.sp,
-                                color = if (active) NavPurple else AppPalette.textMuted
-                            )
+                            if (cell.tracked)
+                                Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            else
+                                Text("${cell.dayOfMonth}", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, fontSize = 10.sp)
                         }
                     }
                 }
@@ -385,6 +432,7 @@ fun StreakDetailSheet(
     currentStreak: Int,
     bestStreak: Int,
     hasTrackedToday: Boolean,
+    trackedDayKeys: Set<String> = emptySet(),
     onDismiss: () -> Unit
 ) {
     val config = flameConfig(currentStreak)
@@ -500,9 +548,12 @@ fun StreakDetailSheet(
                         border = BorderStroke(1.dp, AppPalette.cardBorder)
                     ) {
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            // Day-of-week header
+                            // Day-of-week header — shares the localized Monday-first labels
+                            // with the progress strip in DailyStreakCard so both weekday rows
+                            // on the streak card read in the same language.
+                            val gridDayLabels = narrowWeekdayLabels()
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                listOf("M","T","W","T","F","S","S").forEach { day ->
+                                gridDayLabels.forEach { day ->
                                     Text(day, modifier = Modifier.weight(1f), textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
                                         fontSize = 9.sp, color = AppPalette.textMuted)
@@ -510,9 +561,14 @@ fun StreakDetailSheet(
                             }
 
                             val totalWeeks = 16
-                            // Pre-compute the 16×7 calendar grid once per streak change instead of
-                            // allocating ~112 Calendar clones on every recomposition.
-                            val gridCells = remember(currentStreak) {
+                            // Pre-compute the 16×7 calendar grid once per tracked-day change
+                            // instead of allocating ~112 Calendar clones on every recomposition.
+                            // Cells are marked from the real tracked-day set, not from the
+                            // streak length — the old `daysFromToday in 1..currentStreak`
+                            // heuristic painted checks on days with no transactions and
+                            // contradicted the week strip on the same card.
+                            val gridCells = remember(trackedDayKeys) {
+                                val dayFmt = java.text.SimpleDateFormat("yyyyMMdd", Locale.US)
                                 val today = Calendar.getInstance()
                                 val todayDayOfWeek = (today.get(Calendar.DAY_OF_WEEK) + 5) % 7
                                 val gridStartCal = today.clone() as Calendar
@@ -527,8 +583,8 @@ fun StreakDetailSheet(
                                             isToday = daysFromToday == 0,
                                             isFuture = daysFromToday < 0,
                                             isFirstOfMonth = cellCal.get(Calendar.DAY_OF_MONTH) == 1,
-                                            isTrackedDay = daysFromToday in 1..currentStreak,
-                                            monthLabel = cellCal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.getDefault())?.take(1) ?: ""
+                                            isTrackedDay = dayFmt.format(cellCal.time) in trackedDayKeys,
+                                            monthLabel = cellCal.getDisplayName(Calendar.MONTH, Calendar.SHORT, LocaleHelper.currentLocale())?.take(1) ?: ""
                                         ))
                                     }
                                 }

@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.insightku.core.data.model.Account
@@ -45,6 +46,9 @@ fun TransactionDetailsScreen(
     var searchTerm          by remember { mutableStateOf("") }
     var filterType          by remember { mutableStateOf(FilterType.ALL) }
     var sortBy              by remember { mutableStateOf(SortType.NEWEST) }
+    // Captured before the `remember` below because its calculation lambda is not
+    // a composable scope, so LocalContext cannot be read inside it.
+    val context = LocalContext.current
     // Hold only IDs; resolve the live Transaction from the Room-backed list each recomposition so an
     // open detail/edit sheet reflects saved changes instantly (no need to close and reopen).
     var selectedTransactionId by remember { mutableStateOf<String?>(null) }
@@ -56,12 +60,16 @@ fun TransactionDetailsScreen(
         allTransactions.firstOrNull { it.id == transactionToEditId }
     }
 
-    val filtered = remember(allTransactions, searchTerm, filterType, sortBy) {
+    val filtered = remember(allTransactions, searchTerm, filterType, sortBy, context) {
         val cal = Calendar.getInstance()
         val f = allTransactions.filter { tx ->
-            val matchSearch = tx.title.contains(searchTerm, ignoreCase = true) ||
+            // Match the DISPLAYED text, not the stored text. Goal-completion
+            // transfers are persisted with English title/description; without
+            // this an Indonesian-speaking user searching "Transfer" or "Dana"
+            // would not find rows they can see on screen.
+            val matchSearch = txDisplayTitle(tx, context).contains(searchTerm, ignoreCase = true) ||
                 tx.category.contains(searchTerm, ignoreCase = true) ||
-                (tx.description ?: "").contains(searchTerm, ignoreCase = true)
+                (txDisplayDescription(tx, context) ?: "").contains(searchTerm, ignoreCase = true)
             val txCal = Calendar.getInstance().apply { timeInMillis = tx.date }
             val matchFilter = when (filterType) {
                 FilterType.INCOME      -> tx.type == TransactionType.INCOME

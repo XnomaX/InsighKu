@@ -23,7 +23,6 @@ enum class TransactionTypePresentation(
     val icon: ImageVector,
     val color: Color,
     @StringRes val labelRes: Int,
-    val showAmountPrefix: Boolean = false,
     val allowsEdit: Boolean = false,
     val showCategory: Boolean = false
 ) {
@@ -31,7 +30,6 @@ enum class TransactionTypePresentation(
         icon = Icons.AutoMirrored.Filled.TrendingUp,
         color = AppPalette.success,
         labelRes = R.string.type_income,
-        showAmountPrefix = true,
         allowsEdit = true,
         showCategory = true
     ),
@@ -39,7 +37,6 @@ enum class TransactionTypePresentation(
         icon = Icons.AutoMirrored.Filled.TrendingDown,
         color = AppPalette.error,
         labelRes = R.string.type_expense,
-        showAmountPrefix = true,
         allowsEdit = true,
         showCategory = true
     ),

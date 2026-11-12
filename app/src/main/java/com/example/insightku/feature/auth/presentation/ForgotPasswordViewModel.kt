@@ -1,10 +1,14 @@
 package com.example.insightku.feature.auth.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.ForgotPasswordUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +30,7 @@ import kotlinx.coroutines.launch
  */
 @HiltViewModel
 class ForgotPasswordViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val forgotPasswordUseCase: ForgotPasswordUseCase,
     private val errorBus: ErrorBus
 ) : ViewModel() {
@@ -56,7 +61,8 @@ class ForgotPasswordViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(isLoading = false, isEmailSent = true)
                 }
                 .onFailure { exception ->
-                    val errorMessage = exception.message ?: "Gagal mengirim email reset"
+                    val errorMessage = exception.message
+                        ?: LocaleHelper.wrapContext(context).getString(R.string.error_reset_email_failed)
                     _uiState.value = _uiState.value.copy(isLoading = false)
                     errorBus.send(errorMessage)
                 }

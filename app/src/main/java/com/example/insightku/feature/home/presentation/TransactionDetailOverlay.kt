@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,6 +80,7 @@ fun TransactionDetailOverlay(
     accountMap: Map<String, Account> = emptyMap()
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val context     = LocalContext.current
     val txType      = transaction.type
     val amountColor = txTypeColor(txType)
     val typeLabel   = txTypeLabel(txType)
@@ -135,7 +137,7 @@ fun TransactionDetailOverlay(
                     borderColor = catColor.copy(alpha = 0.2f),
                     borderWidth = 1.dp
                 )
-                Text(transaction.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TxTextPrimary, textAlign = TextAlign.Center)
+                Text(txDisplayTitle(transaction, context), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TxTextPrimary, textAlign = TextAlign.Center)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     // Category badge (only for Income/Expense)
                     if (showCat && transaction.category.isNotBlank()) {
@@ -231,12 +233,14 @@ fun TransactionDetailOverlay(
                 if (txType == TransactionType.AUTO_ALLOCATION) {
                     transaction.referenceId?.let { ruleId ->
                         PremiumInfoTile(
-                            Icons.Default.AutoAwesome, "Allocation Rule", ruleId,
+                            Icons.Default.AutoAwesome, stringResource(R.string.tx_detail_allocation_rule), ruleId,
                             TxAutoAllocIndigo, Modifier.fillMaxWidth()
                         )
                     }
                 }
-                if (!transaction.description.isNullOrBlank()) PremiumInfoTileWide(Icons.AutoMirrored.Filled.Notes, stringResource(R.string.tx_detail_notes), transaction.description, AppPalette.notesPurple)
+                if (!transaction.description.isNullOrBlank()) txDisplayDescription(transaction, context)?.let { notes ->
+                    PremiumInfoTileWide(Icons.AutoMirrored.Filled.Notes, stringResource(R.string.tx_detail_notes), notes, AppPalette.notesPurple)
+                }
                 if (!transaction.location.isNullOrBlank()) PremiumInfoTileWide(Icons.Default.LocationOn, stringResource(R.string.tx_detail_location), transaction.location, AppPalette.locationPink)
             }
 

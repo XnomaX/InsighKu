@@ -480,7 +480,7 @@ fun AutoAllocationDialog(
                             val parsed = cleaned.toDoubleOrNull() ?: return@InlineField
                             if (parsed > 0) form = form.copy(roundUpIncrement = parsed)
                         },
-                        placeholder = "e.g. 5.000",
+                        placeholder = stringResource(R.string.auto_alloc_increment_placeholder),
                         prefix = NumberFormatter.getCurrencySymbol(),
                         accentColor = goalColor,
                         hint = stringResource(R.string.auto_alloc_increment_desc)
@@ -498,7 +498,7 @@ fun AutoAllocationDialog(
                     value = if (form.minIncomeAmount.isEmpty()) ""
                     else CurrencyUtils.formatInputThousands(form.minIncomeAmount),
                     onValueChange = { form = form.copy(minIncomeAmount = CurrencyUtils.stripThousands(it)) },
-                    placeholder = "e.g. 5.000.000",
+                    placeholder = stringResource(R.string.auto_alloc_min_income_placeholder),
                     prefix = NumberFormatter.getCurrencySymbol(),
                     accentColor = goalColor
                 )
@@ -514,7 +514,7 @@ fun AutoAllocationDialog(
                         value = if (form.threshold.isNullOrEmpty()) ""
                         else CurrencyUtils.formatInputThousands(form.threshold!!),
                         onValueChange = { form = form.copy(threshold = CurrencyUtils.stripThousands(it)) },
-                        placeholder = "e.g. 10.000.000",
+                        placeholder = stringResource(R.string.auto_alloc_balance_threshold_placeholder),
                         prefix = NumberFormatter.getCurrencySymbol(),
                         accentColor = goalColor,
                         hint = stringResource(R.string.auto_alloc_balance_desc)
@@ -524,7 +524,7 @@ fun AutoAllocationDialog(
                         value = if (form.minRemainingBalance.isEmpty()) ""
                         else CurrencyUtils.formatInputThousands(form.minRemainingBalance),
                         onValueChange = { form = form.copy(minRemainingBalance = CurrencyUtils.stripThousands(it)) },
-                        placeholder = "e.g. 1.000.000",
+                        placeholder = stringResource(R.string.auto_alloc_min_remaining_placeholder),
                         prefix = NumberFormatter.getCurrencySymbol(),
                         accentColor = goalColor,
                         hint = stringResource(R.string.auto_alloc_min_remaining_desc)

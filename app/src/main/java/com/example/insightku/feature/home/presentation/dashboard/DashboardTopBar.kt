@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
@@ -39,114 +39,102 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.insightku.R
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.IncomeGreen
+import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.ui.theme.PurpleViolet
 import com.example.insightku.feature.home.presentation.PremiumFlameIcon
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
 
 @Composable
-private fun getTimeGreetingRes(): Int {
-    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-    return when {
-        hour < 12 -> R.string.dashboard_greeting_morning
-        hour < 17 -> R.string.dashboard_greeting_afternoon
-        else -> R.string.dashboard_greeting_evening
-    }
-}
-
-
-
-@Composable
 fun DashboardHeader(
-    userName: String,
-    monthlySavings: Double,
-    currentStreak: Int,
     isBalanceVisible: Boolean,
     isLoading: Boolean,
     onToggleVisibility: () -> Unit,
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {},
+    // Null in release builds: Route.NOTIFICATION_DEBUG only exists in the debug nav graph,
+    // so the bell is hidden entirely rather than navigating to a missing destination.
+    onNavigateToNotifications: (() -> Unit)? = null
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppPalette.background)
             .statusBarsPadding()
             .padding(horizontal = Dimens.ScreenHorizontalPadding)
             .padding(top = 20.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = DateFormatter.formatMonthYear(System.currentTimeMillis()),
-            style = MaterialTheme.typography.labelSmall,
-            color = AppPalette.textMuted,
-            letterSpacing = 0.5.sp
-        )
+        // Month chip — the only date context kept; replaces the stacked label + greeting +
+        // affirmation subtitle that read as boilerplate. Rendered as a bare Row, not a
+        // bordered Surface: it carries no click action, and matching the circle buttons'
+        // chrome would make it look tappable (the same "dead control" fault as the old bell).
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CalendarMonth,
+                contentDescription = null,
+                tint = LocalAccent.current,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = DateFormatter.formatMonthYear(System.currentTimeMillis()),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = AppPalette.textPrimary
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "${stringResource(getTimeGreetingRes())}, ${userName.firstName()}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppPalette.textPrimary
-                )
-                Text(
-                    text = stringResource(getContextualSubtitleRes(monthlySavings, currentStreak)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isLoading) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = PurpleViolet.copy(alpha = 0.10f),
-                        contentColor = PurpleViolet
-                    ) {
-                        Text(
-                            text = stringResource(R.string.dashboard_syncing),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+            if (isLoading) {
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = PurpleViolet.copy(alpha = 0.10f),
+                    contentColor = PurpleViolet
+                ) {
+                    Text(
+                        text = stringResource(R.string.dashboard_syncing),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-                // Visibility toggle
+            }
+            // Visibility toggle
+            Surface(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .clickable { onToggleVisibility() },
+                shape = CircleShape,
+                color = AppPalette.card,
+                border = BorderStroke(1.dp, AppPalette.cardBorder)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (isBalanceVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                        contentDescription = stringResource(R.string.dashboard_toggle_balance),
+                        tint = AppPalette.textMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+            // Notification bell — only rendered when a debug destination is wired.
+            if (onNavigateToNotifications != null) {
                 Surface(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(CircleShape)
-                        .clickable { onToggleVisibility() },
-                    shape = CircleShape,
-                    color = AppPalette.card,
-                    border = BorderStroke(1.dp, AppPalette.cardBorder)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (isBalanceVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = stringResource(R.string.dashboard_toggle_balance),
-                            tint = AppPalette.textMuted,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-                // Notification bell
-                Surface(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape),
+                        .clickable { onNavigateToNotifications() },
                     shape = CircleShape,
                     color = AppPalette.card,
                     border = BorderStroke(1.dp, AppPalette.cardBorder)
@@ -160,24 +148,24 @@ fun DashboardHeader(
                         )
                     }
                 }
-                // Settings
-                Surface(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .clickable { onNavigateToSettings() },
-                    shape = CircleShape,
-                    color = AppPalette.card,
-                    border = BorderStroke(1.dp, AppPalette.cardBorder)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.dashboard_settings),
-                            tint = AppPalette.textMuted,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+            }
+            // Settings
+            Surface(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .clickable { onNavigateToSettings() },
+                shape = CircleShape,
+                color = AppPalette.card,
+                border = BorderStroke(1.dp, AppPalette.cardBorder)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = stringResource(R.string.dashboard_settings),
+                        tint = AppPalette.textMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
         }
@@ -201,7 +189,9 @@ fun StickyFinanceStatusBar(
     Surface(
         modifier        = Modifier.fillMaxWidth(),
         color           = AppPalette.card,
-        shadowElevation = 4.dp,
+        // No elevation: the sticky bar sits flush above the scrolling cards, and its
+        // cast shadow read as a dark band cutting across the card below it.
+        shadowElevation = 0.dp,
         border          = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Row(
@@ -244,8 +234,11 @@ fun StickyFinanceStatusBar(
                     label = "streak_count"
                 ) { streak ->
                     Text(
+                        // quantity selects the plural item only — the format args are
+                        // separate, so the count must be passed twice or "%1$d" renders raw.
                         text = if (streak > 0) pluralStringResource(
                             R.plurals.dashboard_streak_days,
+                            streak,
                             streak
                         ) else "—",
                         style      = MaterialTheme.typography.labelMedium,

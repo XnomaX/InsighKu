@@ -53,6 +53,8 @@ import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.FitText
+import com.example.insightku.core.ui.components.SectionHeaderWithAdd
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
@@ -78,45 +80,19 @@ fun RecurringSection(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Section header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(R.string.recurring_section_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AppPalette.textPrimary
-                )
-                Text(
-                    text = if (recurringBudgets.isEmpty()) stringResource(R.string.recurring_section_empty)
-                    else pluralStringResource(
-                        R.plurals.recurring_section_active,
-                        recurringBudgets.size,
-                        NumberFormatter.formatCurrency(recurringBudgets.sumOf { it.amount })
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
-            }
-            Surface(
-                modifier = Modifier.clickable(onClick = onAdd),
-                shape = RoundedCornerShape(50.dp),
-                color = AppPalette.card,
-                border = BorderStroke(1.dp, Purple)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = Purple)
-                    Text(stringResource(R.string.add), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Purple)
-                }
-            }
-        }
+        SectionHeaderWithAdd(
+            title = stringResource(R.string.recurring_section_title),
+            subtitle = if (recurringBudgets.isEmpty()) stringResource(R.string.recurring_section_empty)
+            else pluralStringResource(
+                R.plurals.recurring_section_active,
+                recurringBudgets.size,
+                recurringBudgets.size,
+                NumberFormatter.formatCurrency(recurringBudgets.sumOf { it.amount })
+            ),
+            addLabel = stringResource(R.string.add_recurring),
+            tint = Purple,
+            onAdd = onAdd
+        )
 
         if (recurringBudgets.isEmpty()) {
             RecurringEmptyState(onAdd = onAdd)
@@ -176,7 +152,7 @@ fun RecurringPaymentCard(
             itemName = budget.name,
             onDismiss = { showDeleteConfirm = false },
             onConfirm = { showDeleteConfirm = false; onDelete() },
-            message = "\"${budget.name}\" will be removed from your recurring payments."
+            message = stringResource(R.string.recurring_will_be_removed, budget.name)
         )
     }
 
@@ -283,7 +259,9 @@ private fun RecurringEmptyState(onAdd: () -> Unit) {
             Text(stringResource(R.string.recurring_empty), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
             Text(stringResource(R.string.recurring_empty_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             Surface(
-                modifier = Modifier.clickable(onClick = onAdd),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50.dp))
+                    .clickable(onClick = onAdd),
                 shape = RoundedCornerShape(50.dp),
                 color = AppPalette.card,
                 border = BorderStroke(1.dp, Purple)
@@ -294,7 +272,7 @@ private fun RecurringEmptyState(onAdd: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = Purple)
-                    Text(stringResource(R.string.recurring_add), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Purple)
+                    FitText(stringResource(R.string.recurring_add), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Purple)
                 }
             }
         }
@@ -314,45 +292,19 @@ fun InstallmentsSection(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Section header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(R.string.installment_section_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AppPalette.textPrimary
-                )
-                Text(
-                    text = if (installments.isEmpty()) stringResource(R.string.installment_section_empty)
-                    else pluralStringResource(
-                        R.plurals.installment_section_active,
-                        installments.size,
-                        NumberFormatter.formatCurrency(installments.sumOf { it.remainingBalance })
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
-            }
-            Surface(
-                modifier = Modifier.clickable(onClick = onAdd),
-                shape = RoundedCornerShape(50.dp),
-                color = AppPalette.card,
-                border = BorderStroke(1.dp, AppPalette.cyan)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = AppPalette.cyan)
-                    Text(stringResource(R.string.add), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.cyan)
-                }
-            }
-        }
+        SectionHeaderWithAdd(
+            title = stringResource(R.string.installment_section_title),
+            subtitle = if (installments.isEmpty()) stringResource(R.string.installment_section_empty)
+            else pluralStringResource(
+                R.plurals.installment_section_active,
+                installments.size,
+                installments.size,
+                NumberFormatter.formatCurrency(installments.sumOf { it.remainingBalance })
+            ),
+            addLabel = stringResource(R.string.add_installment),
+            tint = AppPalette.cyan,
+            onAdd = onAdd
+        )
 
         if (installments.isEmpty()) {
             InstallmentEmptyState(onAdd = onAdd)
@@ -413,7 +365,7 @@ fun InstallmentCard(
             itemName = installment.name,
             onDismiss = { showDeleteConfirm = false },
             onConfirm = { showDeleteConfirm = false; onDelete() },
-            message = "\"${installment.name}\" will be removed from your installments."
+            message = stringResource(R.string.installment_will_be_removed, installment.name)
         )
     }
 
@@ -553,7 +505,9 @@ private fun InstallmentEmptyState(onAdd: () -> Unit) {
             Text(stringResource(R.string.installment_section_empty), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
             Text(stringResource(R.string.installment_empty_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
             Surface(
-                modifier = Modifier.clickable(onClick = onAdd),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50.dp))
+                    .clickable(onClick = onAdd),
                 shape = RoundedCornerShape(50.dp),
                 color = AppPalette.card,
                 border = BorderStroke(1.dp, AppPalette.cyan)
@@ -564,7 +518,7 @@ private fun InstallmentEmptyState(onAdd: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = AppPalette.cyan)
-                    Text(stringResource(R.string.installment_add_btn), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.cyan)
+                    FitText(stringResource(R.string.installment_add_btn), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.cyan)
                 }
             }
         }
@@ -582,7 +536,7 @@ private fun FrequencyChip(frequency: BudgetFrequency) {        val label = when 
         BudgetFrequency.YEARLY    -> stringResource(R.string.recurring_yearly)
     }
     Surface(shape = RoundedCornerShape(50), color = Purple.copy(alpha = 0.08f)) {
-        Text(
+        FitText(
             text = label,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             style = MaterialTheme.typography.labelSmall,
@@ -617,7 +571,7 @@ private fun DueChip(daysUntilDue: Int, status: DueStatus) {
         )
     }
     Surface(shape = RoundedCornerShape(50), color = bg) {
-        Text(
+        FitText(
             text = label,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             style = MaterialTheme.typography.labelSmall,

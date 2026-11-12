@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">InsightKu</string>
 
     <!-- Navigation -->
@@ -61,6 +61,89 @@
 
     <!-- Auth - Validation -->
     <string name="error_email_empty">Email cannot be empty</string>
+    <string name="error_name_empty">Name cannot be empty</string>
+    <string name="error_name_letters">Name can only contain letters and spaces</string>
+    <string name="error_password_empty">Password cannot be empty</string>
+    <string name="error_password_digit">Password must contain at least 1 number</string>
+    <string name="error_password_letter">Password must contain at least 1 letter</string>
+    <string name="error_confirm_password_empty">Confirm password cannot be empty</string>
+    <string name="error_password_mismatch">Passwords do not match</string>
+    <string name="error_reset_email_failed">Failed to send reset email</string>
+
+    <!-- Goals - snackbar and status messages -->
+    <string name="goal_created_success">Goal created successfully</string>
+    <string name="goal_updated">Goal updated</string>
+    <string name="goal_restored_active">Goal restored to active</string>
+    <string name="goal_permanently_deleted">Goal permanently deleted</string>
+    <string name="goal_completed_congrats">Congratulations! Goal completed!</string>
+    <string name="goal_completed_funds_transferred">Goal completed — funds transferred</string>
+    <string name="goal_deleted_funds_transferred">Goal deleted — funds transferred</string>
+    <string name="goal_paused">Goal paused</string>
+    <string name="goal_resumed">Goal resumed</string>
+    <string name="goal_contribution_added">%1$s added to %2$s</string>
+    <string name="goal_amount_withdrawn">%1$s withdrawn</string>
+    <string name="goal_account_linked">Account linked to goal</string>
+    <string name="goal_account_unlinked">Account unlinked</string>
+    <string name="goal_daily_target_cleared">Daily target cleared</string>
+    <string name="goal_daily_target_set">Daily target set to %1$s</string>
+    <string name="goal_rule_added">Auto-allocation rule added</string>
+    <string name="goal_rule_updated">Rule updated</string>
+    <string name="goal_rule_deleted">Rule deleted</string>
+    <string name="goal_name_fallback">goal</string>
+
+    <!-- Budget status pill -->
+    <string name="budget_status_no_limit">No limit</string>
+    <string name="budget_status_safe">Safe</string>
+    <string name="budget_status_over">Over</string>
+    <plurals name="budget_subtitle_over">
+        <item quantity="one">%1$d over budget, %2$d total</item>
+        <item quantity="other">%1$d over budget, %2$d total</item>
+    </plurals>
+    <plurals name="budget_subtitle_warning">
+        <item quantity="one">%1$d close to limit, %2$d total</item>
+        <item quantity="other">%1$d close to limit, %2$d total</item>
+    </plurals>
+    <plurals name="budget_subtitle_ok">
+        <item quantity="one">%1$d category monitored</item>
+        <item quantity="other">%1$d categories monitored</item>
+    </plurals>
+    <string name="budget_spent_label">%1$s spent</string>
+    <string name="budget_insight_over">%1$s spending has exceeded the budget</string>
+    <string name="budget_insight_warning">%1$s budget is nearly reached</string>
+    <plurals name="budget_insight_safe">
+        <item quantity="one">%1$d category is well within budget</item>
+        <item quantity="other">%1$d categories are well within budget</item>
+    </plurals>
+
+    <!-- Settings - insight tone names -->
+    <string name="insight_tone_gentle">Gentle</string>
+    <string name="insight_tone_warm">Warm</string>
+    <string name="insight_tone_direct">Direct</string>
+
+    <!-- Settings - insight tone preview sentences -->
+    <string name="insight_tone_preview_gentle">You\'ve leaned into weekends a little more lately — and that\'s perfectly okay.</string>
+    <string name="insight_tone_preview_warm">Weekends are where your money likes to go loud.</string>
+    <string name="insight_tone_preview_direct">Most of your spending happens on weekends.</string>
+
+    <!-- Forecast - client-side failure messages (server refusal detail comes from the API) -->
+    <string name="forecast_error_no_base_url">Forecast API base URL is not configured</string>
+    <string name="forecast_error_timeout">Forecast request timed out — the model may still be warming up</string>
+    <string name="forecast_error_request_failed">Forecast request failed</string>
+    <string name="forecast_error_invalid_json">Forecast response was not valid JSON</string>
+    <string name="forecast_error_no_profile">Forecast response had status OK but no daily profile</string>
+    <string name="forecast_error_null_in_profile">Forecast profile contained a null value</string>
+    <string name="forecast_error_unauthorized">Forecast API rejected the key (401)</string>
+    <string name="forecast_error_too_many">Too many transactions sent to the forecast API (413)</string>
+    <string name="forecast_error_unavailable">Forecast model is unavailable on the server (503)</string>
+    <string name="forecast_error_server">Forecast server error %1$d</string>
+
+    <!-- Receipt scanner - client-side failure messages (shown as detail text
+         under the localized scanner_error_generic headline) -->
+    <string name="scanner_error_scan_failed">Scan failed</string>
+    <string name="scanner_error_read_image">Could not read the selected image</string>
+    <string name="scanner_error_timeout">Request timed out — the server may be slow or offline</string>
+    <string name="scanner_error_no_base_url">Receipt API base URL is not configured</string>
+    <string name="scanner_error_server">Server error %1$d</string>
 
     <!-- Auth - Password Strength -->
     <string name="password_strength_weak">Weak</string>
@@ -86,6 +169,7 @@
     <!-- Settings - Identity -->
     <string name="settings_identity_greeting">Hey, %1$s</string>
     <string name="settings_identity_default">Your space</string>
+    <string name="settings_signed_in">Signed in</string>
     <string name="settings_identity_subtitle">Shape how InsightKu feels and how it gets to know you 💜</string>
     <string name="settings_currency">Currency</string>
     <string name="settings_choose_currency">Choose currency</string>
@@ -112,6 +196,8 @@
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
     <string name="add">Add</string>
+    <string name="add_recurring">Add Recurring</string>
+    <string name="add_installment">Add Installment</string>
     <string name="back">Back</string>
     <string name="close">Close</string>
     <string name="success">Success</string>
@@ -365,6 +451,10 @@
     <string name="tx_summary_income">Income</string>
     <string name="tx_summary_expenses">Expenses</string>
     <string name="tx_summary_total">Total</string>
+    <plurals name="tx_list_count">
+        <item quantity="one">%1$d transaction</item>
+        <item quantity="other">%1$d transactions</item>
+    </plurals>
     <string name="tx_detail_date">Date</string>
     <string name="tx_detail_time">Time</string>
     <string name="tx_detail_account">Account</string>
@@ -373,9 +463,12 @@
     <string name="tx_detail_syncing">Syncing</string>
     <string name="tx_detail_notes">Notes</string>
     <string name="tx_detail_location">Location</string>
+    <string name="tx_detail_allocation_rule">Allocation Rule</string>
     <string name="tx_detail_to_account">To Account</string>
     <string name="tx_detail_from_account">From Account</string>
     <string name="tx_detail_goal">Goal</string>
+    <string name="tx_transfer_from_goal_title">Transfer: %1$s</string>
+    <string name="tx_transfer_from_goal_desc">Funds from completed goal \"%1$s\"</string>
     <string name="tx_detail_contribution_type">Contribution Type</string>
     <string name="tx_detail_auto">Auto Allocation</string>
     <string name="tx_detail_manual">Manual</string>
@@ -393,6 +486,7 @@
     <string name="allocation_review_source">Source Account</string>
     <string name="allocation_review_destination">Destination Goal</string>
     <string name="allocation_review_trigger">Trigger</string>
+    <string name="allocation_review_execution_time">Execution Time</string>
     <string name="allocation_review_approve">Approve</string>
     <string name="allocation_review_reject">Reject</string>
     <string name="allocation_review_subtitle">Review and confirm this allocation</string>
@@ -479,7 +573,9 @@
     <string name="account_name_placeholder">e.g., BCA Savings, GoPay</string>
     <string name="account_type_cash">Cash</string>
     <string name="account_type_bank">Bank</string>
+    <string name="account_type_bank_account">Bank Account</string>
     <string name="account_type_ewallet">E-Wallet</string>
+    <string name="account_type_credit_card">Credit Card</string>
     <string name="account_type_card">Card</string>
     <string name="save_changes">Save Changes</string>
 
@@ -490,10 +586,10 @@
     <string name="account_label">ACCOUNT</string>
     <string name="next_due_date_label">NEXT DUE DATE</string>
     <string name="recurring_name_placeholder">e.g. Netflix, Spotify, Rent</string>
-    <string name="recurring_amount_placeholder">e.g. 59.000</string>
+    <string name="recurring_amount_placeholder">e.g. 59,000</string>
     <string name="installment_name_placeholder">e.g. MacBook, Phone, Car</string>
-    <string name="installment_total_placeholder">e.g. 12.000.000</string>
-    <string name="installment_monthly_placeholder">e.g. 1.000.000</string>
+    <string name="installment_total_placeholder">e.g. 12,000,000</string>
+    <string name="installment_monthly_placeholder">e.g. 1,000,000</string>
     <string name="frequency_weekly">Weekly</string>
     <string name="frequency_biweekly">Biweekly</string>
     <string name="frequency_monthly">Monthly</string>
@@ -596,18 +692,9 @@
     <string name="dialog_archive_title">Archive %1$s?</string>
     <string name="dialog_archive_message">You can view archived items in settings.</string>
 
-    <!-- Dashboard Contextual Subtitles -->
-    <string name="dashboard_subtitle_remarkable_streak">Remarkable consistency. Keep the momentum.</string>
-    <string name="dashboard_subtitle_building_habits">You\'re building healthy spending habits.</string>
-    <string name="dashboard_subtitle_savings_on_track">Your savings are staying on track.</string>
-    <string name="dashboard_subtitle_small_steps">Small mindful steps create strong finances.</string>
-
     <!-- Budget Period Labels -->
 
     <!-- Dashboard Header -->
-    <string name="dashboard_greeting_morning">Good morning</string>
-    <string name="dashboard_greeting_afternoon">Good afternoon</string>
-    <string name="dashboard_greeting_evening">Good evening</string>
     <string name="dashboard_syncing">Syncing</string>
     <string name="dashboard_toggle_balance">Toggle Balance</string>
     <string name="dashboard_notifications">Notifications</string>
@@ -685,6 +772,11 @@
     <string name="dashboard_monthly">Monthly</string>
     <string name="dashboard_no_data">No data yet</string>
     <string name="dashboard_start_adding">Start adding transactions to see insights.</string>
+    <string name="dashboard_forecast_need_more_history">Not enough spending history yet to project. Keep logging expenses — the model needs several days.</string>
+    <string name="dashboard_forecast_offline">Forecast needs a connection to the model server. Reconnect to see your projection.</string>
+    <string name="dashboard_forecast_unavailable">Forecast is temporarily unavailable. %1$s</string>
+    <string name="dashboard_forecast_refused_detail">Model: %1$s</string>
+    <string name="dashboard_forecast_research_note">Experimental model — not yet validated on IDR spending. Treat as an estimate, not advice.</string>
 
     <!-- Dashboard Goals Preview -->
     <string name="dashboard_goals">Goals</string>
@@ -754,6 +846,20 @@
     <!-- Dashboard Insights -->
     <string name="dashboard_insights">Insights</string>
     <string name="dashboard_financial_pulse">Your financial pulse this month</string>
+    <string name="dashboard_advice_no_income">Start logging income to see your financial picture.</string>
+    <string name="dashboard_advice_saving_excellent">You\'re saving %1$d%% of your income this month. Excellent discipline.</string>
+    <string name="dashboard_advice_saving_on_track">Savings are on track at %1$d%% of income. Keep the momentum.</string>
+    <string name="dashboard_advice_overspent">Expenses exceeded income this month. Review your spending to get back on track.</string>
+    <string name="dashboard_advice_healthy_habits">You\'re building healthy spending habits this month.</string>
+    <string name="dashboard_advice_spending_ratio_ok">Recurring payments are under control — spending ratio looks healthy.</string>
+    <string name="dashboard_advice_review_recurring">Consider reviewing recurring payments to reduce monthly outflow.</string>
+    <!-- Singular is unreachable: the guard in BuildInsightMessagesUseCase only selects
+         streak_30 at streak >= 30 and streak_3 at 3 <= streak < 7, so %1$d is never 1.
+         A <plurals> with a "one" item here would be dead resource. -->
+    <string name="dashboard_advice_streak_30" tools:ignore="PluralsCandidate">%1$d days of consistent tracking. Financial mastery in motion.</string>
+    <string name="dashboard_advice_streak_7">%1$d-day tracking streak. Your habit is becoming automatic.</string>
+    <string name="dashboard_advice_streak_3" tools:ignore="PluralsCandidate">%1$d days in — the habit is forming. Don\'t break the chain.</string>
+    <string name="dashboard_advice_start_streak">Log your first transaction today to start building your streak.</string>
 
     <!-- Goal Detail Header -->
     <string name="goal_header_retry">Retry</string>
@@ -830,7 +936,9 @@
     <string name="add_goal_title">Create New Goal</string>
     <string name="add_goal_subtitle">Set a savings target and track progress</string>
     <string name="add_goal_name_label">GOAL NAME</string>
+    <string name="add_goal_name_placeholder">e.g. Emergency Fund, Vacation</string>
     <string name="add_goal_amount_label">TARGET AMOUNT</string>
+    <string name="add_goal_amount_placeholder">e.g. 5,000,000</string>
     <string name="add_goal_date_label">TARGET DATE (OPTIONAL)</string>
     <string name="add_goal_icon_label">ICON</string>
     <string name="add_goal_color_label">COLOR</string>
@@ -858,9 +966,12 @@
     <string name="auto_alloc_percentage">Percentage %%</string>
     <string name="auto_alloc_fixed">Fixed Amount</string>
     <string name="auto_alloc_min_income">MINIMUM INCOME (OPTIONAL)</string>
+    <string name="auto_alloc_min_income_placeholder">e.g. 5,000,000</string>
     <string name="auto_alloc_balance_threshold">BALANCE THRESHOLD</string>
+    <string name="auto_alloc_balance_threshold_placeholder">e.g. 10,000,000</string>
     <string name="auto_alloc_balance_desc">Allocate when account balance exceeds this amount</string>
     <string name="auto_alloc_min_remaining">MINIMUM REMAINING BALANCE (OPTIONAL)</string>
+    <string name="auto_alloc_min_remaining_placeholder">e.g. 1,000,000</string>
     <string name="auto_alloc_min_remaining_desc">Keep at least this amount in the source account</string>
     <string name="auto_alloc_start_date">START DATE</string>
     <string name="auto_alloc_today">Today</string>
@@ -978,6 +1089,8 @@
 
     <!-- Recurring & Installment Section -->
     <string name="recurring_section_title">Recurring Payments</string>
+    <string name="recurring_will_be_removed">\"%1$s\" will be removed from your recurring payments.</string>
+    <string name="installment_will_be_removed">\"%1$s\" will be removed from your installments.</string>
     <string name="recurring_section_empty">No recurring payments</string>
     <plurals name="recurring_section_active">
         <item quantity="one">%1$d active \u2022 %2$s / mo</item>
@@ -990,7 +1103,7 @@
         <item quantity="one">%1$d active \u2022 %2$s remaining</item>
         <item quantity="other">%1$d active \u2022 %2$s remaining</item>
     </plurals>
-    <string name="installment_empty_desc">Track your cicilan and PayLater payments.</string>
+    <string name="installment_empty_desc">Track your installments and PayLater payments.</string>
     <string name="recurring_remaining">Remaining</string>
     <string name="recurring_overdue_by">Overdue by %1$dd</string>
     <string name="recurring_due_today">Due Today</string>
@@ -1004,7 +1117,7 @@
     <string name="installment_sheet_chip">Installment</string>
     <string name="installment_sheet_edit">Edit Installment</string>
     <string name="installment_sheet_add">Add Installment</string>
-    <string name="installment_sheet_desc">Cicilan, PayLater, vehicle credit</string>
+    <string name="installment_sheet_desc">Installments, PayLater, vehicle credit</string>
     <string name="recurring_form_name">PAYMENT NAME</string>
     <string name="recurring_form_icon">ICON</string>
     <string name="recurring_form_frequency">FREQUENCY</string>
@@ -1025,6 +1138,7 @@
     <string name="installment_add_btn">Add Installment</string>
     <string name="error_name_short">Name must be at least 2 characters</string>
     <string name="error_amount_zero">Amount must be greater than zero</string>
+    <string name="error_insufficient_balance">Insufficient balance in %1$s — an account cannot go negative.</string>
     <string name="error_total_required">Total amount is required</string>
     <string name="error_monthly_required">Monthly payment is required</string>
     <string name="error_months_required">Total months is required</string>
@@ -1095,6 +1209,8 @@
     <string name="add_category_expense_desc">Track and limit your spending</string>
     <string name="add_category_income_desc">Track where your money comes from</string>
     <string name="add_category_preview">Preview</string>
+    <string name="add_category_name_placeholder">Category Name</string>
+    <string name="add_category_income_tracking">Income tracking</string>
     <string name="add_category_no_limit">No limit set</string>
     <string name="add_category_name_error">Category name must be at least 2 characters</string>
     <string name="content_selected">Selected</string>
@@ -1113,6 +1229,7 @@
     <string name="alloc_notif_skipped_msg">Auto Allocation to %1$s was skipped because %2$s has insufficient balance.</string>
     <string name="alloc_notif_completed_title">Goal Completed!</string>
     <string name="alloc_notif_completed_msg">Congratulations! Auto Allocation has stopped because your %1$s goal has been completed.</string>
+    <string name="alloc_notif_channel_name">Auto Allocation</string>
     <string name="alloc_notif_channel_desc">Notifications for automatic savings allocations</string>
 
     <!-- Savings Activity Chart -->
@@ -1156,6 +1273,7 @@
     <string name="auto_alloc_round_down">Round Down</string>
     <string name="auto_alloc_round_nearest">Round Nearest</string>
     <string name="auto_alloc_increment">INCREMENT</string>
+    <string name="auto_alloc_increment_placeholder">e.g. 5,000</string>
     <string name="auto_alloc_increment_desc">Round to the nearest multiple of this amount</string>
     <string name="auto_alloc_trigger_daily">Daily</string>
     <string name="auto_alloc_trigger_daily_desc">Fixed daily savings</string>
@@ -1183,6 +1301,48 @@
     <string name="auto_alloc_day_sat">Sat</string>
     <string name="auto_alloc_day_sun">Sun</string>
     <string name="auto_alloc_day_last">Last</string>
+    <string name="auto_alloc_not_set">Not set</string>
+    <string name="auto_alloc_desc_last_day">last day</string>
+    <string name="auto_alloc_day_ordinal">%1$d%2$s</string>
+    <string name="auto_alloc_ordinal_st">st</string>
+    <string name="auto_alloc_ordinal_nd">nd</string>
+    <string name="auto_alloc_ordinal_rd">rd</string>
+    <string name="auto_alloc_ordinal_th">th</string>
+    <string name="auto_alloc_desc_income_percent">Save %1$d%% of income</string>
+    <string name="auto_alloc_desc_income_amount">Save %1$s from income</string>
+    <string name="auto_alloc_desc_min_income">(min %1$s)</string>
+    <string name="auto_alloc_desc_category_percent">Save %1$d%% from category spending</string>
+    <string name="auto_alloc_desc_category_amount">Save %1$s from category spending</string>
+    <string name="auto_alloc_desc_round_up">Round up to nearest %1$s</string>
+    <string name="auto_alloc_desc_round_down">Round down to nearest %1$s</string>
+    <string name="auto_alloc_desc_round_nearest">Round to nearest %1$s</string>
+    <string name="auto_alloc_desc_daily">Every day at %1$s</string>
+    <string name="auto_alloc_desc_weekly">Every %1$s at %2$s</string>
+    <string name="auto_alloc_desc_biweekly">Every 2 weeks from %1$s at %2$s</string>
+    <string name="auto_alloc_desc_monthly">Every %1$s at %2$s</string>
+    <string name="auto_alloc_desc_balance_percent">Save %1$d%% when balance > %2$s</string>
+    <string name="auto_alloc_desc_balance_amount">Save %1$s when balance > %2$s</string>
+    <string name="auto_alloc_desc_keep_balance">(keep %1$s)</string>
+    <string name="auto_alloc_day_monday">Monday</string>
+    <string name="auto_alloc_day_tuesday">Tuesday</string>
+    <string name="auto_alloc_day_wednesday">Wednesday</string>
+    <string name="auto_alloc_day_thursday">Thursday</string>
+    <string name="auto_alloc_day_friday">Friday</string>
+    <string name="auto_alloc_day_saturday">Saturday</string>
+    <string name="auto_alloc_day_sunday">Sunday</string>
+    <string name="alloc_reason_income">Income detected: %1$s</string>
+    <string name="alloc_reason_round">%1$s: %2$s → %3$s</string>
+    <string name="alloc_reason_category">Spending in %1$s: %2$s</string>
+    <string name="alloc_reason_scheduled">Scheduled %1$s allocation</string>
+    <string name="alloc_draft_approved_snackbar">%1$s allocated to %2$s</string>
+    <string name="alloc_freq_daily">daily</string>
+    <string name="alloc_freq_weekly">weekly</string>
+    <string name="alloc_freq_biweekly">biweekly</string>
+    <string name="alloc_freq_monthly">monthly</string>
+    <string name="alloc_reason_balance">Balance %1$s exceeds %2$s</string>
+    <string name="alloc_reason_total_today">Total spending today: %1$s</string>
+    <string name="alloc_reason_total_month">Total spending this month: %1$s</string>
+    <string name="alloc_goal_unknown">Unknown Goal</string>
 
 
     <!-- Goals Screen -->
@@ -1227,6 +1387,15 @@
     <string name="cd_success">Success</string>
     <string name="cd_sign_up_screen">Sign up screen</string>
     <string name="cd_dismiss_error">Dismiss error</string>
+    <string name="cd_field_error">%1$s field, error: %2$s</string>
+    <string name="cd_field_input">%1$s input field</string>
+    <string name="cd_hide_password">Hide password</string>
+    <string name="cd_show_password">Show password</string>
+    <string name="cd_invalid">Invalid</string>
+    <string name="cd_valid">Valid</string>
+    <string name="cd_button_loading">%1$s, loading</string>
+    <string name="cd_button_enabled">%1$s, enabled</string>
+    <string name="cd_button_disabled">%1$s, disabled</string>
 
     <!-- Keepalive Service -->
     <string name="keepalive_title">InsighKu active</string>
@@ -1289,6 +1458,7 @@
         <item quantity="other">\"%1$s\" is due in %2$d days. Amount: %3$s</item>
     </plurals>
     <string name="payment_recurring">Recurring</string>
+    <string name="payment_body_type">Type: %1$s</string>
     <string name="payment_installment">Installment</string>
 
     <!-- Goal Deadline Reminders -->
@@ -1326,6 +1496,13 @@
 
     <!-- Goal Repository -->
     <string name="goal_withdraw_title">Withdraw: %1$s</string>
+    <string name="goal_withdraw_desc">Withdrawal from %1$s</string>
+    <string name="goal_contrib_desc">Contribution to %1$s</string>
+    <string name="goal_contrib_title">Goal: %1$s</string>
+    <string name="tx_auto_recurring_desc">Auto: %1$s</string>
+    <string name="tx_auto_installment_desc">Auto installment: %1$s (%2$d/%3$d)</string>
+    <string name="tx_recurring_payment_desc">Recurring payment: %1$s</string>
+    <string name="tx_installment_payment_desc">Installment payment: %1$s (%2$d/%3$d)</string>
 
     <!-- Goal Detail - Status Actions Section -->
     <string name="goal_status_actions_title">Status Actions</string>

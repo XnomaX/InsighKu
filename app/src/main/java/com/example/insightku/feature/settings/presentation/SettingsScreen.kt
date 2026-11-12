@@ -453,7 +453,7 @@ private fun InsightToneSection(uiState: SettingsUiState, onEvent: (SettingsEvent
                     color = bg
                 ) {
                     Text(
-                        tone.label,
+                        tone.label(),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                         color = if (selected) Color.White else SettingsPalette.Purple,
@@ -478,27 +478,31 @@ private fun InsightToneSection(uiState: SettingsUiState, onEvent: (SettingsEvent
                 Column {
                     Text(stringResource(R.string.settings_sounds_like), style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
                     Spacer(Modifier.height(2.dp))
-                    Text(uiState.insightTone.previewSentence, style = MaterialTheme.typography.bodyMedium, color = SettingsPalette.textPrimary)
+                    Text(uiState.insightTone.previewSentence(), style = MaterialTheme.typography.bodyMedium, color = SettingsPalette.textPrimary)
                 }
             }
         }
     }
 }
 
-private val InsightTone.label: String
-    get() = when (this) {
-        InsightTone.GENTLE -> "Gentle"
-        InsightTone.WARM -> "Warm"
-        InsightTone.DIRECT -> "Direct"
-    }
+// Both InsightTone accessors are @Composable so the copy resolves through
+// stringResource and follows the in-app language switch. Precedent: TxGroup.label()
+// in TransactionDesignTokens. Each has exactly one caller, both inside composables
+// (`:456` tone.label, `:481` previewSentence).
+@Composable
+private fun InsightTone.label(): String = when (this) {
+    InsightTone.GENTLE -> stringResource(R.string.insight_tone_gentle)
+    InsightTone.WARM -> stringResource(R.string.insight_tone_warm)
+    InsightTone.DIRECT -> stringResource(R.string.insight_tone_direct)
+}
 
 /** A single insight shown three ways, so the preview teaches the difference instantly. */
-private val InsightTone.previewSentence: String
-    get() = when (this) {
-        InsightTone.GENTLE -> "You've leaned into weekends a little more lately — and that's perfectly okay."
-        InsightTone.WARM -> "Weekends are where your money likes to go loud."
-        InsightTone.DIRECT -> "Most of your spending happens on weekends."
-    }
+@Composable
+private fun InsightTone.previewSentence(): String = when (this) {
+    InsightTone.GENTLE -> stringResource(R.string.insight_tone_preview_gentle)
+    InsightTone.WARM -> stringResource(R.string.insight_tone_preview_warm)
+    InsightTone.DIRECT -> stringResource(R.string.insight_tone_preview_direct)
+}
 
 // ── Reusable pill selector ───────────────────────────────────────────────────────
 
@@ -1009,7 +1013,7 @@ private fun MemoryRow(memory: MerchantMemory, onForget: () -> Unit) {
 @Composable
 private fun AccountSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     SettingsSurface {
-        Text(uiState.userName.ifBlank { "Signed in" }, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = SettingsPalette.textPrimary)
+        Text(uiState.userName.ifBlank { stringResource(R.string.settings_signed_in) }, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = SettingsPalette.textPrimary)
         Text(uiState.userEmail, style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
         Spacer(Modifier.height(Dimens.PaddingLarge))
         Surface(

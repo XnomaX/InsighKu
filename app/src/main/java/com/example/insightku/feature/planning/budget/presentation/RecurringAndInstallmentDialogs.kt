@@ -690,6 +690,7 @@ fun AddInstallmentDialog(
                                 pluralStringResource(
                                     R.plurals.installment_months_summary,
                                     remainingMonths,
+                                    remainingMonths,
                                     paidMonths,
                                     totalMonths
                                 ),

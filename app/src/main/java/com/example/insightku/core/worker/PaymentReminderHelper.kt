@@ -104,7 +104,7 @@ object PaymentReminderHelper {
 
         // Determine reminder type and content
         val ctx = LocaleHelper.wrapContext(context)
-        val formattedAmount = CurrencyUtils.formatAmount(amount)
+        val formattedAmount = CurrencyUtils.formatAmount(amount, locale = ctx.resources.configuration.locales[0])
         val reminderData = when {
             daysUntilDue < 0 -> Triple(
                 "overdue",
@@ -182,7 +182,7 @@ object PaymentReminderHelper {
             .setContentText("$typeLabel · $formattedAmount")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("$body\nType: $typeLabel")
+                    .bigText("$body\n" + ctx.getString(R.string.payment_body_type, typeLabel))
             )
             .setPriority(
                 if (daysUntilDue <= 1) NotificationCompat.PRIORITY_HIGH

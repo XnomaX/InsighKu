@@ -25,9 +25,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -59,6 +61,14 @@ fun AnalyticsScreen(
     viewModel: AnalyticsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Re-derive the insight copy when the applied language changes. `InsightEngine` bakes
+    // localized Strings into `AnalyticsInsights`, and this ViewModel outlives the Activity
+    // recreation that `setApplicationLocales` triggers — see AnalyticsViewModel.onLocaleChanged.
+    // Keyed on the configuration's language tag because that is snapshot state, so the effect
+    // actually re-runs; the ViewModel does its own comparison against the locale it derived with.
+    val languageTag = LocalConfiguration.current.locales.toLanguageTags()
+    LaunchedEffect(languageTag) { viewModel.onLocaleChanged() }
 
     Box(
         modifier = Modifier
@@ -100,7 +110,7 @@ fun AnalyticsScreen(
                         title = stringResource(R.string.analytics_error_title),
                         subtitle = uiState.error ?: stringResource(R.string.analytics_unknown_error)
                     )
-                    uiState.insights == null || uiState.insights?.heroInsight?.headline?.contains(AnalyticsStrings.heroWeekStartLogging()) == true -> {
+                    uiState.insights == null || uiState.insights?.isOnboarding == true -> {
                         AnalyticsEmptyState(
                             emoji = "📊",
                             title = stringResource(R.string.analytics_empty_title),

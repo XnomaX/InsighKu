@@ -34,6 +34,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.ExpenseRed
@@ -69,7 +70,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlin.math.abs
 
 // ─── Data Models ──────────────────────────────────────────────────────────────────
@@ -331,7 +331,7 @@ private fun computeChartPoints(
  */
 private fun formatTimeLabelByDuration(instant: Instant, durationMs: Long): String {
     val dt = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-    val locale = Locale.getDefault()
+    val locale = LocaleHelper.currentLocale()
     return when {
         durationMs <= 3_600_000L ->
             dt.format(DateTimeFormatter.ofPattern("HH:mm", locale))
@@ -352,7 +352,7 @@ private fun formatTimeLabelByDuration(instant: Instant, durationMs: Long): Strin
  */
 private fun formatTooltipDateTime(instant: Instant): String {
     val dt = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-    val locale = Locale.getDefault()
+    val locale = LocaleHelper.currentLocale()
     return dt.format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale))
 }
 
@@ -547,7 +547,7 @@ private fun rememberSavingsMarker(
                                 color = goalColor,
                                 fontWeight = FontWeight.SemiBold,
                             ),
-                        ) { append(String.format(Locale.getDefault(), "%.0f%%", progress)) }
+                        ) { append(String.format(LocaleHelper.currentLocale(), "%.0f%%", progress)) }
                     }
                 }
             }

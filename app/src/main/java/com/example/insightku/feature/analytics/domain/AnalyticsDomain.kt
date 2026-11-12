@@ -234,6 +234,16 @@ data class AnalyticsInsights(
     val spotlight: SpotlightData,
     val mood: MoodData?,
     val heroInsight: HeroInsight,
+    /**
+     * True when the period holds no transactions at all, so the screen should show the
+     * empty state rather than a set of zero-valued cards.
+     *
+     * Carried as data instead of being re-detected in the UI: the previous check compared
+     * `heroInsight.headline` against a freshly resolved `AnalyticsStrings` call, which never
+     * matched once the app language differed from the language the insights were derived in
+     * (the ViewModel survives the Activity recreation that `setApplicationLocales` triggers).
+     */
+    val isOnboarding: Boolean = false,
 
     // Weekly-specific
     val weekComparison: WeekComparison? = null,
@@ -381,6 +391,7 @@ class InsightEngine @Inject constructor() {
             spotlight = spotlight,
             mood = mood,
             heroInsight = heroInsight,
+            isOnboarding = weekTxns.isEmpty(),
             weekComparison = weekComparison,
             weeklyHabit = weeklyHabit,
             dailySummaries = dailySummaries
@@ -489,6 +500,7 @@ class InsightEngine @Inject constructor() {
             spotlight = spotlight,
             mood = mood,
             heroInsight = heroInsight,
+            isOnboarding = monthTxns.isEmpty(),
             monthlyHealth = monthlyHealth
         )
     }
@@ -612,6 +624,7 @@ class InsightEngine @Inject constructor() {
             spotlight = spotlight,
             mood = mood,
             heroInsight = heroInsight,
+            isOnboarding = yearTxns.isEmpty(),
             annualGrowth = annualGrowth
         )
     }

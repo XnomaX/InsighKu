@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Navigation -->
     <string name="nav_home">Beranda</string>
     <string name="nav_analytics">Analitik</string>
@@ -63,6 +63,85 @@
 
     <!-- Auth - Validation -->
     <string name="error_email_empty">Email tidak boleh kosong</string>
+    <string name="error_name_empty">Nama tidak boleh kosong</string>
+    <string name="error_name_letters">Nama hanya boleh berisi huruf dan spasi</string>
+    <string name="error_password_empty">Kata sandi tidak boleh kosong</string>
+    <string name="error_password_digit">Kata sandi harus mengandung minimal 1 angka</string>
+    <string name="error_password_letter">Kata sandi harus mengandung minimal 1 huruf</string>
+    <string name="error_confirm_password_empty">Konfirmasi kata sandi tidak boleh kosong</string>
+    <string name="error_password_mismatch">Kata sandi tidak cocok</string>
+    <string name="error_reset_email_failed">Gagal mengirim email reset</string>
+
+    <!-- Goals - snackbar and status messages -->
+    <string name="goal_created_success">Tujuan berhasil dibuat</string>
+    <string name="goal_updated">Tujuan diperbarui</string>
+    <string name="goal_restored_active">Tujuan dipulihkan ke aktif</string>
+    <string name="goal_permanently_deleted">Tujuan dihapus permanen</string>
+    <string name="goal_completed_congrats">Selamat! Tujuan tercapai!</string>
+    <string name="goal_completed_funds_transferred">Tujuan tercapai — dana ditransfer</string>
+    <string name="goal_deleted_funds_transferred">Tujuan dihapus — dana ditransfer</string>
+    <string name="goal_paused">Tujuan dijeda</string>
+    <string name="goal_resumed">Tujuan dilanjutkan</string>
+    <string name="goal_contribution_added">%1$s ditambahkan ke %2$s</string>
+    <string name="goal_amount_withdrawn">%1$s ditarik</string>
+    <string name="goal_account_linked">Akun ditautkan ke tujuan</string>
+    <string name="goal_account_unlinked">Akun diputuskan dari tujuan</string>
+    <string name="goal_daily_target_cleared">Target harian dihapus</string>
+    <string name="goal_daily_target_set">Target harian diatur ke %1$s</string>
+    <string name="goal_rule_added">Aturan alokasi otomatis ditambahkan</string>
+    <string name="goal_rule_updated">Aturan diperbarui</string>
+    <string name="goal_rule_deleted">Aturan dihapus</string>
+    <string name="goal_name_fallback">tujuan</string>
+
+    <!-- Budget status pill -->
+    <string name="budget_status_no_limit">Tanpa batas</string>
+    <string name="budget_status_safe">Aman</string>
+    <string name="budget_status_over">Lewat</string>
+    <plurals name="budget_subtitle_over">
+        <item quantity="other">%1$d melewati anggaran, total %2$d</item>
+    </plurals>
+    <plurals name="budget_subtitle_warning">
+        <item quantity="other">%1$d mendekati batas, total %2$d</item>
+    </plurals>
+    <plurals name="budget_subtitle_ok">
+        <item quantity="other">%1$d kategori dipantau</item>
+    </plurals>
+    <string name="budget_spent_label">%1$s terpakai</string>
+    <string name="budget_insight_over">Pengeluaran %1$s sudah melewati anggaran</string>
+    <string name="budget_insight_warning">Anggaran %1$s hampir terpakai</string>
+    <plurals name="budget_insight_safe">
+        <item quantity="other">%1$d kategori masih aman di bawah anggaran</item>
+    </plurals>
+
+    <!-- Settings - insight tone names -->
+    <string name="insight_tone_gentle">Lembut</string>
+    <string name="insight_tone_warm">Hangat</string>
+    <string name="insight_tone_direct">Langsung</string>
+
+    <!-- Settings - insight tone preview sentences -->
+    <string name="insight_tone_preview_gentle">Belakangan kamu sedikit lebih sering belanja di akhir pekan — dan itu tidak apa-apa.</string>
+    <string name="insight_tone_preview_warm">Akhir pekan adalah saat uangmu paling banyak keluar.</string>
+    <string name="insight_tone_preview_direct">Sebagian besar pengeluaranmu terjadi di akhir pekan.</string>
+
+    <!-- Forecast - client-side failure messages (server refusal detail comes from the API) -->
+    <string name="forecast_error_no_base_url">URL dasar API proyeksi belum dikonfigurasi</string>
+    <string name="forecast_error_timeout">Permintaan proyeksi kedaluwarsa — model mungkin masih memuat</string>
+    <string name="forecast_error_request_failed">Permintaan proyeksi gagal</string>
+    <string name="forecast_error_invalid_json">Respons proyeksi bukan JSON yang valid</string>
+    <string name="forecast_error_no_profile">Respons proyeksi berstatus ok tetapi tanpa profil harian</string>
+    <string name="forecast_error_null_in_profile">Profil proyeksi mengandung nilai null</string>
+    <string name="forecast_error_unauthorized">API proyeksi menolak kunci (401)</string>
+    <string name="forecast_error_too_many">Terlalu banyak transaksi dikirim ke API proyeksi (413)</string>
+    <string name="forecast_error_unavailable">Model proyeksi tidak tersedia di server (503)</string>
+    <string name="forecast_error_server">Kesalahan server proyeksi %1$d</string>
+
+    <!-- Receipt scanner - client-side failure messages (shown as detail text
+         under the localized scanner_error_generic headline) -->
+    <string name="scanner_error_scan_failed">Pemindaian gagal</string>
+    <string name="scanner_error_read_image">Tidak dapat membaca gambar yang dipilih</string>
+    <string name="scanner_error_timeout">Permintaan kedaluwarsa — server mungkin lambat atau offline</string>
+    <string name="scanner_error_no_base_url">URL dasar API struk belum dikonfigurasi</string>
+    <string name="scanner_error_server">Kesalahan server %1$d</string>
 
     <!-- Auth - Password Strength -->
     <string name="password_strength_weak">Lemah</string>
@@ -306,6 +385,9 @@
     <string name="tx_summary_income">Pemasukan</string>
     <string name="tx_summary_expenses">Pengeluaran</string>
     <string name="tx_summary_total">Total</string>
+    <plurals name="tx_list_count">
+        <item quantity="other">%1$d transaksi</item>
+    </plurals>
     <string name="tx_detail_date">Tanggal</string>
     <string name="tx_detail_time">Waktu</string>
     <string name="tx_detail_account">Akun</string>
@@ -314,9 +396,12 @@
     <string name="tx_detail_syncing">Menyinkronkan</string>
     <string name="tx_detail_notes">Catatan</string>
     <string name="tx_detail_location">Lokasi</string>
+    <string name="tx_detail_allocation_rule">Aturan Alokasi</string>
     <string name="tx_detail_to_account">Ke Akun</string>
     <string name="tx_detail_from_account">Dari Akun</string>
     <string name="tx_detail_goal">Tujuan</string>
+    <string name="tx_transfer_from_goal_title">Transfer: %1$s</string>
+    <string name="tx_transfer_from_goal_desc">Dana dari tujuan \"%1$s\" yang telah selesai</string>
     <string name="tx_detail_contribution_type">Jenis Kontribusi</string>
     <string name="tx_detail_auto">Alokasi Otomatis</string>
     <string name="tx_detail_manual">Manual</string>
@@ -334,6 +419,7 @@
     <string name="allocation_review_source">Akun Sumber</string>
     <string name="allocation_review_destination">Tujuan</string>
     <string name="allocation_review_trigger">Pemicu</string>
+    <string name="allocation_review_execution_time">Waktu Eksekusi</string>
     <string name="allocation_review_approve">Setujui</string>
     <string name="allocation_review_reject">Tolak</string>
     <string name="allocation_review_info">Ketika disetujui, jumlah ini akan ditransfer dari akun Anda ke tujuan.</string>
@@ -360,6 +446,7 @@
     <!-- Settings - Identity -->
     <string name="settings_identity_greeting">Hai, %1$s</string>
     <string name="settings_identity_default">Ruang Anda</string>
+    <string name="settings_signed_in">Sudah masuk</string>
     <string name="settings_identity_subtitle">Atur bagaimana InsightKu terasa dan semakin mengenal Anda 💜</string>
     <string name="settings_choose_currency">Pilih mata uang</string>
 
@@ -442,7 +529,9 @@
     <string name="account_name_placeholder">mis. Tabungan BCA, GoPay</string>
     <string name="account_type_cash">Tunai</string>
     <string name="account_type_bank">Bank</string>
+    <string name="account_type_bank_account">Rekening Bank</string>
     <string name="account_type_ewallet">E-Wallet</string>
+    <string name="account_type_credit_card">Kartu Kredit</string>
     <string name="account_type_card">Kartu</string>
     <string name="save_changes">Simpan Perubahan</string>
 
@@ -558,18 +647,9 @@
     <string name="dialog_archive_title">Arsipkan %1$s?</string>
     <string name="dialog_archive_message">Anda dapat melihat item yang diarsipkan di pengaturan.</string>
 
-    <!-- Dashboard Contextual Subtitles -->
-    <string name="dashboard_subtitle_remarkable_streak">Konsistensi luar biasa. Pertahankan momentumnya.</string>
-    <string name="dashboard_subtitle_building_habits">Anda sedang membangun kebiasaan belanja yang sehat.</string>
-    <string name="dashboard_subtitle_savings_on_track">Tabungan Anda tetap sesuai rencana.</string>
-    <string name="dashboard_subtitle_small_steps">Langkah kecil bijak membangun keuangan yang kuat.</string>
-
     <!-- Budget Period Labels -->
 
     <!-- Dashboard Header -->
-    <string name="dashboard_greeting_morning">Selamat pagi</string>
-    <string name="dashboard_greeting_afternoon">Selamat siang</string>
-    <string name="dashboard_greeting_evening">Selamat malam</string>
     <string name="dashboard_syncing">Menyinkronkan</string>
     <string name="dashboard_toggle_balance">Alihkan Saldo</string>
     <string name="dashboard_notifications">Notifikasi</string>
@@ -645,6 +725,11 @@
     <string name="dashboard_monthly">Bulanan</string>
     <string name="dashboard_no_data">Belum ada data</string>
     <string name="dashboard_start_adding">Mulai mencatat transaksi untuk melihat wawasan.</string>
+    <string name="dashboard_forecast_need_more_history">Riwayat pengeluaran belum cukup untuk membuat proyeksi. Terus catat pengeluaran — model butuh beberapa hari.</string>
+    <string name="dashboard_forecast_offline">Proyeksi butuh koneksi ke server model. Sambungkan kembali untuk melihat proyeksi.</string>
+    <string name="dashboard_forecast_unavailable">Proyeksi sementara tidak tersedia. %1$s</string>
+    <string name="dashboard_forecast_refused_detail">Model: %1$s</string>
+    <string name="dashboard_forecast_research_note">Model eksperimental — belum divalidasi untuk pengeluaran IDR. Anggap sebagai perkiraan, bukan saran.</string>
 
     <!-- Dashboard Goals Preview -->
     <string name="dashboard_goals">Tujuan</string>
@@ -704,7 +789,21 @@
 
     <!-- Dashboard Insights -->
     <string name="dashboard_insights">Wawasan</string>
-    <string name="dashboard_financial_pulse">Pulse keuangan Anda bulan ini</string>
+    <string name="dashboard_financial_pulse">Gambaran keuangan Anda bulan ini</string>
+    <string name="dashboard_advice_no_income">Mulai catat pemasukan untuk melihat gambaran keuangan Anda.</string>
+    <string name="dashboard_advice_saving_excellent">Anda menabung %1$d%% dari pemasukan bulan ini. Disiplin yang sangat baik.</string>
+    <string name="dashboard_advice_saving_on_track">Tabungan sesuai rencana di %1$d%% dari pemasukan. Pertahankan momentumnya.</string>
+    <string name="dashboard_advice_overspent">Pengeluaran melebihi pemasukan bulan ini. Tinjau kembali pengeluaran Anda agar kembali terkendali.</string>
+    <string name="dashboard_advice_healthy_habits">Anda sedang membangun kebiasaan belanja yang sehat bulan ini.</string>
+    <string name="dashboard_advice_spending_ratio_ok">Pembayaran rutin terkendali — rasio pengeluaran terlihat sehat.</string>
+    <string name="dashboard_advice_review_recurring">Pertimbangkan meninjau pembayaran rutin untuk mengurangi pengeluaran bulanan.</string>
+    <!-- Singular tak tercapai: guard di BuildInsightMessagesUseCase hanya memilih streak_30
+         pada streak >= 30 dan streak_3 pada 3 <= streak < 7, jadi %1$d tidak pernah 1.
+         Bentuk "hari" sama untuk 1 maupun banyak dalam bahasa Indonesia. -->
+    <string name="dashboard_advice_streak_30" tools:ignore="PluralsCandidate">%1$d hari mencatat secara konsisten. Penguasaan keuangan sedang berjalan.</string>
+    <string name="dashboard_advice_streak_7">Streak %1$d hari mencatat. Kebiasaan Anda mulai terbentuk otomatis.</string>
+    <string name="dashboard_advice_streak_3" tools:ignore="PluralsCandidate">Sudah %1$d hari — kebiasaan mulai terbentuk. Jangan putus rantainya.</string>
+    <string name="dashboard_advice_start_streak">Catat transaksi pertama Anda hari ini untuk mulai membangun streak.</string>
 
     <!-- Goal Detail Header -->
     <string name="goal_header_retry">Coba Lagi</string>
@@ -780,7 +879,9 @@
     <string name="add_goal_title">Buat Tujuan Baru</string>
     <string name="add_goal_subtitle">Tetapkan target tabungan dan lacak progres</string>
     <string name="add_goal_name_label">NAMA TUJUAN</string>
+    <string name="add_goal_name_placeholder">mis. Dana Darurat, Liburan</string>
     <string name="add_goal_amount_label">TARGET JUMLAH</string>
+    <string name="add_goal_amount_placeholder">mis. 5.000.000</string>
     <string name="add_goal_date_label">TANGGAL TARGET (OPSIONAL)</string>
     <string name="add_goal_icon_label">IKON</string>
     <string name="add_goal_color_label">WARNA</string>
@@ -808,9 +909,12 @@
     <string name="auto_alloc_percentage">Persentase %</string>
     <string name="auto_alloc_fixed">Jumlah Tetap</string>
     <string name="auto_alloc_min_income">PENDAPATAN MINIMUM (OPSIONAL)</string>
+    <string name="auto_alloc_min_income_placeholder">mis. 5.000.000</string>
     <string name="auto_alloc_balance_threshold">BATAS SALDO</string>
+    <string name="auto_alloc_balance_threshold_placeholder">mis. 10.000.000</string>
     <string name="auto_alloc_balance_desc">Alokasikan ketika saldo akun melebihi jumlah ini</string>
     <string name="auto_alloc_min_remaining">SALDO MINIMUM TERSISA (OPSIONAL)</string>
+    <string name="auto_alloc_min_remaining_placeholder">mis. 1.000.000</string>
     <string name="auto_alloc_min_remaining_desc">Tahan setidaknya jumlah ini di akun sumber</string>
     <string name="auto_alloc_start_date">TANGGAL MULAI</string>
     <string name="auto_alloc_today">Hari Ini</string>
@@ -925,6 +1029,8 @@
 
     <!-- Recurring & Installment Section -->
     <string name="recurring_section_title">Pembayaran Berulang</string>
+    <string name="recurring_will_be_removed">\"%1$s\" akan dihapus dari pembayaran berulang Anda.</string>
+    <string name="installment_will_be_removed">\"%1$s\" akan dihapus dari cicilan Anda.</string>
     <string name="recurring_section_empty">Belum ada pembayaran berulang</string>
     <plurals name="recurring_section_active">
         <item quantity="other">%1$d aktif • %2$s / bln</item>
@@ -969,6 +1075,7 @@
     <string name="installment_add_btn">Tambah Cicilan</string>
     <string name="error_name_short">Nama minimal 2 karakter</string>
     <string name="error_amount_zero">Jumlah harus lebih dari nol</string>
+    <string name="error_insufficient_balance">Saldo %1$s tidak cukup — saldo akun tidak boleh negatif.</string>
     <string name="error_total_required">Jumlah total wajib diisi</string>
     <string name="error_monthly_required">Pembayaran bulanan wajib diisi</string>
     <string name="error_months_required">Total bulan wajib diisi</string>
@@ -1039,6 +1146,8 @@
     <string name="add_category_expense_desc">Lacak dan batasi pengeluaran Anda</string>
     <string name="add_category_income_desc">Lacak dari mana uang Anda berasal</string>
     <string name="add_category_preview">Pratinjau</string>
+    <string name="add_category_name_placeholder">Nama Kategori</string>
+    <string name="add_category_income_tracking">Pencatatan pemasukan</string>
     <string name="add_category_no_limit">Belum ada batas</string>
     <string name="add_category_name_error">Nama kategori minimal 2 karakter</string>
     <string name="content_selected">Dipilih</string>
@@ -1091,6 +1200,7 @@
     <string name="auto_alloc_round_down">Bulatkan ke Bawah</string>
     <string name="auto_alloc_round_nearest">Bulatkan Terdekat</string>
     <string name="auto_alloc_increment">INCREMEN</string>
+    <string name="auto_alloc_increment_placeholder">mis. 5.000</string>
     <string name="auto_alloc_increment_desc">Bulatkan ke kelipatan terdekat dari jumlah ini</string>
     <string name="auto_alloc_trigger_daily">Harian</string>
     <string name="auto_alloc_trigger_daily_desc">Tabungan harian tetap</string>
@@ -1118,6 +1228,48 @@
     <string name="auto_alloc_day_sat">Sb</string>
     <string name="auto_alloc_day_sun">Mg</string>
     <string name="auto_alloc_day_last">Terakhir</string>
+    <string name="auto_alloc_not_set">Belum diatur</string>
+    <string name="auto_alloc_desc_last_day">hari terakhir</string>
+    <string name="auto_alloc_day_ordinal">tanggal %1$d%2$s</string>
+    <string name="auto_alloc_ordinal_st"></string>
+    <string name="auto_alloc_ordinal_nd"></string>
+    <string name="auto_alloc_ordinal_rd"></string>
+    <string name="auto_alloc_ordinal_th"></string>
+    <string name="auto_alloc_desc_income_percent">Simpan %1$d%% dari pemasukan</string>
+    <string name="auto_alloc_desc_income_amount">Simpan %1$s dari pemasukan</string>
+    <string name="auto_alloc_desc_min_income">(min %1$s)</string>
+    <string name="auto_alloc_desc_category_percent">Simpan %1$d%% dari belanja kategori</string>
+    <string name="auto_alloc_desc_category_amount">Simpan %1$s dari belanja kategori</string>
+    <string name="auto_alloc_desc_round_up">Bulatkan ke atas hingga %1$s terdekat</string>
+    <string name="auto_alloc_desc_round_down">Bulatkan ke bawah hingga %1$s terdekat</string>
+    <string name="auto_alloc_desc_round_nearest">Bulatkan ke %1$s terdekat</string>
+    <string name="auto_alloc_desc_daily">Setiap hari pukul %1$s</string>
+    <string name="auto_alloc_desc_weekly">Setiap %1$s pukul %2$s</string>
+    <string name="auto_alloc_desc_biweekly">Setiap 2 minggu mulai %1$s pukul %2$s</string>
+    <string name="auto_alloc_desc_monthly">Setiap %1$s pukul %2$s</string>
+    <string name="auto_alloc_desc_balance_percent">Simpan %1$d%% saat saldo > %2$s</string>
+    <string name="auto_alloc_desc_balance_amount">Simpan %1$s saat saldo > %2$s</string>
+    <string name="auto_alloc_desc_keep_balance">(sisakan %1$s)</string>
+    <string name="auto_alloc_day_monday">Senin</string>
+    <string name="auto_alloc_day_tuesday">Selasa</string>
+    <string name="auto_alloc_day_wednesday">Rabu</string>
+    <string name="auto_alloc_day_thursday">Kamis</string>
+    <string name="auto_alloc_day_friday">Jumat</string>
+    <string name="auto_alloc_day_saturday">Sabtu</string>
+    <string name="auto_alloc_day_sunday">Minggu</string>
+    <string name="alloc_reason_income">Pemasukan terdeteksi: %1$s</string>
+    <string name="alloc_reason_round">%1$s: %2$s → %3$s</string>
+    <string name="alloc_reason_category">Belanja di %1$s: %2$s</string>
+    <string name="alloc_reason_scheduled">Alokasi %1$s terjadwal</string>
+    <string name="alloc_draft_approved_snackbar">%1$s dialokasikan ke %2$s</string>
+    <string name="alloc_freq_daily">harian</string>
+    <string name="alloc_freq_weekly">mingguan</string>
+    <string name="alloc_freq_biweekly">dua mingguan</string>
+    <string name="alloc_freq_monthly">bulanan</string>
+    <string name="alloc_reason_balance">Saldo %1$s melebihi %2$s</string>
+    <string name="alloc_reason_total_today">Total belanja hari ini: %1$s</string>
+    <string name="alloc_reason_total_month">Total belanja bulan ini: %1$s</string>
+    <string name="alloc_goal_unknown">Tujuan Tidak Dikenal</string>
 
     <!-- Goals Screen -->
 
@@ -1161,6 +1313,15 @@
     <string name="cd_success">Berhasil</string>
     <string name="cd_sign_up_screen">Layar pendaftaran</string>
     <string name="cd_dismiss_error">Tutup error</string>
+    <string name="cd_field_error">Kolom %1$s, error: %2$s</string>
+    <string name="cd_field_input">Kolom input %1$s</string>
+    <string name="cd_hide_password">Sembunyikan kata sandi</string>
+    <string name="cd_show_password">Tampilkan kata sandi</string>
+    <string name="cd_invalid">Tidak valid</string>
+    <string name="cd_valid">Valid</string>
+    <string name="cd_button_loading">%1$s, memuat</string>
+    <string name="cd_button_enabled">%1$s, aktif</string>
+    <string name="cd_button_disabled">%1$s, nonaktif</string>
 
     <!-- Keepalive Service -->
     <string name="keepalive_title">InsighKu aktif</string>
@@ -1219,6 +1380,7 @@
         <item quantity="other">"%1$s" jatuh tempo dalam %2$d hari. Jumlah: %3$s</item>
     </plurals>
     <string name="payment_recurring">Berulang</string>
+    <string name="payment_body_type">Tipe: %1$s</string>
     <string name="payment_installment">Cicilan</string>
 
     <!-- Goal Deadline Reminders -->
@@ -1252,6 +1414,13 @@
 
     <!-- Goal Repository -->
     <string name="goal_withdraw_title">Tarik: %1$s</string>
+    <string name="goal_withdraw_desc">Penarikan dari %1$s</string>
+    <string name="goal_contrib_desc">Kontribusi ke %1$s</string>
+    <string name="goal_contrib_title">Tujuan: %1$s</string>
+    <string name="tx_auto_recurring_desc">Auto: %1$s</string>
+    <string name="tx_auto_installment_desc">Auto cicilan: %1$s (%2$d/%3$d)</string>
+    <string name="tx_recurring_payment_desc">Pembayaran berulang: %1$s</string>
+    <string name="tx_installment_payment_desc">Pembayaran cicilan: %1$s (%2$d/%3$d)</string>
 
     <!-- Goal Detail - Status Actions Section -->
     <string name="goal_status_actions_title">Aksi Status</string>
@@ -1337,6 +1506,8 @@
     <string name="delete">Hapus</string>
     <string name="edit">Edit</string>
     <string name="add">Tambah</string>
+    <string name="add_recurring">Tambah Berulang</string>
+    <string name="add_installment">Tambah Cicilan</string>
     <string name="back">Kembali</string>
     <string name="close">Tutup</string>
     <string name="success">Berhasil</string>
@@ -1347,5 +1518,6 @@
     <string name="alloc_notif_skipped_msg">Alokasi otomatis ke %1$s dilewati karena saldo %2$s tidak mencukupi.</string>
     <string name="alloc_notif_completed_title">Target Tercapai!</string>
     <string name="alloc_notif_completed_msg">Selamat! Alokasi otomatis dihentikan karena target %1$s Anda telah tercapai.</string>
+    <string name="alloc_notif_channel_name">Alokasi Otomatis</string>
     <string name="alloc_notif_channel_desc">Notifikasi untuk alokasi tabungan otomatis</string>
 </resources>

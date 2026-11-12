@@ -1,12 +1,16 @@
 package com.example.insightku.feature.auth.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.SignUpUseCase
 import com.example.insightku.feature.auth.presentation.SignUpEvent
 import com.example.insightku.feature.auth.presentation.SignUpState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,12 +43,17 @@ import kotlinx.coroutines.launch
  */
 @HiltViewModel
 class SignUpViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val signUpUseCase: SignUpUseCase,
     private val errorBus: ErrorBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignUpState())
     val uiState = _uiState.asStateFlow()
+
+    // @ApplicationContext carries the system locale, not the in-app one; wrap so
+    // validation messages follow the user's chosen language (see LocaleHelper).
+    private fun str(resId: Int): String = LocaleHelper.wrapContext(context).getString(resId)
 
     fun onEvent(event: SignUpEvent) {
         when (event) {
@@ -84,29 +93,29 @@ class SignUpViewModel @Inject constructor(
     // ─── Validation ────────────────────────────────────────────────────────────
 
     private fun validateName(name: String): String? = when {
-        name.isBlank() -> "Nama tidak boleh kosong"
-        name.length < 2 -> "Nama minimal 2 karakter"
-        !name.matches(Regex("^[a-zA-Z\\s]+$")) -> "Nama hanya boleh berisi huruf dan spasi"
+        name.isBlank() -> str(R.string.error_name_empty)
+        name.length < 2 -> str(R.string.error_name_short)
+        !name.matches(Regex("^[a-zA-Z\\s]+$")) -> str(R.string.error_name_letters)
         else -> null
     }
 
     private fun validateEmail(email: String): String? = when {
-        email.isBlank() -> "Email tidak boleh kosong"
-        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Format email tidak valid"
+        email.isBlank() -> str(R.string.error_email_empty)
+        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> str(R.string.error_invalid_email)
         else -> null
     }
 
     private fun validatePassword(password: String): String? = when {
-        password.isBlank() -> "Password tidak boleh kosong"
-        password.length < 6 -> "Password minimal 6 karakter"
-        !password.any { it.isDigit() } -> "Password harus mengandung minimal 1 angka"
-        !password.any { it.isLetter() } -> "Password harus mengandung minimal 1 huruf"
+        password.isBlank() -> str(R.string.error_password_empty)
+        password.length < 6 -> str(R.string.error_password_length)
+        !password.any { it.isDigit() } -> str(R.string.error_password_digit)
+        !password.any { it.isLetter() } -> str(R.string.error_password_letter)
         else -> null
     }
 
     private fun validateConfirmPassword(password: String, confirmPassword: String): String? = when {
-        confirmPassword.isBlank() -> "Konfirmasi password tidak boleh kosong"
-        password != confirmPassword -> "Password tidak cocok"
+        confirmPassword.isBlank() -> str(R.string.error_confirm_password_empty)
+        password != confirmPassword -> str(R.string.error_password_mismatch)
         else -> null
     }
 
@@ -143,7 +152,7 @@ class SignUpViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, success = true) }
                 }
                 .onFailure { exception ->
-                    val errorMessage = exception.message ?: "Gagal mendaftar"
+                    val errorMessage = exception.message ?: str(R.string.error_registration_failed)
                     _uiState.update { it.copy(isLoading = false, error = errorMessage) }
                     errorBus.send(errorMessage)
                 }

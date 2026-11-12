@@ -493,7 +493,7 @@ private fun AccountTypeChipEdit(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = type.displayName,
+            contentDescription = accountTypeShortLabel(type),
             tint = iconColor,
             modifier = Modifier.size(24.dp)
         )

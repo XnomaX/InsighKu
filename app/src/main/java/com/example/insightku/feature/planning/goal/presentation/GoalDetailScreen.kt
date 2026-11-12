@@ -71,7 +71,13 @@ fun GoalDetailScreen(
     LaunchedEffect(goalId) { if (goalId.isNotEmpty()) viewModel.onEvent(GoalDetailEvent.LoadGoal(goalId)) }
     LaunchedEffect(uiState.snackbarMessage) { uiState.snackbarMessage?.let { snackbarHostState.showSnackbar(it); viewModel.onEvent(GoalDetailEvent.ClearSnackbar) } }
     LaunchedEffect(uiState.error) { uiState.error?.let { snackbarHostState.showSnackbar(it); viewModel.onEvent(GoalDetailEvent.ClearError) } }
-    LaunchedEffect(uiState.snackbarMessage) { if (uiState.snackbarMessage == "Goal archived" || uiState.snackbarMessage == "Goal deleted") onGoalArchived() }
+    LaunchedEffect(uiState.navigateBackForGoalId) {
+        // Compare against this screen's goalId: when GoalDetailScreen is hosted inline by
+        // GoalsScreen, its ViewModel is scoped to the surrounding back-stack entry and survives
+        // the dialog closing, so a flag left over from a previously archived goal must not
+        // close the newly opened one.
+        if (uiState.navigateBackForGoalId != null && uiState.navigateBackForGoalId == goalId) onGoalArchived()
+    }
 
     Scaffold(modifier = modifier.fillMaxSize(), snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = AppPalette.background) { innerPadding ->
         Box(
@@ -237,6 +243,7 @@ private fun DeadlineWarningBanner(goal: Goal, goalColor: Color, onExtend: () -> 
     val title =
         if (isOverdue) stringResource(R.string.goal_deadline_overdue) else pluralStringResource(
             R.plurals.goal_deadline_urgent,
+            daysRemaining,
             daysRemaining
         )
     val subtitle = if (isOverdue) stringResource(R.string.goal_deadline_overdue_desc) else stringResource(R.string.goal_deadline_urgent_desc)

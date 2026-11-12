@@ -57,6 +57,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -443,7 +445,7 @@ private fun PremiumSortRow(
         verticalAlignment     = Alignment.CenterVertically
     ) {
         Text(
-            "$count transaction${if (count != 1) "s" else ""}",
+            pluralStringResource(R.plurals.tx_list_count, count, count),
             style = MaterialTheme.typography.labelMedium,
             color = TxTextMuted
         )
@@ -552,6 +554,7 @@ fun PremiumTransactionCard(
     accountMap: Map<String, Account> = emptyMap()
 ) {
     // Resolve category color for badge (icon is handled by shared TransactionCategoryIcon)
+    val context     = LocalContext.current
     val resolved = resolveCategoryIcon(transaction.category, transaction.type, categoryMap)
     val catColor = resolved.color
     val amountColor = txTypeColor(transaction.type)
@@ -599,7 +602,7 @@ fun PremiumTransactionCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    transaction.title,
+                    txDisplayTitle(transaction, context),
                     style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color      = TxTextPrimary,

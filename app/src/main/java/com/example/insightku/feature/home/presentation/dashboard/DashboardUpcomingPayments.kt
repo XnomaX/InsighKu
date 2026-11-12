@@ -37,6 +37,7 @@ import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.IncomeGreen
 import com.example.insightku.core.ui.theme.WarningYellow
+import com.example.insightku.core.utils.TimeUtils
 import com.example.insightku.feature.home.presentation.formatCurrencyShort
 
 @Composable
@@ -77,6 +78,7 @@ fun UpcomingPaymentsSection(
                     if (noPayments) stringResource(R.string.dashboard_no_payments_soon)
                     else pluralStringResource(
                         R.plurals.dashboard_payments_due_count,
+                        dueSoonRecurring.size + dueSoonInstallments.size,
                         dueSoonRecurring.size + dueSoonInstallments.size
                     ),
                     style = MaterialTheme.typography.bodySmall,
@@ -139,7 +141,7 @@ private fun UpcomingRecurringRow(
     now: Long,
     onMarkPaid: () -> Unit
 ) {
-    val daysUntil = ((budget.nextDue - now) / 86400000L).toInt()
+    val daysUntil = TimeUtils.daysBetween(now, budget.nextDue)
     val isOverdue = daysUntil < 0
     val dueBadgeColor = when {
         isOverdue -> ExpenseRed
@@ -229,7 +231,7 @@ private fun UpcomingInstallmentRow(
     now: Long,
     onMarkPaid: () -> Unit
 ) {
-    val daysUntil = ((installment.nextDueDate - now) / 86400000L).toInt()
+    val daysUntil = TimeUtils.daysBetween(now, installment.nextDueDate)
     val isOverdue = daysUntil < 0
     val dueBadgeColor = when {
         isOverdue -> ExpenseRed

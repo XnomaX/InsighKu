@@ -14,6 +14,7 @@ import com.example.insightku.core.data.local.dao.TransactionDao
 import com.example.insightku.core.data.local.database.InsightKuDatabase
 import com.example.insightku.core.data.model.Transaction
 import com.example.insightku.core.data.model.TransactionType
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.notification.AutoAllocationNotificationHelper
 import com.example.insightku.core.worker.SyncGoalWorker
 import com.example.insightku.feature.planning.goal.data.local.dao.AccountAllocationRow
@@ -72,6 +73,14 @@ class GoalRepository @Inject constructor(
     private val accountMutexes = ConcurrentHashMap<String, Mutex>()
     private fun mutexForAccount(accountId: String): Mutex =
         accountMutexes.computeIfAbsent(accountId) { Mutex() }
+
+    /**
+     * `@ApplicationContext` carries the system locale rather than the in-app one,
+     * so wrap via [LocaleHelper] — the same pattern `ReceiptScanRepository` uses.
+     * Called once per persisted transaction, never in a loop.
+     */
+    private fun str(resId: Int, vararg args: Any?): String =
+        LocaleHelper.wrapContext(context).getString(resId, *args)
 
     fun getActiveGoals(): Flow<List<Goal>> {
         return combine(
@@ -372,11 +381,15 @@ class GoalRepository @Inject constructor(
             }
 
             val txType = if (type == ContributionType.AUTO_ALLOCATION) TransactionType.AUTO_ALLOCATION else TransactionType.GOAL_CONTRIBUTION
-            val txTitle = if (type == ContributionType.AUTO_ALLOCATION) "Auto: ${goal.name}" else "Goal: ${goal.name}"
+            val txTitle = if (type == ContributionType.AUTO_ALLOCATION) {
+                str(R.string.tx_auto_recurring_desc, goal.name)
+            } else {
+                str(R.string.goal_contrib_title, goal.name)
+            }
             val tx = Transaction(
                 title = txTitle, amount = -amount, category = txType.name.replace('_', ' '),
                 date = now, type = txType,
-                description = notes.ifBlank { "Contribution to ${goal.name}" },
+                description = notes.ifBlank { str(R.string.goal_contrib_desc, goal.name) },
                 accountId = accountId, goalId = goalId, goalName = goal.name,
                 sourceModule = if (type == ContributionType.AUTO_ALLOCATION) "auto_allocation" else "goal",
                 referenceId = contribution.id, isAuto = type == ContributionType.AUTO_ALLOCATION
@@ -463,7 +476,7 @@ class GoalRepository @Inject constructor(
                 title = context.getString(R.string.goal_withdraw_title, goal?.name ?: context.getString(R.string.goals_title)), amount = amount,
                 category = "Goal Withdrawal", date = now,
                 type = TransactionType.GOAL_WITHDRAWAL,
-                description = notes.ifBlank { "Withdrawal from ${goal?.name ?: "Goal"}" },
+                description = notes.ifBlank { str(R.string.goal_withdraw_desc, goal?.name ?: str(R.string.goal_name_fallback)) },
                 accountId = accountId, goalId = goalId, goalName = goal?.name,
                 sourceModule = "goal", referenceId = contribution.id
             )

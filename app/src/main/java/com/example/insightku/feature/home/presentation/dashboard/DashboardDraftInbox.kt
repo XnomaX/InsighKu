@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.insightku.R
 import com.example.insightku.core.data.model.DraftConfidence
@@ -77,7 +78,7 @@ fun DraftInboxSection(
                 color = AppPalette.textPrimary
             )
             Text(
-                pluralStringResource(R.plurals.draft_inbox_subtitle, drafts.size),
+                pluralStringResource(R.plurals.draft_inbox_subtitle, drafts.size, drafts.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted
             )
@@ -117,7 +118,7 @@ fun DraftInboxSection(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            pluralStringResource(R.plurals.draft_inbox_more, hiddenCount),
+                            pluralStringResource(R.plurals.draft_inbox_more, hiddenCount, hiddenCount),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
                             color = NavPurple
@@ -188,7 +189,8 @@ private fun AllocationDraftInboxRow(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textPrimary,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
@@ -199,7 +201,8 @@ private fun AllocationDraftInboxRow(
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -253,7 +256,8 @@ private fun DraftInboxRow(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textPrimary,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
@@ -264,10 +268,19 @@ private fun DraftInboxRow(
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = AppPalette.textMuted,
-                        maxLines = 1
+                        // fill = false keeps the English layout unchanged (a short first
+                        // Text takes only what it needs) while letting it shrink instead of
+                        // consuming the whole row when the localized text is longer — the
+                        // Indonesian variants are ~1.6x the English length. Without this the
+                        // sibling "needs your review" warning below can be measured against
+                        // zero remaining width and silently disappear, dropping the only cue
+                        // that a low-confidence draft must be checked.
+                        modifier = Modifier.weight(1f, fill = false),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     if (draft.confidence == DraftConfidence.LOW) {
-                        Text("· ${stringResource(R.string.draft_needs_check)}", style = MaterialTheme.typography.bodySmall, color = WarningYellow, maxLines = 1)
+                        Text("· ${stringResource(R.string.draft_needs_check)}", style = MaterialTheme.typography.bodySmall, color = WarningYellow, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }

@@ -33,26 +33,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.insightku.R
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.feature.home.domain.forecast.ForecastBar
+import com.example.insightku.feature.home.domain.forecast.ForecastNotice
+import com.example.insightku.feature.home.domain.forecast.ForecastUi
 import com.example.insightku.feature.home.presentation.ForecastPeriod
 
+/**
+ * Spending-forecast card.
+ *
+ * Renders exactly what the model returned — see [ForecastUi] for why the two
+ * views are 7 daily bars and 4 weekly buckets of one 28-day profile, and why
+ * there is no 12-month view. Every bar carries its own date-derived label, so
+ * no label here is hardcoded to a weekday or month that may not match the data.
+ *
+ * When there is nothing honest to draw ([ForecastUi.notice] is set, or the bars
+ * are empty) an explanatory state is shown instead. A refusal is rendered as a
+ * calm "needs more history" note, never as an error and never as zero bars.
+ */
 @Composable
 fun AiForecastCard(
-    weeklyData: List<Float>,
-    monthlyData: List<Float>,
-    aiInsight: String,
+    forecast: ForecastUi,
     selectedPeriod: ForecastPeriod,
     onPeriodChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isWeekly = selectedPeriod == ForecastPeriod.WEEKLY
-    val data = if (isWeekly) weeklyData else monthlyData
-    val labels = if (isWeekly) listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
-    else listOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+    val bars = if (isWeekly) forecast.weeklyBars else forecast.monthlyBars
     val barColor = NavPurple
     val barBg = AppPalette.cardBorder
 
@@ -60,11 +72,11 @@ fun AiForecastCard(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize(),
-        shape           = RoundedCornerShape(Dimens.CardRadiusLarge),
-        color           = AppPalette.card,
-        tonalElevation  = 0.dp,
-        shadowElevation = 4.dp,
-        border          = BorderStroke(1.dp, AppPalette.cardBorder)
+        shape = RoundedCornerShape(Dimens.CardRadiusLarge),
+        color = AppPalette.card,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Column(Modifier.padding(Dimens.CardInnerPaddingLarge)) {
             Row(
@@ -72,7 +84,10 @@ fun AiForecastCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     Text(stringResource(R.string.dashboard_spending_forecast), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
                     Text(stringResource(R.string.dashboard_ai_analysis), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                 }
@@ -81,104 +96,148 @@ fun AiForecastCard(
                 }
             }
             Spacer(Modifier.height(16.dp))
-            if (data.isEmpty()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(Dimens.CardRadius),
-                    color = AppPalette.background,
-                    border = BorderStroke(1.dp, AppPalette.cardBorder)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 28.dp, horizontal = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(52.dp)
-                                .clip(CircleShape)
-                                .background(NavPurple.copy(alpha = 0.08f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.BarChart, null, tint = NavPurple.copy(alpha = 0.45f), modifier = Modifier.size(26.dp))
-                        }
-                        Text(stringResource(R.string.dashboard_no_data), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
-                        Text(stringResource(R.string.dashboard_start_adding), style = MaterialTheme.typography.bodySmall,
-                            color = AppPalette.textMuted, textAlign = TextAlign.Center)
-                    }
-                }
+
+            if (bars.isEmpty()) {
+                ForecastEmptyState(forecast.notice)
             } else {
-                val maxValue = data.maxOrNull()?.takeIf { it > 0f } ?: 1f
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(108.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    data.forEachIndexed { i, value ->
-                        val fraction = (value / maxValue).coerceIn(0f, 1f)
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Bottom
-                        ) {
-                            Canvas(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(88.dp)
-                            ) {
-                                val fh = size.height * fraction
-                                drawRoundRect(barBg, Offset.Zero, Size(size.width, size.height), CornerRadius(8f))
-                                drawRoundRect(barColor, Offset(0f, size.height - fh), Size(size.width, fh), CornerRadius(8f))
-                            }
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                labels.getOrNull(i) ?: "",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 8.sp,
-                                color = AppPalette.textMuted,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1
-                            )
-                        }
-                    }
+                ForecastBars(bars, barColor, barBg)
+                // Insight line only when the model actually answered.
+                val insight = forecast.insight
+                if (insight.isNotBlank()) {
+                    ForecastNote(insight, NavPurple.copy(alpha = 0.06f), NavPurple.copy(alpha = 0.12f), "💡")
+                }
+                // The endpoint reports model_status = research_not_validated_on_idr.
+                // Surface that caveat whenever a projection is shown, so the
+                // number is never read as validated financial advice.
+                if (forecast.modelStatus == RESEARCH_STATUS) {
+                    Spacer(Modifier.height(8.dp))
+                    ForecastNote(
+                        stringResource(R.string.dashboard_forecast_research_note),
+                        AppPalette.background, AppPalette.cardBorder, "⚠️"
+                    )
                 }
             }
-            if (aiInsight.isNotBlank()) {
-                Spacer(Modifier.height(12.dp))
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(Dimens.CardRadius),
-                    color = NavPurple.copy(alpha = 0.06f),
-                    border = BorderStroke(1.dp, NavPurple.copy(alpha = 0.12f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(NavPurple.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("💡", fontSize = 10.sp, color = NavPurple)
-                        }
-                        Text(
-                            aiInsight,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppPalette.textPrimary,
-                            modifier = Modifier.weight(1f),
-                            lineHeight = 18.sp
-                        )
-                    }
+        }
+    }
+}
+
+@Composable
+private fun ForecastBars(bars: List<ForecastBar>, barColor: Color, barBg: Color) {
+    val maxValue = bars.maxOfOrNull { it.value }?.takeIf { it > 0f } ?: 1f
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(108.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        bars.forEach { bar ->
+            val fraction = (bar.value / maxValue).coerceIn(0f, 1f)
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom
+            ) {
+                Canvas(Modifier.fillMaxWidth().height(88.dp)) {
+                    val fh = size.height * fraction
+                    drawRoundRect(barBg, Offset.Zero, Size(size.width, size.height), CornerRadius(8f))
+                    drawRoundRect(barColor, Offset(0f, size.height - fh), Size(size.width, fh), CornerRadius(8f))
                 }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    bar.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 8.sp,
+                    color = AppPalette.textMuted,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
             }
+        }
+    }
+}
+
+/**
+ * Explains why there is no chart. A model refusal gets a "needs more history"
+ * message; offline and transport errors get their own, each without implying a
+ * zero projection.
+ */
+@Composable
+private fun ForecastEmptyState(notice: ForecastNotice?) {
+    val (title, body) = when (notice) {
+        is ForecastNotice.Refused ->
+            stringResource(R.string.dashboard_no_data) to
+                stringResource(R.string.dashboard_forecast_need_more_history)
+        is ForecastNotice.Offline ->
+            stringResource(R.string.dashboard_no_data) to
+                stringResource(R.string.dashboard_forecast_offline)
+        is ForecastNotice.Error -> {
+            val detail = stringResource(R.string.dashboard_forecast_refused_detail, notice.message)
+            stringResource(R.string.dashboard_no_data) to
+                stringResource(R.string.dashboard_forecast_unavailable, detail)
+        }
+        null ->
+            stringResource(R.string.dashboard_no_data) to
+                stringResource(R.string.dashboard_start_adding)
+    }
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.CardRadius),
+        color = AppPalette.background,
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 28.dp, horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(NavPurple.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.BarChart, null, tint = NavPurple.copy(alpha = 0.45f), modifier = Modifier.size(26.dp))
+            }
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+            Text(body, style = MaterialTheme.typography.bodySmall,
+                color = AppPalette.textMuted, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun ForecastNote(text: String, bg: Color, border: Color, emoji: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.CardRadius),
+        color = bg,
+        border = BorderStroke(1.dp, border)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(NavPurple.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(emoji, fontSize = 10.sp, color = NavPurple)
+            }
+            Text(
+                text,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppPalette.textPrimary,
+                modifier = Modifier.weight(1f),
+                lineHeight = 18.sp
+            )
         }
     }
 }
@@ -205,10 +264,18 @@ internal fun SegmentedControl(options: List<String>, selectedIndex: Int, onSelec
                         label,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                        color = if (sel) Color.White else AppPalette.textMuted
+                        color = if (sel) Color.White else AppPalette.textMuted,
+                        // Never wrap: with a narrow leftover width a soft-wrapping label
+                        // stacked one character per line (observed on device: "Monthly" as a
+                        // 37px-wide, 285px-tall column). Ellipsis keeps the failure visible
+                        // instead of destroying the card's height.
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
         }
     }
 }
+
+private const val RESEARCH_STATUS = "research_not_validated_on_idr"
