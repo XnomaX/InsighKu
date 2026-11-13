@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -63,6 +64,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
@@ -70,6 +74,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet
+import com.example.insightku.core.ui.theme.AccentPalette
 import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.InsightTone
 import com.example.insightku.core.ui.theme.LocalResponsiveDimens
@@ -545,12 +550,11 @@ private fun <T> PillSelector(
 // ── Accent picker ────────────────────────────────────────────────────────────────
 
 private val ACCENT_PRESETS = listOf(
-    "#7C4DFF" to "Purple",
-    "#7C3AED" to "Violet",
-    "#4A90E2" to "Blue",
-    "#10B981" to "Green",
-    "#F59E0B" to "Amber",
-    "#EF4444" to "Coral"
+    AccentPalette.DEFAULT_HEX to R.string.settings_accent_apricot,
+    "#E7B84B" to R.string.settings_accent_honey,
+    "#7FAE92" to R.string.settings_accent_sage,
+    "#79AFCB" to R.string.settings_accent_sky,
+    "#A898CF" to R.string.settings_accent_lilac
 )
 
 @Composable
@@ -559,15 +563,20 @@ private fun AccentSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> 
         SectionLabel(Icons.Default.Palette, stringResource(R.string.settings_accent_color), stringResource(R.string.settings_accent_color_desc))
         Spacer(Modifier.height(Dimens.PaddingLarge))
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
-            ACCENT_PRESETS.forEach { (hex, _) ->
+            ACCENT_PRESETS.forEach { (hex, labelRes) ->
+                val label = stringResource(labelRes)
                 val color = Color(hex.toColorInt())
                 val isSelected = uiState.accentColorHex.equals(hex, ignoreCase = true)
                 Box(
                     Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
                         .background(color)
-                        .clickable { onEvent(SettingsEvent.OnAccentChange(hex)) },
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.RadioButton
+                        ) { onEvent(SettingsEvent.OnAccentChange(hex)) }
+                        .semantics { contentDescription = label },
                     contentAlignment = Alignment.Center
                 ) {
                     if (isSelected) Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(20.dp))
@@ -586,9 +595,9 @@ private fun VisualDensitySection(uiState: SettingsUiState, onEvent: (SettingsEve
         Spacer(Modifier.height(Dimens.PaddingLarge))
         PillSelector(
             options = listOf(
-                VisualDensity.COMFORTABLE to "Comfortable",
-                VisualDensity.COZY to "Cozy",
-                VisualDensity.COMPACT to "Compact"
+                VisualDensity.COMFORTABLE to stringResource(R.string.settings_density_comfortable),
+                VisualDensity.COZY to stringResource(R.string.settings_density_cozy),
+                VisualDensity.COMPACT to stringResource(R.string.settings_density_compact)
             ),
             selected = uiState.visualDensity,
             onSelect = { onEvent(SettingsEvent.OnVisualDensityChange(it)) }
@@ -1051,4 +1060,3 @@ private fun AppInfoFooter() {
         Text(stringResource(R.string.app_info_made_with_love), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
     }
 }
-

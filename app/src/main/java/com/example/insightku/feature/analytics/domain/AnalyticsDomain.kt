@@ -509,27 +509,60 @@ class InsightEngine @Inject constructor() {
 
     private fun deriveAnnual(allTxns: List<Transaction>, nowMillis: Long): AnalyticsInsights {
         val yearPeriod = AnalyticsPeriod.currentYear(nowMillis)
-        val yearTxns = allTxns.filter { yearPeriod.contains(it.date) }
+        val prevYearPeriod = AnalyticsPeriod.previousYear(nowMillis)
+        val yearTxns = mutableListOf<Transaction>()
+        val monthlyAmounts = Array(12) { DoubleArray(2) }
+        var thisYearTotal = 0.0
+        var lastYearTotal = 0.0
+        var thisYearIncome = 0.0
+        var lastYearIncome = 0.0
+        val transactionCalendar = java.util.Calendar.getInstance()
+
+        // Bucket transactions once instead of filtering the complete history for each month.
+        allTxns.forEach { transaction ->
+            when {
+                yearPeriod.contains(transaction.date) -> {
+                    yearTxns += transaction
+                    when (transaction.type) {
+                        com.example.insightku.core.data.model.TransactionType.INCOME -> {
+                            thisYearIncome += transaction.amount
+                            transactionCalendar.timeInMillis = transaction.date
+                            monthlyAmounts[transactionCalendar.get(java.util.Calendar.MONTH)][0] += transaction.amount
+                        }
+                        com.example.insightku.core.data.model.TransactionType.EXPENSE -> {
+                            thisYearTotal += transaction.amount
+                            transactionCalendar.timeInMillis = transaction.date
+                            monthlyAmounts[transactionCalendar.get(java.util.Calendar.MONTH)][1] += transaction.amount
+                        }
+                        else -> Unit
+                    }
+                }
+                prevYearPeriod.contains(transaction.date) -> {
+                    when (transaction.type) {
+                        com.example.insightku.core.data.model.TransactionType.INCOME -> lastYearIncome += transaction.amount
+                        com.example.insightku.core.data.model.TransactionType.EXPENSE -> lastYearTotal += transaction.amount
+                        else -> Unit
+                    }
+                }
+            }
+        }
 
         // Localized short month names using DateFormatter
+        // Normalize to the first day before changing months to avoid Calendar rolling February
+        // or 30-day months into the following month when today is near the end of a long month.
+        val monthLabelCalendar = java.util.Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+            set(java.util.Calendar.DAY_OF_MONTH, 1)
+        }
         val monthLabels = (0..11).map { m ->
-            val cal = java.util.Calendar.getInstance().apply {
-                timeInMillis = nowMillis
-                set(java.util.Calendar.MONTH, m)
-            }
-            com.example.insightku.core.i18n.DateFormatter.getShortMonthName(cal.timeInMillis)
+            monthLabelCalendar.set(java.util.Calendar.MONTH, m)
+            com.example.insightku.core.i18n.DateFormatter.getShortMonthName(monthLabelCalendar.timeInMillis)
         }.toTypedArray()
 
-        // Monthly points
+        // Monthly points reuse the precomputed month/type totals.
         val monthlyPoints = (0..11).map { m ->
-            val cal = java.util.Calendar.getInstance().apply {
-                timeInMillis = nowMillis
-                set(java.util.Calendar.MONTH, m)
-            }
-            val mp = AnalyticsPeriod.currentMonth(cal.timeInMillis)
-            val mTxns = allTxns.filter { mp.contains(it.date) }
-            val inc = mTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.INCOME }.sumOf { it.amount }
-            val exp = mTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
+            val inc = monthlyAmounts[m][0]
+            val exp = monthlyAmounts[m][1]
             AnnualMonthPoint(m, monthLabels[m], inc, exp, inc - exp)
         }
 
@@ -538,14 +571,7 @@ class InsightEngine @Inject constructor() {
             .get(java.util.Calendar.MONTH)
         val activeMonths = monthlyPoints.filter { it.monthIndex <= currentMonth }
 
-        // Year comparison
-        val prevYearPeriod = AnalyticsPeriod.previousYear(nowMillis)
-        val prevYearTxns = allTxns.filter { prevYearPeriod.contains(it.date) }
-        val thisYearTotal = yearTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
-        val lastYearTotal = prevYearTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.EXPENSE }.sumOf { it.amount }
-        val thisYearIncome = yearTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.INCOME }.sumOf { it.amount }
-        val lastYearIncome = prevYearTxns.filter { it.type == com.example.insightku.core.data.model.TransactionType.INCOME }.sumOf { it.amount }
-
+        // Year comparison uses the totals accumulated in the same history pass above.
         val yearComparison = if (lastYearTotal > 0 || lastYearIncome > 0) {
             YearComparison(
                 thisYearTotal = thisYearTotal,
