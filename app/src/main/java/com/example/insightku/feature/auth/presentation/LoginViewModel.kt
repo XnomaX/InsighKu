@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.insightku.R
+import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.utils.ErrorBus
 import com.example.insightku.feature.auth.domain.GoogleSignInUseCase
 import com.example.insightku.feature.auth.domain.LoginUseCase
@@ -44,6 +45,14 @@ class LoginViewModel @Inject constructor(
             }
             is LoginEvent.GoogleSignIn -> {
                 signInWithGoogle(event.idToken)
+            }
+            is LoginEvent.GoogleSignInFailed -> {
+                val message = LocaleHelper.wrapContext(context).getString(R.string.error_google_signin_failed)
+                _uiState.update { it.copy(isLoading = false, error = message) }
+            }
+            is LoginEvent.GoogleAccountUnavailable -> {
+                val message = LocaleHelper.wrapContext(context).getString(R.string.error_google_account_unavailable)
+                _uiState.update { it.copy(isLoading = false, error = message) }
             }
         }
     }
@@ -91,8 +100,8 @@ class LoginViewModel @Inject constructor(
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false, loginSuccess = true) }
                 }
-                .onFailure { exception ->
-                    val errorMessage = exception.message ?: context.getString(R.string.error_google_signin_failed)
+                .onFailure {
+                    val errorMessage = LocaleHelper.wrapContext(context).getString(R.string.error_google_signin_failed)
                     _uiState.update { it.copy(isLoading = false, error = errorMessage) }
                     errorBus.send(errorMessage)
                 }
@@ -109,6 +118,8 @@ sealed class LoginEvent {
     object Submit : LoginEvent()
     object ClearError : LoginEvent()
     data class GoogleSignIn(val idToken: String) : LoginEvent()
+    object GoogleSignInFailed : LoginEvent()
+    object GoogleAccountUnavailable : LoginEvent()
 }
 
 data class LoginUiState(

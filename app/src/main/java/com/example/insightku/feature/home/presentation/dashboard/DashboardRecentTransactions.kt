@@ -14,11 +14,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.insightku.R
 import com.example.insightku.core.data.model.TransactionType
@@ -35,6 +37,7 @@ import kotlin.math.abs
 fun RecentTransactionsPreview(
     transactions: List<TransactionItem>,
     onViewAllClick: () -> Unit,
+    onAddTransaction: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)) {
@@ -81,14 +84,33 @@ fun RecentTransactionsPreview(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 28.dp),
+                        .padding(vertical = 20.dp, horizontal = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        stringResource(R.string.no_recent_transactions),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.no_recent_transactions),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppPalette.textPrimary
+                        )
+                        Text(
+                            stringResource(R.string.dashboard_empty_transactions_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppPalette.textMuted,
+                            textAlign = TextAlign.Center
+                        )
+                        TextButton(onClick = onAddTransaction) {
+                            Text(
+                                stringResource(R.string.dashboard_add_first_transaction),
+                                fontWeight = FontWeight.SemiBold,
+                                color = NavPurple
+                            )
+                        }
+                    }
                 }
             }
         } else {

@@ -32,7 +32,7 @@ object AppPalette {
         if (isDark) Color(0xFFEDE9FE) else Color(0xFF1A1A2E)
 
     val textMuted: Color @Composable @ReadOnlyComposable get() =
-        if (isDark) Color(0xFFAB8FD4) else Color(0xFF9E9E9E)
+        if (isDark) Color(0xFFAB8FD4) else Color(0xFF6B647D)
 
     // ── Semantic UI colors (shared across screens) ────────────────────────
 
@@ -55,7 +55,8 @@ object AppPalette {
     /** Muted dialog text. */
     val textDialogMuted: Color = Color(0xFF6B6B8A)
     /** Placeholder / hint text. */
-    val placeholder: Color = Color(0xFFBDBDBD)
+    val placeholder: Color @Composable @ReadOnlyComposable get() =
+        if (isDark) Color(0xFFAB8FD4) else Color(0xFF6B647D)
     /** Delete action red. */
     val deleteRed: Color = Color(0xFFE57373)
     /** Delete action background. */

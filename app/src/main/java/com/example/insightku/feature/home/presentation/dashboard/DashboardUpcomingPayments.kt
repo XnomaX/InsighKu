@@ -10,10 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.Icon
@@ -27,7 +25,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.insightku.R
 import com.example.insightku.core.data.model.Installment
@@ -87,50 +84,23 @@ fun UpcomingPaymentsSection(
             }
         }
 
-        if (noPayments) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape    = RoundedCornerShape(Dimens.CardRadiusLarge),
-                color    = AppPalette.card,
-                border   = BorderStroke(1.dp, AppPalette.cardBorder)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 28.dp, horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                            .background(NavPurple.copy(alpha = 0.07f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.CheckCircle, null, tint = NavPurple.copy(alpha = 0.45f), modifier = Modifier.size(26.dp))
-                    }
-                    Text(stringResource(R.string.dashboard_all_caught_up), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
-                    Text(stringResource(R.string.dashboard_no_payments_14), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted, textAlign = TextAlign.Center)
+        if (!noPayments) {
+            if (hasOverdue) {
+                overdueRecurring.forEach { budget ->
+                    UpcomingRecurringRow(budget = budget, now = now, onMarkPaid = { onMarkRecurringPaid(budget) })
+                }
+                overdueInstallments.forEach { inst ->
+                    UpcomingInstallmentRow(installment = inst, now = now, onMarkPaid = { onMarkInstallmentPaid(inst) })
                 }
             }
-        } else {
-            if (hasOverdue) {
-            overdueRecurring.forEach { budget ->
-                UpcomingRecurringRow(budget = budget, now = now, onMarkPaid = { onMarkRecurringPaid(budget) })
+            if (dueSoonRecurring.isNotEmpty() || dueSoonInstallments.isNotEmpty()) {
+                dueSoonRecurring.forEach { budget ->
+                    UpcomingRecurringRow(budget = budget, now = now, onMarkPaid = { onMarkRecurringPaid(budget) })
+                }
+                dueSoonInstallments.take(3).forEach { inst ->
+                    UpcomingInstallmentRow(installment = inst, now = now, onMarkPaid = { onMarkInstallmentPaid(inst) })
+                }
             }
-            overdueInstallments.forEach { inst ->
-                UpcomingInstallmentRow(installment = inst, now = now, onMarkPaid = { onMarkInstallmentPaid(inst) })
-            }
-        }
-        if (dueSoonRecurring.isNotEmpty() || dueSoonInstallments.isNotEmpty()) {
-            dueSoonRecurring.forEach { budget ->
-                UpcomingRecurringRow(budget = budget, now = now, onMarkPaid = { onMarkRecurringPaid(budget) })
-            }
-            dueSoonInstallments.take(3).forEach { inst ->
-                UpcomingInstallmentRow(installment = inst, now = now, onMarkPaid = { onMarkInstallmentPaid(inst) })
-            }
-        }
         }
     }
 }

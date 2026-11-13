@@ -42,6 +42,7 @@
     <string name="signup_title">Buat akun Anda</string>
     <string name="signup_subtitle">Mulai perjalanan Anda menuju pelacakan keuangan yang lebih cerdas</string>
     <string name="signup_button">Buat Akun</string>
+    <string name="signup_terms_privacy_notice">Dengan membuat akun, Anda memahami bahwa penggunaan InsightKu diatur oleh Ketentuan Layanan dan Kebijakan Privasi.</string>
     <string name="creating_account">Membuat akun…</string>
     <string name="name_label">Nama Lengkap</string>
     <string name="name_placeholder">Masukkan nama lengkap Anda</string>
@@ -149,10 +150,9 @@
     <string name="password_strength_good">Baik</string>
     <string name="password_strength_strong">Kuat</string>
     <string name="password_strength_excellent">Sangat Kuat</string>
-    <string name="password_req_length">Minimal 8 karakter</string>
+    <string name="password_req_length">Minimal 6 karakter</string>
     <string name="password_req_number">Mengandung angka</string>
     <string name="password_req_letter">Mengandung huruf</string>
-    <string name="password_req_special">Mengandung karakter khusus</string>
 
     <!-- Analytics - Period Selector -->
     <string name="period_weekly">Mingguan</string>
@@ -717,6 +717,8 @@
     <string name="dashboard_recent">Terbaru</string>
     <string name="dashboard_latest_activity">Aktivitas keuangan terkini</string>
     <string name="dashboard_view_all">Lihat Semua</string>
+    <string name="dashboard_empty_transactions_hint">Tambahkan transaksi agar aktivitas Anda terlihat di sini.</string>
+    <string name="dashboard_add_first_transaction">Tambah transaksi</string>
 
     <!-- Dashboard Forecast -->
     <string name="dashboard_spending_forecast">Proyeksi Pengeluaran</string>
@@ -1474,7 +1476,8 @@
     <string name="error_delete_installment">Gagal menghapus cicilan</string>
     <string name="error_login_user_not_found">Login gagal: user tidak ditemukan</string>
     <string name="error_registration_failed">Registrasi gagal</string>
-    <string name="error_google_signin_failed">Google Sign-In gagal</string>
+    <string name="error_google_signin_failed">Google Sign-In belum berhasil. Periksa koneksi internet dan akun Google Anda, lalu coba lagi atau masuk dengan email dan kata sandi.</string>
+    <string name="error_google_account_unavailable">Tidak ada akun Google yang tersedia. Tambahkan akun ke perangkat, lalu coba lagi atau masuk dengan email dan kata sandi.</string>
     <string name="error_user_not_logged_in">User tidak login</string>
 
     <!-- Notification strings -->

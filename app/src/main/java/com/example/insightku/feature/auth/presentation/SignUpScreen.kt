@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -198,6 +199,15 @@ private fun SignUpScreenContent(
                     isLoading = uiState.isLoading,
                     loadingText = stringResource(R.string.creating_account)
                 )
+                Text(
+                    text = stringResource(R.string.signup_terms_privacy_notice),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppPalette.textMuted,
+                    textAlign = TextAlign.Center
+                )
             }
 
             Spacer(modifier = Modifier.height(formSpacing * 2))
@@ -258,7 +268,7 @@ private fun PasswordStrengthSection(password: String) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             PasswordRequirement(
                 text = stringResource(R.string.password_req_length),
-                isMet = password.length >= 8
+                isMet = password.length >= 6
             )
             PasswordRequirement(
                 text = stringResource(R.string.password_req_number),
@@ -267,10 +277,6 @@ private fun PasswordStrengthSection(password: String) {
             PasswordRequirement(
                 text = stringResource(R.string.password_req_letter),
                 isMet = password.any { it.isLetter() }
-            )
-            PasswordRequirement(
-                text = stringResource(R.string.password_req_special),
-                isMet = password.any { !it.isLetterOrDigit() }
             )
         }
     }
@@ -292,7 +298,7 @@ private fun PasswordRequirement(text: String, isMet: Boolean) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = if (isMet) AppPalette.success else AppPalette.textMuted.copy(alpha = 0.6f)
+            color = if (isMet) AppPalette.success else AppPalette.textMuted
         )
     }
 }
@@ -308,7 +314,7 @@ private data class PasswordStrength(
 @Composable
 private fun calculatePasswordStrength(password: String): PasswordStrength {
     var score = 0
-    if (password.length >= 8) score++
+    if (password.length >= 6) score++
     if (password.any { it.isDigit() }) score++
     if (password.any { it.isLetter() }) score++
     if (password.any { it.isUpperCase() }) score++
