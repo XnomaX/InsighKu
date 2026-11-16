@@ -516,12 +516,20 @@ fun PremiumBottomNav(
     val currentTab = getTabForRoute(currentRoute)
 
     fun navigateToTab(tabRoute: String) {
-        // Already on this tab's root → no-op (prevents redundant navigation)
-        if (currentTab == tabRoute) {
+        if (currentRoute == tabRoute) return
+
+        // HOME is the start destination: popUpTo(startDestination) keeps HOME in
+        // the stack, so restoreState=true would bring back nested screens like
+        // Settings on top of it. Home must always land on the dashboard.
+        if (tabRoute == Route.HOME) {
+            navController.navigate(Route.HOME) {
+                popUpTo(Route.HOME) { inclusive = false }
+                launchSingleTop = true
+                restoreState = false
+            }
             return
         }
 
-        // Different tab → navigate with full state save/restore
         navController.navigate(tabRoute) {
             popUpTo(navController.graph.findStartDestination().id) {
                 saveState = true
