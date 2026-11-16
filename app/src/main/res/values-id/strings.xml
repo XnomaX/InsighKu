@@ -456,10 +456,8 @@
     <string name="recurring_empty">Belum ada pembayaran berulang.</string>
 
     <!-- Settings - Identity -->
-    <string name="settings_identity_greeting">Hai, %1$s</string>
-    <string name="settings_identity_default">Ruang Anda</string>
     <string name="settings_signed_in">Sudah masuk</string>
-    <string name="settings_identity_subtitle">Atur bagaimana InsightKu terasa dan semakin mengenal Anda 💜</string>
+    <string name="settings_identity_subtitle">Pengaturan</string>
     <string name="settings_choose_currency">Pilih mata uang</string>
 
     <!-- Settings - Logout Dialog -->
@@ -1511,6 +1509,9 @@
     <string name="no_recent_transactions">Belum ada transaksi</string>
     <string name="appearance">Tampilan</string>
     <string name="account">Akun</string>
+    <string name="settings_group_appearance">Tampilan</string>
+    <string name="settings_group_language_money">Bahasa &amp; uang</string>
+    <string name="settings_group_habits_capture">Kebiasaan &amp; tangkapan</string>
     <string name="error_invalid_email">Masukkan alamat email yang valid</string>
     <string name="error_password_length">Kata sandi minimal 6 karakter</string>
     <string name="add_transaction_title">Tambah Transaksi</string>

@@ -18,6 +18,9 @@
     <string name="settings_language_desc">Choose your preferred language</string>
     <string name="appearance">Appearance</string>
     <string name="account">Account</string>
+    <string name="settings_group_appearance">Appearance</string>
+    <string name="settings_group_language_money">Language &amp; money</string>
+    <string name="settings_group_habits_capture">Habits &amp; capture</string>
 
     <!-- Auth - Login -->
     <string name="login_title">Welcome back</string>
@@ -167,10 +170,8 @@
     <!-- Auth -->
 
     <!-- Settings - Identity -->
-    <string name="settings_identity_greeting">Hey, %1$s</string>
-    <string name="settings_identity_default">Your space</string>
     <string name="settings_signed_in">Signed in</string>
-    <string name="settings_identity_subtitle">Shape how InsightKu feels and how it gets to know you 💜</string>
+    <string name="settings_identity_subtitle">Settings</string>
     <string name="settings_currency">Currency</string>
     <string name="settings_choose_currency">Choose currency</string>
 

@@ -6,18 +6,19 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,17 +35,15 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Spa
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -63,16 +62,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
+import com.example.insightku.core.notification.BankNotificationListenerService
 import com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet
 import com.example.insightku.core.ui.theme.AccentPalette
 import com.example.insightku.core.ui.theme.Dimens
@@ -110,87 +117,162 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(SettingsPalette.background),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+        contentPadding = PaddingValues(
             start = dimens.screenHorizontalPadding,
             end = dimens.screenHorizontalPadding,
             top = Dimens.PaddingExtraLarge,
-            bottom = Dimens.ContentBottomPadding
-        ),
-        verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)
+            // Floating bottom nav (~64dp) + gesture bar; keep the last row reachable.
+            bottom = Dimens.ContentBottomPadding + Dimens.BottomNavHeight
+        )
     ) {
-        item { IdentityHeader(uiState) }
+        item { IdentityHeader() }
+
+        item { GroupHeading(stringResource(R.string.settings_group_appearance)) }
         item { AppearanceSection(uiState, onEvent) }
-        item { LanguageSection(uiState, onEvent) }
         item { AccentSection(uiState, onEvent) }
-        item { ComfortSection(uiState, onEvent) }
         item { VisualDensitySection(uiState, onEvent) }
-        item { InsightToneSection(uiState, onEvent) }
-        item { HabitGoalSection(uiState, onEvent) }
+        item { ComfortSection(uiState, onEvent) }
+
+        item { Spacer(Modifier.height(Dimens.SectionSpacing)) }
+        item { GroupHeading(stringResource(R.string.settings_group_language_money)) }
+        item { LanguageSection(uiState, onEvent) }
         item { CurrencySection(uiState, onEvent) }
+        item { InsightToneSection(uiState, onEvent) }
+
+        item { Spacer(Modifier.height(Dimens.SectionSpacing)) }
+        item { GroupHeading(stringResource(R.string.settings_group_habits_capture)) }
+        item { HabitGoalSection(uiState, onEvent) }
         item { SmartCaptureSection(uiState, onEvent, onNavigateToBankWhitelist, onNavigateToAutoDetectionOnboarding) }
         if (onNavigateToNotificationDebug != null) {
             item {
-                SettingsSurface {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { onNavigateToNotificationDebug() },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.BugReport,
-                            contentDescription = null,
-                            tint     = SettingsPalette.Purple,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.settings_notification_debug), style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
-                            Text(stringResource(R.string.settings_notification_debug_desc), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
-                        }
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SettingsPalette.textMuted)
-                    }
-                }
+                SettingsRow(
+                    title = stringResource(R.string.settings_notification_debug),
+                    subtitle = stringResource(R.string.settings_notification_debug_desc),
+                    leadingIcon = Icons.Default.BugReport,
+                    onClick = onNavigateToNotificationDebug,
+                    trailing = { TrailingChevron() }
+                )
             }
         }
+
+        item { Spacer(Modifier.height(Dimens.SectionSpacing)) }
+        item { GroupHeading(stringResource(R.string.account)) }
         item { AccountSection(uiState, onEvent) }
         item { AppInfoFooter() }
     }
 }
 
-// ── Shared shells ───────────────────────────────────────────────────────────────
+// ── Layout primitives ───────────────────────────────────────────────────────────
+//
+// One continuous editorial list: no card per setting. Groups are separated by
+// whitespace, rows inside a group by a single hairline. Every row shares one
+// 56dp baseline so labels, values, icons and toggles line up column-perfect.
+
+private val RowHeight = 56.dp
+private val IconColumnWidth = 32.dp
 
 @Composable
-private fun SettingsSurface(
-    modifier: Modifier = Modifier,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
+private fun GroupHeading(title: String) {
+    Text(
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = SettingsPalette.Purple,
+        letterSpacing = 1.4.sp,
+        modifier = Modifier.padding(bottom = Dimens.PaddingMedium)
+    )
+}
+
+@Composable
+private fun Hairline() {
+    HorizontalDivider(
+        color = SettingsPalette.cardBorder.copy(alpha = 0.7f),
+        thickness = 0.5.dp
+    )
+}
+
+/** Shared row: label at start, trailing control pinned to the end, never overlapping. */
+@Composable
+private fun SettingsRow(
+    title: String,
+    subtitle: String? = null,
+    leadingIcon: ImageVector? = null,
+    onClick: (() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Dimens.CardRadius),
-        color = SettingsPalette.card,
-        border = BorderStroke(1.dp, SettingsPalette.cardBorder),
-        tonalElevation = 0.dp,
-        shadowElevation = Dimens.ElevationSmall
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = RowHeight)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(vertical = Dimens.PaddingMedium),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(Modifier.padding(Dimens.CardInnerPaddingLarge), content = content)
+        if (leadingIcon != null) {
+            Icon(
+                leadingIcon,
+                contentDescription = null,
+                tint = SettingsPalette.textMuted,
+                modifier = Modifier.size(Dimens.IconSizeMedium)
+            )
+            Spacer(Modifier.width(Dimens.PaddingMedium))
+        } else {
+            Spacer(Modifier.width(IconColumnWidth))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = SettingsPalette.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (subtitle != null) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SettingsPalette.textMuted,
+                    maxLines = 2
+                )
+            }
+        }
+        if (trailing != null) {
+            Spacer(Modifier.width(Dimens.PaddingMedium))
+            Box(contentAlignment = Alignment.CenterEnd) { trailing() }
+        }
     }
 }
 
 @Composable
-private fun SectionLabel(icon: ImageVector, title: String, subtitle: String? = null) {
+private fun SettingsGroup(content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxWidth()) { content() }
+}
+
+@Composable
+private fun TrailingChevron() {
+    Icon(
+        Icons.Default.ChevronRight,
+        contentDescription = null,
+        tint = SettingsPalette.textMuted,
+        modifier = Modifier.size(Dimens.IconSizeMedium)
+    )
+}
+
+@Composable
+private fun TrailingValue(value: String, chevron: Boolean = true) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(SettingsPalette.tint(SettingsPalette.Purple)),
-            contentAlignment = Alignment.Center
-        ) { Icon(icon, null, tint = SettingsPalette.Purple, modifier = Modifier.size(18.dp)) }
-        Spacer(Modifier.width(Dimens.PaddingMedium))
-        Column {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.textPrimary)
-            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = SettingsPalette.Purple,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (chevron) {
+            Spacer(Modifier.width(Dimens.PaddingSmall))
+            TrailingChevron()
         }
     }
 }
@@ -204,32 +286,60 @@ private fun ToneSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
             checkedThumbColor = Color.White,
             checkedTrackColor = SettingsPalette.Purple,
             uncheckedThumbColor = Color.White,
-            uncheckedTrackColor = SettingsPalette.textMuted.copy(alpha = 0.4f)
+            uncheckedTrackColor = SettingsPalette.textMuted.copy(alpha = 0.35f)
         )
     )
+}
+
+/** Thin, borderless preview strip — a single accent rule instead of a nested card. */
+@Composable
+private fun PreviewStrip(
+    label: String,
+    body: String,
+    leading: @Composable (() -> Unit)? = null
+) {
+    val bodyColor by animateColorAsState(SettingsPalette.textPrimary, label = "previewText")
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.CornerRadiusSmall))
+            .background(SettingsPalette.tint(SettingsPalette.Purple))
+            .padding(horizontal = Dimens.PaddingLarge, vertical = Dimens.PaddingMedium),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .width(3.dp)
+                .height(28.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(SettingsPalette.Purple)
+        )
+        Spacer(Modifier.width(Dimens.PaddingMedium))
+        if (leading != null) {
+            leading()
+            Spacer(Modifier.width(Dimens.PaddingMedium))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
+            Text(body, style = MaterialTheme.typography.bodyMedium, color = bodyColor)
+        }
+    }
 }
 
 // ── 1. Identity header ────────────────────────────────────────────────────────
 
 @Composable
-private fun IdentityHeader(uiState: SettingsUiState) {
-    Column {
-        Text(
-            if (uiState.userName.isNotBlank()) stringResource(R.string.settings_identity_greeting, uiState.userName.substringBefore(' ')) else stringResource(R.string.settings_identity_default),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = SettingsPalette.textPrimary
-        )
-        Spacer(Modifier.height(Dimens.PaddingSmall))
-        Text(
-            stringResource(R.string.settings_identity_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = SettingsPalette.textMuted
-        )
-    }
+private fun IdentityHeader() {
+    Text(
+        stringResource(R.string.settings_identity_subtitle),
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+        color = SettingsPalette.textPrimary,
+        modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)
+    )
 }
 
-// ── 1b. Language picker ─────────────────────────────────────────────────────
+// ── 2. Language picker ────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -237,45 +347,28 @@ private fun LanguageSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -
     var showSheet by remember { mutableStateOf(false) }
     val currentLang = uiState.appLanguage
 
-    SettingsSurface {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showSheet = true },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SectionLabel(
-                Icons.Default.Language,
-                stringResource(R.string.settings_language),
-                stringResource(R.string.settings_language_desc)
-            )
-            Spacer(Modifier.weight(1f))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)
-            ) {
-                Text(
-                    text = when (currentLang) {
+    SettingsGroup {
+        SettingsRow(
+            title = stringResource(R.string.settings_language),
+            subtitle = stringResource(R.string.settings_language_desc),
+            leadingIcon = Icons.Default.Language,
+            onClick = { showSheet = true },
+            trailing = {
+                TrailingValue(
+                    when (currentLang) {
                         AppLanguage.ID -> "🇮🇩 Indonesia"
                         AppLanguage.EN -> "🇺🇸 English"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = SettingsPalette.Purple
-                )
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = SettingsPalette.textMuted,
-                    modifier = Modifier.size(Dimens.IconSizeMedium)
+                    }
                 )
             }
-        }
+        )
+        Hairline()
     }
 
     if (showSheet) {
         LanguageBottomSheet(
-            currentLanguage = currentLang,                onSelect = { lang ->
+            currentLanguage = currentLang,
+            onSelect = { lang ->
                 onEvent(SettingsEvent.OnLanguageChange(lang))
                 showSheet = false
             },
@@ -299,22 +392,7 @@ private fun LanguageBottomSheet(
         containerColor = SettingsPalette.card,
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
         tonalElevation = 0.dp,
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(SettingsPalette.cardBorder)
-                )
-            }
-        }
+        dragHandle = { SheetDragHandle() }
     ) {
         Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
             Text(
@@ -335,6 +413,7 @@ private fun LanguageBottomSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(min = RowHeight)
                         .background(rowBg)
                         .clickable { onSelect(language) }
                         .padding(
@@ -376,124 +455,99 @@ private fun LanguageBottomSheet(
     }
 }
 
-// ── 2. Appearance + live preview ──────────────────────────────────────────────
-
 @Composable
-private fun AppearanceSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsSurface {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        SectionLabel(
-            if (uiState.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
-            stringResource(R.string.appearance),
-            if (uiState.isDarkMode) stringResource(R.string.settings_appearance_desc_dark) else stringResource(R.string.settings_appearance_desc_light)
+private fun SheetDragHandle() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .width(Dimens.BottomSheetHandleWidth)
+                .height(Dimens.BottomSheetHandleHeight)
+                .clip(RoundedCornerShape(Dimens.BottomSheetHandleRadius))
+                .background(SettingsPalette.cardBorder)
         )
-            Spacer(Modifier.weight(1f))
-            ToneSwitch(uiState.isDarkMode) { onEvent(SettingsEvent.OnThemeChange(it)) }
-        }
-        Spacer(Modifier.height(Dimens.PaddingLarge))
-        // Live mini-preview — a tiny mock card that recolors with the toggle.
-        val previewBg by animateColorAsState(SettingsPalette.card, label = "previewBg")
-        val previewText by animateColorAsState(SettingsPalette.textPrimary, label = "previewText")
-        Surface(
-            Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
-            color = previewBg,
-            border = BorderStroke(1.dp, SettingsPalette.cardBorder)
-        ) {
-            Row(Modifier.padding(Dimens.CardInnerPadding), verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(SettingsPalette.Purple)
-                )
-                Spacer(Modifier.width(Dimens.PaddingMedium))
-                Column {
-                    Text(stringResource(R.string.settings_preview), style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
-                    Text(stringResource(R.string.settings_preview_desc), style = MaterialTheme.typography.bodyMedium, color = previewText)
-                }
-            }
-        }
     }
 }
 
-// ── 3. Comfort mode ────────────────────────────────────────────────────────────
+// ── 3. Appearance + live preview ──────────────────────────────────────────────
+
+@Composable
+private fun AppearanceSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
+    SettingsGroup {
+        SettingsRow(
+            title = stringResource(R.string.appearance),
+            subtitle = if (uiState.isDarkMode) stringResource(R.string.settings_appearance_desc_dark) else stringResource(R.string.settings_appearance_desc_light),
+            leadingIcon = if (uiState.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+            trailing = { ToneSwitch(uiState.isDarkMode) { onEvent(SettingsEvent.OnThemeChange(it)) } }
+        )
+        PreviewStrip(
+            label = stringResource(R.string.settings_preview),
+            body = stringResource(R.string.settings_preview_desc),
+            leading = {
+                Box(
+                    Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(SettingsPalette.Purple)
+                )
+            }
+        )
+        Spacer(Modifier.height(Dimens.PaddingSmall))
+        Hairline()
+    }
+}
+
+// ── 4. Comfort mode ────────────────────────────────────────────────────────────
 
 @Composable
 private fun ComfortSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsSurface {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SectionLabel(Icons.Default.Spa, stringResource(R.string.settings_comfort_mode), stringResource(R.string.settings_comfort_mode_desc))
-            Spacer(Modifier.weight(1f))
-            ToneSwitch(uiState.comfortMode) { onEvent(SettingsEvent.OnComfortModeToggle(it)) }
-        }
+    SettingsGroup {
+        SettingsRow(
+            title = stringResource(R.string.settings_comfort_mode),
+            subtitle = stringResource(R.string.settings_comfort_mode_desc),
+            trailing = { ToneSwitch(uiState.comfortMode) { onEvent(SettingsEvent.OnComfortModeToggle(it)) } }
+        )
         AnimatedVisibility(uiState.comfortMode, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
             Text(
                 stringResource(R.string.settings_comfort_body_detail),
                 style = MaterialTheme.typography.bodySmall,
                 color = SettingsPalette.Purple,
-                modifier = Modifier.padding(top = Dimens.PaddingMedium)
+                modifier = Modifier.padding(start = IconColumnWidth, bottom = Dimens.PaddingMedium)
             )
         }
     }
 }
 
-// ── 4. How insights talk to you + live preview ─────────────────────────────────
+// ── 5. How insights talk to you + live preview ─────────────────────────────────
 
 @Composable
 private fun InsightToneSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsSurface {
-        SectionLabel(Icons.Default.AutoAwesome, stringResource(R.string.settings_insight_tone), stringResource(R.string.settings_insight_tone_desc))
-        Spacer(Modifier.height(Dimens.PaddingLarge))
-        // Segmented pills — not a tab bar, an in-place voice picker.
-        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)) {
-            InsightTone.entries.forEach { tone ->
-                val selected = uiState.insightTone == tone
-                val bg by animateColorAsState(if (selected) SettingsPalette.Purple else SettingsPalette.tint(SettingsPalette.Purple), label = "tonebg")
-                Surface(
-                    Modifier
-                        .weight(1f)
-                        .clickable { onEvent(SettingsEvent.OnInsightToneChange(tone)) },
-                    shape = RoundedCornerShape(50),
-                    color = bg
-                ) {
-                    Text(
-                        tone.label(),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (selected) Color.White else SettingsPalette.Purple,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = Dimens.PaddingMedium)
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(Dimens.PaddingLarge))
-        // Live preview — the SAME insight rendered in the chosen tone.
-        Surface(
-            Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
-            color = SettingsPalette.cardElevated
-        ) {
-            Row(Modifier.padding(Dimens.CardInnerPadding), verticalAlignment = Alignment.Top) {
-                Text("🔮", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.width(Dimens.PaddingMedium))
-                Column {
-                    Text(stringResource(R.string.settings_sounds_like), style = MaterialTheme.typography.labelSmall, color = SettingsPalette.textMuted)
-                    Spacer(Modifier.height(2.dp))
-                    Text(uiState.insightTone.previewSentence(), style = MaterialTheme.typography.bodyMedium, color = SettingsPalette.textPrimary)
-                }
-            }
+    SettingsGroup {
+        SettingsRow(
+            title = stringResource(R.string.settings_insight_tone),
+            subtitle = stringResource(R.string.settings_insight_tone_desc),
+            leadingIcon = Icons.Default.AutoAwesome
+        )
+        Column(Modifier.padding(start = IconColumnWidth)) {
+            PillSelector(
+                options = InsightTone.entries.map { it to it.label() },
+                selected = uiState.insightTone,
+                onSelect = { onEvent(SettingsEvent.OnInsightToneChange(it)) }
+            )
+            Spacer(Modifier.height(Dimens.PaddingMedium))
+            PreviewStrip(
+                label = stringResource(R.string.settings_sounds_like),
+                body = uiState.insightTone.previewSentence()
+            )
+            Spacer(Modifier.height(Dimens.PaddingLarge))
         }
     }
 }
 
-// Both InsightTone accessors are @Composable so the copy resolves through
-// stringResource and follows the in-app language switch. Precedent: TxGroup.label()
-// in TransactionDesignTokens. Each has exactly one caller, both inside composables
-// (`:456` tone.label, `:481` previewSentence).
 @Composable
 private fun InsightTone.label(): String = when (this) {
     InsightTone.GENTLE -> stringResource(R.string.insight_tone_gentle)
@@ -511,14 +565,13 @@ private fun InsightTone.previewSentence(): String = when (this) {
 
 // ── Reusable pill selector ───────────────────────────────────────────────────────
 
-/** A generic 3-way segmented pill selector matching the insight-tone pattern. */
 @Composable
 private fun <T> PillSelector(
     options: List<Pair<T, String>>,
     selected: T,
     onSelect: (T) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
         options.forEach { (value, label) ->
             val isSelected = value == selected
             val bg by animateColorAsState(
@@ -528,20 +581,24 @@ private fun <T> PillSelector(
             Surface(
                 Modifier
                     .weight(1f)
+                    .heightIn(min = 44.dp)
+                    .clip(RoundedCornerShape(Dimens.CornerRadiusMedium))
                     .clickable { onSelect(value) },
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
                 color = bg
             ) {
-                Text(
-                    label,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) Color.White else SettingsPalette.Purple,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = Dimens.PaddingMedium)
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) Color.White else SettingsPalette.Purple,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = Dimens.PaddingSmall)
+                    )
+                }
             }
         }
     }
@@ -559,17 +616,23 @@ private val ACCENT_PRESETS = listOf(
 
 @Composable
 private fun AccentSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsSurface {
-        SectionLabel(Icons.Default.Palette, stringResource(R.string.settings_accent_color), stringResource(R.string.settings_accent_color_desc))
-        Spacer(Modifier.height(Dimens.PaddingLarge))
-        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
+    SettingsGroup {
+        SettingsRow(
+            title = stringResource(R.string.settings_accent_color),
+            subtitle = stringResource(R.string.settings_accent_color_desc),
+            leadingIcon = Icons.Default.Palette
+        )
+        Row(
+            Modifier.padding(start = IconColumnWidth, bottom = Dimens.PaddingLarge),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
+        ) {
             ACCENT_PRESETS.forEach { (hex, labelRes) ->
                 val label = stringResource(labelRes)
                 val color = Color(hex.toColorInt())
                 val isSelected = uiState.accentColorHex.equals(hex, ignoreCase = true)
                 Box(
                     Modifier
-                        .size(48.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
                         .background(color)
                         .selectable(
@@ -579,10 +642,11 @@ private fun AccentSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> 
                         .semantics { contentDescription = label },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isSelected) Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    if (isSelected) Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(Dimens.IconSizeMedium))
                 }
             }
         }
+        Hairline()
     }
 }
 
@@ -590,45 +654,54 @@ private fun AccentSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> 
 
 @Composable
 private fun VisualDensitySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsSurface {
-        SectionLabel(Icons.Default.Dashboard, stringResource(R.string.settings_visual_density), stringResource(R.string.settings_visual_density_desc))
-        Spacer(Modifier.height(Dimens.PaddingLarge))
-        PillSelector(
-            options = listOf(
-                VisualDensity.COMFORTABLE to stringResource(R.string.settings_density_comfortable),
-                VisualDensity.COZY to stringResource(R.string.settings_density_cozy),
-                VisualDensity.COMPACT to stringResource(R.string.settings_density_compact)
-            ),
-            selected = uiState.visualDensity,
-            onSelect = { onEvent(SettingsEvent.OnVisualDensityChange(it)) }
+    SettingsGroup {
+        SettingsRow(
+            title = stringResource(R.string.settings_visual_density),
+            subtitle = stringResource(R.string.settings_visual_density_desc)
         )
+        Column(Modifier.padding(start = IconColumnWidth, bottom = Dimens.PaddingLarge)) {
+            PillSelector(
+                options = listOf(
+                    VisualDensity.COMFORTABLE to stringResource(R.string.settings_density_comfortable),
+                    VisualDensity.COZY to stringResource(R.string.settings_density_cozy),
+                    VisualDensity.COMPACT to stringResource(R.string.settings_density_compact)
+                ),
+                selected = uiState.visualDensity,
+                onSelect = { onEvent(SettingsEvent.OnVisualDensityChange(it)) }
+            )
+        }
+        Hairline()
     }
 }
 
-// ── 5. Habit goal stepper ───────────────────────────────────────────────────────
+// ── 6. Habit goal stepper ───────────────────────────────────────────────────────
+
 @Composable
 private fun HabitGoalSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsSurface {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SectionLabel(Icons.Default.LocalFireDepartment, stringResource(R.string.settings_habit_goal), stringResource(R.string.settings_habit_goal_desc))
-            Spacer(Modifier.weight(1f))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                StepperButton(Icons.Default.Remove, enabled = uiState.habitGoal > 1) {
-                    onEvent(SettingsEvent.OnHabitGoalChange((uiState.habitGoal - 1).coerceAtLeast(1)))
-                }
-                Text(
-                    "${uiState.habitGoal}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = SettingsPalette.textPrimary,
-                    modifier = Modifier.width(40.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                StepperButton(Icons.Default.Add, enabled = uiState.habitGoal < 7) {
-                    onEvent(SettingsEvent.OnHabitGoalChange((uiState.habitGoal + 1).coerceAtMost(7)))
+    SettingsGroup {
+        SettingsRow(
+            title = stringResource(R.string.settings_habit_goal),
+            subtitle = stringResource(R.string.settings_habit_goal_desc),
+            trailing = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StepperButton(Icons.Default.Remove, enabled = uiState.habitGoal > 1) {
+                        onEvent(SettingsEvent.OnHabitGoalChange((uiState.habitGoal - 1).coerceAtLeast(1)))
+                    }
+                    Text(
+                        "${uiState.habitGoal}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = SettingsPalette.textPrimary,
+                        modifier = Modifier.width(40.dp),
+                        textAlign = TextAlign.Center
+                    )
+                    StepperButton(Icons.Default.Add, enabled = uiState.habitGoal < 7) {
+                        onEvent(SettingsEvent.OnHabitGoalChange((uiState.habitGoal + 1).coerceAtMost(7)))
+                    }
                 }
             }
-        }
+        )
+        Hairline()
     }
 }
 
@@ -637,7 +710,7 @@ private fun StepperButton(icon: ImageVector, enabled: Boolean, onClick: () -> Un
     val alpha = if (enabled) 1f else 0.3f
     Box(
         Modifier
-            .size(36.dp)
+            .size(40.dp)
             .clip(CircleShape)
             .background(SettingsPalette.tint(SettingsPalette.Purple).copy(alpha = 0.12f * alpha))
             .clickable(enabled = enabled, onClick = onClick),
@@ -645,7 +718,7 @@ private fun StepperButton(icon: ImageVector, enabled: Boolean, onClick: () -> Un
     ) { Icon(icon, null, tint = SettingsPalette.Purple.copy(alpha = alpha), modifier = Modifier.size(18.dp)) }
 }
 
-// ── 6. Currency ──────────────────────────────────────────────────────────────────
+// ── 7. Currency ──────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -653,33 +726,15 @@ private fun CurrencySection(uiState: SettingsUiState, onEvent: (SettingsEvent) -
     var showSheet by remember { mutableStateOf(false) }
     val selected = CurrencyUtils.getOption(uiState.currencyCode)
 
-    SettingsSurface {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showSheet = true },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SectionLabel(Icons.Default.Payments, stringResource(R.string.settings_currency), stringResource(R.string.settings_currency_desc))
-            Spacer(Modifier.weight(1f))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)
-            ) {
-                Text(
-                    text = "${selected.flag} ${selected.code}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = SettingsPalette.Purple
-                )
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = SettingsPalette.textMuted,
-                    modifier = Modifier.size(Dimens.IconSizeMedium)
-                )
-            }
-        }
+    SettingsGroup {
+        SettingsRow(
+            title = stringResource(R.string.settings_currency),
+            subtitle = stringResource(R.string.settings_currency_desc),
+            leadingIcon = Icons.Default.Payments,
+            onClick = { showSheet = true },
+            trailing = { TrailingValue("${selected.flag} ${selected.code}") }
+        )
+        Hairline()
     }
 
     if (showSheet) {
@@ -709,22 +764,7 @@ private fun CurrencyBottomSheet(
         containerColor = SettingsPalette.card,
         contentWindowInsets = WindowInsets(0, 8, 0, 8),
         tonalElevation = 0.dp,
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(SettingsPalette.cardBorder)
-                )
-            }
-        }
+        dragHandle = { SheetDragHandle() }
     ) {
         Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
             Text(
@@ -745,19 +785,17 @@ private fun CurrencyBottomSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(min = RowHeight)
                         .background(rowBg)
                         .clickable { onSelect(option.code) }
                         .padding(
                             horizontal = Dimens.CardInnerPaddingLarge,
-                            vertical = Dimens.PaddingLarge
+                            vertical = Dimens.PaddingMedium
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
                 ) {
-                    Text(
-                        text = option.flag,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Text(text = option.flag, style = MaterialTheme.typography.titleMedium)
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = option.region,
@@ -785,7 +823,7 @@ private fun CurrencyBottomSheet(
     }
 }
 
-// ── 7. Smart capture (honest consent + REAL category learning) ───────────────────
+// ── 8. Smart capture (honest consent + REAL category learning) ───────────────────
 
 @Composable
 private fun SmartCaptureSection(
@@ -794,39 +832,38 @@ private fun SmartCaptureSection(
     onNavigateToBankWhitelist: (() -> Unit)? = null,
     onNavigateToAutoDetectionOnboarding: (() -> Unit)? = null
 ) {
-    SettingsSurface {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SectionLabel(Icons.Default.AutoAwesome, stringResource(R.string.settings_smart_capture), stringResource(R.string.settings_smart_capture_desc))
-            Spacer(Modifier.weight(1f))
-            ToneSwitch(uiState.smartCaptureEnabled) { onEvent(SettingsEvent.OnSmartCaptureToggle(it)) }
-        }
+    SettingsGroup {
+        SettingsRow(
+            title = stringResource(R.string.settings_smart_capture),
+            subtitle = stringResource(R.string.settings_smart_capture_desc),
+            trailing = { ToneSwitch(uiState.smartCaptureEnabled) { onEvent(SettingsEvent.OnSmartCaptureToggle(it)) } }
+        )
         Text(
             stringResource(R.string.settings_smart_capture_body_long),
             style = MaterialTheme.typography.bodySmall,
             color = SettingsPalette.textMuted,
-            modifier = Modifier.padding(top = Dimens.PaddingMedium)
+            modifier = Modifier.padding(start = IconColumnWidth, bottom = Dimens.PaddingLarge)
         )
+        Hairline()
 
-        Spacer(Modifier.height(Dimens.PaddingLarge))
-        androidx.compose.material3.HorizontalDivider(color = SettingsPalette.cardBorder)
-        Spacer(Modifier.height(Dimens.PaddingLarge))
-
-        // The genuinely-real control: category learning + transparency.
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.settings_learn_categories), style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
-                Text(stringResource(R.string.settings_learn_categories_desc), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
-            }
-            ToneSwitch(uiState.categoryLearningEnabled) { onEvent(SettingsEvent.OnCategoryLearningToggle(it)) }
-        }
+        SettingsRow(
+            title = stringResource(R.string.settings_learn_categories),
+            subtitle = stringResource(R.string.settings_learn_categories_desc),
+            trailing = { ToneSwitch(uiState.categoryLearningEnabled) { onEvent(SettingsEvent.OnCategoryLearningToggle(it)) } }
+        )
 
         AnimatedVisibility(
             visible = uiState.categoryLearningEnabled && uiState.learnedMemories.isNotEmpty(),
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Column(Modifier.padding(top = Dimens.PaddingLarge)) {
-                Text(stringResource(R.string.settings_learn_categories_hint), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.Purple)
+            Column(Modifier.padding(start = IconColumnWidth, bottom = Dimens.PaddingLarge)) {
+                Text(
+                    stringResource(R.string.settings_learn_categories_hint),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SettingsPalette.Purple
+                )
                 Spacer(Modifier.height(Dimens.PaddingMedium))
                 uiState.learnedMemories.forEach { memory ->
                     MemoryRow(memory) { onEvent(SettingsEvent.OnForgetMemory(memory.merchant)) }
@@ -839,15 +876,11 @@ private fun SmartCaptureSection(
                 stringResource(R.string.settings_learn_categories_empty_detail),
                 style = MaterialTheme.typography.bodySmall,
                 color = SettingsPalette.textMuted,
-                modifier = Modifier.padding(top = Dimens.PaddingMedium)
+                modifier = Modifier.padding(start = IconColumnWidth, bottom = Dimens.PaddingLarge)
             )
         }
+        Hairline()
 
-        Spacer(Modifier.height(Dimens.PaddingMedium))
-        androidx.compose.material3.HorizontalDivider(color = SettingsPalette.cardBorder)
-        Spacer(Modifier.height(Dimens.PaddingMedium))
-
-        // ── Bank notification auto-capture ────────────────────────────────────
         BankNotificationSection(uiState, onEvent, onNavigateToBankWhitelist, onNavigateToAutoDetectionOnboarding)
     }
 }
@@ -859,19 +892,17 @@ private fun BankNotificationSection(
     onNavigateToBankWhitelist: (() -> Unit)? = null,
     onNavigateToAutoDetectionOnboarding: (() -> Unit)? = null
 ) {
-    val context   = androidx.compose.ui.platform.LocalContext.current
-    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
 
-    // Re-check permission on every ON_RESUME (user may have just granted it in Settings)
     var isListenerEnabled by remember { mutableStateOf(false) }
     fun refreshPermission() {
-        isListenerEnabled = com.example.insightku.core.notification.BankNotificationListenerService
-            .isEnabled(context)
+        isListenerEnabled = BankNotificationListenerService.isEnabled(context)
     }
 
     DisposableEffect(lifecycle) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) refreshPermission()
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshPermission()
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
@@ -879,113 +910,89 @@ private fun BankNotificationSection(
     LaunchedEffect(Unit) { refreshPermission() }
 
     Column {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.settings_bank_notification),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = SettingsPalette.textPrimary
-                )
-                Text(
-                    stringResource(R.string.settings_bank_notification_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = SettingsPalette.textMuted
-                )
-            }
-            ToneSwitch(
-                checked = uiState.bankNotificationEnabled && isListenerEnabled,
-                onCheckedChange = { enabled ->
-                    if (enabled && !isListenerEnabled) {
-                        // Permission not granted — open settings instead of toggling
-                        com.example.insightku.core.notification.BankNotificationListenerService
-                            .openSettings(context)
-                    } else {
-                        onEvent(SettingsEvent.OnBankNotificationToggle(enabled))
-                    }
-                }
-            )
-        }
-
-        Spacer(Modifier.height(Dimens.PaddingSmall))
-
-        when {
-            // Permission NOT granted — show prominent prompt
-            !isListenerEnabled -> {
-                Surface(
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CornerRadiusMedium),
-                    color = SettingsPalette.cardElevated,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(Modifier.padding(Dimens.CardInnerPadding)) {
-                        Text(
-                            stringResource(R.string.settings_notification_access_prompt),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SettingsPalette.textPrimary
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            stringResource(R.string.settings_notification_access_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = SettingsPalette.textMuted
-                        )
-                        Spacer(Modifier.height(Dimens.PaddingMedium))
-                        Button(
-                            onClick = {
-                                // Trust-first: arahkan ke onboarding (value → transparansi → izin)
-                                // alih-alih langsung melempar user ke layar sistem yang menakutkan.
-                                if (onNavigateToAutoDetectionOnboarding != null) {
-                                    onNavigateToAutoDetectionOnboarding()
-                                } else {
-                                    com.example.insightku.core.notification.BankNotificationListenerService
-                                        .openSettings(context)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                            containerColor = SettingsPalette.Purple
-                            )
-                        ) {
-                            Text(stringResource(R.string.settings_notification_access_button))
+        SettingsRow(
+            title = stringResource(R.string.settings_bank_notification),
+            subtitle = stringResource(R.string.settings_bank_notification_desc),
+            trailing = {
+                ToneSwitch(
+                    checked = uiState.bankNotificationEnabled && isListenerEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled && !isListenerEnabled) {
+                            // Permission not granted — open settings instead of toggling
+                            BankNotificationListenerService.openSettings(context)
+                        } else {
+                            onEvent(SettingsEvent.OnBankNotificationToggle(enabled))
                         }
                     }
+                )
+            }
+        )
+
+        when {
+            !isListenerEnabled -> {
+                // Permission prompt is the one place a filled panel is warranted:
+                // it carries a real action, not a setting row.
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(Dimens.CornerRadiusSmall))
+                        .background(SettingsPalette.tint(SettingsPalette.Purple))
+                        .padding(Dimens.PaddingLarge)
+                ) {
+                    Text(
+                        stringResource(R.string.settings_notification_access_prompt),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = SettingsPalette.textPrimary
+                    )
+                    Spacer(Modifier.height(Dimens.PaddingSmall))
+                    Text(
+                        stringResource(R.string.settings_notification_access_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SettingsPalette.textMuted
+                    )
+                    Spacer(Modifier.height(Dimens.PaddingMedium))
+                    Button(
+                        onClick = {
+                            if (onNavigateToAutoDetectionOnboarding != null) {
+                                onNavigateToAutoDetectionOnboarding()
+                            } else {
+                                BankNotificationListenerService.openSettings(context)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = SettingsPalette.Purple)
+                    ) {
+                        Text(stringResource(R.string.settings_notification_access_button))
+                    }
                 }
             }
-            // Permission granted AND feature enabled — show active status
             isListenerEnabled && uiState.bankNotificationEnabled -> {
                 Text(
                     "✓ ${stringResource(R.string.settings_notification_active)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SettingsPalette.textMuted
+                    color = SettingsPalette.textMuted,
+                    modifier = Modifier.padding(start = IconColumnWidth, bottom = Dimens.PaddingMedium)
                 )
             }
-            // Permission granted but feature toggled OFF
             else -> {
                 Text(
                     stringResource(R.string.settings_notification_inactive),
                     style = MaterialTheme.typography.bodySmall,
-                    color = SettingsPalette.textMuted
+                    color = SettingsPalette.textMuted,
+                    modifier = Modifier.padding(start = IconColumnWidth, bottom = Dimens.PaddingMedium)
                 )
             }
         }
 
-        // Entry ke layar whitelist — kontrol app mana yang dipantau.
         if (onNavigateToBankWhitelist != null) {
-            Spacer(Modifier.height(Dimens.PaddingMedium))
-            androidx.compose.material3.HorizontalDivider(color = SettingsPalette.cardBorder)
-            Spacer(Modifier.height(Dimens.PaddingMedium))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateToBankWhitelist() },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_monitored_apps), style = MaterialTheme.typography.bodyLarge, color = SettingsPalette.textPrimary)
-                    Text(stringResource(R.string.settings_monitored_apps_desc), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
-                }
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SettingsPalette.textMuted)
-            }
+            Hairline()
+            SettingsRow(
+                title = stringResource(R.string.settings_monitored_apps),
+                subtitle = stringResource(R.string.settings_monitored_apps_desc),
+                onClick = onNavigateToBankWhitelist,
+                trailing = { TrailingChevron() }
+            )
         }
     }
 }
@@ -995,55 +1002,89 @@ private fun MemoryRow(memory: MerchantMemory, onForget: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
+            .heightIn(min = 48.dp)
             .padding(vertical = Dimens.PaddingSmall),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(memory.merchant, style = MaterialTheme.typography.bodyMedium, color = SettingsPalette.textPrimary)
+            Text(
+                memory.merchant,
+                style = MaterialTheme.typography.bodyMedium,
+                color = SettingsPalette.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             Text(
                 "usually ${memory.category} · ${memory.timesSeen}/${memory.totalForMerchant} times",
                 style = MaterialTheme.typography.bodySmall,
-                color = SettingsPalette.textMuted
+                color = SettingsPalette.textMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
+        Spacer(Modifier.width(Dimens.PaddingMedium))
         Box(
             Modifier
-                .size(28.dp)
+                .size(40.dp)
                 .clip(CircleShape)
                 .background(SettingsPalette.tint(SettingsPalette.textMuted))
                 .clickable(onClick = onForget),
             contentAlignment = Alignment.Center
-        ) { Icon(Icons.Default.Close, "Forget ${memory.merchant}", tint = SettingsPalette.textMuted, modifier = Modifier.size(14.dp)) }
+        ) { Icon(Icons.Default.Close, "Forget ${memory.merchant}", tint = SettingsPalette.textMuted, modifier = Modifier.size(16.dp)) }
     }
 }
 
-// ── 8. Account ───────────────────────────────────────────────────────────────────
+// ── 9. Account ───────────────────────────────────────────────────────────────────
 
 @Composable
 private fun AccountSection(uiState: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
-    SettingsSurface {
-        Text(uiState.userName.ifBlank { stringResource(R.string.settings_signed_in) }, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = SettingsPalette.textPrimary)
-        Text(uiState.userEmail, style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
-        Spacer(Modifier.height(Dimens.PaddingLarge))
-        Surface(
+    SettingsGroup {
+        Row(
             Modifier
                 .fillMaxWidth()
-                .clickable { onEvent(SettingsEvent.ShowLogoutDialog) },
-            shape = RoundedCornerShape(50),
-            color = Color.Transparent,
-            border = BorderStroke(1.dp, SettingsPalette.ExpenseRed.copy(alpha = 0.5f))
+                .padding(vertical = Dimens.PaddingMedium),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = Dimens.PaddingMedium),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = SettingsPalette.ExpenseRed, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(Dimens.PaddingMedium))
-                Text(stringResource(R.string.settings_log_out), color = SettingsPalette.ExpenseRed, fontWeight = FontWeight.Medium)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    uiState.userName.ifBlank { stringResource(R.string.settings_signed_in) },
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SettingsPalette.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    uiState.userEmail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SettingsPalette.textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
+        }
+        Hairline()
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = RowHeight)
+                .clickable { onEvent(SettingsEvent.ShowLogoutDialog) },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ExitToApp,
+                contentDescription = null,
+                tint = SettingsPalette.ExpenseRed,
+                modifier = Modifier.size(Dimens.IconSizeMedium)
+            )
+            Spacer(Modifier.width(Dimens.PaddingMedium))
+            Text(
+                stringResource(R.string.settings_log_out),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = SettingsPalette.ExpenseRed,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -1053,10 +1094,19 @@ private fun AppInfoFooter() {
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(top = Dimens.PaddingMedium),
+            .padding(top = Dimens.PaddingExtraLarge, bottom = Dimens.PaddingLarge),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = SettingsPalette.textMuted)
-        Text(stringResource(R.string.app_info_made_with_love), style = MaterialTheme.typography.bodySmall, color = SettingsPalette.textMuted)
+        Text(
+            stringResource(R.string.app_name),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = SettingsPalette.textMuted
+        )
+        Text(
+            stringResource(R.string.app_info_made_with_love),
+            style = MaterialTheme.typography.bodySmall,
+            color = SettingsPalette.textMuted
+        )
     }
 }
