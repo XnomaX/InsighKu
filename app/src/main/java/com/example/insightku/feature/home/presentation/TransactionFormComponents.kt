@@ -704,12 +704,16 @@ fun PremiumSegmentedControl(
             .onSizeChanged { containerWidthPx = it.width }
     ) {
         val halfWidthDp = with(density) { (containerWidthPx / 2).toDp() }
+        val halfWidthPx = containerWidthPx / 2
 
+        // IntOffset is in pixels. halfWidthDp.value is dp, so on a 3x-density
+        // device the selector only travelled a third of the way and stopped in
+        // the middle when switching to "Pendapatan".
         Box(
             modifier = Modifier
                 .width(halfWidthDp)
                 .fillMaxHeight()
-                .offset { IntOffset((halfWidthDp * pillFraction).value.roundToInt(), 0) }
+                .offset { IntOffset((halfWidthPx * pillFraction).roundToInt(), 0) }
                 .padding(3.dp)
                 .clip(RoundedCornerShape(11.dp))
                 .background(if (isIncome) IncomeGreen else ExpenseRed)

@@ -49,7 +49,14 @@ internal fun categoryListSubtitle(uiState: BudgetingUiState): String {
 
 @Composable
 internal fun budgetSpentText(category: BudgetCategory): String =
-    stringResource(R.string.budget_spent_label, formatCurrencyPlain(category.spentAmount))
+    if (category.hasLimit)
+        stringResource(
+            R.string.budget_spent_of_limit,
+            formatCurrencyPlain(category.spentAmount),
+            formatCurrencyPlain(category.limitAmount)
+        )
+    else
+        stringResource(R.string.budget_spent_label, formatCurrencyPlain(category.spentAmount))
 
 /**
  * Pill text for a budget's health. `@Composable` returning `String` rather than

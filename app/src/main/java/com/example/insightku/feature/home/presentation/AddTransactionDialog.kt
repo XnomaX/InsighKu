@@ -47,7 +47,6 @@ import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -82,6 +81,7 @@ import com.example.insightku.core.data.model.TransactionType
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.ExpenseRed
 import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.core.utils.toAmountOrZero
@@ -347,34 +347,61 @@ fun AddTransactionDialog(
         )
     }
     if (showDiscardConfirmation) {
-        AlertDialog(
+        // Plain white item: no animated icon, no accent tint, no spring, no shadow.
+        androidx.compose.ui.window.Dialog(
             onDismissRequest = {
                 showDiscardConfirmation = false
                 launchScannerAfterDiscard = false
-            },
-            title = { Text(stringResource(R.string.add_transaction_discard_title)) },
-            text = { Text(stringResource(R.string.add_transaction_discard_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val openScanner = launchScannerAfterDiscard
-                        launchScannerAfterDiscard = false
-                        isFormDirty = false
-                        showDiscardConfirmation = false
-                        onDismiss()
-                        if (openScanner) onOpenScanner()
-                    }
-                ) { Text(stringResource(R.string.add_transaction_discard)) }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showDiscardConfirmation = false
-                        launchScannerAfterDiscard = false
-                    }
-                ) { Text(stringResource(R.string.add_transaction_keep_editing)) }
             }
-        )
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(0.88f),
+                shape = RoundedCornerShape(Dimens.BottomSheetRadius),
+                colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, AppPalette.cardBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(Dimens.PaddingExtraLarge),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
+                ) {
+                    Text(
+                        text = stringResource(R.string.add_transaction_discard_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = AppPalette.textPrimary
+                    )
+                    Text(
+                        text = stringResource(R.string.add_transaction_discard_message),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppPalette.textMuted
+                    )
+                    Spacer(Modifier.height(Dimens.PaddingMedium))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = {
+                                showDiscardConfirmation = false
+                                launchScannerAfterDiscard = false
+                            }
+                        ) { Text(stringResource(R.string.add_transaction_keep_editing), color = AppPalette.textMuted) }
+                        TextButton(
+                            onClick = {
+                                val openScanner = launchScannerAfterDiscard
+                                launchScannerAfterDiscard = false
+                                isFormDirty = false
+                                showDiscardConfirmation = false
+                                onDismiss()
+                                if (openScanner) onOpenScanner()
+                            }
+                        ) { Text(stringResource(R.string.add_transaction_discard), color = AppPalette.textPrimary) }
+                    }
+                }
+            }
+        }
     }
 }
 

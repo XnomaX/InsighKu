@@ -1,6 +1,5 @@
 package com.example.insightku.core.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,9 +9,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
@@ -30,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -139,27 +137,11 @@ fun FitText(
 // ─── Add pill ─────────────────────────────────────────────────────────────────
 
 /**
- * Non-scaling part of the pill: 12dp horizontal padding x2, 14dp icon, 4dp gap.
- * These are dp, so they stay constant at any font scale.
- */
-private val AddPillChrome = 42.dp
-
-/**
- * Width budget left for the label at the default font scale, i.e.
- * [Dimens.AddPillWidth] minus [AddPillChrome]. The widest shipped label — Indonesian
- * "Tambah Kategori" at `labelMedium` — measures ~100dp, so 102dp fits it without shrinking.
- */
-private val AddPillLabelBudget = Dimens.AddPillWidth - AddPillChrome
-
-/**
- * The uniform section-header "add" pill. Width is [Dimens.AddPillWidth] so Expense,
- * Income, Recurring and Installment headers all render the same shape; content is centred
- * so short labels ("Tambah", "Add") sit in the middle rather than hugging the start edge.
- *
- * Uses `Modifier.clickable` rather than the `Surface(onClick = ...)` overload: that
- * overload chains `minimumInteractiveComponentSize()`, which forces a 48dp minimum and
- * would grow every section header row. `clip` precedes `clickable` so the ripple follows
- * the pill outline.
+ * The uniform section-header "add" action, used by Expense Budgets, Income
+ * Sources, Recurring Payments and Installments.
+ * Quiet by design: no pill, no border. `FitText` + a bounded width keeps the
+ * longest Indonesian label ("Tambah Kategori") on the title row instead of
+ * pushing the action off to the right or wrapping to a second line.
  */
 @Composable
 fun AddPillButton(
@@ -169,42 +151,32 @@ fun AddPillButton(
     modifier: Modifier = Modifier,
     contentDescription: String? = null
 ) {
-    // The label is sp but the box is dp, so a large accessibility font scale would shrink
-    // the label to FIT_TEXT_MIN_SCALE and then ellipsize the primary CTA. Only the label
-    // budget scales — the icon and padding are dp and must not — and the result is capped
-    // so the pill cannot consume the row on a narrow screen. All four pills still get the
-    // same width at any given scale, which is what keeps them uniform.
-    val fontScale = LocalDensity.current.fontScale.coerceIn(1f, 1.4f)
-    val pillWidth = AddPillChrome + AddPillLabelBudget * fontScale
-
     Surface(
         modifier = modifier
-            .width(pillWidth)
-            .clip(RoundedCornerShape(50.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(50.dp),
-        color = AppPalette.card,
-        border = BorderStroke(1.dp, tint)
+        shape = RoundedCornerShape(8.dp),
+        color = Color.Transparent
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 Icons.Filled.Add,
                 contentDescription = contentDescription,
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(16.dp),
                 tint = tint
             )
             FitText(
                 text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.widthIn(max = 120.dp),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
                 color = tint,
-                textAlign = TextAlign.Center
+                maxLines = 1
             )
         }
     }
@@ -214,14 +186,9 @@ fun AddPillButton(
  * Section header for a list with an add action, used by Expense Budgets, Income Sources,
  * Recurring Payments and Installments.
  *
- * One component for all four so the title styles and the pill footprint cannot drift
- * apart again.
- *
- * The title column takes `weight(1f)`. `RowColumnMeasurePolicy` measures unweighted
- * children first and gives weighted ones only what remains, so the pill keeps its full
- * [Dimens.AddPillWidth] and the title shrinks instead — previously the title was unweighted too
- * and claimed the whole row, leaving the pill `remaining.coerceAtLeast(0)`, which clipped
- * its label and pushed it past the right edge of the cards below.
+ * One component for all four so the title styles and the add action cannot drift
+ * apart. The title column takes `weight(1f)` so a long localized title keeps the
+ * add action on the same row instead of wrapping to a second line.
  */
 @Composable
 fun SectionHeaderWithAdd(
@@ -245,12 +212,11 @@ fun SectionHeaderWithAdd(
             FitText(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
                 color = AppPalette.textPrimary,
                 // One line: wrapping to a second line grew the header row and pushed
-                // the pill and the list below it down ("text pindah ke bawah"), which
-                // read as a broken layout. Shrinking is the locale-proof behaviour;
-                // minScale 0.7 keeps the longest Indonesian title legible at 320dp.
+                // the add action and the list below it down, which read as a broken
+                // layout. Shrinking is the locale-proof behaviour; minScale 0.7 keeps
+                // the longest Indonesian title legible at 320dp.
                 maxLines = 1,
                 minScale = 0.7f
             )

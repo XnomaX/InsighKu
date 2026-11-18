@@ -1,7 +1,7 @@
 package com.example.insightku.feature.planning.goal.presentation
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -28,26 +28,24 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.insightku.R
 import com.example.insightku.core.ui.components.PremiumDatePicker
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
-import com.example.insightku.core.ui.theme.ExpenseRed
-import com.example.insightku.core.ui.theme.PurpleViolet
+import com.example.insightku.core.ui.theme.LocalAccent
 import com.example.insightku.feature.planning.goal.domain.model.Goal
 import java.time.LocalDate
 import java.time.ZoneId
@@ -141,76 +139,63 @@ fun GoalDetailScreen(
     }
 }
 
-// ─── Dialog-based Entry Point (Legacy) ───────────────────────────────────────────
-
 // ─── Main Content ────────────────────────────────────────────────────────────────
 
 @Composable
 private fun GoalDetailContent(uiState: GoalDetailUiState, onBack: () -> Unit, onEvent: (GoalDetailEvent) -> Unit) {
     val goal = uiState.goal ?: return
-    val goalColor = remember(goal.color) {
-        try {
-            Color(goal.color.toColorInt())
-        } catch (_: Exception) {
-            PurpleViolet
-        }
-    }
-    val animatedProgress by animateFloatAsState(targetValue = goal.progressPercent.toFloat() / 100f, animationSpec = spring(dampingRatio = 0.8f, stiffness = 200f), label = "progress")
+    // A single accent flows through every section, including the chart, so no
+    // section competes with the progress figure.
+    val accent = LocalAccent.current
+    val animatedProgress by animateFloatAsState(
+        targetValue = goal.progressPercent.toFloat() / 100f,
+        animationSpec = tween(300),
+        label = "progress"
+    )
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppPalette.background), contentPadding = PaddingValues(bottom = 120.dp)
+            .background(AppPalette.background),
+        contentPadding = PaddingValues(bottom = Dimens.ContentBottomPadding),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(Dimens.CardSpacing)
     ) {
-        item { PremiumDetailHeader(goal = goal, goalColor = goalColor, onBack = onBack, onEdit = { onEvent(GoalDetailEvent.EditGoal) }) }
-        item { GoalSummaryCard(goal = goal, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        item { PremiumDetailHeader(goal = goal, goalColor = accent, onBack = onBack, onEdit = { onEvent(GoalDetailEvent.EditGoal) }) }
+        item { GoalSummaryCard(goal = goal, goalColor = accent, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
 
-        // ── Completed Goal Banner ──────────────────────────────────────────
         if (goal.isCompleted) {
-            item { Spacer(Modifier.height(12.dp)); CompletedGoalBanner(goalName = goal.name, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+            item { CompletedGoalBanner(goalName = goal.name, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         }
 
-        item { Spacer(Modifier.height(12.dp)); ProgressSection(goal = goal, goalColor = goalColor, animatedProgress = animatedProgress, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        item { ProgressSection(goal = goal, goalColor = accent, animatedProgress = animatedProgress, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
 
-        // ── Deadline Warning Banner (not for completed/archived) ──────────
         if (!goal.isCompleted && !goal.isArchived) {
-            item { DeadlineWarningBanner(goal = goal, goalColor = goalColor, onExtend = { onEvent(GoalDetailEvent.ShowExtendDeadlineDialog) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+            item { DeadlineWarningBanner(goal = goal, onExtend = { onEvent(GoalDetailEvent.ShowExtendDeadlineDialog) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         }
 
-        item { Spacer(Modifier.height(12.dp)); ContributionSummarySection(uiState = uiState, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-        item { Spacer(Modifier.height(12.dp)); SavingsActivityCombinedCard(contributions = uiState.contributions, goalColor = goalColor, goalStartDate = goal.createdAt, goalDeadline = goal.deadline, targetAmount = goal.targetAmount, accountMap = uiState.accountMap, isLoadingMore = uiState.isLoadingMore, hasMore = uiState.hasMoreContributions, onLoadMore = { onEvent(GoalDetailEvent.LoadMoreContributions) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
-        item { Spacer(Modifier.height(12.dp)); TimelineSection(events = uiState.timelineEvents, goalColor = goalColor, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        item { ContributionSummarySection(uiState = uiState, goalColor = accent, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        item { SavingsActivityCombinedCard(contributions = uiState.contributions, goalColor = accent, goalStartDate = goal.createdAt, goalDeadline = goal.deadline, targetAmount = goal.targetAmount, accountMap = uiState.accountMap, isLoadingMore = uiState.isLoadingMore, hasMore = uiState.hasMoreContributions, onLoadMore = { onEvent(GoalDetailEvent.LoadMoreContributions) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        item { TimelineSection(events = uiState.timelineEvents, goalColor = accent, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
 
-        // ── Auto-allocation (not for completed/archived) ──────────────────
         if (!goal.isCompleted && !goal.isArchived) {
             item {
-                Spacer(Modifier.height(12.dp)); AutoAllocationSection(
-                rules = uiState.allocationRules,
-                goalColor = goalColor,
-                onAddRule = { onEvent(GoalDetailEvent.ShowAutoAllocationDialog) },
-                onEditRule = { onEvent(GoalDetailEvent.ShowEditAutoAllocationRule(it)) },
-                onToggleRule = { ruleId, enabled ->
-                    onEvent(
-                        GoalDetailEvent.ToggleAutoAllocationRule(
-                            ruleId,
-                            enabled
-                        )
-                    )
-                },
-                modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
-            )
+                AutoAllocationSection(
+                    rules = uiState.allocationRules,
+                    goalColor = accent,
+                    onAddRule = { onEvent(GoalDetailEvent.ShowAutoAllocationDialog) },
+                    onEditRule = { onEvent(GoalDetailEvent.ShowEditAutoAllocationRule(it)) },
+                    onToggleRule = { ruleId, enabled -> onEvent(GoalDetailEvent.ToggleAutoAllocationRule(ruleId, enabled)) },
+                    modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)
+                )
             }
         }
 
-        // ── Action buttons (only for active, non-completed goals) ─────────
         if (!goal.isPaused && !goal.isCompleted && !goal.isArchived) {
-            item { Spacer(Modifier.height(12.dp)); ActionButtonsSection(goal = goal, goalColor = goalColor, onContribute = { onEvent(GoalDetailEvent.ShowContributeDialog) }, onWithdraw = { onEvent(GoalDetailEvent.ShowWithdrawDialog) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+            item { ActionButtonsSection(goal = goal, goalColor = accent, onContribute = { onEvent(GoalDetailEvent.ShowContributeDialog) }, onWithdraw = { onEvent(GoalDetailEvent.ShowWithdrawDialog) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
         }
 
-        // ── Status Actions (for active/paused/non-completed goals) ────────
         if (goal.isActive || goal.isPaused || !goal.isCompleted) {
             item {
-                Spacer(Modifier.height(12.dp))
                 StatusActionsSection(
                     goal = goal,
                     onPause = { onEvent(GoalDetailEvent.PauseGoal) },
@@ -221,14 +206,14 @@ private fun GoalDetailContent(uiState: GoalDetailUiState, onBack: () -> Unit, on
             }
         }
 
-        item { Spacer(Modifier.height(24.dp)); DangerZoneSection(onArchive = { onEvent(GoalDetailEvent.ArchiveGoal) }, onDelete = { onEvent(GoalDetailEvent.DeleteGoal) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
+        item { DangerZoneSection(onArchive = { onEvent(GoalDetailEvent.ArchiveGoal) }, onDelete = { onEvent(GoalDetailEvent.DeleteGoal) }, modifier = Modifier.padding(horizontal = Dimens.ScreenHorizontalPadding)) }
     }
 }
 
 // ─── Deadline Warning Banner ──────────────────────────────────────────────────────
 
 @Composable
-private fun DeadlineWarningBanner(goal: Goal, goalColor: Color, onExtend: () -> Unit, modifier: Modifier = Modifier) {
+private fun DeadlineWarningBanner(goal: Goal, onExtend: () -> Unit, modifier: Modifier = Modifier) {
     val deadline = goal.deadline ?: return
     val today = LocalDate.now()
     val daysRemaining = ChronoUnit.DAYS.between(today, deadline).toInt()
@@ -238,59 +223,43 @@ private fun DeadlineWarningBanner(goal: Goal, goalColor: Color, onExtend: () -> 
 
     if (!isUrgent && !isOverdue) return
 
-    val bannerColor = if (isOverdue) ExpenseRed else goalColor
-    val icon = if (isOverdue) Icons.Outlined.ErrorOutline else Icons.Outlined.AccessTime
-    val title =
-        if (isOverdue) stringResource(R.string.goal_deadline_overdue) else pluralStringResource(
-            R.plurals.goal_deadline_urgent,
-            daysRemaining,
-            daysRemaining
-        )
+    val title = if (isOverdue) stringResource(R.string.goal_deadline_overdue) else pluralStringResource(
+        R.plurals.goal_deadline_urgent, daysRemaining, daysRemaining
+    )
     val subtitle = if (isOverdue) stringResource(R.string.goal_deadline_overdue_desc) else stringResource(R.string.goal_deadline_urgent_desc)
+    val icon = if (isOverdue) Icons.Outlined.ErrorOutline else Icons.Outlined.AccessTime
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimens.CardRadius),
-        color = bannerColor.copy(alpha = 0.07f),
-        border = BorderStroke(1.dp, bannerColor.copy(alpha = 0.2f))
+        color = AppPalette.card,
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(Dimens.CardInnerPaddingLarge),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier.size(40.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = bannerColor.copy(alpha = 0.8f), modifier = Modifier.size(24.dp))
-            }
-            Spacer(Modifier.width(10.dp))
+            Icon(icon, contentDescription = null, tint = AppPalette.textMuted, modifier = Modifier.size(Dimens.IconSizeMedium))
+            Spacer(Modifier.width(Dimens.PaddingMedium))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = bannerColor.copy(alpha = 0.9f)
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = AppPalette.textPrimary
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(Dimens.PaddingSmall))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = AppPalette.textMuted
                 )
             }
-            Spacer(Modifier.width(8.dp))
-            Surface(
-                onClick = onExtend,
-                shape = RoundedCornerShape(10.dp),
-                color = bannerColor.copy(alpha = 0.15f)
-            ) {
+            TextButton(onClick = onExtend) {
                 Text(
                     text = stringResource(R.string.goal_extend_deadline_btn),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = bannerColor
+                    style = MaterialTheme.typography.labelLarge,
+                    color = AppPalette.textPrimary
                 )
             }
         }

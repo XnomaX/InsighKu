@@ -174,11 +174,10 @@ private val IconColumnWidth = 32.dp
 @Composable
 private fun GroupHeading(title: String) {
     Text(
-        text = title.uppercase(),
+        text = title,
         style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Medium,
         color = SettingsPalette.Purple,
-        letterSpacing = 1.4.sp,
         modifier = Modifier.padding(bottom = Dimens.PaddingMedium)
     )
 }
@@ -265,7 +264,7 @@ private fun TrailingValue(value: String, chevron: Boolean = true) {
         Text(
             value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = SettingsPalette.Purple,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -333,7 +332,7 @@ private fun IdentityHeader() {
     Text(
         stringResource(R.string.settings_identity_subtitle),
         style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Medium,
         color = SettingsPalette.textPrimary,
         modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)
     )
@@ -390,15 +389,13 @@ private fun LanguageBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = Dimens.BottomSheetRadius, topEnd = Dimens.BottomSheetRadius),
         containerColor = SettingsPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
         tonalElevation = 0.dp,
-        dragHandle = { SheetDragHandle() }
     ) {
         Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
             Text(
                 text = stringResource(R.string.settings_language),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = SettingsPalette.textPrimary,
                 modifier = Modifier.padding(
                     horizontal = Dimens.CardInnerPaddingLarge,
@@ -437,7 +434,7 @@ private fun LanguageBottomSheet(
                                 AppLanguage.EN -> "English"
                             },
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                             color = if (isSelected) Purple else SettingsPalette.textPrimary
                         )
                     }
@@ -591,7 +588,7 @@ private fun <T> PillSelector(
                     Text(
                         label,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                         color = if (isSelected) Color.White else SettingsPalette.Purple,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
@@ -690,7 +687,7 @@ private fun HabitGoalSection(uiState: SettingsUiState, onEvent: (SettingsEvent) 
                     Text(
                         "${uiState.habitGoal}",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = SettingsPalette.textPrimary,
                         modifier = Modifier.width(40.dp),
                         textAlign = TextAlign.Center
@@ -762,15 +759,13 @@ private fun CurrencyBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = Dimens.BottomSheetRadius, topEnd = Dimens.BottomSheetRadius),
         containerColor = SettingsPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
         tonalElevation = 0.dp,
-        dragHandle = { SheetDragHandle() }
     ) {
         Column(modifier = Modifier.padding(bottom = Dimens.PaddingExtraLarge)) {
             Text(
                 text = stringResource(R.string.settings_choose_currency),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = SettingsPalette.textPrimary,
                 modifier = Modifier.padding(
                     horizontal = Dimens.CardInnerPaddingLarge,
@@ -800,7 +795,7 @@ private fun CurrencyBottomSheet(
                         Text(
                             text = option.region,
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                             color = if (isSelected) Purple else SettingsPalette.textPrimary
                         )
                         Text(
@@ -861,7 +856,7 @@ private fun SmartCaptureSection(
                 Text(
                     stringResource(R.string.settings_learn_categories_hint),
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = SettingsPalette.Purple
                 )
                 Spacer(Modifier.height(Dimens.PaddingMedium))
@@ -942,7 +937,7 @@ private fun BankNotificationSection(
                     Text(
                         stringResource(R.string.settings_notification_access_prompt),
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = SettingsPalette.textPrimary
                     )
                     Spacer(Modifier.height(Dimens.PaddingSmall))
@@ -1049,7 +1044,7 @@ private fun AccountSection(uiState: SettingsUiState, onEvent: (SettingsEvent) ->
                 Text(
                     uiState.userName.ifBlank { stringResource(R.string.settings_signed_in) },
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = SettingsPalette.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -1100,7 +1095,7 @@ private fun AppInfoFooter() {
         Text(
             stringResource(R.string.app_name),
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = SettingsPalette.textMuted
         )
         Text(

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -44,6 +45,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import com.example.insightku.R
@@ -53,9 +55,11 @@ import com.example.insightku.core.data.model.Installment
 import com.example.insightku.core.data.model.RecurringBudget
 import com.example.insightku.core.i18n.DateFormatter
 import com.example.insightku.core.i18n.NumberFormatter
+import com.example.insightku.core.ui.components.AddPillButton
 import com.example.insightku.core.ui.components.FitText
 import com.example.insightku.core.ui.components.SectionHeaderWithAdd
 import com.example.insightku.core.ui.components.dialogs.CategoryIconResolver
+import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.LocalAccent
 import java.util.concurrent.TimeUnit
@@ -236,45 +240,36 @@ fun RecurringPaymentCard(
 private fun RecurringEmptyState(onAdd: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
         border = BorderStroke(1.dp, Border)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(28.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(Purple.copy(alpha = 0.08f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Repeat, contentDescription = null, tint = Purple.copy(alpha = 0.5f), modifier = Modifier.size(26.dp))
-            }
-            Text(stringResource(R.string.recurring_empty), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
-            Text(stringResource(R.string.recurring_empty_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
-            Surface(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50.dp))
-                    .clickable(onClick = onAdd),
-                shape = RoundedCornerShape(50.dp),
-                color = AppPalette.card,
-                border = BorderStroke(1.dp, Purple)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = Purple)
-                    FitText(stringResource(R.string.recurring_add), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Purple)
-                }
-            }
+            Text(
+                stringResource(R.string.recurring_empty),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = AppPalette.textPrimary,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                stringResource(R.string.recurring_empty_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppPalette.textMuted,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(8.dp))
+            AddPillButton(
+                label = stringResource(R.string.recurring_add),
+                onClick = onAdd,
+                tint = Purple
+            )
         }
     }
 }
@@ -482,45 +477,36 @@ fun InstallmentCard(
 private fun InstallmentEmptyState(onAdd: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(Dimens.CardRadius),
         colors = CardDefaults.cardColors(containerColor = AppPalette.card),
         border = BorderStroke(1.dp, Border)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(28.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(AppPalette.cyan.copy(alpha = 0.08f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.CreditScore, contentDescription = null, tint = AppPalette.cyan.copy(alpha = 0.5f), modifier = Modifier.size(26.dp))
-            }
-            Text(stringResource(R.string.installment_section_empty), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
-            Text(stringResource(R.string.installment_empty_desc), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
-            Surface(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50.dp))
-                    .clickable(onClick = onAdd),
-                shape = RoundedCornerShape(50.dp),
-                color = AppPalette.card,
-                border = BorderStroke(1.dp, AppPalette.cyan)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = AppPalette.cyan)
-                    FitText(stringResource(R.string.installment_add_btn), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.cyan)
-                }
-            }
+            Text(
+                stringResource(R.string.installment_section_empty),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = AppPalette.textPrimary,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                stringResource(R.string.installment_empty_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppPalette.textMuted,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(8.dp))
+            AddPillButton(
+                label = stringResource(R.string.installment_add_btn),
+                onClick = onAdd,
+                tint = LocalAccent.current
+            )
         }
     }
 }
@@ -528,22 +514,20 @@ private fun InstallmentEmptyState(onAdd: () -> Unit) {
 // ─── Shared chips ─────────────────────────────────────────────────────────────
 
 @Composable
-private fun FrequencyChip(frequency: BudgetFrequency) {        val label = when (frequency) {
+private fun FrequencyChip(frequency: BudgetFrequency) {
+    val label = when (frequency) {
         BudgetFrequency.WEEKLY    -> stringResource(R.string.period_weekly)
         BudgetFrequency.BIWEEKLY  -> stringResource(R.string.recurring_biweekly)
         BudgetFrequency.MONTHLY   -> stringResource(R.string.period_monthly)
         BudgetFrequency.QUARTERLY -> stringResource(R.string.recurring_quarterly)
         BudgetFrequency.YEARLY    -> stringResource(R.string.recurring_yearly)
     }
-    Surface(shape = RoundedCornerShape(50), color = Purple.copy(alpha = 0.08f)) {
-        FitText(
-            text = label,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = Purple
-        )
-    }
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Medium,
+        color = AppPalette.textMuted
+    )
 }
 
 private enum class DueStatus { OVERDUE, TODAY, TOMORROW, SOON, NORMAL }
@@ -558,25 +542,19 @@ private fun dueStatusFor(daysUntilDue: Int): DueStatus = when {
 
 @Composable
 private fun DueChip(daysUntilDue: Int, status: DueStatus) {
-    val (label, bg, fg) = when (status) {
-        DueStatus.OVERDUE -> Triple(stringResource(R.string.recurring_overdue_by, -daysUntilDue), Red.copy(alpha = 0.12f),    Red)
-        DueStatus.TODAY   -> Triple(stringResource(R.string.recurring_due_today),        Orange.copy(alpha = 0.12f), Orange)
-        DueStatus.TOMORROW -> Triple(stringResource(R.string.recurring_due_tomorrow),    Orange.copy(alpha = 0.10f), Orange)
-        DueStatus.SOON    -> Triple(stringResource(R.string.recurring_due_in, daysUntilDue), Orange.copy(alpha = 0.08f), Orange)
-        DueStatus.NORMAL  -> Triple(
-            DateFormatter.formatShortDate(
-                System.currentTimeMillis() + TimeUnit.DAYS.toMillis(daysUntilDue.toLong())
-            ),
-            AppPalette.cardBorder, AppPalette.textMuted
+    val label = when (status) {
+        DueStatus.OVERDUE -> stringResource(R.string.recurring_overdue_by, -daysUntilDue)
+        DueStatus.TODAY   -> stringResource(R.string.recurring_due_today)
+        DueStatus.TOMORROW -> stringResource(R.string.recurring_due_tomorrow)
+        DueStatus.SOON    -> stringResource(R.string.recurring_due_in, daysUntilDue)
+        DueStatus.NORMAL  -> DateFormatter.formatShortDate(
+            System.currentTimeMillis() + TimeUnit.DAYS.toMillis(daysUntilDue.toLong())
         )
     }
-    Surface(shape = RoundedCornerShape(50), color = bg) {
-        FitText(
-            text = label,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = fg
-        )
-    }
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Medium,
+        color = AppPalette.textMuted
+    )
 }

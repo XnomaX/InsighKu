@@ -68,15 +68,6 @@ fun GoalActionsBottomSheet(
         sheetState = sheetState,
         containerColor = AppPalette.card,
         shape = RoundedCornerShape(Dimens.BottomSheetRadius),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .width(Dimens.BottomSheetHandleWidth)
-                    .height(Dimens.BottomSheetHandleHeight)
-                    .clip(RoundedCornerShape(Dimens.BottomSheetHandleRadius))
-                    .background(AppPalette.cardBorder)
-            )
-        }
     ) {
         Column(
             modifier = Modifier
@@ -100,7 +91,7 @@ fun GoalActionsBottomSheet(
                     Icon(imageVector = getGoalIcon(goal.iconName), contentDescription = null, tint = goalColor, modifier = Modifier.size(24.dp))
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(goal.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                    Text(goal.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                     Text(
                         text = "${goal.progressPercent.toInt()}% · ${stringResource(R.string.goal_actions_sheet_target, com.example.insightku.core.i18n.NumberFormatter.formatCurrencyCompact(goal.targetAmount))}",
                         style = MaterialTheme.typography.bodySmall,
@@ -187,7 +178,7 @@ private fun GoalActionRow(
             Icon(icon, null, tint = iconTint, modifier = Modifier.size(22.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+            Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
         }
         Icon(Icons.Outlined.ChevronRight, null, tint = AppPalette.textMuted, modifier = Modifier.size(18.dp))

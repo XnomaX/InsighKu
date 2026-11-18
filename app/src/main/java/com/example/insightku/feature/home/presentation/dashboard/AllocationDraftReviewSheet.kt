@@ -1,5 +1,7 @@
 package com.example.insightku.feature.home.presentation.dashboard
 
+import com.example.insightku.core.ui.components.bottomsheet.SheetHeader
+import com.example.insightku.core.ui.theme.Dimens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -63,9 +65,7 @@ fun AllocationDraftReviewSheet(
 ) {
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         containerColor = AppPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8)
     ) {
         Column(
             modifier = Modifier
@@ -73,34 +73,17 @@ fun AllocationDraftReviewSheet(
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.allocation_review_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = stringResource(R.string.allocation_review_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AppPalette.textMuted
-                    )
-                }
-            }
+            SheetHeader(
+                title = stringResource(R.string.allocation_review_title),
+                subtitle = stringResource(R.string.allocation_review_subtitle)
+            )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
 
-            // Allocation Details Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = AppPalette.cardElevated),
-                border = BorderStroke(1.dp, AppPalette.cardBorder)
+            // Allocation details
+            Column(
+                modifier = Modifier.padding(horizontal = Dimens.BottomSheetContentPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -119,8 +102,8 @@ fun AllocationDraftReviewSheet(
                         )
                         Text(
                             text = NumberFormatter.formatCurrency(draft.allocationAmount ?: 0.0),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
                             color = SuccessColor
                         )
                     }

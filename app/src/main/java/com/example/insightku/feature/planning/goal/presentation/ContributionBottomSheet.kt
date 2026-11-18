@@ -1,5 +1,6 @@
 package com.example.insightku.feature.planning.goal.presentation
 
+import com.example.insightku.core.ui.theme.Dimens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -65,7 +66,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -122,29 +122,11 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(AppPalette.cardBorder)
-                )
-            }
-        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .navigationBarsPadding()
                 .padding(bottom = 32.dp)
         ) {
             // ── 1. Goal Header ──────────────────────────────────────────
@@ -163,8 +145,8 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
                         modifier = Modifier.size(26.dp)
                     )
                 }
-                Column(modifier = Modifier.weight(1f)) { Text(text = stringResource(R.string.contribution_saving_to), style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted); Text(text = goal.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                Surface(shape = RoundedCornerShape(10.dp), color = goalColor.copy(alpha = 0.12f)) { Text(text = "${goal.progressPercent.toInt()}%", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = goalColor, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) } }
+                Column(modifier = Modifier.weight(1f)) { Text(text = stringResource(R.string.contribution_saving_to), style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted); Text(text = goal.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                Surface(shape = RoundedCornerShape(10.dp), color = goalColor.copy(alpha = 0.12f)) { Text(text = "${goal.progressPercent.toInt()}%", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium, color = goalColor, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) } }
 
             Spacer(Modifier.height(16.dp))
 
@@ -174,13 +156,13 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column {
                             Text(stringResource(R.string.goal_contribution_current_progress), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                            Text("${currentPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                            Text("${currentPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                         }
                         if (showPreview) {
                             Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = AppPalette.textMuted.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("${stringResource(R.string.goal_dialog_after)} ${stringResource(R.string.goal_dialog_after_contribution)}", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                                Text("${newPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = goalColor)
+                                Text("${newPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = goalColor)
                             }
                         }
                     }
@@ -197,20 +179,13 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
                                 .fillMaxWidth(animatedDisplayPercent)
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(5.dp))
-                                .background(
-                                    Brush.horizontalGradient(
-                                        listOf(
-                                            goalColor.copy(alpha = 0.7f),
-                                            goalColor
-                                        )
-                                    )
-                                )
+                                .background(LocalAccent.current)
                         )
                     }
                     Spacer(Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(stringResource(R.string.goal_summary_remaining), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                        Text(NumberFormatter.formatCurrency(remainingTarget), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(NumberFormatter.formatCurrency(remainingTarget), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     }
                 }
             }
@@ -218,19 +193,19 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
             Spacer(Modifier.height(16.dp))
 
             // ── 3. Amount ──────────────────────────────────────────────
-            Text(text = stringResource(R.string.contribution_amount), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+            Text(text = stringResource(R.string.contribution_amount), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
             OutlinedTextField(value = if (amount.isEmpty()) "" else NumberFormatter.formatNumber(amount.toDoubleOrNull() ?: 0.0), onValueChange = { amount = it.filter { c -> c.isDigit() }.take(12) }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("0", color = AppPalette.textMuted.copy(alpha = 0.5f)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = goalColor, unfocusedBorderColor = AppPalette.cardBorder, focusedContainerColor = AppPalette.cardElevated, unfocusedContainerColor = AppPalette.cardElevated))
 
             Spacer(Modifier.height(12.dp))
 
             // ── 4. Quick Amount Chips ──────────────────────────────────
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 2.dp)) { items(quickAmounts) { quickAmount -> Surface(onClick = { amount = quickAmount.toString() }, shape = RoundedCornerShape(12.dp), color = if (parsedAmount == quickAmount.toDouble()) goalColor else AppPalette.cardElevated, border = BorderStroke(1.dp, if (parsedAmount == quickAmount.toDouble()) goalColor else AppPalette.cardBorder)) { Text(text = "+${when { quickAmount >= 1_000_000 -> "${quickAmount / 1_000_000}M"; quickAmount >= 1_000 -> "${quickAmount / 1_000}K"; else -> quickAmount.toString() }}", style = MaterialTheme.typography.labelLarge, fontWeight = if (parsedAmount == quickAmount.toDouble()) FontWeight.Bold else FontWeight.Medium, color = if (parsedAmount == quickAmount.toDouble()) Color.White else AppPalette.textPrimary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) } } }
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 2.dp)) { items(quickAmounts) { quickAmount -> Surface(onClick = { amount = quickAmount.toString() }, shape = RoundedCornerShape(12.dp), color = if (parsedAmount == quickAmount.toDouble()) goalColor else AppPalette.cardElevated, border = BorderStroke(1.dp, if (parsedAmount == quickAmount.toDouble()) goalColor else AppPalette.cardBorder)) { Text(text = "+${when { quickAmount >= 1_000_000 -> "${quickAmount / 1_000_000}M"; quickAmount >= 1_000 -> "${quickAmount / 1_000}K"; else -> quickAmount.toString() }}", style = MaterialTheme.typography.labelLarge, fontWeight = if (parsedAmount == quickAmount.toDouble()) FontWeight.Medium else FontWeight.Medium, color = if (parsedAmount == quickAmount.toDouble()) Color.White else AppPalette.textPrimary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) } } }
 
             Spacer(Modifier.height(12.dp))
 
             // ── 5. From Account ────────────────────────────────────────
             var accountExpanded by remember { mutableStateOf(false) }
-            Text(text = stringResource(R.string.goal_dialog_from_account), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+            Text(text = stringResource(R.string.goal_dialog_from_account), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
             val fallbackColor = LocalAccent.current
             val accountColor = remember(selectedAccount?.color) {
                 try {
@@ -258,7 +233,7 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        if (selectedAccount != null) { Text(selectedAccount.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(selectedAccount.balance), style = MaterialTheme.typography.bodySmall, color = if (selectedAccount.balance > 0) SuccessColor else ExpenseRed) }
+                        if (selectedAccount != null) { Text(selectedAccount.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(selectedAccount.balance), style = MaterialTheme.typography.bodySmall, color = if (selectedAccount.balance > 0) SuccessColor else ExpenseRed) }
                         else { Text(stringResource(R.string.goal_dialog_select_source), style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted) }
                     }
                     Icon(imageVector = if (accountExpanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown, contentDescription = null, tint = AppPalette.textMuted, modifier = Modifier.size(22.dp))
@@ -310,7 +285,7 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
                                     )
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(account.balance), style = MaterialTheme.typography.bodySmall, color = if (account.balance > 0) SuccessColor else ExpenseRed)
                                 }
                                 if (isSelected) { Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = acctColor, modifier = Modifier.size(20.dp)) }
@@ -329,7 +304,7 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)), border = BorderStroke(1.dp, color.copy(alpha = 0.2f))) {
                     Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Icon(imageVector = Icons.Outlined.Warning, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-                        Column(modifier = Modifier.weight(1f)) { Text(text = msg, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = color); Text(text = stringResource(R.string.contribution_insufficient_cash_detail, NumberFormatter.formatCurrency(shortfall)), style = MaterialTheme.typography.bodySmall, color = color.copy(alpha = 0.8f)) }
+                        Column(modifier = Modifier.weight(1f)) { Text(text = msg, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = color); Text(text = stringResource(R.string.contribution_insufficient_cash_detail, NumberFormatter.formatCurrency(shortfall)), style = MaterialTheme.typography.bodySmall, color = color.copy(alpha = 0.8f)) }
                     }
                 }
             }
@@ -347,12 +322,13 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(Dimens.ButtonHeightPrimary),
                 enabled = isValid,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(Dimens.ButtonRadius),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = goalColor,
-                    disabledContainerColor = goalColor.copy(alpha = 0.3f)
+                    containerColor = LocalAccent.current,
+                    contentColor = AppPalette.textPrimary,
+                    disabledContainerColor = AppPalette.cardBorder
                 )
             ) {
                 Icon(
@@ -362,7 +338,7 @@ fun ContributionBottomSheet(goal: Goal, accounts: List<Account>, accountAllocati
                 ); Spacer(modifier = Modifier.width(10.dp)); Text(
                 text = stringResource(R.string.contribution_save_to_goal),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Medium
             )
             }
             Spacer(Modifier.height(8.dp))
@@ -413,29 +389,11 @@ fun WithdrawalBottomSheet(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(AppPalette.cardBorder)
-                )
-            }
-        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .navigationBarsPadding()
                 .padding(bottom = 32.dp)
         ) {
             // ── 1. Goal Header ──────────────────────────────────────────
@@ -454,8 +412,8 @@ fun WithdrawalBottomSheet(
                         modifier = Modifier.size(26.dp)
                     )
                 }
-                Column(modifier = Modifier.weight(1f)) { Text(text = stringResource(R.string.contribution_withdrawing_from), style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted); Text(text = goal.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                Surface(shape = RoundedCornerShape(10.dp), color = goalColor.copy(alpha = 0.12f)) { Text(text = NumberFormatter.formatCurrency(goal.currentAmount), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = goalColor, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) } }
+                Column(modifier = Modifier.weight(1f)) { Text(text = stringResource(R.string.contribution_withdrawing_from), style = MaterialTheme.typography.labelMedium, color = AppPalette.textMuted); Text(text = goal.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                Surface(shape = RoundedCornerShape(10.dp), color = goalColor.copy(alpha = 0.12f)) { Text(text = NumberFormatter.formatCurrency(goal.currentAmount), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = goalColor, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) } }
 
             Spacer(Modifier.height(16.dp))
 
@@ -465,13 +423,13 @@ fun WithdrawalBottomSheet(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column {
                             Text(stringResource(R.string.goal_contribution_current_progress), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                            Text("${currentPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                            Text("${currentPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                         }
                         if (showPreview) {
                             Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = AppPalette.textMuted.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("${stringResource(R.string.goal_dialog_after)} ${stringResource(R.string.goal_dialog_after_withdrawal)}", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                                Text("${newPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = goalColor)
+                                Text("${newPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = goalColor)
                             }
                         }
                     }
@@ -488,20 +446,13 @@ fun WithdrawalBottomSheet(
                                 .fillMaxWidth(animatedDisplayPercent)
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(5.dp))
-                                .background(
-                                    Brush.horizontalGradient(
-                                        listOf(
-                                            goalColor.copy(alpha = 0.7f),
-                                            goalColor
-                                        )
-                                    )
-                                )
+                                .background(LocalAccent.current)
                         )
                     }
                     Spacer(Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(stringResource(R.string.goal_summary_remaining), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                        Text(NumberFormatter.formatCurrency(remainingTarget), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(NumberFormatter.formatCurrency(remainingTarget), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     }
                 }
             }
@@ -509,7 +460,7 @@ fun WithdrawalBottomSheet(
             Spacer(Modifier.height(16.dp))
 
             // ── 3. Amount ──────────────────────────────────────────────
-            Text(text = stringResource(R.string.contribution_amount), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+            Text(text = stringResource(R.string.contribution_amount), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
             OutlinedTextField(value = if (amount.isEmpty()) "" else NumberFormatter.formatNumber(amount.toDoubleOrNull() ?: 0.0), onValueChange = { amount = it.filter { c -> c.isDigit() }.take(12) }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("0", color = AppPalette.textMuted.copy(alpha = 0.5f)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = goalColor, unfocusedBorderColor = AppPalette.cardBorder, focusedContainerColor = AppPalette.cardElevated, unfocusedContainerColor = AppPalette.cardElevated), isError = parsedAmount > goal.currentAmount)
 
             Spacer(Modifier.height(12.dp))
@@ -534,7 +485,7 @@ fun WithdrawalBottomSheet(
                         Text(
                             text = "-${label}",
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Medium,
                             color = if (isSelected) Color.White else AppPalette.textPrimary,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
                         )
@@ -546,7 +497,7 @@ fun WithdrawalBottomSheet(
 
             // ── 5. To Account ──────────────────────────────────────────
             var accountExpanded by remember { mutableStateOf(false) }
-            Text(text = stringResource(R.string.goal_dialog_to_account), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+            Text(text = stringResource(R.string.goal_dialog_to_account), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
             val fallbackColor = LocalAccent.current
             val accountColor = remember(selectedAccount?.color) {
                 try {
@@ -574,7 +525,7 @@ fun WithdrawalBottomSheet(
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        if (selectedAccount != null) { Text(selectedAccount.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(selectedAccount.balance), style = MaterialTheme.typography.bodySmall, color = if (selectedAccount.balance > 0) SuccessColor else ExpenseRed) }
+                        if (selectedAccount != null) { Text(selectedAccount.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(selectedAccount.balance), style = MaterialTheme.typography.bodySmall, color = if (selectedAccount.balance > 0) SuccessColor else ExpenseRed) }
                         else { Text(stringResource(R.string.goal_dialog_select_destination), style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted) }
                     }
                     Icon(imageVector = if (accountExpanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown, contentDescription = null, tint = AppPalette.textMuted, modifier = Modifier.size(22.dp))
@@ -626,7 +577,7 @@ fun WithdrawalBottomSheet(
                                     )
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(account.balance), style = MaterialTheme.typography.bodySmall, color = if (account.balance > 0) SuccessColor else ExpenseRed)
                                 }
                                 if (isSelected) { Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = acctColor, modifier = Modifier.size(20.dp)) }
@@ -644,7 +595,7 @@ fun WithdrawalBottomSheet(
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)), border = BorderStroke(1.dp, color.copy(alpha = 0.2f))) {
                     Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Icon(imageVector = Icons.Outlined.Warning, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-                        Text(text = msg, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = color, modifier = Modifier.weight(1f))
+                        Text(text = msg, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = color, modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -662,12 +613,13 @@ fun WithdrawalBottomSheet(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(Dimens.ButtonHeightPrimary),
                 enabled = isValid,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(Dimens.ButtonRadius),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = goalColor,
-                    disabledContainerColor = goalColor.copy(alpha = 0.3f)
+                    containerColor = LocalAccent.current,
+                    contentColor = AppPalette.textPrimary,
+                    disabledContainerColor = AppPalette.cardBorder
                 )
             ) {
                 Icon(
@@ -677,7 +629,7 @@ fun WithdrawalBottomSheet(
                 ); Spacer(modifier = Modifier.width(10.dp)); Text(
                 text = stringResource(R.string.withdraw),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Medium
             )
             }
             Spacer(Modifier.height(8.dp))

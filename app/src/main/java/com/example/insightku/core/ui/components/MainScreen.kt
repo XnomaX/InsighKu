@@ -3,10 +3,7 @@ package com.example.insightku.core.ui.components
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -45,6 +42,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.example.insightku.core.ui.components.FitText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -541,10 +539,10 @@ fun PremiumBottomNav(
 
     Surface(
         modifier        = modifier.fillMaxWidth(),
-        shape           = RoundedCornerShape(32.dp),
+        shape           = RoundedCornerShape(28.dp),
         color           = NavBg,
         tonalElevation  = 0.dp,
-        // Border-only: the elevation shadow drew a dark band across the content above.
+        // Hairline only: an elevation shadow drew a dark band across the content above.
         shadowElevation = 0.dp,
         border          = androidx.compose.foundation.BorderStroke(
             1.dp, NavBorder
@@ -553,7 +551,7 @@ fun PremiumBottomNav(
         Row(
             modifier              = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 10.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment     = Alignment.CenterVertically
         ) {
@@ -599,69 +597,45 @@ private fun BottomNavTabItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val NavPurple = LocalAccent.current // global accent — recolors the nav live
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed         by interactionSource.collectIsPressedAsState()
-
-    val iconScale by animateFloatAsState(
-        targetValue   = when {
-            isPressed  -> 0.88f
-            isSelected -> 1.08f
-            else       -> 1f
-        },
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
-        label         = "icon_scale_${item.route}"
-    )
-
-    val pillWidth by animateDpAsState(
-        targetValue   = if (isSelected) 56.dp else 40.dp,
-        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-        label         = "pill_width_${item.route}"
-    )
-
-    val pillAlpha by animateFloatAsState(
-        targetValue   = if (isSelected) 1f else 0f,
-        animationSpec = tween(200),
-        label         = "pill_alpha_${item.route}"
-    )
+    val NavAccent = LocalAccent.current
 
     Column(
         modifier              = Modifier
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalAlignment   = Alignment.CenterHorizontally,
         verticalArrangement   = Arrangement.spacedBy(4.dp)
     ) {
-        // Icon with animated pill background
+        // 12dp top pad centres the 20dp icon on the 44dp add-button circle.
+        Icon(
+            imageVector        = item.icon,
+            contentDescription = stringResource(item.labelRes),
+            modifier = Modifier
+                .padding(top = 12.dp)
+                .size(20.dp),
+            tint               = if (isSelected) NavAccent else NavInactive
+        )
+
+        // Signature: a small dot marks the active tab. No pill background,
+        // so the bar stays quiet and the add button reads as the only primary.
         Box(
             modifier          = Modifier
-                .width(pillWidth)
-                .height(32.dp)
-                .clip(RoundedCornerShape(50.dp))
-                .background(NavPurple.copy(alpha = pillAlpha * 0.10f)),
-            contentAlignment  = Alignment.Center
-        ) {                val label = stringResource(item.labelRes)
-                Icon(
-                    imageVector        = item.icon,
-                    contentDescription = label,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .scale(iconScale),
-                    tint               = if (isSelected) NavPurple else NavInactive
-                )
-        }
+                .width(4.dp)
+                .height(4.dp)
+                .clip(CircleShape)
+                .background(if (isSelected) NavAccent else Color.Transparent)
+        )
 
-        // Label
-        Text(
+        // Label: FitText shrinks long Indonesian labels ("Perencanaan") to a
+        // single line instead of wrapping and doubling the bar height.
+        FitText(
             text       = stringResource(item.labelRes),
             style      = MaterialTheme.typography.labelSmall,
-            fontSize   = 10.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color      = if (isSelected) NavPurple else NavInactive
+            fontSize   = 11.sp,
+            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+            color      = if (isSelected) NavAccent else NavInactive,
+            maxLines   = 1,
+            minScale   = 0.75f
         )
     }
 }
@@ -670,13 +644,13 @@ private fun BottomNavTabItem(
 
 @Composable
 fun CenterAddButton(onClick: () -> Unit) {
-    val NavPurple = LocalAccent.current // global accent — recolors the add button live
+    val NavAccent = LocalAccent.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed         by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
-        targetValue   = if (isPressed) 0.90f else 1f,
-        animationSpec = spring(dampingRatio = 0.4f, stiffness = 600f),
+        targetValue   = if (isPressed) 0.95f else 1f,
+        animationSpec = tween(durationMillis = 120),
         label         = "add_scale"
     )
 
@@ -691,18 +665,19 @@ fun CenterAddButton(onClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // The one primary on the bar: solid accent, neutral soft shadow only.
         Box(
             modifier = Modifier
                 .size(44.dp)
                 .scale(scale)
                 .shadow(
-                    elevation = 4.dp,
+                    elevation = 3.dp,
                     shape = CircleShape,
-                    ambientColor = NavPurple.copy(alpha = 0.15f),
-                    spotColor = NavPurple.copy(alpha = 0.20f)
+                    ambientColor = Color.Black.copy(alpha = 0.08f),
+                    spotColor = Color.Black.copy(alpha = 0.10f)
                 )
                 .clip(CircleShape)
-                .background(NavPurple),
+                .background(NavAccent),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -716,9 +691,9 @@ fun CenterAddButton(onClick: () -> Unit) {
         Text(
             text       = stringResource(R.string.nav_add),
             style      = MaterialTheme.typography.labelSmall,
-            fontSize   = 10.sp,
+            fontSize   = 11.sp,
             fontWeight = FontWeight.SemiBold,
-            color      = NavPurple
+            color      = NavAccent
         )
     }
 }

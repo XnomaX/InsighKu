@@ -1,5 +1,6 @@
 package com.example.insightku.feature.planning.goal.presentation
 
+import com.example.insightku.core.ui.components.bottomsheet.SheetHeader
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -306,67 +307,23 @@ fun AutoAllocationDialog(
             topStart = Dimens.BottomSheetRadius,
             topEnd = Dimens.BottomSheetRadius
         ),
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(AppPalette.cardBorder)
-                )
-            }
-        }
     ) {
         // ── Header ──────────────────────────────────────────────────────
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 28.dp)
-                .padding(bottom = 20.dp)
-        ) {
-            Surface(shape = RoundedCornerShape(50), color = goalColor.copy(alpha = 0.10f)) {
-                Text(
-                    text = stringResource(R.string.auto_alloc_chip),
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = goalColor
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(if (isEditing) R.string.auto_alloc_edit_rule else R.string.auto_alloc_new_rule),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = AppPalette.textPrimary
+        Box(modifier = Modifier.fillMaxWidth()) {
+            SheetHeader(
+                title = stringResource(if (isEditing) R.string.auto_alloc_edit_rule else R.string.auto_alloc_new_rule),
+                subtitle = stringResource(R.string.auto_alloc_configure)
+            )
+            if (isEditing && onDelete != null) {
+                IconButton(
+                    onClick = { showDeleteConfirm = true },
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.DeleteOutline,
+                        contentDescription = stringResource(R.string.delete),
+                        tint = AppPalette.textMuted
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.auto_alloc_configure),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted
-                    )
-                }
-                if (isEditing && onDelete != null) {
-                    IconButton(onClick = { showDeleteConfirm = true }) {
-                        Icon(
-                            imageVector = Icons.Outlined.DeleteOutline,
-                            contentDescription = stringResource(R.string.delete),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
                 }
             }
         }
@@ -379,8 +336,7 @@ fun AutoAllocationDialog(
                 .verticalScroll(rememberScrollState())
                 .background(AppPalette.background)
                 .padding(horizontal = 24.dp)
-                .padding(vertical = 16.dp)
-                .navigationBarsPadding(),
+                .padding(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CompactTriggerSelector(
@@ -440,8 +396,7 @@ fun AutoAllocationDialog(
                     Text(
                         text = stringResource(R.string.auto_alloc_rounding_mode),
                         style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.2.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = AppPalette.textMuted
                     )
                     val roundingModes = listOf(
@@ -463,7 +418,7 @@ fun AutoAllocationDialog(
                                 Text(
                                     text = label,
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = if (isSel) FontWeight.SemiBold else FontWeight.Normal,
+                                    fontWeight = if (isSel) FontWeight.Medium else FontWeight.Normal,
                                     color = if (isSel) goalColor else AppPalette.textMuted,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
                                     maxLines = 1
@@ -625,8 +580,7 @@ fun AutoAllocationDialog(
                     Text(
                         text = stringResource(R.string.auto_alloc_categories),
                         style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.2.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = AppPalette.textMuted
                     )
                     // Compact chip grid
@@ -672,7 +626,7 @@ fun AutoAllocationDialog(
                                             Text(
                                                 text = cat.name,
                                                 style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                                                 color = AppPalette.textPrimary,
                                                 maxLines = 1
                                             )
@@ -687,8 +641,7 @@ fun AutoAllocationDialog(
                     Text(
                         text = stringResource(R.string.auto_alloc_execution_mode),
                         style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.2.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = AppPalette.textMuted
                     )
                     val modes = listOf(
@@ -712,7 +665,7 @@ fun AutoAllocationDialog(
                                 Text(
                                     text = label,
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = if (isSel) FontWeight.SemiBold else FontWeight.Normal,
+                                    fontWeight = if (isSel) FontWeight.Medium else FontWeight.Normal,
                                     color = if (isSel) goalColor else AppPalette.textMuted,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
                                     maxLines = 1
@@ -773,7 +726,7 @@ fun AutoAllocationDialog(
                     Text(
                         stringResource(if (isEditing) R.string.auto_alloc_update_rule else R.string.auto_alloc_create_rule),
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = Color.White
                     )
                 }
@@ -836,8 +789,7 @@ private fun CompactTriggerSelector(
         Text(
             text = stringResource(R.string.auto_alloc_trigger),
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         Spacer(Modifier.height(8.dp))
@@ -865,7 +817,7 @@ private fun CompactTriggerSelector(
                     Text(
                         text = selectedOption.label,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = AppPalette.textPrimary
                     )
                     Text(
@@ -924,7 +876,7 @@ private fun CompactTriggerSelector(
                                     Text(
                                         text = option.label,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                        fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Medium,
                                         color = if (isSelected) accentColor else AppPalette.textPrimary
                                     )
                                     Text(
@@ -976,8 +928,7 @@ private fun InlineField(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         OutlinedTextField(
@@ -986,7 +937,7 @@ private fun InlineField(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             placeholder = { Text(placeholder, color = AppPalette.placeholder) },
-            prefix = { Text(prefix, fontWeight = FontWeight.Bold, color = accentColor) },
+            prefix = { Text(prefix, fontWeight = FontWeight.Medium, color = accentColor) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -1018,8 +969,7 @@ private fun AccountSelector(
         Text(
             text = stringResource(R.string.auto_alloc_source_account),
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         when {
@@ -1037,7 +987,7 @@ private fun AccountSelector(
                     ) {
                         Icon(Icons.Outlined.AccountBalance, null, tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.auto_alloc_create_account_first), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary)
+                            Text(stringResource(R.string.auto_alloc_create_account_first), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                             Text(stringResource(R.string.auto_alloc_need_account), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                         }
                         if (onNavigateToAccounts != null) {
@@ -1051,7 +1001,7 @@ private fun AccountSelector(
                             ) {
                                 Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Icon(Icons.Outlined.Add, null, tint = accentColor, modifier = Modifier.size(14.dp))
-                                    Text(stringResource(R.string.auto_alloc_create_account), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = accentColor)
+                                    Text(stringResource(R.string.auto_alloc_create_account), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = accentColor)
                                 }
                             }
                         }
@@ -1068,7 +1018,7 @@ private fun AccountSelector(
                     Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Icons.Outlined.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.auto_alloc_account_unavailable), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.auto_alloc_account_unavailable), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -1119,7 +1069,7 @@ private fun AccountPickerChips(
                             Color(account.color.toColorInt()) } catch (_: Exception) { accentColor }, modifier = Modifier.size(16.dp))
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(account.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(account.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(CurrencyUtils.formatAmountCompact(account.balance), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted, maxLines = 1)
                     }
                     if (isSelected) {
@@ -1152,8 +1102,7 @@ private fun AllocationValueSelector(
         Text(
             text = stringResource(R.string.auto_alloc_amount),
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1196,10 +1145,10 @@ private fun AllocationValueSelector(
                 )
             },
             prefix = if (allocationType == AllocationValueType.FIXED) {
-                { Text(NumberFormatter.getCurrencySymbol(), fontWeight = FontWeight.Bold, color = accentColor) }
+                { Text(NumberFormatter.getCurrencySymbol(), fontWeight = FontWeight.Medium, color = accentColor) }
             } else null,
             suffix = if (allocationType == AllocationValueType.PERCENT) {
-                { Text("%", fontWeight = FontWeight.Bold, color = accentColor) }
+                { Text("%", fontWeight = FontWeight.Medium, color = accentColor) }
             } else null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             shape = RoundedCornerShape(12.dp),
@@ -1246,7 +1195,7 @@ private fun InlineConfirmationToggle(
                 Text(
                     text = stringResource(R.string.auto_alloc_confirmation),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = AppPalette.textPrimary
                 )
                 Text(
@@ -1283,8 +1232,7 @@ private fun CompactTimePicker(
         Text(
             text = stringResource(R.string.auto_alloc_execution_time),
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         Surface(
@@ -1300,7 +1248,7 @@ private fun CompactTimePicker(
             ) {
                 // Hour
                 TimeAdjuster(value = hour, onDecrement = { onHourChange((hour - 1 + 24) % 24) }, onIncrement = { onHourChange((hour + 1) % 24) }, accentColor = accentColor)
-                Text(" : ", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                Text(" : ", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                 // Minute
                 TimeAdjuster(value = minute, onDecrement = { onMinuteChange((minute - 15 + 60) % 60) }, onIncrement = { onMinuteChange((minute + 15) % 60) }, accentColor = accentColor)
             }
@@ -1320,13 +1268,13 @@ private fun TimeAdjuster(value: Int, onDecrement: () -> Unit, onIncrement: () ->
             color = AppPalette.cardElevated
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text("-", fontWeight = FontWeight.Bold, color = accentColor)
+                Text("-", fontWeight = FontWeight.Medium, color = accentColor)
             }
         }
         Text(
             text = value.toString().padStart(2, '0'),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Medium,
             color = accentColor,
             modifier = Modifier.width(36.dp),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -1340,7 +1288,7 @@ private fun TimeAdjuster(value: Int, onDecrement: () -> Unit, onIncrement: () ->
             color = AppPalette.cardElevated
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text("+", fontWeight = FontWeight.Bold, color = accentColor)
+                Text("+", fontWeight = FontWeight.Medium, color = accentColor)
             }
         }
     }
@@ -1367,8 +1315,7 @@ private fun WeekDayPicker(
         Text(
             text = stringResource(R.string.auto_alloc_execution_day),
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1384,7 +1331,7 @@ private fun WeekDayPicker(
                     border = BorderStroke(1.dp, if (isSelected) accentColor else AppPalette.cardBorder)
                 ) {
                     Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                        Text(dayLabel, style = MaterialTheme.typography.labelSmall, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, color = if (isSelected) Color.White else AppPalette.textMuted)
+                        Text(dayLabel, style = MaterialTheme.typography.labelSmall, fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Medium, color = if (isSelected) Color.White else AppPalette.textMuted)
                     }
                 }
             }
@@ -1407,8 +1354,7 @@ private fun MonthDayPickerCompact(
         Text(
             text = stringResource(R.string.auto_alloc_day_of_month),
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         // Common day presets in a grid
@@ -1430,7 +1376,7 @@ private fun MonthDayPickerCompact(
                             border = BorderStroke(1.dp, if (isSelected) accentColor else AppPalette.cardBorder)
                         ) {
                             Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                                Text(dayLabels[day] ?: "$day", style = MaterialTheme.typography.labelSmall, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, color = if (isSelected) Color.White else AppPalette.textMuted)
+                                Text(dayLabels[day] ?: "$day", style = MaterialTheme.typography.labelSmall, fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal, color = if (isSelected) Color.White else AppPalette.textMuted)
                             }
                         }
                     }
@@ -1452,8 +1398,7 @@ private fun CompactBiweeklyDatePicker(
         Text(
             text = stringResource(R.string.auto_alloc_start_date),
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         val today = LocalDate.now()

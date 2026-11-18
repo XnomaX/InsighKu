@@ -78,7 +78,7 @@
     <string name="goal_updated">Tujuan diperbarui</string>
     <string name="goal_restored_active">Tujuan dipulihkan ke aktif</string>
     <string name="goal_permanently_deleted">Tujuan dihapus permanen</string>
-    <string name="goal_completed_congrats">Selamat! Tujuan tercapai!</string>
+    <string name="goal_completed_congrats">Tujuan selesai</string>
     <string name="goal_completed_funds_transferred">Tujuan tercapai — dana ditransfer</string>
     <string name="goal_deleted_funds_transferred">Tujuan dihapus — dana ditransfer</string>
     <string name="goal_paused">Tujuan dijeda</string>
@@ -108,6 +108,7 @@
         <item quantity="other">%1$d kategori dipantau</item>
     </plurals>
     <string name="budget_spent_label">%1$s terpakai</string>
+    <string name="budget_spent_of_limit">%1$s dari %2$s</string>
     <string name="budget_insight_over">Pengeluaran %1$s sudah melewati anggaran</string>
     <string name="budget_insight_warning">Anggaran %1$s hampir terpakai</string>
     <plurals name="budget_insight_safe">
@@ -318,9 +319,15 @@
     <string name="account_delete_button">Hapus</string>
 
     <!-- Goals -->
-    <string name="goals_empty_title">Belum Ada Tujuan</string>
-    <string name="goals_empty_desc">Tetapkan tujuan tabungan pertama Anda.</string>
+    <string name="goals_empty_title">Belum ada tujuan</string>
+    <string name="goals_empty_desc">Tentukan satu hal yang ingin kamu tabung, lalu mulai catat progresnya</string>
     <string name="goals_create">Buat Tujuan</string>
+    <string name="goals_total_saved">Total terkumpul</string>
+    <string name="goals_total_of">Dari %1$s untuk %2$d tujuan aktif</string>
+    <string name="goal_card_collected">Terkumpul</string>
+    <string name="goal_card_collected_of">%1$s dari %2$s</string>
+    <string name="goal_card_deadline">Tenggat %1$s</string>
+
     <string name="goals_active">Aktif</string>
     <string name="goals_archive">Arsipkan Tujuan?</string>
     <string name="goals_archive_confirm">Arsipkan</string>
@@ -328,6 +335,7 @@
     <string name="goal_savings_overview">Ringkasan Tabungan</string>
     <string name="goal_savings_overview_desc">Lacak progres Anda menuju tujuan ini</string>
     <string name="goal_deposits">Setoran</string>
+    <string name="goal_contrib_none">Belum ada</string>
     <string name="goal_latest">Terbaru</string>
     <string name="goal_average">Rata-rata</string>
     <string name="goal_last_deposit_date">Setoran Terakhir</string>
@@ -966,8 +974,9 @@
 
     <!-- Goal Card -->
     <string name="goal_card_left">%1$s tersisa</string>
-    <string name="goal_card_overdue">Terlambat</string>
+    <string name="goal_card_overdue">Lewat tenggat</string>
     <string name="goal_card_due_today">Jatuh tempo hari ini</string>
+
     <plurals name="goal_card_days_left">
         <item quantity="other">%1$d hari tersisa</item>
     </plurals>
@@ -983,12 +992,12 @@
         <item quantity="other">%1$d diarsipkan</item>
     </plurals>
     <string name="goals_no_active">Tidak ada tujuan aktif</string>
-    <string name="goals_no_active_desc">Buat tujuan baru untuk mulai menabung menuju sesuatu yang bermakna.</string>
+    <string name="goals_no_active_desc">Buat tujuan baru untuk mulai menabung</string>
     <string name="goals_no_paused">Tidak ada tujuan dijeda</string>
-    <string name="goals_no_paused_desc">Ketika Anda menjeda tujuan, tujuan akan muncul di sini.</string>
+    <string name="goals_no_paused_desc">Tujuan yang dijeda akan muncul di sini</string>
     <string name="goals_completed_tab">Selesai</string>
     <string name="goals_no_completed">Tidak ada tujuan selesai</string>
-    <string name="goals_no_completed_desc">Ketika Anda menyelesaikan tujuan, tujuan akan muncul di sini.</string>
+    <string name="goals_no_completed_desc">Tujuan yang selesai akan muncul di sini</string>
     <string name="goals_no_archived">Tidak ada tujuan yang diarsipkan</string>
 
     <!-- Goal Redesign — Completed Card -->
@@ -1033,9 +1042,9 @@
     <string name="goal_status_paused">Dijeda</string>
 
     <!-- Goal Redesign — Celebration -->
-    <string name="goal_celebration_title">Tujuan Tercapai! \uD83C\uDF89</string>
-    <string name="goal_celebration_desc">Selamat! Anda telah mencapai target untuk \"%1$s\".</string>
-    <string name="goal_celebration_dismiss">Mantap!</string>
+    <string name="goal_celebration_title">Tujuan tercapai</string>
+    <string name="goal_celebration_desc">Target untuk \"%1$s\" sudah terpenuhi</string>
+    <string name="goal_celebration_dismiss">Selesai</string>
 
     <!-- Contribution Screen -->
 
@@ -1173,7 +1182,7 @@
 
     <!-- Savings Activity Chart -->
     <string name="chart_cumulative_balance">Saldo Saat Ini</string>
-    <string name="chart_net_change">Perubahan Bersih</string>
+    <string name="chart_net_change">Perubahan bersih %1$s</string>
     <string name="chart_tooltip_balance">Saldo</string>
     <string name="chart_tooltip_progress">Progress</string>
 
@@ -1182,8 +1191,8 @@
     <string name="goal_timeline_created_desc">"%1$s" telah dibuat</string>
     <string name="goal_timeline_first_contribution">Setoran Pertama</string>
     <string name="goal_timeline_first_contribution_desc">Mulai menabung menuju tujuan ini</string>
-    <string name="goal_timeline_completed">Target Tercapai!</string>
-    <string name="goal_timeline_completed_desc">Berhasil mencapai jumlah target</string>
+    <string name="goal_timeline_completed">Target tercapai</string>
+    <string name="goal_timeline_completed_desc">Jumlah target terpenuhi</string>
     <string name="goal_timeline_milestone">Pencapaian %1$d%%</string>
     <string name="goal_timeline_milestone_desc">Mencapai %1$d%% dari target</string>
 
@@ -1437,7 +1446,7 @@
     <!-- Goal Detail - Status Actions Section -->
     <string name="goal_status_actions_title">Aksi Status</string>
     <string name="goal_status_actions_subtitle">Kelola kemajuan tujuan ini</string>
-    <string name="goal_completed_banner_desc">%1$s telah tercapai!</string>
+    <string name="goal_completed_banner_desc">%1$s mencapai targetnya</string>
 
     <!-- Error messages -->
     <string name="error_load_accounts">Gagal memuat akun</string>

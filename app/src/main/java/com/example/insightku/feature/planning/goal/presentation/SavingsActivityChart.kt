@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.PaintingStyle
@@ -37,8 +35,6 @@ import com.example.insightku.R
 import com.example.insightku.core.i18n.LocaleHelper
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.theme.AppPalette
-import com.example.insightku.core.ui.theme.ExpenseRed
-import com.example.insightku.core.ui.theme.SuccessColor
 import com.example.insightku.feature.planning.goal.domain.model.Contribution
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
@@ -161,6 +157,21 @@ internal fun ChartCardContent(
             }
         }
 
+        // Quiet hairlines: axis lines, ticks and a muted grid so the trend has
+        // a frame and the reader can see where each value sits.
+        val axisLine = rememberLineComponent(
+            fill = Fill(AppPalette.cardBorder),
+            thickness = 1.dp,
+        )
+        val axisTick = rememberLineComponent(
+            fill = Fill(AppPalette.cardBorder),
+            thickness = 1.dp,
+        )
+        val axisGuideline = rememberLineComponent(
+            fill = Fill(AppPalette.cardBorder.copy(alpha = 0.6f)),
+            thickness = 1.dp,
+        )
+
         CartesianChartHost(
             chart = rememberCartesianChart(
                 rememberLineCartesianLayer(
@@ -168,14 +179,7 @@ internal fun ChartCardContent(
                         LineCartesianLayer.rememberLine(
                             fill = LineCartesianLayer.LineFill.single(Fill(goalColor)),
                             areaFill = LineCartesianLayer.AreaFill.single(
-                                fill = Fill(
-                                    Brush.verticalGradient(
-                                        listOf(
-                                            goalColor.copy(alpha = 0.25f),
-                                            goalColor.copy(alpha = 0.0f),
-                                        ),
-                                    ),
-                                ),
+                                fill = Fill(goalColor.copy(alpha = 0.08f)),
                             ),
                             interpolator = LineCartesianLayer.Interpolator.cubic(),
                         ),
@@ -185,8 +189,8 @@ internal fun ChartCardContent(
                             override fun getMinX(minX: Double, maxX: Double, extraStore: ExtraStore) = minX
                             override fun getMaxX(minX: Double, maxX: Double, extraStore: ExtraStore) =
                                 deadlineXMillis?.toDouble() ?: maxX
-                            override fun getMinY(minY: Double, maxY: Double, extraStore: ExtraStore) = minY
-                            override fun getMaxY(minY: Double, maxY: Double, extraStore: ExtraStore) = maxY
+                            override fun getMinY(minY: Double, maxY: Double, extraStore: ExtraStore) = minOf(0.0, minY)
+                            override fun getMaxY(minY: Double, maxY: Double, extraStore: ExtraStore) = maxOf(maxY, 1.0)
                         }
                     },
                 ),
@@ -194,7 +198,9 @@ internal fun ChartCardContent(
                     valueFormatter = CartesianValueFormatter { _, y, _ ->
                         NumberFormatter.formatCurrencyCompact(y)
                     },
-                    line = null,
+                    line = axisLine,
+                    tick = axisTick,
+                    guideline = axisGuideline,
                 ),
                 bottomAxis = HorizontalAxis.rememberBottom(
                     valueFormatter = xAxisFormatter,
@@ -202,7 +208,9 @@ internal fun ChartCardContent(
                         spacing = { maxOf(1, points.size / 6) },
                         addExtremeLabelPadding = true,
                     ),
-                    line = null,
+                    line = axisLine,
+                    tick = axisTick,
+                    guideline = null,
                 ),
                 decorations = if (deadlineDecoration != null) {
                     listOf(deadlineDecoration)
@@ -247,39 +255,20 @@ private fun ChartSummaryHeader(points: List<ChartPoint>, goalColor: Color) {
             Text(
                 NumberFormatter.formatCurrency(points.lastOrNull()?.balance ?: 0.0),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = goalColor,
+                fontWeight = FontWeight.Medium,
+                color = AppPalette.textPrimary,
             )
         }
         if (points.size >= 2) {
             val change = points.last().balance - points.first().balance
-            val isPositive = change >= 0
-            val chipColor = if (isPositive) SuccessColor else ExpenseRed
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = chipColor.copy(alpha = 0.10f),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.chart_net_change).uppercase(),
-                        style = TextStyle(
-                            fontSize = 9.sp,
-                            letterSpacing = 0.5.sp,
-                            color = chipColor,
-                        ),
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = "${if (isPositive) "+" else ""}${NumberFormatter.formatCurrencyCompact(change)}",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = chipColor,
-                    )
-                }
-            }
+            Text(
+                text = stringResource(
+                    R.string.chart_net_change,
+                    "${if (change >= 0) "+" else ""}${NumberFormatter.formatCurrencyCompact(change)}"
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppPalette.textMuted,
+            )
         }
     }
 }
@@ -446,8 +435,8 @@ private fun rememberSavingsMarker(
         }
     }
 
-    val depositColor = SuccessColor
-    val withdrawalColor = ExpenseRed
+    val depositColor = AppPalette.textPrimary
+    val withdrawalColor = AppPalette.textPrimary
     val textPrimary = AppPalette.textPrimary
     val textMuted = AppPalette.textMuted
     val cardColor = AppPalette.card

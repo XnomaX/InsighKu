@@ -1,5 +1,7 @@
 package com.example.insightku.feature.planning.budget.presentation
 
+import com.example.insightku.core.ui.theme.Dimens
+import com.example.insightku.core.ui.components.bottomsheet.SheetHeader
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -179,7 +181,7 @@ fun SheetIconPicker(
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 private val SheetPurple: Color  @Composable get() = LocalAccent.current
-private val SheetCyan    = Color(0xFF06B6D4)
+private val SheetCyan: Color @Composable get() = LocalAccent.current
 private val SheetBorder: Color  @Composable get() = AppPalette.cardBorder
 private val SheetBg: Color      @Composable get() = AppPalette.background
 
@@ -231,47 +233,12 @@ fun AddRecurringPaymentDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest   = onDismiss,
         containerColor     = AppPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(SheetBorder)
-                )
-            }
-        }
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Header
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 8.dp)
-            ) {
-                Surface(shape = RoundedCornerShape(50), color = SheetPurple.copy(alpha = 0.10f)) {
-                    Text(stringResource(R.string.recurring_sheet_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = SheetPurple)
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(if (editing != null) stringResource(R.string.recurring_sheet_edit) else stringResource(R.string.recurring_sheet_add),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-                Text(stringResource(R.string.recurring_sheet_desc),
-                    style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
-            }
-
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(SheetBorder)
+            SheetHeader(
+                title = if (editing != null) stringResource(R.string.recurring_sheet_edit) else stringResource(R.string.recurring_sheet_add),
+                subtitle = stringResource(R.string.recurring_sheet_desc)
             )
 
             // Form
@@ -280,9 +247,8 @@ fun AddRecurringPaymentDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .background(SheetBg)
-                    .padding(24.dp)
-                    .navigationBarsPadding(),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
             ) {
                 SheetFormField(label = stringResource(R.string.recurring_form_name), value = name,
                     onValueChange = { name = it; nameError = null },
@@ -296,8 +262,7 @@ fun AddRecurringPaymentDialog(
 
                 // Icon picker
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.recurring_form_icon), style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.recurring_form_icon), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     SheetIconPicker(
                         icons = recurringIcons,
                         selectedLabel = selectedIconLabel,
@@ -311,8 +276,7 @@ fun AddRecurringPaymentDialog(
                 // Category selector
                 if (availableCategories.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.category_label), style = MaterialTheme.typography.labelSmall,
-                            letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.category_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         SheetCategorySelector(
                             categories = availableCategories,
                             selectedId = selectedCategoryId,
@@ -325,8 +289,7 @@ fun AddRecurringPaymentDialog(
                 // Account selector
                 if (accounts.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.account_label), style = MaterialTheme.typography.labelSmall,
-                            letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.account_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         SheetAccountSelector(
                             accounts = accounts,
                             selectedAccountId = selectedAccountId,
@@ -336,14 +299,12 @@ fun AddRecurringPaymentDialog(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.recurring_form_frequency), style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.recurring_form_frequency), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     SheetFrequencySelector(selected = frequency, onSelect = { frequency = it }, accentColor = SheetPurple)
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.recurring_form_next_due), style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.recurring_form_next_due), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -356,7 +317,7 @@ fun AddRecurringPaymentDialog(
                             horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(DateFormatter.formatFullDate(nextDue),
                                 style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
-                            Icon(Icons.Default.EditCalendar, null, tint = Color(0xFFB39DDB), modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.EditCalendar, null, tint = AppPalette.textMuted, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -372,7 +333,7 @@ fun AddRecurringPaymentDialog(
                         border   = BorderStroke(1.dp, SheetBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
+                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         }
                     }
                     Box(
@@ -414,7 +375,7 @@ fun AddRecurringPaymentDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(if (editing != null) stringResource(R.string.recurring_save_changes) else stringResource(R.string.recurring_add_payment_btn),
-                            style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                            style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color.White)
                     }
                 }
             }
@@ -505,7 +466,7 @@ fun AddInstallmentDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = { state.selectedDateMillis?.let { nextDue = it }; showDatePicker = false }) {
-                    Text(stringResource(R.string.dialog_ok), fontWeight = FontWeight.Bold, color = SheetCyan)
+                    Text(stringResource(R.string.dialog_ok), fontWeight = FontWeight.Medium, color = SheetCyan)
                 }
             },
             dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) } }
@@ -515,56 +476,21 @@ fun AddInstallmentDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor   = AppPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(SheetBorder)
-                )
-            }
-        }
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 8.dp)
-            ) {
-                Surface(shape = RoundedCornerShape(50), color = SheetCyan.copy(alpha = 0.10f)) {
-                    Text(stringResource(R.string.installment_sheet_chip), Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = SheetCyan)
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(if (editing != null) stringResource(R.string.installment_sheet_edit) else stringResource(R.string.installment_sheet_add),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-                Text(stringResource(R.string.installment_sheet_desc),
-                    style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
-            }
-
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(SheetBorder)
+            SheetHeader(
+                title = if (editing != null) stringResource(R.string.installment_sheet_edit) else stringResource(R.string.installment_sheet_add),
+                subtitle = stringResource(R.string.installment_sheet_desc)
             )
+
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .background(SheetBg)
-                    .padding(24.dp)
-                    .navigationBarsPadding(),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge)
             ) {
                 SheetFormField(label = stringResource(R.string.installment_form_name), value = name,
                     onValueChange = { name = it; nameError = null },
@@ -578,8 +504,7 @@ fun AddInstallmentDialog(
 
                 // Icon picker
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.installment_form_icon), style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.installment_form_icon), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     SheetIconPicker(
                         icons = installmentIcons,
                         selectedLabel = selectedIconLabel,
@@ -592,8 +517,7 @@ fun AddInstallmentDialog(
 
                 // Smart Monthly Payment / Total Months fields
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(stringResource(R.string.installment_form_details), style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.installment_form_details), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     Text(stringResource(R.string.installment_form_auto_hint),
                         style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted.copy(alpha = 0.7f))
                 }
@@ -628,8 +552,7 @@ fun AddInstallmentDialog(
                 // Category selector
                 if (availableCategories.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.category_label), style = MaterialTheme.typography.labelSmall,
-                            letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.category_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         SheetCategorySelector(
                             categories  = availableCategories,
                             selectedId  = selectedCategoryId,
@@ -642,8 +565,7 @@ fun AddInstallmentDialog(
                 // Account selector
                 if (accounts.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.account_label), style = MaterialTheme.typography.labelSmall,
-                            letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.account_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         SheetAccountSelector(
                             accounts = accounts,
                             selectedAccountId = selectedAccountId,
@@ -668,12 +590,12 @@ fun AddInstallmentDialog(
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(stringResource(R.string.recurring_remaining), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                                     Text(NumberFormatter.formatCurrency(remaining.toDouble()),
-                                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = SheetCyan)
+                                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = SheetCyan)
                                 }
                                 Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(stringResource(R.string.installment_progress_label), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
                                     Text("$progressPercent%",
-                                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color(0xFF7C4DFF))
+                                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = LocalAccent.current)
                                 }
                             }
                             // Progress bar
@@ -682,8 +604,8 @@ fun AddInstallmentDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(6.dp)
-                                    .clip(RoundedCornerShape(50.dp)),
-                                color = Color(0xFF7C4DFF),
+                                    .clip(RoundedCornerShape(Dimens.CornerRadiusMedium)),
+                                color = LocalAccent.current,
                                 trackColor = SheetBorder
                             )
                             Text(
@@ -700,8 +622,7 @@ fun AddInstallmentDialog(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.next_due_date_label), style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.next_due_date_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -714,7 +635,7 @@ fun AddInstallmentDialog(
                             horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(DateFormatter.formatFullDate(nextDue),
                                 style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
-                            Icon(Icons.Default.EditCalendar, null, tint = Color(0xFFB39DDB), modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.EditCalendar, null, tint = AppPalette.textMuted, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -730,7 +651,7 @@ fun AddInstallmentDialog(
                         border   = BorderStroke(1.dp, SheetBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF6B6B8A))
+                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         }
                     }
                     Box(
@@ -789,7 +710,7 @@ fun AddInstallmentDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(if (editing != null) stringResource(R.string.recurring_save_changes) else stringResource(R.string.installment_add_btn),
-                            style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                            style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color.White)
                     }
                 }
             }
@@ -841,7 +762,7 @@ private fun SheetCategorySelector(
                         }
                         Text(cat.name,
                             style      = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                             color      = if (isSelected) catColor else AppPalette.textMuted,
                             maxLines   = 2,
                             textAlign  = androidx.compose.ui.text.style.TextAlign.Center)
@@ -902,7 +823,7 @@ private fun SheetAccountSelector(
                         }
                         Text(account.name,
                             style      = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                             color      = if (isSelected) accountColor else AppPalette.textMuted,
                             maxLines   = 2,
                             textAlign  = androidx.compose.ui.text.style.TextAlign.Center)
@@ -929,14 +850,13 @@ internal fun SheetFormField(
     description: String? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(label, style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+        Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
         OutlinedTextField(
             value         = value,
             onValueChange = onValueChange,
             modifier      = Modifier.fillMaxWidth(),
-            placeholder   = { Text(placeholder, color = Color(0xFFBDBDBD)) },
-            prefix        = if (prefix != null) {{ Text(prefix, fontWeight = FontWeight.Bold, color = accentColor) }} else null,
+            placeholder   = { Text(placeholder, color = AppPalette.textMuted) },
+            prefix        = if (prefix != null) {{ Text(prefix, fontWeight = FontWeight.Medium, color = accentColor) }} else null,
             singleLine    = true,
             isError       = error != null,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
@@ -946,11 +866,11 @@ internal fun SheetFormField(
                 unfocusedBorderColor    = SheetBorder,
                 focusedContainerColor   = AppPalette.card,
                 unfocusedContainerColor = AppPalette.card,
-                errorBorderColor        = Color(0xFFEF4444)
+                errorBorderColor        = AppPalette.error
             )
         )
         if (error != null) {
-            Text(error, style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF4444))
+            Text(error, style = MaterialTheme.typography.labelSmall, color = AppPalette.error)
         }
         if (description != null && error == null) {
             Text(description, style = MaterialTheme.typography.labelSmall, color = accentColor.copy(alpha = 0.6f))
@@ -976,7 +896,7 @@ internal fun SheetFrequencySelector(
             val isSelected = selected == freq
             Surface(
                 modifier = Modifier.clickable { onSelect(freq) },
-                shape    = RoundedCornerShape(50.dp),
+                shape    = RoundedCornerShape(Dimens.CornerRadiusMedium),
                 color    = if (isSelected) accentColor else AppPalette.card,
                 border   = BorderStroke(1.dp, if (isSelected) accentColor else SheetBorder)
             ) {
@@ -984,8 +904,8 @@ internal fun SheetFrequencySelector(
                     label,
                     modifier   = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     style      = MaterialTheme.typography.labelMedium,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color      = if (isSelected) Color.White else Color(0xFF6B6B8A)
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+                    color      = if (isSelected) Color.White else AppPalette.textMuted
                 )
             }
         }

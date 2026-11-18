@@ -79,7 +79,7 @@
     <string name="goal_updated">Goal updated</string>
     <string name="goal_restored_active">Goal restored to active</string>
     <string name="goal_permanently_deleted">Goal permanently deleted</string>
-    <string name="goal_completed_congrats">Congratulations! Goal completed!</string>
+    <string name="goal_completed_congrats">Goal completed</string>
     <string name="goal_completed_funds_transferred">Goal completed — funds transferred</string>
     <string name="goal_deleted_funds_transferred">Goal deleted — funds transferred</string>
     <string name="goal_paused">Goal paused</string>
@@ -112,6 +112,7 @@
         <item quantity="other">%1$d categories monitored</item>
     </plurals>
     <string name="budget_spent_label">%1$s spent</string>
+    <string name="budget_spent_of_limit">%1$s of %2$s</string>
     <string name="budget_insight_over">%1$s spending has exceeded the budget</string>
     <string name="budget_insight_warning">%1$s budget is nearly reached</string>
     <plurals name="budget_insight_safe">
@@ -384,9 +385,15 @@
     <string name="account_delete_button">Delete</string>
 
     <!-- Goals -->
-    <string name="goals_empty_title">No Goals Yet</string>
-    <string name="goals_empty_desc">Set your first savings goal and start tracking your progress.</string>
-    <string name="goals_create">Create Goal</string>
+    <string name="goals_empty_title">No goals yet</string>
+    <string name="goals_empty_desc">Pick one thing to save for, then start tracking your progress</string>
+    <string name="goals_create">Create goal</string>
+    <string name="goals_total_saved">Total saved</string>
+    <string name="goals_total_of">Of %1$s across %2$d active goals</string>
+    <string name="goal_card_collected">Collected</string>
+    <string name="goal_card_collected_of">%1$s of %2$s</string>
+    <string name="goal_card_deadline">Due %1$s</string>
+
     <string name="goals_active">Active</string>
     <string name="goals_archive">Archive Goal?</string>
     <string name="goals_archive_confirm">Archive</string>
@@ -394,6 +401,7 @@
     <string name="goal_savings_overview">Savings Overview</string>
     <string name="goal_savings_overview_desc">Track your progress towards this goal</string>
     <string name="goal_deposits">Deposits</string>
+    <string name="goal_contrib_none">None yet</string>
     <string name="goal_latest">Latest</string>
     <string name="goal_average">Average</string>
     <string name="goal_last_deposit_date">Last Deposit</string>
@@ -1026,8 +1034,9 @@
 
     <!-- Goal Card -->
     <string name="goal_card_left">%1$s left</string>
-    <string name="goal_card_overdue">Overdue</string>
+    <string name="goal_card_overdue">Past due</string>
     <string name="goal_card_due_today">Due today</string>
+
     <plurals name="goal_card_days_left">
         <item quantity="one">%1$d day left</item>
         <item quantity="other">%1$d days left</item>
@@ -1045,12 +1054,12 @@
         <item quantity="other">%1$d archived</item>
     </plurals>
     <string name="goals_no_active">No active goals</string>
-    <string name="goals_no_active_desc">Create a new goal to start saving towards something meaningful.</string>
+    <string name="goals_no_active_desc">Create a new goal to start saving</string>
     <string name="goals_no_paused">No paused goals</string>
-    <string name="goals_no_paused_desc">When you pause a goal, it\'ll appear here.</string>
+    <string name="goals_no_paused_desc">Paused goals will appear here</string>
     <string name="goals_completed_tab">Completed</string>
     <string name="goals_no_completed">No completed goals</string>
-    <string name="goals_no_completed_desc">When you complete a goal, it\'ll appear here.</string>
+    <string name="goals_no_completed_desc">Completed goals will appear here</string>
     <string name="goals_no_archived">No archived goals</string>
 
     <!-- Goal Redesign — Completed Card -->
@@ -1096,9 +1105,9 @@
     <string name="goal_status_paused">Paused</string>
 
     <!-- Goal Redesign — Celebration -->
-    <string name="goal_celebration_title">Goal Achieved! \uD83C\uDF89</string>
-    <string name="goal_celebration_desc">Congratulations! You\'ve reached your target for \"%1$s\".</string>
-    <string name="goal_celebration_dismiss">Awesome!</string>
+    <string name="goal_celebration_title">Goal reached</string>
+    <string name="goal_celebration_desc">The target for \"%1$s\" is met</string>
+    <string name="goal_celebration_dismiss">Done</string>
 
     <!-- Contribution Screen -->
 
@@ -1249,7 +1258,7 @@
 
     <!-- Savings Activity Chart -->
     <string name="chart_cumulative_balance">Current Balance</string>
-    <string name="chart_net_change">Net Change</string>
+    <string name="chart_net_change">Net change %1$s</string>
     <string name="chart_tooltip_balance">Balance</string>
     <string name="chart_tooltip_progress">Progress</string>
 
@@ -1258,8 +1267,8 @@
     <string name="goal_timeline_created_desc">\"%1$s\" was created</string>
     <string name="goal_timeline_first_contribution">First Contribution</string>
     <string name="goal_timeline_first_contribution_desc">Started saving towards the goal</string>
-    <string name="goal_timeline_completed">Goal Achieved!</string>
-    <string name="goal_timeline_completed_desc">Successfully reached the target amount</string>
+    <string name="goal_timeline_completed">Goal completed</string>
+    <string name="goal_timeline_completed_desc">Target amount reached</string>
     <string name="goal_timeline_milestone">%1$d%% Milestone</string>
     <string name="goal_timeline_milestone_desc">Reached %1$d%% of the target</string>
 
@@ -1522,7 +1531,7 @@
     <!-- Goal Detail - Status Actions Section -->
     <string name="goal_status_actions_title">Status Actions</string>
     <string name="goal_status_actions_subtitle">Manage this goal\'s progress</string>
-    <string name="goal_completed_banner_desc">%1$s has been achieved!</string>
+    <string name="goal_completed_banner_desc">%1$s reached its target</string>
 
     <!-- Error messages -->
     <string name="error_load_accounts">Failed to load accounts</string>

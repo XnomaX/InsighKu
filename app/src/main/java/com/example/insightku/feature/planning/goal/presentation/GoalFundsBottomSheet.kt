@@ -1,5 +1,6 @@
 package com.example.insightku.feature.planning.goal.presentation
 
+import com.example.insightku.core.ui.theme.Dimens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -99,30 +100,12 @@ fun GoalFundsBottomSheet(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(AppPalette.cardBorder)
-                )
-            }
-        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
-                .navigationBarsPadding()
                 .padding(bottom = 32.dp)
         ) {
             // ── Goal header ─────────────────────────────────────────────
@@ -142,7 +125,7 @@ fun GoalFundsBottomSheet(
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = stringResource(if (isDelete) R.string.goal_delete_funds_title else R.string.goal_complete_funds_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                    Text(text = stringResource(if (isDelete) R.string.goal_delete_funds_title else R.string.goal_complete_funds_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                     Text(text = goalName, style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
@@ -153,7 +136,7 @@ fun GoalFundsBottomSheet(
             Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = AppPalette.cardElevated, border = BorderStroke(1.dp, AppPalette.cardBorder)) {
                 Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.goal_funds_total), style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted)
-                    Text(NumberFormatter.formatCurrency(totalFunds), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = parsedGoalColor)
+                    Text(NumberFormatter.formatCurrency(totalFunds), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = parsedGoalColor)
                 }
             }
 
@@ -174,7 +157,7 @@ fun GoalFundsBottomSheet(
                 ) {
                     Icon(imageVector = if (isDelete) Icons.AutoMirrored.Outlined.Undo else Icons.Outlined.Savings, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(10.dp))
-                    Text(stringResource(if (isDelete) R.string.goal_funds_return else R.string.goal_funds_keep), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(if (isDelete) R.string.goal_funds_return else R.string.goal_funds_keep), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                 }
                 Spacer(Modifier.height(10.dp))
                 OutlinedButton(
@@ -189,7 +172,7 @@ fun GoalFundsBottomSheet(
                 ) {
                     Icon(imageVector = Icons.Outlined.SwapHoriz, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(10.dp))
-                    Text(stringResource(R.string.goal_funds_transfer), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.goal_funds_transfer), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                 }
                 if (destinationAccounts.isEmpty()) {
                     Spacer(Modifier.height(8.dp))
@@ -197,7 +180,7 @@ fun GoalFundsBottomSheet(
                 }
             } else {
                 // ── Transfer mode: destination picker ───────────────────
-                Text(stringResource(R.string.goal_funds_select_account), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                Text(stringResource(R.string.goal_funds_select_account), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                 Spacer(Modifier.height(8.dp))
                 Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = AppPalette.cardElevated, border = BorderStroke(1.dp, AppPalette.cardBorder)) {
                     Column(modifier = Modifier.heightIn(max = 280.dp)) {
@@ -237,7 +220,7 @@ fun GoalFundsBottomSheet(
                                     )
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(com.example.insightku.core.utils.CurrencyUtils.formatAmountCompact(account.balance), style = MaterialTheme.typography.bodySmall, color = if (account.balance > 0) SuccessColor else ExpenseRed)
                                 }
                                 if (isSelected) { Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = acctColor, modifier = Modifier.size(20.dp)) }
@@ -251,14 +234,17 @@ fun GoalFundsBottomSheet(
                     onClick = { selectedAccountId?.let { onTransfer(it) } },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp),
+                        .height(Dimens.ButtonHeightPrimary),
                     enabled = selectedAccountId != null,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = parsedGoalColor)
+                    shape = RoundedCornerShape(Dimens.ButtonRadius),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = LocalAccent.current,
+                        contentColor = AppPalette.textPrimary
+                    )
                 ) {
                     Icon(imageVector = Icons.Outlined.SwapHoriz, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(10.dp))
-                    Text(stringResource(R.string.goal_funds_confirm_transfer), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.goal_funds_confirm_transfer), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                 }
                 Spacer(Modifier.height(10.dp))
                 TextButton(

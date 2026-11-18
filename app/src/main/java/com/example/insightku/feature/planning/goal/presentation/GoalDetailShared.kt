@@ -5,10 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.example.insightku.R
+import com.example.insightku.core.ui.theme.AppPalette
+import com.example.insightku.core.ui.theme.Dimens
 import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.components.dialogs.PremiumArchiveConfirmDialog
 import com.example.insightku.core.ui.components.dialogs.PremiumDeleteConfirmDialog
@@ -16,9 +17,9 @@ import com.example.insightku.core.ui.components.dialogs.PremiumSuccessOverlay
 
 @Composable
 internal fun SectionHeader(title: String, subtitle: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = com.example.insightku.core.ui.theme.AppPalette.textPrimary)
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = com.example.insightku.core.ui.theme.AppPalette.textMuted)
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)) {
+        Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
     }
 }
 

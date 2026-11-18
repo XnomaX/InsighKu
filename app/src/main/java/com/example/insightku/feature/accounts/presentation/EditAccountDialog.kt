@@ -1,5 +1,8 @@
 package com.example.insightku.feature.accounts.presentation
 
+import com.example.insightku.core.ui.components.bottomsheet.SheetHeader
+import androidx.compose.material3.IconButton
+import com.example.insightku.core.ui.theme.Dimens
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -99,23 +102,6 @@ fun EditAccountDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(SheetBorder)
-                )
-            }
-        }
     ) {
         Column(
             modifier = Modifier
@@ -123,77 +109,31 @@ fun EditAccountDialog(
                 .verticalScroll(rememberScrollState())
                 .background(SheetBg)
                 .padding(24.dp)
-                .navigationBarsPadding()
         ) {
-            // Header
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            Box(modifier = Modifier.fillMaxWidth()) {
+                SheetHeader(
+                    title = account.name,
+                    subtitle = stringResource(R.string.account_edit_desc)
+                )
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.TopEnd)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = SheetPurple.copy(alpha = 0.10f)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.account_edit),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SheetPurple
-                        )
-                    }
-                    Surface(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable { onDismiss() },
-                        shape = CircleShape,
-                        color = AppPalette.cardBorder
-                    ) {
-                        Box(
-                            modifier = Modifier.padding(6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.cd_close),
-                                modifier = Modifier.size(16.dp),
-                                tint = AppPalette.textMuted
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.cd_close),
+                        modifier = Modifier.size(Dimens.IconSizeMedium),
+                        tint = AppPalette.textMuted
+                    )
                 }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = account.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AppPalette.textPrimary
-                )
-                Text(
-                    text = stringResource(R.string.account_edit_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
             }
-
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(SheetBorder)
-            )
-
-            Spacer(Modifier.height(18.dp))
 
             // Account Type
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = stringResource(R.string.account_type_label),
                     style = MaterialTheme.typography.labelSmall,
-                    letterSpacing = 1.2.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = AppPalette.textMuted
                 )
                 Row(
@@ -241,8 +181,7 @@ fun EditAccountDialog(
                 Text(
                     text = stringResource(R.string.account_color_only),
                     style = MaterialTheme.typography.labelSmall,
-                    letterSpacing = 1.2.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = AppPalette.textMuted
                 )
                 ColorPicker(
@@ -296,7 +235,7 @@ fun EditAccountDialog(
                         Text(
                             text = stringResource(R.string.save_changes),
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             color = Color.White
                         )
                     }
@@ -356,8 +295,7 @@ private fun CurrencyTextFieldEdit(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
 
@@ -397,7 +335,7 @@ private fun CurrencyTextFieldEdit(
                 Text(
                     NumberFormatter.getCurrencySymbol(),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = accentColor,
                     modifier = Modifier.padding(start = 4.dp)
                 )
@@ -416,7 +354,7 @@ private fun CurrencyTextFieldEdit(
                 focusedTextColor = accentColor,
                 unfocusedTextColor = accentColor
             ),
-            textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium)
         )
     }
 }
@@ -436,8 +374,7 @@ private fun AccountFormFieldEdit(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         OutlinedTextField(
@@ -507,7 +444,7 @@ private fun AccountTypeChipEdit(
             },
             style = MaterialTheme.typography.labelSmall,
             color = textColor,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
         )
     }
 }

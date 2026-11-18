@@ -209,7 +209,7 @@ private fun AccountsHeader(
                     FitText(
                         text = stringResource(R.string.accounts_title),
                         style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = AppPalette.textPrimary
                     )
                     if (accountCount > 0) {
@@ -243,7 +243,7 @@ private fun AccountsHeader(
                         FitText(
                             text = stringResource(R.string.accounts_add),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                             color = accent
                         )
                     }
@@ -369,7 +369,7 @@ private fun AccountRow(
                         Text(
                             text = account.name,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                             color = AppPalette.textPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -383,7 +383,7 @@ private fun AccountRow(
                                     text = stringResource(R.string.account_default_badge),
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Medium,
                                     color = LocalAccent.current
                                 )
                             }
@@ -411,7 +411,7 @@ private fun AccountRow(
                     Text(
                         text = CurrencyUtils.formatAmount(account.balance, "IDR"),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = if (account.isLiability) ExpenseRed else AppPalette.textPrimary
                     )
                     if (account.isLiability) {
@@ -604,23 +604,6 @@ private fun AccountDetailSheet(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(AppPalette.cardBorder)
-                )
-            }
-        }
     ) {
         Column(
             modifier = Modifier
@@ -655,8 +638,8 @@ private fun AccountDetailSheet(
                 // Name
                 Text(
                     text = account.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
                     color = AppPalette.textPrimary,
                     textAlign = TextAlign.Center
                 )
@@ -674,34 +657,19 @@ private fun AccountDetailSheet(
                 Text(
                     text = CurrencyUtils.formatAmount(account.balance, "IDR"),
                     style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = if (account.isLiability) ExpenseRed else AppPalette.textPrimary
                 )
 
                 if (account.isLiability) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = ExpenseRed.copy(alpha = 0.10f)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.account_outstanding_liability),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = ExpenseRed
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
+                    Text(
+                        text = stringResource(R.string.account_outstanding_liability),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppPalette.textMuted
+                    )
                 }
             }
-
-            // Divider
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(AppPalette.cardBorder)
-            )
 
             // ── Scrollable body (bounded so flings settle; wraps when short) ──
             Column(
@@ -739,8 +707,7 @@ private fun AccountDetailSheet(
                 Text(
                     text = stringResource(R.string.account_detail_details),
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.5.sp,
+                    fontWeight = FontWeight.Medium,
                     color = AppPalette.textMuted
                 )
 
@@ -812,7 +779,7 @@ private fun AccountDetailSheet(
                         Text(
                             text = stringResource(R.string.account_edit),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                             color = Color.White
                         )
                     }
@@ -845,7 +812,7 @@ private fun AccountDetailSheet(
                         Text(
                             text = stringResource(R.string.account_delete),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                             color = ExpenseRed
                         )
                     }
@@ -888,8 +855,7 @@ private fun AllocationBreakdownSection(
         Text(
             text = stringResource(R.string.account_allocation_breakdown),
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.5.sp,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
 
@@ -906,7 +872,7 @@ private fun AllocationBreakdownSection(
             Text(
                 text = CurrencyUtils.formatAmount(allocation.account.balance, "IDR"),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = AppPalette.textPrimary
             )
         }
@@ -917,7 +883,7 @@ private fun AllocationBreakdownSection(
                 Text(
                     text = stringResource(R.string.account_goal_allocations),
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = AppPalette.textMuted
                 )
 
@@ -948,7 +914,7 @@ private fun AllocationBreakdownSection(
                 Text(
                     text = stringResource(R.string.account_budget_allocations),
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = AppPalette.textMuted
                 )
 
@@ -1000,7 +966,7 @@ private fun AllocationBreakdownSection(
                 Text(
                     text = CurrencyUtils.formatAmount(allocation.availableCash, "IDR"),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = successGreen
                 )
             }

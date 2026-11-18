@@ -1,5 +1,6 @@
 package com.example.insightku.feature.planning.budget.presentation
 
+import com.example.insightku.core.ui.components.bottomsheet.SheetHeader
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -117,59 +118,11 @@ fun AddCategoryDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = { handleDismiss() },
         containerColor   = AppPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle       = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(AppPalette.cardBorder)
-                )
-            }
-        }
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 8.dp)
-            ) {
-                Surface(shape = RoundedCornerShape(50), color = accentColor.copy(alpha = 0.10f)) {
-                    Text(
-                        text       = stringResource(if (initialType == CategoryType.EXPENSE) R.string.add_category_expense_chip else R.string.add_category_income_chip),
-                        modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style      = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color      = accentColor
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text       = stringResource(if (initialType == CategoryType.EXPENSE) R.string.add_category_expense_title else R.string.add_category_income_title),
-                    style      = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color      = AppPalette.textPrimary
-                )
-                Text(
-                    text  = stringResource(if (initialType == CategoryType.EXPENSE) R.string.add_category_expense_desc else R.string.add_category_income_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(AppPalette.cardBorder)
+            SheetHeader(
+                title = stringResource(if (initialType == CategoryType.EXPENSE) R.string.add_category_expense_title else R.string.add_category_income_title),
+                subtitle = stringResource(if (initialType == CategoryType.EXPENSE) R.string.add_category_expense_desc else R.string.add_category_income_desc)
             )
 
             Column(
@@ -177,12 +130,11 @@ fun AddCategoryDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .background(AppPalette.background)
-                    .padding(24.dp)
-                    .navigationBarsPadding(),
+                    .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.label_category_name), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.label_category_name), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     OutlinedTextField(
                         value         = name,
                         onValueChange = { name = it; nameError = null },
@@ -212,7 +164,7 @@ fun AddCategoryDialog(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.label_icon), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.label_icon), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     LazyVerticalGrid(
                         columns               = GridCells.Adaptive(56.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -232,7 +184,7 @@ fun AddCategoryDialog(
 
                 if (initialType == CategoryType.EXPENSE) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.label_budget_limit_alert), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.label_budget_limit_alert), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         BudgetLimitInput(
                             budgetLimitText         = budgetLimitText,
                             onBudgetLimitTextChange = { budgetLimitText = it },
@@ -241,7 +193,7 @@ fun AddCategoryDialog(
                         )
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.label_budget_reset), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.label_budget_reset), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         RecurringPeriodSelector(selected = selectedPeriod, onSelect = { selectedPeriod = it })
                     }
                 }
@@ -266,7 +218,7 @@ fun AddCategoryDialog(
                             Text(
                                 text       = name.ifEmpty { stringResource(R.string.add_category_name_placeholder) },
                                 style      = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                                 color      = if (name.isEmpty()) AppPalette.placeholder else AppPalette.textPrimary
                             )
                             Text(
@@ -277,9 +229,11 @@ fun AddCategoryDialog(
                                 color = AppPalette.textMuted
                             )
                         }
-                        Surface(shape = RoundedCornerShape(50), color = accentColor.copy(alpha = 0.10f)) {
-                            Text(stringResource(R.string.add_category_preview), modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = accentColor, fontWeight = FontWeight.SemiBold)
-                        }
+                        Text(
+                            text = stringResource(R.string.add_category_preview),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppPalette.textMuted
+                        )
                     }
                 }
 
@@ -307,7 +261,7 @@ fun AddCategoryDialog(
                                 if (validate()) {
                                     val colorHex =
                                         "#" + selectedIcon.color.value.toString(16).padStart(8, '0')
-                                            .substring(2, 8).uppercase()
+                                            .substring(2, 8)
                                     onCategoryAdded(
                                         Category(
                                             name = name.trim(),
@@ -329,7 +283,7 @@ fun AddCategoryDialog(
                             Text(
                                 if (initialType == CategoryType.EXPENSE) stringResource(R.string.add_category_expense_title) else stringResource(R.string.add_category_income_title),
                                 style      = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                                 color      = Color.White
                             )
                         }

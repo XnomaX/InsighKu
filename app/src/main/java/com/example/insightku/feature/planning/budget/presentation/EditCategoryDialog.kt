@@ -1,5 +1,6 @@
 package com.example.insightku.feature.planning.budget.presentation
 
+import com.example.insightku.core.ui.components.bottomsheet.SheetHeader
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -108,59 +109,11 @@ fun EditCategoryDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = { handleDismiss() },
         containerColor   = AppPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle       = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(AppPalette.cardBorder)
-                )
-            }
-        }
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 8.dp)
-            ) {
-                Surface(shape = RoundedCornerShape(50), color = accentColor.copy(alpha = 0.10f)) {
-                    Text(
-                        text       = stringResource(if (categoryType == CategoryType.EXPENSE) R.string.add_category_expense_chip else R.string.add_category_income_chip),
-                        modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style      = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color      = accentColor
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text       = stringResource(R.string.edit_category),
-                    style      = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color      = AppPalette.textPrimary
-                )
-                Text(
-                    text  = stringResource(R.string.edit_category_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(AppPalette.cardBorder)
+            SheetHeader(
+                title = stringResource(R.string.edit_category),
+                subtitle = stringResource(R.string.edit_category_subtitle)
             )
 
             Column(
@@ -168,12 +121,11 @@ fun EditCategoryDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .background(AppPalette.background)
-                    .padding(24.dp)
-                    .navigationBarsPadding(),
+                    .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.label_category_name), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text(stringResource(R.string.label_category_name), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     OutlinedTextField(
                         value         = name,
                         onValueChange = { name = it; nameError = null },
@@ -198,7 +150,7 @@ fun EditCategoryDialog(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("ICON", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                    Text("ICON", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     LazyVerticalGrid(
                         columns               = GridCells.Adaptive(56.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -218,7 +170,7 @@ fun EditCategoryDialog(
 
                 if (categoryType == CategoryType.EXPENSE) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.label_budget_limit_alert), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.label_budget_limit_alert), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         BudgetLimitInput(
                             budgetLimitText         = budgetLimitText,
                             onBudgetLimitTextChange = { budgetLimitText = it },
@@ -227,7 +179,7 @@ fun EditCategoryDialog(
                         )
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.label_budget_reset), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(stringResource(R.string.label_budget_reset), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                         RecurringPeriodSelector(selected = selectedPeriod, onSelect = { selectedPeriod = it })
                     }
                 }
@@ -256,7 +208,7 @@ fun EditCategoryDialog(
                                 if (validate()) {
                                     val colorHex =
                                         "#" + selectedIcon.color.value.toString(16).padStart(8, '0')
-                                            .substring(2, 8).uppercase()
+                                            .substring(2, 8)
                                     onCategoryEdited(
                                         category.copy(
                                             name = name.trim(),
@@ -273,7 +225,7 @@ fun EditCategoryDialog(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(stringResource(R.string.transaction_save_changes), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(stringResource(R.string.transaction_save_changes), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color.White)
                     }
                 }
 

@@ -61,8 +61,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.insightku.core.ui.theme.LocalAccent
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -116,23 +116,11 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = { onEvent(GoalDetailEvent.DismissDialog) },
         containerColor = AppPalette.card,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(top = 8.dp, bottom = 8.dp)
-                    .size(40.dp, 4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(AppPalette.cardBorder)
-            )
-        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .navigationBarsPadding()
                 .padding(bottom = 32.dp)
         ) {
             // ── 1. Goal Header ──────────────────────────────────────────
@@ -152,7 +140,7 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(if (isWithdraw) stringResource(R.string.goal_contribution_withdraw) else stringResource(R.string.goal_contribution_add), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                    Text(if (isWithdraw) stringResource(R.string.goal_contribution_withdraw) else stringResource(R.string.goal_contribution_add), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                     Text(goal.name, style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted)
                 }
             }
@@ -167,13 +155,13 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column {
                             Text(stringResource(R.string.goal_contribution_current_progress), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                            Text("${currentPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
+                            Text("${currentPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                         }
                         if (showPreview) {
                             Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = AppPalette.textMuted.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("${stringResource(R.string.goal_dialog_after)} ${if (isWithdraw) stringResource(R.string.goal_dialog_after_withdrawal) else stringResource(R.string.goal_dialog_after_contribution)}", style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                                Text("${newPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = goalColor)
+                                Text("${newPercent.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = goalColor)
                             }
                         }
                     }
@@ -191,21 +179,14 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
                                 .fillMaxWidth(animatedDisplayPercent)
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(5.dp))
-                                .background(
-                                    Brush.horizontalGradient(
-                                        listOf(
-                                            goalColor.copy(alpha = 0.7f),
-                                            goalColor
-                                        )
-                                    )
-                                )
+                                .background(LocalAccent.current)
                         )
                     }
                     // Remaining target
                     Spacer(Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(stringResource(R.string.goal_summary_remaining), style = MaterialTheme.typography.labelSmall, color = AppPalette.textMuted)
-                        Text(formatCurrencyFull(remainingTarget), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                        Text(formatCurrencyFull(remainingTarget), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                     }
                 }
             }
@@ -214,10 +195,10 @@ internal fun GoalDetailContributionDialog(uiState: GoalDetailUiState, onEvent: (
 
             // ── 3. Amount ──────────────────────────────────────────────
             Column {
-                Text(stringResource(R.string.goal_amount_label), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                Text(stringResource(R.string.goal_amount_label), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                 Spacer(Modifier.height(8.dp))
                 val formattedAmount = if (uiState.contributionAmount.isEmpty()) "" else NumberFormatter.formatNumber(uiState.contributionAmount.toDoubleOrNull() ?: 0.0)
-OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.filter { c -> c.isDigit() }; onEvent(GoalDetailEvent.UpdateAmount(filtered)) }, placeholder = { Text("0", color = AppPalette.textMuted.copy(alpha = 0.5f)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = goalColor, unfocusedBorderColor = AppPalette.cardBorder, focusedContainerColor = goalColor.copy(alpha = 0.04f), unfocusedContainerColor = AppPalette.cardElevated), textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, color = AppPalette.textPrimary))
+OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.filter { c -> c.isDigit() }; onEvent(GoalDetailEvent.UpdateAmount(filtered)) }, placeholder = { Text("0", color = AppPalette.textMuted.copy(alpha = 0.5f)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = goalColor, unfocusedBorderColor = AppPalette.cardBorder, focusedContainerColor = goalColor.copy(alpha = 0.04f), unfocusedContainerColor = AppPalette.cardElevated), textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium, color = AppPalette.textPrimary))
             }
 
             Spacer(Modifier.height(12.dp))
@@ -225,7 +206,7 @@ OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.f
             // ── 4. Quick Amount Chips ──────────────────────────────────
             if (!isWithdraw) {
                 val quickAmounts = listOf(50_000.0, 100_000.0, 250_000.0, 500_000.0, 1_000_000.0)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { items(quickAmounts.size) { index -> val chipAmount = quickAmounts[index]; val isSelected = uiState.contributionAmount.toDoubleOrNull() == chipAmount; Surface(onClick = { onEvent(GoalDetailEvent.UpdateAmount(chipAmount.toLong().toString())) }, shape = RoundedCornerShape(12.dp), color = if (isSelected) goalColor.copy(alpha = 0.15f) else AppPalette.cardElevated, border = BorderStroke(1.dp, if (isSelected) goalColor.copy(alpha = 0.4f) else AppPalette.cardBorder)) { Text("+${NumberFormatter.formatCompact(chipAmount)}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = if (isSelected) goalColor else AppPalette.textMuted, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) } } }
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { items(quickAmounts.size) { index -> val chipAmount = quickAmounts[index]; val isSelected = uiState.contributionAmount.toDoubleOrNull() == chipAmount; Surface(onClick = { onEvent(GoalDetailEvent.UpdateAmount(chipAmount.toLong().toString())) }, shape = RoundedCornerShape(12.dp), color = if (isSelected) goalColor.copy(alpha = 0.15f) else AppPalette.cardElevated, border = BorderStroke(1.dp, if (isSelected) goalColor.copy(alpha = 0.4f) else AppPalette.cardBorder)) { Text("+${NumberFormatter.formatCompact(chipAmount)}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium, color = if (isSelected) goalColor else AppPalette.textMuted, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) } } }
                 Spacer(Modifier.height(12.dp))
             }
 
@@ -234,7 +215,7 @@ OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.f
             if (displayAccounts.isNotEmpty()) {
                 val selectedAccount = displayAccounts.find { it.id == uiState.selectedAccountId }
                 var accountExpanded by remember { mutableStateOf(false) }
-                Text(stringResource(R.string.goal_dialog_from_account), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = AppPalette.textMuted)
+                Text(stringResource(R.string.goal_dialog_from_account), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium, color = AppPalette.textMuted)
                 Spacer(Modifier.height(8.dp))
                 AccountDropdownSelector(account = selectedAccount, isWithdraw = isWithdraw, isExpanded = accountExpanded, onClick = { accountExpanded = !accountExpanded })
                 Spacer(Modifier.height(4.dp))
@@ -284,7 +265,7 @@ OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.f
                                         contentAlignment = Alignment.Center
                                     ) { Icon(accountIcon, contentDescription = null, tint = if (isSelected) accountColor else AppPalette.textMuted, modifier = Modifier.size(20.dp)) }
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(account.name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal, color = AppPalette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Text(
                                             CurrencyUtils.formatAmountCompact(account.balance),
                                             style = MaterialTheme.typography.bodySmall,
@@ -308,7 +289,7 @@ OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.f
                     Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Icon(Icons.Outlined.Warning, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(msg, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = color)
+                            Text(msg, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = color)
                             if (uiState.isInsufficientFunds) {
                                 Text(stringResource(R.string.goal_dialog_insufficient_funds_detail, CurrencyUtils.formatAmountCompact(uiState.shortfall)), style = MaterialTheme.typography.bodySmall, color = color.copy(alpha = 0.8f))
                             }
@@ -342,7 +323,7 @@ OutlinedTextField(value = formattedAmount, onValueChange = { val filtered = it.f
                 )
             ) {
                 if (isSubmitting) { CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.5.dp) }
-                else { Text(if (isWithdraw) stringResource(R.string.goal_dialog_withdraw) else stringResource(R.string.goal_dialog_save_contribution), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (canSubmit) Color.White else AppPalette.textMuted) }
+                else { Text(if (isWithdraw) stringResource(R.string.goal_dialog_withdraw) else stringResource(R.string.goal_dialog_save_contribution), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = if (canSubmit) Color.White else AppPalette.textMuted) }
             }
             Spacer(Modifier.height(8.dp))
             TextButton(
@@ -392,7 +373,7 @@ internal fun AccountDropdownSelector(account: Account?, isWithdraw: Boolean, isE
                     Text(
                         account.name,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = AppPalette.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis

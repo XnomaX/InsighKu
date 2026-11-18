@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import com.example.insightku.core.ui.components.bottomsheet.SheetHeader
+import com.example.insightku.core.ui.theme.Dimens
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CreditCard
@@ -96,23 +98,6 @@ fun AddAccountDialog(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = AppPalette.card,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(SheetBorder)
-                )
-            }
-        }
     ) {
         Column(
             modifier = Modifier
@@ -120,52 +105,19 @@ fun AddAccountDialog(
                 .verticalScroll(rememberScrollState())
                 .background(SheetBg)
                 .padding(24.dp)
-                .navigationBarsPadding()
         ) {
-            // Header
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = SheetPurple.copy(alpha = 0.10f)
-                ) {
-                    Text(
-                        text = stringResource(R.string.account_new),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = SheetPurple
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.account_add_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AppPalette.textPrimary
-                )
-                Text(
-                    text = stringResource(R.string.account_add_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
-                )
-            }
-
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(SheetBorder)
+            SheetHeader(
+                title = stringResource(R.string.account_add_title),
+                subtitle = stringResource(R.string.account_add_desc)
             )
-
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(Dimens.PaddingLarge))
 
             // Account Type
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = stringResource(R.string.account_type_label),
                     style = MaterialTheme.typography.labelSmall,
-                    letterSpacing = 1.2.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = AppPalette.textMuted
                 )
                 Row(
@@ -213,8 +165,7 @@ fun AddAccountDialog(
                 Text(
                     text = stringResource(R.string.account_color_label),
                     style = MaterialTheme.typography.labelSmall,
-                    letterSpacing = 1.2.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = AppPalette.textMuted
                 )
                 ColorPicker(
@@ -268,7 +219,7 @@ fun AddAccountDialog(
                         Text(
                             text = stringResource(R.string.account_add_title),
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             color = Color.White
                         )
                     }
@@ -322,8 +273,7 @@ private fun CurrencyTextField(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
 
@@ -371,7 +321,7 @@ private fun CurrencyTextField(
                 Text(
                     NumberFormatter.getCurrencySymbol(),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = accentColor,
                     modifier = Modifier.padding(start = 4.dp)
                 )
@@ -390,7 +340,7 @@ private fun CurrencyTextField(
                 focusedTextColor = accentColor,
                 unfocusedTextColor = accentColor
             ),
-            textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium)
         )
     }
 }
@@ -410,8 +360,7 @@ private fun AccountFormField(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.2.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textMuted
         )
         OutlinedTextField(
@@ -481,7 +430,7 @@ private fun AccountTypeChip(
             },
             style = MaterialTheme.typography.labelSmall,
             color = textColor,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
         )
     }
 }

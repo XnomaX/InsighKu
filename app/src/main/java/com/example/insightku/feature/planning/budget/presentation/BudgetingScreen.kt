@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,27 +13,22 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -74,7 +70,7 @@ fun BudgetingScreen(
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
     val goalsViewModel: GoalsViewModel = hiltViewModel()
-
+    val goalsUiState by goalsViewModel.uiState.collectAsStateWithLifecycle()
     // Handle initial action from Home screen CTAs
     LaunchedEffect(initialAction) {
         when (initialAction) {
@@ -118,56 +114,54 @@ fun BudgetingScreen(
                 PlanningTab.GOALS -> PlanningHeader(
                     title = stringResource(R.string.goals_title),
                     subtitle = stringResource(R.string.goals_subtitle),
-                    onAddClick = { goalsViewModel.onEvent(GoalsEvent.ShowAddGoalDialog()) }
+                    onAddClick = { goalsViewModel.onEvent(GoalsEvent.ShowAddGoalDialog()) },
+                    showAddAction = goalsUiState.hasGoals
                 )
                 null -> Box(modifier = Modifier.fillMaxWidth())
             }
         }
 
-        // Tab Row Navigation
-        SecondaryTabRow(
-            selectedTabIndex = pagerState.currentPage,
-            containerColor = AppPalette.background,
-            contentColor = LocalAccent.current,
+        // Tab Row Navigation — quiet text tabs, thin accent indicator.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AppPalette.background)
+                .padding(horizontal = Dimens.ScreenHorizontalPadding)
         ) {
             tabs.forEachIndexed { index, tab ->
                 val selected = pagerState.currentPage == index
-                Tab(
-                    selected = selected,
-                    onClick = {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    },
-                    text = {                val tabLabel = stringResource(when (tab) {
+                val tabLabel = stringResource(when (tab) {
                     PlanningTab.BUDGETING -> R.string.budgeting_title
                     PlanningTab.GOALS -> R.string.goals_title
                 })
-                val tabIcon = when (tab) {
-                    PlanningTab.BUDGETING -> Icons.Outlined.AccountBalanceWallet
-                    PlanningTab.GOALS -> Icons.Outlined.Savings
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                            Icon(
-                                imageVector = tabIcon,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = if (selected) LocalAccent.current else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            FitText(
-                                text = tabLabel,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (selected) LocalAccent.current else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
                         }
-                    },
-                    selectedContentColor = LocalAccent.current,
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                        .padding(vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    FitText(
+                        text = tabLabel,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (selected) LocalAccent.current else AppPalette.textMuted
+                    )
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(
+                                if (selected) LocalAccent.current
+                                else Color.Transparent
+                            )
+                    )
+                }
             }
         }
 
@@ -233,7 +227,7 @@ fun BudgetingScreenContent(
                 onAdd = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.EXPENSE)) },
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,
-                    vertical = 8.dp
+                    vertical = 12.dp
                 ),
                 addContentDescription = stringResource(R.string.cd_add_category)
             )
@@ -291,7 +285,7 @@ fun BudgetingScreenContent(
                 onAdd = { onEvent(BudgetingEvent.ShowAddBudgetDialog(CategoryType.INCOME)) },
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,
-                    vertical = 8.dp
+                    vertical = 12.dp
                 )
             )
         }
@@ -330,7 +324,7 @@ fun BudgetingScreenContent(
                 categories = uiState.rawCategories,
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,
-                    vertical = 4.dp
+                    vertical = 12.dp
                 )
             )
         }
@@ -345,7 +339,7 @@ fun BudgetingScreenContent(
                 categories = uiState.rawCategories,
                 modifier = Modifier.padding(
                     horizontal = Dimens.ScreenHorizontalPadding,
-                    vertical = 4.dp
+                    vertical = 12.dp
                 )
             )
         }

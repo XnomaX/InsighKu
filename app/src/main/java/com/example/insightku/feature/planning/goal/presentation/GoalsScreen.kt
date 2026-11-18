@@ -1,7 +1,5 @@
 package com.example.insightku.feature.planning.goal.presentation
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,17 +17,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Archive
-import androidx.compose.material.icons.outlined.CheckCircleOutline
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.PauseCircleOutline
 import androidx.compose.material.icons.outlined.Restore
-import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,8 +58,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -102,7 +96,7 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel(), onNavigateToGoalDet
                         .fillMaxSize()
                         .weight(1f), contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = LocalAccent.current, modifier = Modifier.size(28.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(color = LocalAccent.current, modifier = Modifier.size(Dimens.IconSizeLarge + Dimens.PaddingSmall), strokeWidth = 2.dp)
                 }
             } else {
                 GoalsContent(uiState = uiState, onEvent = viewModel::onEvent, modifier = Modifier.weight(1f))
@@ -114,7 +108,6 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel(), onNavigateToGoalDet
     LaunchedEffect(uiState.snackbarMessage) { uiState.snackbarMessage?.let { message -> snackbarHostState.showSnackbar(message); viewModel.onEvent(GoalsEvent.ClearSnackbar) } }
     LaunchedEffect(uiState.error) { uiState.error?.let { error -> snackbarHostState.showSnackbar(error); viewModel.onEvent(GoalsEvent.ClearError) } }
 
-    // ── Goal Actions Bottom Sheet ─────────────────────────────────────────
     if (uiState.showActionsSheet && uiState.actionsGoalId != null) {
         val actionsGoal = uiState.goals.find { it.id == uiState.actionsGoalId }
             ?: uiState.activeGoals.find { it.id == uiState.actionsGoalId }
@@ -132,7 +125,6 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel(), onNavigateToGoalDet
         }
     }
 
-    // ── Archived Goals Bottom Sheet ───────────────────────────────────────
     if (uiState.showArchivedSheet) {
         ArchivedGoalsSheet(
             archivedGoals = uiState.archivedGoals,
@@ -143,7 +135,6 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel(), onNavigateToGoalDet
         )
     }
 
-    // ── Completion Celebration Overlay ────────────────────────────────────
     if (uiState.showCompletionCelebration) {
         CompletionCelebrationOverlay(
             goalName = uiState.completionGoalName,
@@ -151,7 +142,6 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel(), onNavigateToGoalDet
         )
     }
 
-    // ── Dialog Host ───────────────────────────────────────────────────────
     DialogHost(uiState.dialogState, viewModel::onEvent, uiState)
 }
 
@@ -164,12 +154,18 @@ private fun GoalsContent(uiState: GoalsUiState, onEvent: (GoalsEvent) -> Unit, m
         contentPadding = PaddingValues(
             start = Dimens.ScreenHorizontalPadding,
             end = Dimens.ScreenHorizontalPadding,
-            top = 12.dp,
+            top = Dimens.PaddingLarge,
             bottom = Dimens.ContentBottomPadding
         ),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)
     ) {
-        // ── Tab Filter (Active / Paused) + Archive Access ─────────────────
+        // One aggregate figure leads the page. It already exists in GoalsUiState.
+        uiState.goalSummary?.let { summary ->
+            if (summary.totalGoals > 0) {
+                item { GoalsAggregate(summary) }
+            }
+        }
+
         if (uiState.hasGoals) {
             item {
                 GoalFilterTabs(
@@ -184,18 +180,16 @@ private fun GoalsContent(uiState: GoalsUiState, onEvent: (GoalsEvent) -> Unit, m
             }
         }
 
-        // ── Empty States ──────────────────────────────────────────────────
         if (uiState.goals.isEmpty()) {
             item { EmptyGoalsState(onCreateGoal = { onEvent(GoalsEvent.ShowAddGoalDialog()) }) }
         } else if (uiState.displayedGoals.isEmpty()) {
             item {
-                EmptyTabState(
+                EmptyGoalsState(
                     tab = uiState.selectedTab,
                     onCreateGoal = { onEvent(GoalsEvent.ShowAddGoalDialog()) }
                 )
             }
         } else {
-            // ── Goal Cards ────────────────────────────────────────────────
             items(uiState.displayedGoals, key = { it.id }) { goal ->
                 GoalCard(
                     goal = goal,
@@ -207,24 +201,52 @@ private fun GoalsContent(uiState: GoalsUiState, onEvent: (GoalsEvent) -> Unit, m
             }
         }
 
-        // ── Auto-allocation rules ─────────────────────────────────────────
         if (uiState.autoAllocationRules.isNotEmpty()) {
-            item { Spacer(modifier = Modifier.height(8.dp)); Text(text = stringResource(R.string.auto_allocation_rules), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary) }
+            item {
+                Text(
+                    text = stringResource(R.string.auto_allocation_rules),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = AppPalette.textPrimary
+                )
+            }
             item {
                 AutoAllocationRulesSection(
                     rules = uiState.autoAllocationRules,
-                    onToggle = { ruleId, enabled ->
-                        onEvent(
-                            GoalsEvent.ToggleAutoAllocationRule(
-                                ruleId,
-                                enabled
-                            )
-                        )
-                    })
+                    onToggle = { ruleId, enabled -> onEvent(GoalsEvent.ToggleAutoAllocationRule(ruleId, enabled)) }
+                )
             }
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(Dimens.PaddingLarge)) }
+    }
+}
+
+// ─── Aggregate ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun GoalsAggregate(summary: com.example.insightku.feature.planning.goal.domain.model.GoalSummary) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.goals_total_saved),
+            style = MaterialTheme.typography.labelSmall,
+            color = AppPalette.textMuted
+        )
+        Text(
+            text = NumberFormatter.formatCurrencyCompact(summary.totalSaved),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Medium,
+            color = AppPalette.textPrimary
+        )
+        Text(
+            text = stringResource(
+                R.string.goals_total_of,
+                NumberFormatter.formatCurrencyCompact(summary.totalTarget),
+                summary.activeGoals
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppPalette.textMuted
+        )
     }
 }
 
@@ -242,58 +264,41 @@ private fun GoalFilterTabs(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium),
         verticalAlignment = Alignment.CenterVertically
     ) {
         LazyRow(
             modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
         ) {
             item {
-                GoalFilterChip(
-                    label = stringResource(R.string.goals_active),
-                    count = activeCount,
-                    isSelected = selectedTab == GoalFilterTab.ACTIVE,
-                    onClick = { onTabSelected(GoalFilterTab.ACTIVE) }
-                )
+                GoalFilterChip(stringResource(R.string.goals_active), activeCount, selectedTab == GoalFilterTab.ACTIVE) { onTabSelected(GoalFilterTab.ACTIVE) }
             }
             item {
-                GoalFilterChip(
-                    label = stringResource(R.string.goals_paused_tab),
-                    count = pausedCount,
-                    isSelected = selectedTab == GoalFilterTab.PAUSED,
-                    onClick = { onTabSelected(GoalFilterTab.PAUSED) }
-                )
+                GoalFilterChip(stringResource(R.string.goals_paused_tab), pausedCount, selectedTab == GoalFilterTab.PAUSED) { onTabSelected(GoalFilterTab.PAUSED) }
             }
             item {
-                GoalFilterChip(
-                    label = stringResource(R.string.goals_completed_tab),
-                    count = completedCount,
-                    isSelected = selectedTab == GoalFilterTab.COMPLETED,
-                    onClick = { onTabSelected(GoalFilterTab.COMPLETED) }
-                )
+                GoalFilterChip(stringResource(R.string.goals_completed_tab), completedCount, selectedTab == GoalFilterTab.COMPLETED) { onTabSelected(GoalFilterTab.COMPLETED) }
             }
         }
 
-        // Archive access button (always visible)
         Surface(
             onClick = onArchivedClick,
             shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
-            color = AppPalette.cardElevated,
+            color = Color.Transparent,
             border = BorderStroke(1.dp, AppPalette.cardBorder)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = Dimens.PaddingMedium, vertical = Dimens.PaddingMedium),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingSmall)
             ) {
-                Icon(Icons.Outlined.Archive, null, tint = AppPalette.textMuted, modifier = Modifier.size(16.dp))
+                Icon(Icons.Outlined.Archive, null, tint = AppPalette.textMuted, modifier = Modifier.size(Dimens.IconSizeSmall))
                 if (archivedCount > 0) {
                     Text(
                         pluralStringResource(R.plurals.goals_archived_count, archivedCount, archivedCount),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = AppPalette.textMuted,
-                        fontWeight = FontWeight.Medium
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppPalette.textMuted
                     )
                 }
             }
@@ -304,140 +309,91 @@ private fun GoalFilterTabs(
 @Composable
 private fun GoalFilterChip(label: String, count: Int, isSelected: Boolean, onClick: () -> Unit) {
     val accent = LocalAccent.current
-    val bgColor by animateColorAsState(
-        targetValue = if (isSelected) accent.copy(alpha = 0.12f) else Color.Transparent,
-        animationSpec = tween(200), label = "chip_bg"
-    )
-    val textColor by animateColorAsState(
-        targetValue = if (isSelected) accent else AppPalette.textMuted,
-        animationSpec = tween(200), label = "chip_text"
-    )
-    val borderColor by animateColorAsState(
-        targetValue = if (isSelected) accent.copy(alpha = 0.3f) else AppPalette.cardBorder,
-        animationSpec = tween(200), label = "chip_border"
-    )
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
-        color = bgColor,
-        border = BorderStroke(1.dp, borderColor)
+        color = if (isSelected) accent.copy(alpha = 0.12f) else Color.Transparent,
+        border = BorderStroke(1.dp, if (isSelected) accent.copy(alpha = 0.3f) else AppPalette.cardBorder)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.PaddingLarge, vertical = Dimens.PaddingMedium),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
         ) {
-            FitText(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = textColor)
+            FitText(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium, color = if (isSelected) AppPalette.textPrimary else AppPalette.textMuted)
             if (count > 0) {
-                Surface(shape = CircleShape, color = textColor.copy(alpha = 0.15f)) {
-                    Text(
-                        text = "$count",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = textColor,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
+                Text(
+                    text = "$count",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppPalette.textMuted
+                )
             }
         }
     }
 }
 
-// ─── Empty Tab State ──────────────────────────────────────────────────────────
+// ─── Empty State (one component for all cases) ───────────────────────────────
 
 @Composable
-private fun EmptyTabState(tab: GoalFilterTab, onCreateGoal: () -> Unit) {
+private fun EmptyGoalsState(onCreateGoal: () -> Unit, tab: GoalFilterTab? = null) {
+    val icon = when (tab) {
+        GoalFilterTab.PAUSED -> Icons.Outlined.PauseCircleOutline
+        GoalFilterTab.COMPLETED -> Icons.Outlined.Check
+        else -> Icons.Outlined.Flag
+    }
+    val (title, desc) = when (tab) {
+        GoalFilterTab.PAUSED -> stringResource(R.string.goals_no_paused) to stringResource(R.string.goals_no_paused_desc)
+        GoalFilterTab.ACTIVE -> stringResource(R.string.goals_no_active) to stringResource(R.string.goals_no_active_desc)
+        GoalFilterTab.COMPLETED -> stringResource(R.string.goals_no_completed) to stringResource(R.string.goals_no_completed_desc)
+        null -> stringResource(R.string.goals_empty_title) to stringResource(R.string.goals_empty_desc)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 48.dp),
+            .padding(vertical = Dimens.PaddingExtraLarge + Dimens.PaddingLarge),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val icon = when (tab) {
-            GoalFilterTab.PAUSED -> Icons.Outlined.PauseCircleOutline
-            GoalFilterTab.ACTIVE -> Icons.Outlined.Flag
-            GoalFilterTab.COMPLETED -> Icons.Outlined.CheckCircleOutline
-        }
+        // An empty progress track, not a stock illustration: the product's own
+        // object, drawn at rest, with the target it is waiting for.
         Box(
             modifier = Modifier
-                .size(72.dp)
-                .clip(CircleShape)
-                .background(AppPalette.cardElevated), contentAlignment = Alignment.Center
-        ) {
-            Icon(imageVector = icon, contentDescription = null, tint = AppPalette.textMuted, modifier = Modifier.size(36.dp))
-        }
-        Spacer(modifier = Modifier.height(16.dp))
+                .fillMaxWidth(0.6f)
+                .height(Dimens.ProgressBarHeight)
+                .clip(RoundedCornerShape(Dimens.PaddingSmall))
+                .background(AppPalette.cardBorder)
+        )
+        Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
+        Icon(imageVector = icon, contentDescription = null, tint = AppPalette.textMuted, modifier = Modifier.size(Dimens.IconSizeLarge))
+        Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
         Text(
-            text = when (tab) {
-                GoalFilterTab.PAUSED -> stringResource(R.string.goals_no_paused)
-                GoalFilterTab.ACTIVE -> stringResource(R.string.goals_no_active)
-                GoalFilterTab.COMPLETED -> stringResource(R.string.goals_no_completed)
-            },
+            text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = AppPalette.textPrimary
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
         Text(
-            text = when (tab) {
-                GoalFilterTab.PAUSED -> stringResource(R.string.goals_no_paused_desc)
-                GoalFilterTab.ACTIVE -> stringResource(R.string.goals_no_active_desc)
-                GoalFilterTab.COMPLETED -> stringResource(R.string.goals_no_completed_desc)
-            },
-            style = MaterialTheme.typography.bodySmall,
+            text = desc,
+            style = MaterialTheme.typography.bodyMedium,
             color = AppPalette.textMuted,
             textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
         Button(
             onClick = onCreateGoal,
             modifier = Modifier
                 .fillMaxWidth(0.8f)
-                .height(52.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = LocalAccent.current)
+                .height(Dimens.ButtonHeightPrimary),
+            shape = RoundedCornerShape(Dimens.ButtonRadius),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = LocalAccent.current,
+                contentColor = AppPalette.textPrimary
+            )
         ) {
-            Icon(imageVector = Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.goals_create), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-// ─── Empty State ──────────────────────────────────────────────────────────────
-
-@Composable
-private fun EmptyGoalsState(onCreateGoal: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(88.dp)
-                .clip(CircleShape)
-                .background(LocalAccent.current.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(imageVector = Icons.Outlined.Savings, contentDescription = null, tint = LocalAccent.current, modifier = Modifier.size(44.dp))
-        }
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(text = stringResource(R.string.goals_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppPalette.textPrimary)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = stringResource(R.string.goals_empty_desc), style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted, textAlign = TextAlign.Center, lineHeight = TextUnit(20f, TextUnitType.Sp))
-        Spacer(modifier = Modifier.height(28.dp))
-        Button(
-            onClick = onCreateGoal,
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .height(52.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = LocalAccent.current)
-        ) {
-            Icon(imageVector = Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.goals_create), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Icon(imageVector = Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(Dimens.IconSizeMedium))
+            Spacer(modifier = Modifier.width(Dimens.PaddingMedium))
+            Text(stringResource(R.string.goals_create), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -450,22 +406,27 @@ private fun AutoAllocationRulesSection(
     onToggle: (String, Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = AppPalette.card), border = BorderStroke(1.dp, AppPalette.cardBorder)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.CardRadius),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
+        border = BorderStroke(1.dp, AppPalette.cardBorder)
+    ) {
         Column {
             rules.forEachIndexed { index, rule ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp), verticalAlignment = Alignment.CenterVertically
+                        .padding(Dimens.CardInnerPaddingLarge), verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = rule.goalName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
+                        Text(text = rule.goalName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = AppPalette.textPrimary)
                         Text(text = rule.description(context), style = MaterialTheme.typography.bodySmall, color = AppPalette.textMuted)
                     }
                     Switch(checked = rule.isEnabled, onCheckedChange = { onToggle(rule.id, it) })
                 }
                 if (index < rules.lastIndex) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = AppPalette.cardBorder)
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.CardInnerPaddingLarge), color = AppPalette.cardBorder)
                 }
             }
         }
@@ -484,18 +445,7 @@ private fun DialogHost(dialogState: GoalsDialogState, onEvent: (GoalsEvent) -> U
                 goal = dialogState.goal,
                 onDismiss = { onEvent(GoalsEvent.DismissDialog) },
                 onSave = { name, amount, deadline, icon, color, notes, reminder ->
-                    onEvent(
-                        GoalsEvent.UpdateGoal(
-                            dialogState.goal.id,
-                            name,
-                            amount,
-                            deadline,
-                            icon,
-                            color,
-                            notes,
-                            reminder
-                        )
-                    )
+                    onEvent(GoalsEvent.UpdateGoal(dialogState.goal.id, name, amount, deadline, icon, color, notes, reminder))
                 })
         }
         is GoalsDialogState.ArchiveGoal -> {
@@ -511,15 +461,7 @@ private fun DialogHost(dialogState: GoalsDialogState, onEvent: (GoalsEvent) -> U
                     goal = goal,
                     accounts = uiState.accounts,
                     onDismiss = { onEvent(GoalsEvent.DismissDialog) },
-                    onWithdraw = { accountId: String, amount: Double ->
-                        onEvent(
-                            GoalsEvent.Withdraw(
-                                dialogState.goalId,
-                                accountId,
-                                amount
-                            )
-                        )
-                    })
+                    onWithdraw = { accountId: String, amount: Double -> onEvent(GoalsEvent.Withdraw(dialogState.goalId, accountId, amount)) })
             }
         }
         is GoalsDialogState.SetDailyTarget -> { SetDailyTargetDialog(currentAmount = dialogState.amount, onDismiss = { onEvent(GoalsEvent.DismissDialog) }, onSet = { amount -> onEvent(GoalsEvent.SetDailyTarget(amount)) }, onClear = { onEvent(GoalsEvent.ClearDailyTarget) }) }
@@ -573,16 +515,16 @@ private fun SetDailyTargetDialog(currentAmount: String, onDismiss: () -> Unit, o
     val parsedAmount = amount.toDoubleOrNull() ?: 0.0
     AlertDialog(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(Dimens.BottomSheetRadius),
         containerColor = AppPalette.card,
-        title = { Text(text = stringResource(R.string.daily_saving_target), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+        title = { Text(text = stringResource(R.string.daily_saving_target), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium) },
         text = {
             Column {
                 Text(text = stringResource(R.string.daily_target_set_desc), style = MaterialTheme.typography.bodyMedium, color = AppPalette.textMuted)
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
                 OutlinedTextField(value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text(stringResource(R.string.daily_amount)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, prefix = { Text("${NumberFormatter.getCurrencySymbol()} ") })
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)) {
                     listOf("25000", "50000", "100000", "200000").forEach { value ->
                         FilterChip(selected = amount == value, onClick = { amount = value }, label = { Text("${NumberFormatter.getCurrencySymbol()} ${NumberFormatter.formatNumber(value.toDouble())}") })
                     }

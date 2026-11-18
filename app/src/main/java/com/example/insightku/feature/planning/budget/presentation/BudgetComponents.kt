@@ -1,8 +1,8 @@
 package com.example.insightku.feature.planning.budget.presentation
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -52,7 +53,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.insightku.R
-import com.example.insightku.core.i18n.NumberFormatter
 import com.example.insightku.core.ui.components.FitText
 import com.example.insightku.core.ui.theme.AppPalette
 import com.example.insightku.core.ui.theme.Dimens
@@ -78,7 +78,7 @@ fun BudgetCategoryCard(
     LaunchedEffect(category.id) { progressAnimated = true }
     val animatedProgress by animateFloatAsState(
         targetValue = if (progressAnimated) category.progressFraction else 0f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 200f),
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
         label = "catProgress"
     )
 
@@ -86,7 +86,7 @@ fun BudgetCategoryCard(
     val isPressed by interactionSource.collectIsPressedAsState()
     val cardScale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
+        animationSpec = tween(durationMillis = 120),
         label = "cardScale"
     )
 
@@ -94,15 +94,16 @@ fun BudgetCategoryCard(
         modifier = modifier
             .fillMaxWidth()
             .scale(cardScale),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        border = BorderStroke(1.dp, AppPalette.cardBorder)
+        shape = RoundedCornerShape(Dimens.CardRadiusLarge),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // Row 1 — identity: icon, name, actions. The name gets the full
+            // remaining width so it never clips against the figures.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -110,59 +111,35 @@ fun BudgetCategoryCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(categoryColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = categoryIcon(category),
                         contentDescription = null,
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(20.dp),
                         tint = categoryColor
                     )
                 }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = category.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = AppPalette.textPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = budgetSpentText(category),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.textMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = if (category.hasLimit) stringResource(R.string.remaining_stat_label) else stringResource(R.string.category_tracked),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppPalette.textMuted
-                    )
-                    Text(
-                        text = if (category.hasLimit) formatCurrencyPlain(category.remainingAmount) else stringResource(R.string.category_no_limit),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (category.hasLimit) statusColor else LocalAccent.current,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    text = category.name,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppPalette.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
                 IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                     Icon(
                         Icons.Default.Edit,
                         contentDescription = stringResource(R.string.cd_edit_item, category.name),
-                        modifier = Modifier.size(16.dp),
-                        tint = AppPalette.accent
+                        modifier = Modifier.size(18.dp),
+                        tint = AppPalette.textMuted
                     )
                 }
 
@@ -171,13 +148,38 @@ fun BudgetCategoryCard(
                         Icon(
                             Icons.Default.DeleteOutline,
                             contentDescription = stringResource(R.string.cd_delete_item, category.name),
-                            modifier = Modifier.size(16.dp),
-                            tint = AppPalette.deleteRed.copy(alpha = 0.7f)
+                            modifier = Modifier.size(18.dp),
+                            tint = AppPalette.textMuted
                         )
                     }
                 }
             }
 
+            // Row 2 — figures: spent (of the limit) left, remaining right.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = budgetSpentText(category),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppPalette.textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = if (category.hasLimit) formatCurrencyPlain(category.remainingAmount)
+                    else stringResource(R.string.category_no_limit),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (category.hasLimit) statusColor else AppPalette.textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            // Row 3 — progress and status.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -187,26 +189,25 @@ fun BudgetCategoryCard(
                     progress = { animatedProgress },
                     modifier = Modifier
                         .weight(1f)
-                        .height(6.dp)
+                        .height(3.dp)
                         .clip(RoundedCornerShape(50.dp)),
                     color = statusColor,
                     trackColor = AppPalette.cardBorder
                 )
                 if (!category.recurringPeriod.isNullOrBlank()) {
                     Surface(
-                        shape = RoundedCornerShape(50),
-                        color = LocalAccent.current.copy(alpha = 0.08f)
+                        shape = RoundedCornerShape(6.dp),
+                        color = AppPalette.cardElevated
                     ) {
                         Text(
                             text = category.recurringPeriod,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = LocalAccent.current
+                            color = AppPalette.textMuted
                         )
                     }
                 }
-                BudgetStatePill(
+                BudgetStateText(
                     text = categoryStatusText(category),
                     color = statusColor
                 )
@@ -215,18 +216,26 @@ fun BudgetCategoryCard(
     }
 }
 
+/**
+ * Quiet budget status: a small status dot plus the label, no pill background.
+ * The dot keeps the status readable without a colored container.
+ */
 @Composable
-internal fun BudgetStatePill(text: String, color: Color) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = color.copy(alpha = 0.12f),
-        contentColor = color
+internal fun BudgetStateText(text: String, color: Color) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
         FitText(
             text = text,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
+            color = color,
             maxLines = 1
         )
     }
@@ -243,74 +252,90 @@ internal fun IncomeCategoryCard(
 ) {
     val categoryColor = parseCategoryColor(category.color)
 
+    // Same card system as [BudgetCategoryCard]: no border, no elevation,
+    // 40dp icon box, muted 18dp actions, figures on their own row.
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        border = BorderStroke(1.dp, AppPalette.cardBorder)
+        shape = RoundedCornerShape(Dimens.CardRadiusLarge),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(categoryColor.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = categoryIcon(category),
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                    tint = categoryColor
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(categoryColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = categoryIcon(category),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = categoryColor
+                    )
+                }
+
                 Text(
                     text = category.name,
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     color = AppPalette.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.cd_edit),
+                        modifier = Modifier.size(18.dp),
+                        tint = AppPalette.textMuted
+                    )
+                }
+                if (onDelete != null) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Default.DeleteOutline,
+                            contentDescription = stringResource(R.string.cd_delete),
+                            modifier = Modifier.size(18.dp),
+                            tint = AppPalette.textMuted
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom
+            ) {
                 Text(
                     text = if (category.spentAmount > 0)
                         stringResource(R.string.income_this_month, formatCurrencyPlain(category.spentAmount))
                     else stringResource(R.string.no_income_recorded),
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodySmall,
-                    color = AppPalette.textMuted
+                    color = AppPalette.textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            }
-            if (category.spentAmount > 0) {
-                Text(
-                    text = NumberFormatter.formatCurrencyCompact(category.spentAmount),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = AppPalette.success
-                )
-            }
-            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = stringResource(R.string.cd_edit),
-                    modifier = Modifier.size(16.dp),
-                    tint = AppPalette.accent
-                )
-            }
-            if (onDelete != null) {
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Default.DeleteOutline,
-                        contentDescription = stringResource(R.string.cd_delete),
-                        modifier = Modifier.size(16.dp),
-                        tint = AppPalette.deleteRed.copy(alpha = 0.7f)
+                if (category.spentAmount > 0) {
+                    Text(
+                        text = formatCurrencyPlain(category.spentAmount),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppPalette.success,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -368,66 +393,51 @@ internal fun EmptyBudgetState(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        border = BorderStroke(1.dp, AppPalette.cardBorder)
+        shape = RoundedCornerShape(Dimens.CardRadiusLarge),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(28.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(LocalAccent.current.copy(alpha = 0.08f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Category,
-                    contentDescription = null,
-                    modifier = Modifier.size(34.dp),
-                    tint = LocalAccent.current.copy(alpha = 0.5f)
-                )
-            }
             FitText(
                 text = stringResource(R.string.empty_budget_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
                 color = AppPalette.textPrimary,
                 textAlign = TextAlign.Center
             )
             Text(
                 text = stringResource(R.string.empty_budget_desc),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = AppPalette.textMuted,
                 textAlign = TextAlign.Center
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Surface(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(50.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .clickable(onClick = onAddCategory),
-                shape = RoundedCornerShape(50.dp),
-                color = AppPalette.card,
-                border = BorderStroke(1.dp, LocalAccent.current)
+                shape = RoundedCornerShape(8.dp),
+                color = Color.Transparent
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.Add,
                         contentDescription = null,
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(16.dp),
                         tint = LocalAccent.current
                     )
                     FitText(
                         stringResource(R.string.add_category),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = LocalAccent.current
                     )
@@ -446,35 +456,20 @@ internal fun EmptyIncomeState(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = AppPalette.card),
-        border = BorderStroke(1.dp, AppPalette.cardBorder)
+        shape = RoundedCornerShape(Dimens.CardRadiusLarge),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.card)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(28.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(AppPalette.success.copy(alpha = 0.08f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.TrendingUp,
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp),
-                    tint = AppPalette.success.copy(alpha = 0.5f)
-                )
-            }
             Text(
                 text = stringResource(R.string.empty_income_title),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
                 color = AppPalette.textPrimary,
                 textAlign = TextAlign.Center
             )
@@ -484,28 +479,28 @@ internal fun EmptyIncomeState(
                 color = AppPalette.textMuted,
                 textAlign = TextAlign.Center
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Surface(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(50.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .clickable(onClick = onAddCategory),
-                shape = RoundedCornerShape(50.dp),
-                color = AppPalette.card,
-                border = BorderStroke(1.dp, AppPalette.success)
+                shape = RoundedCornerShape(8.dp),
+                color = Color.Transparent
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.Add,
                         contentDescription = null,
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(16.dp),
                         tint = AppPalette.success
                     )
                     FitText(
                         stringResource(R.string.add_income_source),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = AppPalette.success
                     )
@@ -527,18 +522,19 @@ internal fun BudgetInsightsSection(
     val insights = buildInsights(categories)
     if (insights.isEmpty()) return
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.budget_insights_title),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = AppPalette.textPrimary
+            color = AppPalette.textPrimary,
+            modifier = Modifier.padding(top = 4.dp)
         )
         insights.forEach { insight ->
             InsightCard(
                 text = insight.text,
                 iconTint = insight.iconTint,
-                icon = insight.icon
+                icon = insight.icon,
+                bgColor = insight.bgColor
             )
         }
     }
@@ -548,34 +544,28 @@ internal fun BudgetInsightsSection(
 internal fun InsightCard(
     text: String,
     iconTint: Color,
-    icon: ImageVector
+    icon: ImageVector,
+    bgColor: Color
 ) {
+    // Quiet insight row: a soft tint of the status color, no border, no icon
+    // box. The icon carries the status color; the text stays primary.
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = AppPalette.card,
-        border = BorderStroke(1.dp, iconTint.copy(alpha = 0.30f))
+        shape = RoundedCornerShape(12.dp),
+        color = bgColor
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(iconTint.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = iconTint
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = iconTint
+            )
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodySmall,

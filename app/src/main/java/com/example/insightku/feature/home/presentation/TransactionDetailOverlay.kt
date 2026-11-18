@@ -1,5 +1,7 @@
 package com.example.insightku.feature.home.presentation
 
+import com.example.insightku.core.ui.components.bottomsheet.SheetHeader
+import com.example.insightku.core.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -96,77 +98,24 @@ fun TransactionDetailOverlay(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor   = TxCard,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .clip(CircleShape)
-                        .background(TxCardBorder)
-                )
-            }
-        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
         ) {
             // -- Hero section ----------------------------------------------
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 8.dp, bottom = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                TransactionCategoryIcon(
-                    categoryName = transaction.category,
-                    transactionType = transaction.type,
-                    categoryMap = categoryMap,
-                    containerSize = 68.dp,
-                    iconSize = 32.dp,
-                    cornerRadius = 20.dp,
-                    borderColor = catColor.copy(alpha = 0.2f),
-                    borderWidth = 1.dp
-                )
-                Text(txDisplayTitle(transaction, context), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TxTextPrimary, textAlign = TextAlign.Center)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    // Category badge (only for Income/Expense)
-                    if (showCat && transaction.category.isNotBlank()) {
-                        Surface(shape = RoundedCornerShape(50.dp), color = catColor.copy(alpha = 0.10f)) {
-                            Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Box(
-                                    Modifier
-                                        .size(5.dp)
-                                        .clip(CircleShape)
-                                        .background(catColor)
-                                )
-                                Text(transaction.category, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = catColor)
-                            }
-                        }
-                    }
-                    // Type badge (always shown)
-                    Surface(shape = RoundedCornerShape(8.dp), color = amountColor.copy(alpha = 0.10f)) {
-                        Text(typeLabel.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = amountColor, letterSpacing = 1.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
-                    }
-                }
-                Text("$prefix ${formatCurrencyRp(transaction.amount)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = amountColor, letterSpacing = (-0.5).sp)
-            }
-
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(TxCardBorder)
+            SheetHeader(
+                title = txDisplayTitle(transaction, context),
+                subtitle = typeLabel
             )
+            Text(
+                "$prefix ${formatCurrencyRp(transaction.amount)}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                color = AppPalette.textPrimary,
+                modifier = Modifier.padding(horizontal = Dimens.BottomSheetContentPadding)
+            )
+
 
             // -- Info grid -------------------------------------------------
             Column(
@@ -269,7 +218,7 @@ fun TransactionDetailOverlay(
                             Box(contentAlignment = Alignment.Center) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Icon(Icons.Default.Edit, null, tint = accent, modifier = Modifier.size(16.dp))
-                                    Text(stringResource(R.string.edit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = accent)
+                                    Text(stringResource(R.string.edit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = accent)
                                 }
                             }
                         }
@@ -284,7 +233,7 @@ fun TransactionDetailOverlay(
                             Box(contentAlignment = Alignment.Center) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Icon(Icons.Default.Delete, null, tint = TxExpenseRed, modifier = Modifier.size(16.dp))
-                                    Text(stringResource(R.string.delete), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxExpenseRed)
+                                    Text(stringResource(R.string.delete), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = TxExpenseRed)
                                 }
                             }
                         }
@@ -307,7 +256,7 @@ fun TransactionDetailOverlay(
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.Flag, null, tint = TxGoalPurple, modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.transaction_view_goal), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxGoalPurple)
+                                Text(stringResource(R.string.transaction_view_goal), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = TxGoalPurple)
                             }
                         }
                     }
@@ -329,7 +278,7 @@ fun TransactionDetailOverlay(
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.SwapHoriz, null, tint = TxTransferBlue, modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.transaction_view_transfer), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TxTransferBlue)
+                                Text(stringResource(R.string.transaction_view_transfer), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = TxTransferBlue)
                             }
                         }
                     }
@@ -354,7 +303,7 @@ fun TransactionDetailOverlay(
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.ContentCopy, null, tint = accent, modifier = Modifier.size(15.dp))
-                                Text(stringResource(R.string.transaction_duplicate), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = accent)
+                                Text(stringResource(R.string.transaction_duplicate), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = accent)
                             }
                         }
                     }
@@ -418,7 +367,7 @@ private fun PremiumInfoTile(
             Text(
                 value,
                 style      = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color      = TxTextPrimary,
                 maxLines   = 2,
                 overflow   = TextOverflow.Ellipsis

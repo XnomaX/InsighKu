@@ -1,5 +1,6 @@
 package com.example.insightku.feature.home.presentation
 
+import com.example.insightku.core.ui.theme.Dimens
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -158,28 +159,11 @@ fun EditTransactionDetail(
     com.example.insightku.core.ui.components.bottomsheet.SafeBottomSheet(
         onDismissRequest = onDismiss,
         containerColor   = EditSurface,
-        contentWindowInsets = WindowInsets(0, 8, 0, 8),
-        dragHandle = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp), contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .clip(CircleShape)
-                        .background(EditBorder)
-                )
-            }
-        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.92f)
-                .navigationBarsPadding()
         ) {
 
             // Header
@@ -191,7 +175,7 @@ fun EditTransactionDetail(
                 verticalAlignment     = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(stringResource(R.string.transaction_edit), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = EditTextPrimary)
+                    Text(stringResource(R.string.transaction_edit), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = EditTextPrimary)
                     Text(stringResource(R.string.transaction_edit_desc), style = MaterialTheme.typography.bodySmall, color = EditTextMuted)
                 }
                 Box(
@@ -353,7 +337,7 @@ fun EditTransactionDetail(
                 Text(
                     text = stringResource(R.string.error_insufficient_balance, selectedAccount.name),
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = EditExpenseRed,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -374,7 +358,7 @@ fun EditTransactionDetail(
                     shape    = RoundedCornerShape(16.dp),
                     border   = BorderStroke(1.dp, EditBorder)
                 ) {
-                    Text(stringResource(R.string.cancel), fontWeight = FontWeight.SemiBold, color = EditTextMuted)
+                    Text(stringResource(R.string.cancel), fontWeight = FontWeight.Medium, color = EditTextMuted)
                 }
                 Button(
                     onClick = {
@@ -394,13 +378,16 @@ fun EditTransactionDetail(
                     enabled = !insufficientBalance,
                     modifier = Modifier
                         .weight(1f)
-                        .height(52.dp),
-                    shape    = RoundedCornerShape(16.dp),
-                    colors   = ButtonDefaults.buttonColors(containerColor = accentColor)
+                        .height(Dimens.ButtonHeightPrimary),
+                    shape    = RoundedCornerShape(Dimens.ButtonRadius),
+                    colors   = ButtonDefaults.buttonColors(
+                        containerColor = LocalAccent.current,
+                        contentColor = AppPalette.textPrimary
+                    )
                 ) {
                     Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.transaction_save_changes), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.transaction_save_changes), fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -444,7 +431,7 @@ private fun EditTypeToggle(isIncome: Boolean, onToggle: (Boolean) -> Unit) {
                     .clickable { onToggle(false) },
                 contentAlignment = Alignment.Center
             ) {
-                Text(stringResource(R.string.type_expense), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                Text(stringResource(R.string.type_expense), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium,
                     color = if (!isIncome) Color.White else EditTextMuted)
             }
             Box(
@@ -456,7 +443,7 @@ private fun EditTypeToggle(isIncome: Boolean, onToggle: (Boolean) -> Unit) {
                     .clickable { onToggle(true) },
                 contentAlignment = Alignment.Center
             ) {
-                Text(stringResource(R.string.type_income), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                Text(stringResource(R.string.type_income), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium,
                     color = if (isIncome) Color.White else EditTextMuted)
             }
         }
@@ -492,8 +479,8 @@ private fun EditAmountCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text("${NumberFormatter.getCurrencySymbol()} $displayText", style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold, color = accentColor, textAlign = TextAlign.Center)
+        Text("${NumberFormatter.getCurrencySymbol()} $displayText", style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Medium, color = accentColor, textAlign = TextAlign.Center)
         Text(if (isIncome) stringResource(R.string.income_amount) else stringResource(R.string.expense_amount),
             style = MaterialTheme.typography.labelSmall, color = accentColor.copy(alpha = 0.6f))
         Spacer(Modifier.height(4.dp))
@@ -508,7 +495,7 @@ private fun EditAmountCard(
             placeholder   = { Text("0", color = accentColor.copy(alpha = 0.35f)) },
             label         = { Text(stringResource(R.string.transaction_amount_hint), color = accentColor.copy(alpha = 0.7f)) },
             leadingIcon   = {
-                Text(NumberFormatter.getCurrencySymbol(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold,
+                Text(NumberFormatter.getCurrencySymbol(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
                     color = accentColor, modifier = Modifier.padding(start = 4.dp))
             },
             modifier = Modifier
@@ -526,7 +513,7 @@ private fun EditAmountCard(
                 focusedTextColor        = accentColor,
                 unfocusedTextColor      = accentColor
             ),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
         )
     }
 }
@@ -586,7 +573,7 @@ private fun EditCategoryPicker(
             Text(
                 selected.ifBlank { stringResource(R.string.choose_category) },
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = EditTextPrimary,
                 modifier = Modifier.weight(1f)
             )
@@ -631,7 +618,7 @@ private fun EditCategoryPicker(
                             Text(
                                 name,
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (isSel) FontWeight.Medium else FontWeight.Normal,
                                 color = if (isSel) c else EditTextPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -756,7 +743,7 @@ private fun EditAccountChipRow(
                         Text(
                             account.name,
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                             color = if (isSelected) accountColor else EditTextMuted,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -792,9 +779,8 @@ private fun EditFieldLabel(text: String) {
     Text(
         text          = text,
         style         = MaterialTheme.typography.labelSmall,
-        letterSpacing = 1.2.sp,
         color         = EditTextMuted.copy(alpha = 0.7f),
-        fontWeight    = FontWeight.SemiBold
+        fontWeight    = FontWeight.Medium
     )
 }
 

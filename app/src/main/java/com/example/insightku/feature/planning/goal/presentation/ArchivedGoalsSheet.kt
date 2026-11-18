@@ -57,15 +57,6 @@ fun ArchivedGoalsSheet(
         sheetState = sheetState,
         containerColor = AppPalette.card,
         shape = RoundedCornerShape(Dimens.BottomSheetRadius),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .width(Dimens.BottomSheetHandleWidth)
-                    .height(Dimens.BottomSheetHandleHeight)
-                    .clip(RoundedCornerShape(Dimens.BottomSheetHandleRadius))
-                    .background(AppPalette.cardBorder)
-            )
-        }
     ) {
         Column(
             modifier = Modifier
@@ -92,7 +83,7 @@ fun ArchivedGoalsSheet(
                     Text(
                         stringResource(R.string.goals_archived_title),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = AppPalette.textPrimary
                     )
                     Text(
